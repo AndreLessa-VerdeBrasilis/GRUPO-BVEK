@@ -7,7 +7,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-:root{--verde:#1a6b3c;--verde-claro:#e8f5ee;--cinza:#f4f4f4;--borda:#ddd;--texto:#222;--texto2:#666;--branco:#fff;--vermelho:#c0392b}
+:root{--verde:#1a6b3c;--verde-claro:#e8f5ee;--cinza:#f4f4f4;--borda:#ddd;--texto:#222;--texto2:#666;--branco:#fff;--vermelho:#c0392b;--azul:#2980b9}
 body{font-family:'Segoe UI',sans-serif;background:var(--cinza);color:var(--texto)}
 #tela-login{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#1a6b3c,#0d3d22)}
 .login-box{background:#fff;border-radius:16px;padding:48px 40px;width:360px;box-shadow:0 20px 60px rgba(0,0,0,.3)}
@@ -28,29 +28,35 @@ body{font-family:'Segoe UI',sans-serif;background:var(--cinza);color:var(--texto
 .btn-sair{background:rgba(255,255,255,.15);border:none;color:#fff;padding:6px 14px;border-radius:6px;cursor:pointer;font-size:13px}
 .empresa-selector{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.15);padding:6px 12px;border-radius:8px}
 .empresa-selector label{font-size:12px;opacity:.8;white-space:nowrap}
-.empresa-selector select{background:none;border:none;color:#fff;font-size:14px;font-weight:600;cursor:pointer;outline:none;max-width:200px}
+.empresa-selector select{background:none;border:none;color:#fff;font-size:14px;font-weight:600;cursor:pointer;outline:none;max-width:220px}
 .empresa-selector select option{color:#000;background:#fff}
 .tabs{background:#fff;border-bottom:2px solid var(--borda);display:flex;padding:0 24px}
 .tab{padding:14px 20px;cursor:pointer;font-size:14px;font-weight:500;color:var(--texto2);border-bottom:3px solid transparent;margin-bottom:-2px;transition:all .2s}
 .tab.ativo{color:var(--verde);border-bottom-color:var(--verde)}
-.conteudo{padding:24px;max-width:1400px;margin:0 auto}
+.conteudo{padding:24px;max-width:1500px;margin:0 auto}
 .barra-acoes{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px}
 .barra-acoes h2{font-size:15px;color:var(--texto2);font-weight:500}
-.btn-novo{background:var(--verde);color:#fff;border:none;padding:11px 24px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;transition:background .2s}
+.btn-novo{background:var(--verde);color:#fff;border:none;padding:11px 24px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer}
 .btn-novo:hover{background:#145530}
 .funil-container{overflow-x:auto;padding-bottom:16px}
 .funil{display:flex;gap:12px;min-width:max-content;align-items:flex-start}
-.coluna{background:#fff;border-radius:12px;width:220px;min-width:220px;border:1.5px solid var(--borda);overflow:hidden}
+.coluna{background:#fff;border-radius:12px;width:230px;min-width:230px;border:1.5px solid var(--borda);overflow:hidden}
 .coluna-header{padding:10px 14px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;display:flex;align-items:center;justify-content:space-between}
 .coluna-body{padding:8px;min-height:120px}
 .coluna-vazia{text-align:center;color:#ccc;font-size:12px;padding:20px 8px}
 .card{background:#fff;border:1.5px solid var(--borda);border-radius:10px;padding:12px;margin-bottom:8px;cursor:pointer;transition:box-shadow .2s,transform .2s}
 .card:hover{box-shadow:0 4px 16px rgba(0,0,0,.1);transform:translateY(-2px)}
+.card-empresa-tag{font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;display:inline-block;margin-bottom:5px}
+.tag-VB{background:#e8f5e9;color:#1b5e20}
+.tag-EK{background:#e3f2fd;color:#1565c0}
+.tag-BL{background:#fce4ec;color:#880e4f}
+.tag-ALL{background:#f3e5f5;color:#6a1b9a}
+.card-numero{font-size:10px;color:var(--texto2);margin-bottom:3px}
 .card-titulo{font-size:13px;font-weight:600;margin-bottom:4px;line-height:1.3}
 .card-cliente{font-size:12px;color:var(--texto2);margin-bottom:4px}
 .card-valor{font-size:12px;font-weight:600;color:var(--verde)}
 .card-data{font-size:11px;color:var(--texto2);margin-top:4px}
-.badge{font-size:10px;padding:2px 7px;border-radius:20px;font-weight:600;display:inline-block;margin-bottom:5px}
+.badge{font-size:10px;padding:2px 7px;border-radius:20px;font-weight:600;display:inline-block;margin-bottom:4px}
 .badge-rec{background:#fff3cd;color:#856404}
 .badge-auto{background:#f8d7da;color:#842029}
 .col-entrada .coluna-header{background:#e3f2fd;color:#1565c0}
@@ -64,28 +70,45 @@ body{font-family:'Segoe UI',sans-serif;background:var(--cinza);color:var(--texto
 .col-perdida .coluna-header{background:#ffebee;color:#b71c1c}
 .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto}
 .modal-overlay.aberto{display:flex}
-.modal{background:#fff;border-radius:16px;width:100%;max-width:680px;padding:32px;box-shadow:0 20px 60px rgba(0,0,0,.3);margin:auto}
+.modal{background:#fff;border-radius:16px;width:100%;max-width:800px;padding:32px;box-shadow:0 20px 60px rgba(0,0,0,.3);margin:auto}
+.modal-lg{max-width:1000px}
 .modal h2{font-size:20px;margin-bottom:6px;color:var(--verde)}
 .modal-sub{font-size:13px;color:var(--texto2);margin-bottom:20px}
 .secao{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--verde);margin:20px 0 12px;padding-bottom:6px;border-bottom:1.5px solid var(--verde-claro)}
 .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 .form-grid .full{grid-column:1/-1}
+.form-grid .tri{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
 .campo-check{display:flex;align-items:center;gap:10px;padding:4px 0}
 .campo-check input[type=checkbox]{width:18px;height:18px;cursor:pointer;accent-color:var(--verde)}
 .campo-check label{cursor:pointer;font-weight:600;font-size:14px}
 .etapa-box{background:var(--verde-claro);border:1.5px solid var(--verde);border-radius:8px;padding:10px 14px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
 .etapa-box span{font-size:13px;color:var(--verde);font-weight:600}
 .etapa-box select{border:1.5px solid var(--verde);border-radius:6px;padding:6px 10px;font-size:13px;color:var(--verde);font-weight:600;background:#fff;cursor:pointer;outline:none}
+.numero-box{background:#f0f9ff;border:1.5px solid var(--azul);border-radius:8px;padding:10px 14px;margin-bottom:16px;display:flex;align-items:center;gap:12px}
+.numero-box span{font-size:13px;color:var(--azul);font-weight:700}
 .modal-btns{display:flex;gap:12px;justify-content:flex-end;margin-top:28px;flex-wrap:wrap}
 .btn-cancelar{padding:10px 20px;border:1.5px solid var(--borda);background:#fff;border-radius:8px;cursor:pointer;font-size:14px;color:var(--texto2)}
 .btn-salvar{padding:10px 28px;background:var(--verde);color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600}
 .btn-excluir{padding:10px 20px;background:var(--vermelho);color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:14px}
+.btn-pdf{padding:10px 20px;background:var(--azul);color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600}
+.btn-versao{padding:10px 20px;background:#8e44ad;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:14px}
 .alertas-box{background:#fff3cd;border:1.5px solid #ffc107;border-radius:10px;padding:14px 18px;margin-bottom:20px}
 .alertas-box h3{color:#856404;font-size:13px;margin-bottom:6px}
 .alerta-item{font-size:13px;color:#664d03;padding:3px 0}
 .card-lista{background:#fff;border:1.5px solid var(--borda);border-radius:10px;padding:16px 20px;margin-bottom:10px}
 .vazio{color:var(--texto2);font-size:14px;padding:20px 0}
-@media(max-width:600px){.form-grid{grid-template-columns:1fr}.conteudo{padding:12px}.modal{padding:20px}.topbar{padding:0 12px}}
+/* TABELA ITENS */
+.tabela-itens{width:100%;border-collapse:collapse;margin-top:8px;font-size:13px}
+.tabela-itens th{background:var(--verde-claro);color:var(--verde);padding:8px;text-align:left;font-size:11px;font-weight:700;text-transform:uppercase}
+.tabela-itens td{padding:6px 8px;border-bottom:1px solid var(--borda);vertical-align:middle}
+.tabela-itens input{width:100%;border:none;outline:none;font-size:13px;font-family:inherit;background:transparent}
+.tabela-itens input:focus{background:#f9f9f9;border-radius:4px}
+.tabela-itens tr:hover td{background:#fafafa}
+.btn-add-item{background:none;border:1.5px dashed var(--borda);border-radius:6px;padding:6px 14px;cursor:pointer;font-size:12px;color:var(--texto2);margin-top:8px}
+.btn-add-item:hover{border-color:var(--verde);color:var(--verde)}
+.btn-rm-item{background:none;border:none;color:var(--vermelho);cursor:pointer;font-size:16px;padding:2px 6px}
+.total-box{text-align:right;margin-top:12px;font-size:16px;font-weight:700;color:var(--verde)}
+@media(max-width:600px){.form-grid{grid-template-columns:1fr}.form-grid .tri{grid-template-columns:1fr}.conteudo{padding:12px}.modal{padding:20px}.topbar{padding:0 12px}}
 </style>
 </head>
 <body>
@@ -114,7 +137,9 @@ body{font-family:'Segoe UI',sans-serif;background:var(--cinza);color:var(--texto
     <div class="topbar-logo">GRUPO-BVEK</div>
     <div class="empresa-selector">
       <label>Empresa:</label>
-      <select id="select-empresa" onchange="trocarEmpresa()"></select>
+      <select id="select-empresa" onchange="trocarEmpresa()">
+        <option value="todas">— Todas as empresas —</option>
+      </select>
     </div>
     <div class="topbar-right">
       <span id="user-nome" style="font-size:12px;opacity:.8"></span>
@@ -133,7 +158,7 @@ body{font-family:'Segoe UI',sans-serif;background:var(--cinza);color:var(--texto
     </div>
     <div id="tab-funil">
       <div class="barra-acoes">
-        <h2 id="titulo-funil">Funil de atendimentos</h2>
+        <h2 id="titulo-funil">Funil de atendimentos — Todas as empresas</h2>
         <button class="btn-novo" onclick="abrirModalCard()">+ Novo Atendimento</button>
       </div>
       <div class="funil-container"><div class="funil" id="funil"></div></div>
@@ -157,9 +182,15 @@ body{font-family:'Segoe UI',sans-serif;background:var(--cinza);color:var(--texto
 
 <!-- MODAL ATENDIMENTO -->
 <div class="modal-overlay" id="modal-card">
-  <div class="modal">
+  <div class="modal modal-lg">
     <h2 id="modal-titulo">Novo Atendimento</h2>
-    <p class="modal-sub">Preencha os dados. O cliente é criado automaticamente.</p>
+    <p class="modal-sub">Preencha os dados completos para gerar a proposta automaticamente.</p>
+
+    <div class="numero-box" id="numero-box" style="display:none">
+      <span id="numero-display">—</span>
+      <span style="font-size:12px;color:var(--texto2)">Número da proposta</span>
+    </div>
+
     <div class="etapa-box" id="etapa-box" style="display:none">
       <span>Etapa atual:</span>
       <select id="card-etapa-select" onchange="salvarEtapa()">
@@ -174,21 +205,46 @@ body{font-family:'Segoe UI',sans-serif;background:var(--cinza);color:var(--texto
         <option value="perdida">Proposta Perdida ❌</option>
       </select>
     </div>
-    <div class="secao">Dados do cliente</div>
+
+    <div class="secao">Empresa e cliente</div>
     <div class="form-grid">
-      <div class="campo full"><label>Nome do contato *</label><input type="text" id="cli-nome" placeholder="Nome completo"></div>
+      <div class="campo">
+        <label>Empresa responsável *</label>
+        <select id="card-empresa-id">
+          <option value="">Selecione a empresa</option>
+        </select>
+      </div>
+      <div class="campo">
+        <label>Responsável interno</label>
+        <input type="text" id="card-responsavel" placeholder="Quem vai atender">
+      </div>
+      <div class="campo full"><label>Nome do contato / cliente *</label><input type="text" id="cli-nome" placeholder="Nome completo do contato"></div>
       <div class="campo full"><label>Empresa do cliente</label><input type="text" id="cli-empresa-nome" placeholder="Nome da empresa do cliente"></div>
       <div class="campo"><label>Telefone</label><input type="text" id="cli-tel" placeholder="(21) 99999-9999"></div>
       <div class="campo"><label>E-mail</label><input type="email" id="cli-email-campo" placeholder="email@cliente.com"></div>
-      <div class="campo full"><label>Cargo</label><input type="text" id="cli-cargo" placeholder="Ex: Engenheiro, Gerente"></div>
+      <div class="campo full"><label>Cargo</label><input type="text" id="cli-cargo" placeholder="Ex: Engenheiro, Gerente de Obras"></div>
     </div>
+
     <div class="secao">Dados da proposta</div>
     <div class="form-grid">
-      <div class="campo full"><label>Título do atendimento *</label><input type="text" id="card-titulo" placeholder="Ex: Projeto elétrico — Galpão Industrial"></div>
-      <div class="campo"><label>Responsável interno</label><input type="text" id="card-responsavel" placeholder="Quem vai atender"></div>
-      <div class="campo"><label>Valor estimado (R$)</label><input type="number" id="card-valor" placeholder="0,00"></div>
-      <div class="campo full"><label>Previsão de fechamento</label><input type="date" id="card-fechamento"></div>
-      <div class="campo full"><label>Descrição / Observações</label><textarea id="card-descricao" rows="3" placeholder="Detalhes do serviço..."></textarea></div>
+      <div class="campo full"><label>Título / Objeto da proposta *</label><input type="text" id="card-titulo" placeholder="Ex: Retrofit Laboratório Arkema — Térreo"></div>
+      <div class="campo"><label>Valor total (R$)</label><input type="number" id="card-valor" placeholder="0,00" oninput="atualizarTotal()"></div>
+      <div class="campo"><label>Previsão de fechamento</label><input type="date" id="card-fechamento"></div>
+      <div class="campo"><label>Prazo de execução (meses)</label><input type="number" id="card-prazo" placeholder="Ex: 5"></div>
+      <div class="campo"><label>Validade da proposta (dias)</label><input type="number" id="card-validade" placeholder="30" value="30"></div>
+      <div class="campo full"><label>Escopo dos serviços</label><textarea id="card-escopo" rows="4" placeholder="Descreva detalhadamente o escopo dos serviços..."></textarea></div>
+      <div class="campo full"><label>Forma de pagamento</label><input type="text" id="card-pagamento" placeholder="Ex: Crédito em conta, conforme medições mensais"></div>
+      <div class="campo">
+        <label>% Mão de obra</label>
+        <input type="number" id="card-pct-mao" placeholder="30" value="30">
+      </div>
+      <div class="campo">
+        <label>% Insumos e equipamentos</label>
+        <input type="number" id="card-pct-ins" placeholder="70" value="70">
+      </div>
+      <div class="campo full"><label>Observações gerais</label><textarea id="card-obs" rows="2" placeholder="Observações adicionais..."></textarea></div>
+      <div class="campo full"><label>Nota 1</label><input type="text" id="card-nota1" placeholder="Ex: Em dias chuvosos..."></div>
+      <div class="campo full"><label>Nota 2</label><input type="text" id="card-nota2" placeholder="Ex: Caso haja necessidade de paralisação..."></div>
       <div class="campo full">
         <div class="campo-check">
           <input type="checkbox" id="card-recorrente" onchange="toggleRecorrente()">
@@ -200,8 +256,30 @@ body{font-family:'Segoe UI',sans-serif;background:var(--cinza);color:var(--texto
         <input type="number" id="card-dias" placeholder="Ex: 365 anual · 180 semestral · 30 mensal">
       </div>
     </div>
+
+    <div class="secao">Itens do orçamento</div>
+    <table class="tabela-itens" id="tabela-itens">
+      <thead>
+        <tr>
+          <th style="width:60px">Item</th>
+          <th style="width:80px">Código</th>
+          <th>Descrição</th>
+          <th style="width:60px">Und</th>
+          <th style="width:80px">Qtd</th>
+          <th style="width:100px">Vl Unit (R$)</th>
+          <th style="width:100px">Total (R$)</th>
+          <th style="width:36px"></th>
+        </tr>
+      </thead>
+      <tbody id="itens-body"></tbody>
+    </table>
+    <button class="btn-add-item" onclick="addItem()">+ Adicionar item</button>
+    <div class="total-box">Total: R$ <span id="total-geral">0,00</span></div>
+
     <div class="modal-btns">
       <button class="btn-excluir" id="btn-excluir" style="display:none" onclick="excluirCard()">Excluir</button>
+      <button class="btn-versao" id="btn-versao" style="display:none" onclick="criarNovaVersao()">+ Nova versão</button>
+      <button class="btn-pdf" id="btn-pdf" style="display:none" onclick="gerarPDF()">📄 Gerar Proposta</button>
       <button class="btn-cancelar" onclick="fecharModal('modal-card')">Cancelar</button>
       <button class="btn-salvar" onclick="salvarCard()">Salvar</button>
     </div>
@@ -212,8 +290,11 @@ body{font-family:'Segoe UI',sans-serif;background:var(--cinza);color:var(--texto
 <div class="modal-overlay" id="modal-empresa">
   <div class="modal">
     <h2>Nova Empresa</h2>
-    <div class="campo" style="margin-top:20px"><label>Nome *</label><input type="text" id="emp-nome" placeholder="Nome da empresa"></div>
-    <div class="campo"><label>CNPJ</label><input type="text" id="emp-cnpj" placeholder="00.000.000/0000-00"></div>
+    <div class="form-grid" style="margin-top:20px">
+      <div class="campo full"><label>Nome *</label><input type="text" id="emp-nome" placeholder="Nome da empresa"></div>
+      <div class="campo"><label>Sigla (2-3 letras)</label><input type="text" id="emp-sigla" placeholder="Ex: VB" maxlength="5"></div>
+      <div class="campo"><label>CNPJ</label><input type="text" id="emp-cnpj" placeholder="00.000.000/0000-00"></div>
+    </div>
     <div class="modal-btns">
       <button class="btn-cancelar" onclick="fecharModal('modal-empresa')">Cancelar</button>
       <button class="btn-salvar" onclick="salvarEmpresa()">Salvar</button>
@@ -243,7 +324,8 @@ body{font-family:'Segoe UI',sans-serif;background:var(--cinza);color:var(--texto
 const SUPABASE_URL='https://smusenaszgkqkjjwblyi.supabase.co';
 const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNtdXNlbmFzemdrcWtqandibHlpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0MTIwNTMsImV4cCI6MjA5Nzk4ODA1M30.IU1Z9ddIUpktjHvWqrSZaEWuo4gbmZfrfmYJ_NoXbWs';
 const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
-let empresaAtual=null,cardEditandoId=null,clienteEditandoId=null;
+let empresaAtual='todas',cardEditandoId=null,clienteEditandoId=null,todasEmpresas=[],itensLocais=[];
+
 const ETAPAS=[
   {id:'entrada',label:'Entrada',cls:'col-entrada'},
   {id:'contato',label:'Contato',cls:'col-contato'},
@@ -264,13 +346,7 @@ async function fazerLogin(){
   if(error){document.getElementById('login-erro').textContent='E-mail ou senha incorretos.';return;}
   iniciarApp();
 }
-
-async function sair(){
-  await sb.auth.signOut();
-  document.getElementById('app').style.display='none';
-  document.getElementById('tela-login').style.display='flex';
-}
-
+async function sair(){await sb.auth.signOut();document.getElementById('app').style.display='none';document.getElementById('tela-login').style.display='flex';}
 async function iniciarApp(){
   const{data:{user}}=await sb.auth.getUser();
   if(!user)return;
@@ -282,27 +358,38 @@ async function iniciarApp(){
 
 async function carregarEmpresas(){
   const{data}=await sb.from('empresas').select('*').eq('ativa',true).order('nome');
+  todasEmpresas=data||[];
   const sel=document.getElementById('select-empresa');
-  sel.innerHTML='';
-  (data||[]).forEach(e=>{
+  // manter opção "todas"
+  while(sel.options.length>1)sel.remove(1);
+  todasEmpresas.forEach(e=>{
     const opt=document.createElement('option');
     opt.value=e.id;opt.textContent=e.nome;sel.appendChild(opt);
   });
-  if(data&&data.length>0){empresaAtual=data[0].id;sel.value=empresaAtual;}
-  renderizarListaEmpresas(data||[]);
-  if(empresaAtual){await carregarFunil();await verificarAlertas();}
+  // popular select do modal
+  const selModal=document.getElementById('card-empresa-id');
+  selModal.innerHTML='<option value="">Selecione a empresa</option>';
+  todasEmpresas.forEach(e=>{
+    const opt=document.createElement('option');
+    opt.value=e.id;opt.textContent=e.nome+' ('+e.sigla+')';selModal.appendChild(opt);
+  });
+  renderizarListaEmpresas(todasEmpresas);
+  await carregarFunil();
+  await verificarAlertas();
 }
 
 function trocarEmpresa(){
   empresaAtual=document.getElementById('select-empresa').value;
-  const nome=document.getElementById('select-empresa').options[document.getElementById('select-empresa').selectedIndex].text;
-  document.getElementById('titulo-funil').textContent='Funil — '+nome;
+  const sel=document.getElementById('select-empresa');
+  const nomeEmp=empresaAtual==='todas'?'Todas as empresas':sel.options[sel.selectedIndex].text;
+  document.getElementById('titulo-funil').textContent='Funil de atendimentos — '+nomeEmp;
   carregarFunil();verificarAlertas();
 }
 
 async function carregarFunil(){
-  if(!empresaAtual)return;
-  const{data:cards}=await sb.from('cards').select('*,clientes(nome,empresa_cliente)').eq('empresa_id',empresaAtual).order('criado_em',{ascending:false});
+  let query=sb.from('cards').select('*,clientes(nome,empresa_cliente),empresas(nome,sigla)').order('criado_em',{ascending:false});
+  if(empresaAtual!=='todas')query=query.eq('empresa_id',empresaAtual);
+  const{data:cards}=await query;
   const funil=document.getElementById('funil');
   funil.innerHTML='';
   ETAPAS.forEach(etapa=>{
@@ -320,9 +407,12 @@ function renderCard(c){
   const cliente=c.clientes?(c.clientes.empresa_cliente||c.clientes.nome):'—';
   const valor=c.valor_estimado?'R$ '+Number(c.valor_estimado).toLocaleString('pt-BR',{minimumFractionDigits:2}):'';
   const data=c.data_fechamento_prevista?new Date(c.data_fechamento_prevista+'T00:00:00').toLocaleDateString('pt-BR'):'';
+  const sigla=c.empresas?c.empresas.sigla:'?';
+  const num=c.numero_proposta?`<div class="card-numero">${c.numero_proposta}${c.versao>1?' · V'+c.versao:''}</div>`:'';
   return`<div class="card" data-id="${c.id}">
+    <span class="card-empresa-tag tag-${sigla}">${sigla} · ${c.empresas?c.empresas.nome:''}</span>
     ${c.recorrente?'<span class="badge badge-rec">🔄 Recorrente</span>':''}
-    ${c.card_origem_id?'<span class="badge badge-auto">Renovação automática</span>':''}
+    ${num}
     <div class="card-titulo">${c.titulo}</div>
     <div class="card-cliente">${cliente}</div>
     ${valor?`<div class="card-valor">${valor}</div>`:''}
@@ -330,25 +420,68 @@ function renderCard(c){
   </div>`;
 }
 
+async function gerarNumeroProposta(empresaId){
+  const agora=new Date();
+  const mes=agora.getMonth()+1;
+  const ano=agora.getFullYear();
+  const emp=todasEmpresas.find(e=>e.id===empresaId);
+  if(!emp)return null;
+  // Buscar ou criar sequência
+  let{data:seq}=await sb.from('sequencia_propostas').select('*').eq('empresa_id',empresaId).eq('mes',mes).eq('ano',ano).single();
+  if(!seq){
+    const{data:novo}=await sb.from('sequencia_propostas').insert({empresa_id:empresaId,mes,ano,ultimo_numero:1}).select().single();
+    seq=novo;
+  } else {
+    const novoNum=seq.ultimo_numero+1;
+    await sb.from('sequencia_propostas').update({ultimo_numero:novoNum}).eq('id',seq.id);
+    seq.ultimo_numero=novoNum;
+  }
+  const num=String(seq.ultimo_numero).padStart(3,'0');
+  const mesStr=String(mes).padStart(2,'0');
+  return`${emp.sigla}${num}-${mesStr}${String(ano).slice(2)}`;
+}
+
 async function abrirModalCard(id=null){
-  cardEditandoId=id;clienteEditandoId=null;
-  ['cli-nome','cli-empresa-nome','cli-tel','cli-email-campo','cli-cargo','card-titulo','card-responsavel','card-valor','card-fechamento','card-descricao','card-dias'].forEach(i=>{const el=document.getElementById(i);if(el)el.value='';});
+  cardEditandoId=id;clienteEditandoId=null;itensLocais=[];
+  ['cli-nome','cli-empresa-nome','cli-tel','cli-email-campo','cli-cargo','card-titulo','card-responsavel','card-valor','card-fechamento','card-prazo','card-escopo','card-pagamento','card-obs','card-nota1','card-nota2','card-dias'].forEach(i=>{const el=document.getElementById(i);if(el)el.value='';});
+  document.getElementById('card-validade').value='30';
+  document.getElementById('card-pct-mao').value='30';
+  document.getElementById('card-pct-ins').value='70';
   document.getElementById('card-recorrente').checked=false;
   document.getElementById('campo-recorrencia').style.display='none';
   document.getElementById('btn-excluir').style.display='none';
+  document.getElementById('btn-versao').style.display='none';
+  document.getElementById('btn-pdf').style.display='none';
   document.getElementById('etapa-box').style.display='none';
+  document.getElementById('numero-box').style.display='none';
+  renderItens();
   if(id){
     document.getElementById('modal-titulo').textContent='Editar Atendimento';
     document.getElementById('btn-excluir').style.display='inline-block';
+    document.getElementById('btn-versao').style.display='inline-block';
+    document.getElementById('btn-pdf').style.display='inline-block';
     document.getElementById('etapa-box').style.display='flex';
     const{data:card}=await sb.from('cards').select('*,clientes(*)').eq('id',id).single();
     if(card){
+      if(card.numero_proposta){
+        document.getElementById('numero-box').style.display='flex';
+        document.getElementById('numero-display').textContent=card.numero_proposta+'.V'+card.versao;
+      }
       document.getElementById('card-etapa-select').value=card.etapa||'entrada';
+      document.getElementById('card-empresa-id').value=card.empresa_id||'';
       document.getElementById('card-titulo').value=card.titulo||'';
       document.getElementById('card-responsavel').value=card.responsavel||'';
       document.getElementById('card-valor').value=card.valor_estimado||'';
       document.getElementById('card-fechamento').value=card.data_fechamento_prevista||'';
-      document.getElementById('card-descricao').value=card.descricao||'';
+      document.getElementById('card-prazo').value=card.prazo_execucao_meses||'';
+      document.getElementById('card-validade').value=card.validade_proposta_dias||30;
+      document.getElementById('card-escopo').value=card.escopo||'';
+      document.getElementById('card-pagamento').value=card.forma_pagamento||'';
+      document.getElementById('card-pct-mao').value=card.percentual_mao_obra||30;
+      document.getElementById('card-pct-ins').value=card.percentual_insumos||70;
+      document.getElementById('card-obs').value=card.observacoes||'';
+      document.getElementById('card-nota1').value=card.nota1||'';
+      document.getElementById('card-nota2').value=card.nota2||'';
       document.getElementById('card-recorrente').checked=card.recorrente||false;
       document.getElementById('card-dias').value=card.dias_recorrencia||'';
       document.getElementById('campo-recorrencia').style.display=card.recorrente?'block':'none';
@@ -360,12 +493,51 @@ async function abrirModalCard(id=null){
         document.getElementById('cli-email-campo').value=card.clientes.email||'';
         document.getElementById('cli-cargo').value=card.clientes.cargo||'';
       }
+      // carregar itens
+      const{data:itens}=await sb.from('itens_proposta').select('*').eq('card_id',id).order('ordem');
+      itensLocais=(itens||[]).map(i=>({...i}));
+      renderItens();
     }
-  }else{
+  } else {
     document.getElementById('modal-titulo').textContent='Novo Atendimento';
+    if(empresaAtual!=='todas')document.getElementById('card-empresa-id').value=empresaAtual;
   }
   document.getElementById('modal-card').classList.add('aberto');
 }
+
+// ITENS
+function renderItens(){
+  const tbody=document.getElementById('itens-body');
+  tbody.innerHTML='';
+  itensLocais.forEach((item,idx)=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML=`
+      <td><input value="${item.item||''}" onchange="itensLocais[${idx}].item=this.value" placeholder="1.1"></td>
+      <td><input value="${item.codigo||''}" onchange="itensLocais[${idx}].codigo=this.value" placeholder="00001"></td>
+      <td><input value="${item.descricao||''}" onchange="itensLocais[${idx}].descricao=this.value;calcLinha(${idx})" placeholder="Descrição do serviço"></td>
+      <td><input value="${item.unidade||''}" onchange="itensLocais[${idx}].unidade=this.value" placeholder="m²"></td>
+      <td><input type="number" value="${item.quantidade||''}" onchange="itensLocais[${idx}].quantidade=parseFloat(this.value)||0;calcLinha(${idx})" placeholder="0"></td>
+      <td><input type="number" value="${item.valor_unitario||''}" onchange="itensLocais[${idx}].valor_unitario=parseFloat(this.value)||0;calcLinha(${idx})" placeholder="0,00"></td>
+      <td style="font-weight:600;color:var(--verde)">${fmtMoeda(item.valor_total||0)}</td>
+      <td><button class="btn-rm-item" onclick="rmItem(${idx})">×</button></td>`;
+    tbody.appendChild(tr);
+  });
+  atualizarTotal();
+}
+function calcLinha(idx){
+  const i=itensLocais[idx];
+  i.valor_total=(i.quantidade||0)*(i.valor_unitario||0);
+  renderItens();
+}
+function addItem(){itensLocais.push({item:'',codigo:'',descricao:'',unidade:'',quantidade:0,valor_unitario:0,valor_total:0,ordem:itensLocais.length});renderItens();}
+function rmItem(idx){itensLocais.splice(idx,1);renderItens();}
+function atualizarTotal(){
+  const total=itensLocais.reduce((s,i)=>s+(i.valor_total||0),0);
+  document.getElementById('total-geral').textContent=fmtMoeda(total);
+  // sincronizar campo valor
+  if(total>0)document.getElementById('card-valor').value=total.toFixed(2);
+}
+function fmtMoeda(v){return Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2});}
 
 async function salvarEtapa(){
   if(!cardEditandoId)return;
@@ -373,47 +545,185 @@ async function salvarEtapa(){
   await carregarFunil();
 }
 
-function toggleRecorrente(){
-  document.getElementById('campo-recorrencia').style.display=document.getElementById('card-recorrente').checked?'block':'none';
-}
+function toggleRecorrente(){document.getElementById('campo-recorrencia').style.display=document.getElementById('card-recorrente').checked?'block':'none';}
 
 async function salvarCard(){
   const nomeCliente=document.getElementById('cli-nome').value.trim();
   const titulo=document.getElementById('card-titulo').value.trim();
+  const empId=document.getElementById('card-empresa-id').value;
   if(!nomeCliente){alert('Informe o nome do contato.');return;}
-  if(!titulo){alert('Informe o título do atendimento.');return;}
+  if(!titulo){alert('Informe o título.');return;}
+  if(!empId){alert('Selecione a empresa responsável.');return;}
+
   let clienteId=clienteEditandoId;
-  const dadosCli={empresa_id:empresaAtual,nome:nomeCliente,empresa_cliente:document.getElementById('cli-empresa-nome').value,telefone:document.getElementById('cli-tel').value,email:document.getElementById('cli-email-campo').value,cargo:document.getElementById('cli-cargo').value};
+  const dadosCli={empresa_id:empId,nome:nomeCliente,empresa_cliente:document.getElementById('cli-empresa-nome').value,telefone:document.getElementById('cli-tel').value,email:document.getElementById('cli-email-campo').value,cargo:document.getElementById('cli-cargo').value};
   if(clienteId){await sb.from('clientes').update(dadosCli).eq('id',clienteId);}
   else{const{data:nc}=await sb.from('clientes').insert(dadosCli).select().single();clienteId=nc?.id;}
-  const dadosCard={empresa_id:empresaAtual,cliente_id:clienteId,titulo,responsavel:document.getElementById('card-responsavel').value,valor_estimado:document.getElementById('card-valor').value||null,data_fechamento_prevista:document.getElementById('card-fechamento').value||null,descricao:document.getElementById('card-descricao').value,etapa:cardEditandoId?document.getElementById('card-etapa-select').value:'entrada',recorrente:document.getElementById('card-recorrente').checked,dias_recorrencia:document.getElementById('card-dias').value||null,atualizado_em:new Date().toISOString()};
+
+  let numProposta=null;
+  if(!cardEditandoId){numProposta=await gerarNumeroProposta(empId);}
+
+  const dadosCard={
+    empresa_id:empId,cliente_id:clienteId,titulo,
+    responsavel:document.getElementById('card-responsavel').value,
+    valor_estimado:document.getElementById('card-valor').value||null,
+    data_fechamento_prevista:document.getElementById('card-fechamento').value||null,
+    escopo:document.getElementById('card-escopo').value,
+    prazo_execucao_meses:document.getElementById('card-prazo').value||null,
+    validade_proposta_dias:document.getElementById('card-validade').value||30,
+    forma_pagamento:document.getElementById('card-pagamento').value,
+    percentual_mao_obra:document.getElementById('card-pct-mao').value||30,
+    percentual_insumos:document.getElementById('card-pct-ins').value||70,
+    observacoes:document.getElementById('card-obs').value,
+    nota1:document.getElementById('card-nota1').value,
+    nota2:document.getElementById('card-nota2').value,
+    recorrente:document.getElementById('card-recorrente').checked,
+    dias_recorrencia:document.getElementById('card-dias').value||null,
+    etapa:cardEditandoId?document.getElementById('card-etapa-select').value:'entrada',
+    atualizado_em:new Date().toISOString(),
+  };
+  if(numProposta)dadosCard.numero_proposta=numProposta;
+  if(!cardEditandoId)dadosCard.versao=1;
+
+  let savedId=cardEditandoId;
   if(cardEditandoId){await sb.from('cards').update(dadosCard).eq('id',cardEditandoId);}
-  else{await sb.from('cards').insert(dadosCard);}
+  else{const{data:nc}=await sb.from('cards').insert(dadosCard).select().single();savedId=nc?.id;}
+
+  // salvar itens
+  if(savedId){
+    await sb.from('itens_proposta').delete().eq('card_id',savedId);
+    if(itensLocais.length>0){
+      await sb.from('itens_proposta').insert(itensLocais.map((i,idx)=>({...i,card_id:savedId,ordem:idx,id:undefined})));
+    }
+  }
   fecharModal('modal-card');await carregarFunil();await verificarAlertas();
+}
+
+async function criarNovaVersao(){
+  if(!cardEditandoId)return;
+  const{data:original}=await sb.from('cards').select('*').eq('id',cardEditandoId).single();
+  if(!original)return;
+  const novaVersao=(original.versao||1)+1;
+  const{data:nova}=await sb.from('cards').insert({
+    ...original,id:undefined,versao:novaVersao,
+    card_pai_id:original.card_pai_id||original.id,
+    etapa:'elaboracao',atualizado_em:new Date().toISOString(),criado_em:undefined
+  }).select().single();
+  // copiar itens
+  const{data:itens}=await sb.from('itens_proposta').select('*').eq('card_id',cardEditandoId);
+  if(itens&&itens.length>0){
+    await sb.from('itens_proposta').insert(itens.map(i=>({...i,id:undefined,card_id:nova.id})));
+  }
+  fecharModal('modal-card');
+  await carregarFunil();
+  alert(`Nova versão criada: ${original.numero_proposta}.V${novaVersao}`);
+  setTimeout(()=>abrirModalCard(nova.id),300);
 }
 
 async function excluirCard(){
   if(!confirm('Excluir este atendimento?'))return;
+  await sb.from('itens_proposta').delete().eq('card_id',cardEditandoId);
   await sb.from('cards').delete().eq('id',cardEditandoId);
   fecharModal('modal-card');carregarFunil();
 }
 
+// GERAR PDF
+async function gerarPDF(){
+  if(!cardEditandoId)return;
+  const{data:card}=await sb.from('cards').select('*,clientes(*),empresas(*)').eq('id',cardEditandoId).single();
+  const{data:itens}=await sb.from('itens_proposta').select('*').eq('card_id',cardEditandoId).order('ordem');
+  const emp=card.empresas||{};
+  const cli=card.clientes||{};
+  const hoje=new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric'});
+  const total=fmtMoeda(card.valor_estimado||0);
+  const itensHTML=(itens||[]).map(i=>`<tr><td>${i.item||''}</td><td>${i.codigo||''}</td><td>${i.descricao||''}</td><td>${i.unidade||''}</td><td>${fmtNum(i.quantidade)}</td><td>${fmtMoeda(i.valor_unitario||0)}</td><td><strong>${fmtMoeda(i.valor_total||0)}</strong></td></tr>`).join('');
+  function fmtNum(v){return v?Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2}):'—';}
+
+  const html=`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">
+  <title>Proposta ${card.numero_proposta||''}</title>
+  <style>
+    body{font-family:Arial,sans-serif;font-size:11px;color:#222;margin:0;padding:0}
+    .pagina{padding:30px 40px;max-width:800px;margin:0 auto}
+    .topo{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px;padding-bottom:16px;border-bottom:2px solid #1a6b3c}
+    .logo-area h1{color:#1a6b3c;font-size:20px;margin:0}
+    .logo-area p{color:#666;font-size:10px;margin:2px 0 0}
+    .sites{font-size:9px;color:#666}
+    .data-local{text-align:right;font-size:11px}
+    h2{color:#1a6b3c;font-size:13px;margin:20px 0 6px;border-bottom:1px solid #e8f5ee;padding-bottom:4px}
+    .destinatario{margin:16px 0}
+    .destinatario strong{display:block;font-size:13px}
+    .numero-prop{background:#e8f5ee;border-left:4px solid #1a6b3c;padding:8px 14px;margin:16px 0;font-size:13px;font-weight:700;color:#1a6b3c}
+    p{margin:6px 0;line-height:1.5}
+    table{width:100%;border-collapse:collapse;margin:12px 0;font-size:10px}
+    th{background:#1a6b3c;color:#fff;padding:6px 8px;text-align:left}
+    td{padding:5px 8px;border-bottom:1px solid #eee}
+    tr:nth-child(even) td{background:#f9f9f9}
+    .total-row td{font-weight:700;background:#e8f5ee;font-size:12px}
+    .valor-total{text-align:right;font-size:14px;font-weight:700;color:#1a6b3c;margin:16px 0;padding:12px;background:#e8f5ee;border-radius:6px}
+    .assinaturas{display:flex;gap:40px;margin-top:40px;padding-top:20px;border-top:1px solid #ddd}
+    .ass-item{flex:1;text-align:center}
+    .ass-linha{border-top:1px solid #222;margin:40px 0 6px;padding-top:6px}
+    .rodape{margin-top:30px;padding-top:10px;border-top:1px solid #ddd;font-size:9px;color:#999;text-align:center}
+    @media print{body{margin:0}.pagina{padding:20px}}
+  </style></head><body><div class="pagina">
+  <div class="topo">
+    <div class="logo-area">
+      <h1>${emp.nome||'GRUPO-BVEK'}</h1>
+      <p>Rio de Janeiro, ${hoje}</p>
+    </div>
+    <div class="data-local sites">
+      www.engekat.com.br | www.brasilimp.com.br<br>www.verdebrasilis.com.br | www.katseguros.com.br
+    </div>
+  </div>
+  <div class="destinatario">
+    <p>A</p>
+    <strong>${cli.empresa_cliente||cli.nome||''}</strong>
+    ${cli.nome&&cli.empresa_cliente?`<p>At.: ${cli.nome}${cli.cargo?' — '+cli.cargo:''}</p>`:''}
+  </div>
+  <div class="numero-prop">Proposta de Serviços — ${card.titulo||''} — ${card.numero_proposta||''}.V${card.versao||1}</div>
+  <p><strong>Prezados Senhores,</strong></p>
+  <p>A ${emp.nome||''} é uma empresa especializada, que atende as principais demandas de nossos clientes e parceiros com funcionários próprios, ganhando agilidade e qualidade em todos os processos.</p>
+  ${card.escopo?`<h2>Escopo dos Serviços</h2><p>${card.escopo.replace(/\n/g,'<br>')}</p>`:''}
+  ${(itens&&itens.length>0)?`<h2>Orçamento Sintético</h2>
+  <table><thead><tr><th>Item</th><th>Código</th><th>Descrição</th><th>Und</th><th>Qtd</th><th>Vl Unit</th><th>Total</th></tr></thead>
+  <tbody>${itensHTML}</tbody>
+  <tfoot><tr class="total-row"><td colspan="6" style="text-align:right">VALOR TOTAL</td><td>R$ ${total}</td></tr></tfoot>
+  </table>`:''}
+  <div class="valor-total">Valor total dos serviços, materiais, insumos e mão de obra: R$ ${total}</div>
+  ${card.prazo_execucao_meses?`<p><strong>Prazo de Execução:</strong> até ${card.prazo_execucao_meses} ${card.prazo_execucao_meses==1?'mês':'meses'}</p>`:''}
+  <p><strong>Validade da proposta:</strong> ${card.validade_proposta_dias||30} dias.</p>
+  ${card.forma_pagamento?`<p><strong>Forma de Pagamento:</strong> ${card.forma_pagamento}</p>`:''}
+  ${card.percentual_mao_obra?`<p><strong>Composição de Custos:</strong> ${card.percentual_mao_obra}% Mão de Obra + ${card.percentual_insumos}% Insumos e Equipamentos</p>`:''}
+  ${card.observacoes?`<p><strong>Observações:</strong> ${card.observacoes}</p>`:''}
+  ${card.nota1?`<p><strong>Nota 1:</strong> ${card.nota1}</p>`:''}
+  ${card.nota2?`<p><strong>Nota 2:</strong> ${card.nota2}</p>`:''}
+  <div class="assinaturas">
+    <div class="ass-item"><div class="ass-linha"></div><strong>André F. Lessa</strong><br>Diretor Comercial<br><small>Tel: 21-3040-3700 | Cel: 21-99675-0707</small></div>
+    <div class="ass-item"><div class="ass-linha"></div><strong>${cli.nome||'Cliente'}</strong><br>${cli.cargo||'Representante'}<br><small>${cli.empresa_cliente||''}</small></div>
+  </div>
+  <div class="rodape">www.engekat.com.br | www.brasilimp.com.br | www.verdebrasilis.com.br | www.katseguros.com.br</div>
+  </div></body></html>`;
+
+  const win=window.open('','_blank');
+  win.document.write(html);
+  win.document.close();
+  setTimeout(()=>win.print(),800);
+}
+
 async function verificarAlertas(){
-  if(!empresaAtual)return;
-  const{data}=await sb.from('cards').select('*,clientes(nome)').eq('empresa_id',empresaAtual).eq('recorrente',true).eq('etapa','fechada');
+  let query=sb.from('cards').select('*,clientes(nome)').eq('recorrente',true).eq('etapa','fechada');
+  if(empresaAtual!=='todas')query=query.eq('empresa_id',empresaAtual);
+  const{data}=await query;
   const hoje=new Date();const alertas=[];
   for(const card of(data||[])){
     if(!card.dias_recorrencia||!card.atualizado_em)continue;
     const proxima=new Date(new Date(card.atualizado_em).getTime()+card.dias_recorrencia*86400000);
     const diff=Math.ceil((proxima-hoje)/86400000);
-    if(diff<=15&&diff>=0){
-      alertas.push(`<div class="alerta-item">📋 <strong>${card.titulo}</strong> — renovação em <strong>${diff} dia(s)</strong> (${proxima.toLocaleDateString('pt-BR')})</div>`);
-      await criarRecorrente(card);
-    }
+    if(diff<=15&&diff>=0){alertas.push(`<div class="alerta-item">📋 <strong>${card.titulo}</strong> — renovação em <strong>${diff} dia(s)</strong> (${proxima.toLocaleDateString('pt-BR')})</div>`);await criarRecorrente(card);}
   }
   const box=document.getElementById('alertas-box');
   if(alertas.length>0){document.getElementById('alertas-lista').innerHTML=alertas.join('');box.style.display='block';}
-  else{box.style.display='none';}
+  else box.style.display='none';
 }
 
 async function criarRecorrente(c){
@@ -431,18 +741,18 @@ function abrirTab(tab){
 
 function renderizarListaEmpresas(empresas){
   const div=document.getElementById('lista-empresas');if(!div)return;
-  div.innerHTML=empresas.length?empresas.map(e=>`<div class="card-lista"><div style="font-weight:600">${e.nome}</div>${e.cnpj?`<div style="font-size:13px;color:var(--texto2)">${e.cnpj}</div>`:''}</div>`).join(''):'<p class="vazio">Nenhuma empresa cadastrada.</p>';
+  div.innerHTML=empresas.length?empresas.map(e=>`<div class="card-lista"><div style="font-weight:600">${e.nome} <span style="background:#e8f5ee;color:#1b5e20;font-size:11px;padding:2px 8px;border-radius:20px;font-weight:700">${e.sigla||''}</span></div>${e.cnpj?`<div style="font-size:13px;color:var(--texto2)">${e.cnpj}</div>`:''}</div>`).join(''):'<p class="vazio">Nenhuma empresa cadastrada.</p>';
 }
 
 function abrirModalEmpresa(){
-  document.getElementById('emp-nome').value='';document.getElementById('emp-cnpj').value='';
+  document.getElementById('emp-nome').value='';document.getElementById('emp-cnpj').value='';document.getElementById('emp-sigla').value='';
   document.getElementById('modal-empresa').classList.add('aberto');
 }
 
 async function salvarEmpresa(){
   const nome=document.getElementById('emp-nome').value.trim();
   if(!nome){alert('Informe o nome.');return;}
-  await sb.from('empresas').insert({nome,cnpj:document.getElementById('emp-cnpj').value});
+  await sb.from('empresas').insert({nome,cnpj:document.getElementById('emp-cnpj').value,sigla:document.getElementById('emp-sigla').value.toUpperCase()});
   fecharModal('modal-empresa');await carregarEmpresas();abrirTab('empresas');
 }
 
@@ -460,7 +770,7 @@ function abrirModalCliente(){
 async function salvarCliente(){
   const nome=document.getElementById('ncli-nome').value.trim();
   if(!nome){alert('Informe o nome.');return;}
-  await sb.from('clientes').insert({empresa_id:empresaAtual,nome,empresa_cliente:document.getElementById('ncli-empresa').value,email:document.getElementById('ncli-email').value,telefone:document.getElementById('ncli-tel').value,cargo:document.getElementById('ncli-cargo').value});
+  await sb.from('clientes').insert({empresa_id:empresaAtual==='todas'?todasEmpresas[0]?.id:empresaAtual,nome,empresa_cliente:document.getElementById('ncli-empresa').value,email:document.getElementById('ncli-email').value,telefone:document.getElementById('ncli-tel').value,cargo:document.getElementById('ncli-cargo').value});
   fecharModal('modal-cliente');carregarListaClientes();
 }
 
