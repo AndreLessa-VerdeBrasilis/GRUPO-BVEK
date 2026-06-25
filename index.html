@@ -20,8 +20,6 @@
     --azul: #2980b9;
   }
   body { font-family: 'Segoe UI', sans-serif; background: var(--cinza); color: var(--texto); }
-
-  /* LOGIN */
   #tela-login {
     min-height: 100vh; display: flex; align-items: center; justify-content: center;
     background: linear-gradient(135deg, #1a6b3c 0%, #0d3d22 100%);
@@ -47,8 +45,6 @@
   }
   .btn-verde:hover { background: #145530; }
   .erro { color: var(--vermelho); font-size: 13px; margin-top: 8px; text-align: center; }
-
-  /* APP PRINCIPAL */
   #app { display: none; }
   .topbar {
     background: var(--verde); color: white; padding: 0 24px;
@@ -57,15 +53,21 @@
     box-shadow: 0 2px 8px rgba(0,0,0,0.15);
   }
   .topbar-logo { font-weight: 700; font-size: 18px; letter-spacing: 1px; }
-  .topbar-empresa { font-size: 13px; opacity: .8; }
   .topbar-right { display: flex; align-items: center; gap: 16px; }
   .btn-sair {
     background: rgba(255,255,255,0.15); border: none; color: white;
     padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 13px;
   }
   .btn-sair:hover { background: rgba(255,255,255,0.25); }
-
-  /* TABS */
+  .empresa-selector {
+    display: flex; align-items: center; gap: 12px; background: rgba(255,255,255,0.1);
+    padding: 6px 12px; border-radius: 8px;
+  }
+  .empresa-selector select {
+    background: none; border: none; color: white; font-size: 13px;
+    font-weight: 600; cursor: pointer; outline: none;
+  }
+  .empresa-selector select option { color: black; background: white; }
   .tabs { background: white; border-bottom: 2px solid var(--borda); display: flex; padding: 0 24px; }
   .tab {
     padding: 14px 20px; cursor: pointer; font-size: 14px; font-weight: 500;
@@ -74,15 +76,9 @@
   }
   .tab.ativo { color: var(--verde); border-bottom-color: var(--verde); }
   .tab:hover { color: var(--verde); }
-
-  /* CONTEÚDO */
   .conteudo { padding: 24px; max-width: 1400px; margin: 0 auto; }
-
-  /* FUNIL KANBAN */
   .funil-container { overflow-x: auto; padding-bottom: 16px; }
-  .funil {
-    display: flex; gap: 12px; min-width: max-content; align-items: flex-start;
-  }
+  .funil { display: flex; gap: 12px; min-width: max-content; align-items: flex-start; }
   .coluna {
     background: var(--branco); border-radius: 12px; width: 240px; min-width: 240px;
     border: 1.5px solid var(--borda); overflow: hidden;
@@ -103,9 +99,9 @@
   .card-cliente { font-size: 12px; color: var(--texto2); margin-bottom: 6px; }
   .card-valor { font-size: 12px; font-weight: 600; color: var(--verde); }
   .badge-recorrente {
-    position: absolute; top: 8px; right: 8px;
     background: #fff3cd; color: #856404; font-size: 10px;
     padding: 2px 6px; border-radius: 20px; font-weight: 600;
+    display: inline-block; margin-bottom: 6px;
   }
   .badge-alerta {
     background: #f8d7da; color: #842029; font-size: 10px;
@@ -118,8 +114,6 @@
     margin: 4px 0 8px; transition: all .2s;
   }
   .btn-add-card:hover { border-color: var(--verde); color: var(--verde); background: var(--verde-claro); }
-
-  /* CORES DAS COLUNAS */
   .col-entrada .coluna-header { background: #e3f2fd; color: #1565c0; }
   .col-contato .coluna-header { background: #f3e5f5; color: #6a1b9a; }
   .col-nutricao1 .coluna-header { background: #fff8e1; color: #e65100; }
@@ -129,8 +123,6 @@
   .col-nutricao2 .coluna-header { background: #fff3e0; color: #bf360c; }
   .col-fechada .coluna-header { background: #e8f5e9; color: #2e7d32; }
   .col-perdida .coluna-header { background: #ffebee; color: #b71c1c; }
-
-  /* MODAL */
   .modal-overlay {
     display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5);
     z-index: 1000; align-items: center; justify-content: center; padding: 20px;
@@ -157,27 +149,16 @@
     border: none; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600;
   }
   .btn-salvar:hover { background: #145530; }
-
-  /* ALERTAS */
+  .btn-excluir {
+    padding: 10px 20px; background: var(--vermelho); color: white;
+    border: none; border-radius: 8px; cursor: pointer; font-size: 14px;
+  }
   .alertas-box {
     background: #fff3cd; border: 1.5px solid #ffc107; border-radius: 10px;
     padding: 16px 20px; margin-bottom: 20px;
   }
   .alertas-box h3 { color: #856404; font-size: 14px; margin-bottom: 8px; }
   .alerta-item { font-size: 13px; color: #664d03; padding: 4px 0; }
-
-  /* EMPRESA SELECT */
-  .empresa-selector {
-    display: flex; align-items: center; gap: 12px; background: rgba(255,255,255,0.1);
-    padding: 6px 12px; border-radius: 8px;
-  }
-  .empresa-selector select {
-    background: none; border: none; color: white; font-size: 13px;
-    font-weight: 600; cursor: pointer; outline: none;
-  }
-  .empresa-selector select option { color: black; background: white; }
-
-  /* RESPONSIVO */
   @media (max-width: 600px) {
     .form-grid { grid-template-columns: 1fr; }
     .conteudo { padding: 12px; }
@@ -187,7 +168,6 @@
 </head>
 <body>
 
-<!-- TELA DE LOGIN -->
 <div id="tela-login">
   <div class="login-box">
     <div class="login-logo">
@@ -207,7 +187,6 @@
   </div>
 </div>
 
-<!-- APP PRINCIPAL -->
 <div id="app">
   <div class="topbar">
     <div class="topbar-logo">GRUPO-BVEK</div>
@@ -220,21 +199,16 @@
       <button class="btn-sair" onclick="sair()">Sair</button>
     </div>
   </div>
-
   <div class="tabs">
     <div class="tab ativo" onclick="abrirTab('funil')">Funil de Propostas</div>
     <div class="tab" onclick="abrirTab('empresas')">Empresas</div>
     <div class="tab" onclick="abrirTab('clientes')">Clientes</div>
   </div>
-
   <div class="conteudo">
-    <!-- ALERTAS DE RECORRÊNCIA -->
     <div class="alertas-box" id="alertas-box" style="display:none">
       <h3>⚠️ Propostas recorrentes — renovação próxima</h3>
       <div id="alertas-lista"></div>
     </div>
-
-    <!-- FUNIL -->
     <div id="tab-funil">
       <div style="display:flex;justify-content:flex-end;margin-bottom:16px">
         <button class="btn-verde" style="width:auto;padding:10px 20px" onclick="abrirModalCard(null)">+ Nova Proposta</button>
@@ -243,8 +217,6 @@
         <div class="funil" id="funil"></div>
       </div>
     </div>
-
-    <!-- EMPRESAS -->
     <div id="tab-empresas" style="display:none">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
         <h2 style="font-size:18px">Empresas cadastradas</h2>
@@ -252,8 +224,6 @@
       </div>
       <div id="lista-empresas"></div>
     </div>
-
-    <!-- CLIENTES -->
     <div id="tab-clientes" style="display:none">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
         <h2 style="font-size:18px">Clientes cadastrados</h2>
@@ -264,7 +234,7 @@
   </div>
 </div>
 
-<!-- MODAL CARD/PROPOSTA -->
+<!-- MODAL PROPOSTA -->
 <div class="modal-overlay" id="modal-card">
   <div class="modal">
     <h2 id="modal-card-titulo">Nova Proposta</h2>
@@ -274,7 +244,7 @@
         <input type="text" id="card-titulo" placeholder="Ex: Projeto elétrico - Galpão Industrial">
       </div>
       <div class="campo">
-        <label>Cliente *</label>
+        <label>Cliente</label>
         <select id="card-cliente"></select>
       </div>
       <div class="campo">
@@ -319,8 +289,9 @@
       </div>
     </div>
     <div class="modal-btns">
+      <button class="btn-excluir" id="btn-excluir-card" style="display:none" onclick="excluirCard()">Excluir</button>
       <button class="btn-cancelar" onclick="fecharModal('modal-card')">Cancelar</button>
-      <button class="btn-salvar" onclick="salvarCard()">Salvar Proposta</button>
+      <button class="btn-salvar" onclick="salvarCard()">Salvar</button>
     </div>
   </div>
 </div>
@@ -378,23 +349,23 @@
 </div>
 
 <script>
-const SUPABASE_URL = 'COLE_SUA_URL_AQUI';
-const SUPABASE_KEY = 'COLE_SUA_CHAVE_AQUI';
+const SUPABASE_URL = 'https://smusenaszgkqkjjwblyi.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNtdXNlbmFzemdrcWtqandibHlpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0MTIwNTMsImV4cCI6MjA5Nzk4ODA1M30.IU1Z9ddIUpktjHvWqrSZaEWuo4gbmZfrfmYJ_NoXbWs';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let empresaAtual = null;
 let cardEditandoId = null;
 
 const ETAPAS = [
-  { id: 'entrada',    label: 'Entrada',               classe: 'col-entrada' },
-  { id: 'contato',    label: 'Contato',               classe: 'col-contato' },
-  { id: 'nutricao1',  label: 'Nutrição (1ª fase)',    classe: 'col-nutricao1' },
-  { id: 'orcamento',  label: 'Orçamento',             classe: 'col-orcamento' },
-  { id: 'elaboracao', label: 'Elaboração de Proposta',classe: 'col-elaboracao' },
-  { id: 'enviada',    label: 'Proposta Enviada',      classe: 'col-enviada' },
-  { id: 'nutricao2',  label: 'Nutrição (2ª fase)',    classe: 'col-nutricao2' },
-  { id: 'fechada',    label: 'Fechadas',              classe: 'col-fechada' },
-  { id: 'perdida',    label: 'Perdidas',              classe: 'col-perdida' },
+  { id: 'entrada',    label: 'Entrada',                classe: 'col-entrada' },
+  { id: 'contato',    label: 'Contato',                classe: 'col-contato' },
+  { id: 'nutricao1',  label: 'Nutrição (1ª fase)',     classe: 'col-nutricao1' },
+  { id: 'orcamento',  label: 'Orçamento',              classe: 'col-orcamento' },
+  { id: 'elaboracao', label: 'Elaboração de Proposta', classe: 'col-elaboracao' },
+  { id: 'enviada',    label: 'Proposta Enviada',       classe: 'col-enviada' },
+  { id: 'nutricao2',  label: 'Nutrição (2ª fase)',     classe: 'col-nutricao2' },
+  { id: 'fechada',    label: 'Fechadas',               classe: 'col-fechada' },
+  { id: 'perdida',    label: 'Perdidas',               classe: 'col-perdida' },
 ];
 
 async function fazerLogin() {
@@ -402,10 +373,7 @@ async function fazerLogin() {
   const senha = document.getElementById('login-senha').value;
   document.getElementById('login-erro').textContent = '';
   const { error } = await sb.auth.signInWithPassword({ email, password: senha });
-  if (error) {
-    document.getElementById('login-erro').textContent = 'E-mail ou senha incorretos.';
-    return;
-  }
+  if (error) { document.getElementById('login-erro').textContent = 'E-mail ou senha incorretos.'; return; }
   iniciarApp();
 }
 
@@ -435,7 +403,7 @@ async function carregarEmpresas() {
     opt.value = e.id; opt.textContent = e.nome;
     sel.appendChild(opt);
   });
-  if (data && data.length > 0) { empresaAtual = data[0].id; }
+  if (data && data.length > 0) empresaAtual = data[0].id;
   renderizarListaEmpresas(data || []);
 }
 
@@ -454,20 +422,19 @@ async function verificarAlertasRecorrencia() {
     .eq('etapa', 'fechada');
   const hoje = new Date();
   const alertas = [];
-  (data || []).forEach(card => {
-    if (!card.dias_recorrencia || !card.atualizado_em) return;
+  for (const card of (data || [])) {
+    if (!card.dias_recorrencia || !card.atualizado_em) continue;
     const ultima = new Date(card.atualizado_em);
     const proxima = new Date(ultima.getTime() + card.dias_recorrencia * 86400000);
     const diff = Math.ceil((proxima - hoje) / 86400000);
     if (diff <= 15 && diff >= 0) {
-      alertas.push(`<div class="alerta-item">📋 <strong>${card.titulo}</strong> — renovação em <strong>${diff} dias</strong> (${proxima.toLocaleDateString('pt-BR')})</div>`);
-      criarCardRecorrente(card);
+      alertas.push(`<div class="alerta-item">📋 <strong>${card.titulo}</strong> — renovação em <strong>${diff} dia(s)</strong> (${proxima.toLocaleDateString('pt-BR')})</div>`);
+      await criarCardRecorrente(card);
     }
-  });
+  }
   const box = document.getElementById('alertas-box');
-  const lista = document.getElementById('alertas-lista');
   if (alertas.length > 0) {
-    lista.innerHTML = alertas.join('');
+    document.getElementById('alertas-lista').innerHTML = alertas.join('');
     box.style.display = 'block';
   } else {
     box.style.display = 'none';
@@ -498,7 +465,6 @@ async function carregarFunil() {
     .select('*, clientes(nome, empresa_cliente)')
     .eq('empresa_id', empresaAtual)
     .order('criado_em', { ascending: false });
-
   const funil = document.getElementById('funil');
   funil.innerHTML = '';
   ETAPAS.forEach(etapa => {
@@ -516,14 +482,17 @@ async function carregarFunil() {
       </div>`;
     funil.appendChild(col);
   });
+  document.querySelectorAll('.card').forEach(el => {
+    el.addEventListener('click', () => abrirModalCard(null, el.dataset.id));
+  });
 }
 
 function renderCard(c) {
   const cliente = c.clientes ? (c.clientes.empresa_cliente || c.clientes.nome) : '—';
   const valor = c.valor_estimado ? 'R$ ' + Number(c.valor_estimado).toLocaleString('pt-BR', {minimumFractionDigits:2}) : '';
-  const recBadge = c.recorrente ? '<span class="badge-recorrente">🔄 Recorrente</span>' : '';
+  const recBadge = c.recorrente ? '<span class="badge-recorrente">🔄 Recorrente</span><br>' : '';
   const origemBadge = c.card_origem_id ? '<span class="badge-alerta">Renovação automática</span>' : '';
-  return `<div class="card" onclick="abrirModalCard(null,'${c.id}')">
+  return `<div class="card" data-id="${c.id}">
     ${recBadge}
     <div class="card-titulo">${c.titulo}</div>
     <div class="card-cliente">${cliente}</div>
@@ -534,8 +503,8 @@ function renderCard(c) {
 
 async function abrirModalCard(etapa, id = null) {
   cardEditandoId = id;
-  const modal = document.getElementById('modal-card');
   document.getElementById('modal-card-titulo').textContent = id ? 'Editar Proposta' : 'Nova Proposta';
+  document.getElementById('btn-excluir-card').style.display = id ? 'block' : 'none';
   await carregarClientesSelect();
   if (id) {
     const { data } = await sb.from('cards').select('*').eq('id', id).single();
@@ -560,7 +529,7 @@ async function abrirModalCard(etapa, id = null) {
     document.getElementById('card-dias').value = '';
     document.getElementById('campo-recorrencia').style.display = 'none';
   }
-  modal.classList.add('aberto');
+  document.getElementById('modal-card').classList.add('aberto');
 }
 
 async function carregarClientesSelect() {
@@ -606,6 +575,13 @@ async function salvarCard() {
   verificarAlertasRecorrencia();
 }
 
+async function excluirCard() {
+  if (!confirm('Tem certeza que deseja excluir esta proposta?')) return;
+  await sb.from('cards').delete().eq('id', cardEditandoId);
+  fecharModal('modal-card');
+  carregarFunil();
+}
+
 function fecharModal(id) {
   document.getElementById(id).classList.remove('aberto');
 }
@@ -618,6 +594,7 @@ function abrirTab(tab) {
     el.classList.toggle('ativo', ['funil','empresas','clientes'][i] === tab);
   });
   if (tab === 'clientes') carregarListaClientes();
+  if (tab === 'empresas') carregarEmpresas();
 }
 
 function renderizarListaEmpresas(empresas) {
@@ -678,7 +655,6 @@ async function salvarCliente() {
   carregarListaClientes();
 }
 
-// Verificar sessão ao carregar
 sb.auth.getSession().then(({ data: { session } }) => {
   if (session) iniciarApp();
 });
