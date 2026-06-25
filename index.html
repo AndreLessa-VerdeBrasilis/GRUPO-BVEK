@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GRUPO-BVEK | CRM</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --verde: #1a6b3c;
+    --verde-claro: #e8f5ee;
+    --cinza: #f4f4f4;
+    --borda: #ddd;
+    --texto: #222;
+    --texto2: #666;
+    --branco: #fff;
+    --vermelho: #c0392b;
+    --amarelo: #f39c12;
+    --azul: #2980b9;
+  }
+  body { font-family: 'Segoe UI', sans-serif; background: var(--cinza); color: var(--texto); }
+
+  /* LOGIN */
+  #tela-login {
+    min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(135deg, #1a6b3c 0%, #0d3d22 100%);
+  }
+  .login-box {
+    background: white; border-radius: 16px; padding: 48px 40px; width: 360px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  }
+  .login-logo { text-align: center; margin-bottom: 32px; }
+  .login-logo h1 { color: var(--verde); font-size: 26px; font-weight: 700; }
+  .login-logo p { color: var(--texto2); font-size: 13px; margin-top: 4px; }
+  .campo { margin-bottom: 16px; }
+  .campo label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: var(--texto); }
+  .campo input, .campo select {
+    width: 100%; padding: 10px 14px; border: 1.5px solid var(--borda);
+    border-radius: 8px; font-size: 14px; outline: none; transition: border .2s;
+  }
+  .campo input:focus, .campo select:focus { border-color: var(--verde); }
+  .btn-verde {
+    width: 100%; padding: 12px; background: var(--verde); color: white;
+    border: none; border-radius: 8px; font-size: 15px; font-weight: 600;
+    cursor: pointer; transition: background .2s;
+  }
+  .btn-verde:hover { background: #145530; }
+  .erro { color: var(--vermelho); font-size: 13px; margin-top: 8px; text-align: center; }
+
+  /* APP PRINCIPAL */
+  #app { display: none; }
+  .topbar {
+    background: var(--verde); color: white; padding: 0 24px;
+    display: flex; align-items: center; justify-content: space-between;
+    height: 56px; position: sticky; top: 0; z-index: 100;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  }
+  .topbar-logo { font-weight: 700; font-size: 18px; letter-spacing: 1px; }
+  .topbar-empresa { font-size: 13px; opacity: .8; }
+  .topbar-right { display: flex; align-items: center; gap: 16px; }
+  .btn-sair {
+    background: rgba(255,255,255,0.15); border: none; color: white;
+    padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 13px;
+  }
+  .btn-sair:hover { background: rgba(255,255,255,0.25); }
+
+  /* TABS */
+  .tabs { background: white; border-bottom: 2px solid var(--borda); display: flex; padding: 0 24px; }
+  .tab {
+    padding: 14px 20px; cursor: pointer; font-size: 14px; font-weight: 500;
+    color: var(--texto2); border-bottom: 3px solid transparent; margin-bottom: -2px;
+    transition: all .2s;
+  }
+  .tab.ativo { color: var(--verde); border-bottom-color: var(--verde); }
+  .tab:hover { color: var(--verde); }
+
+  /* CONTEÚDO */
+  .conteudo { padding: 24px; max-width: 1400px; margin: 0 auto; }
+
+  /* FUNIL KANBAN */
+  .funil-container { overflow-x: auto; padding-bottom: 16px; }
+  .funil {
+    display: flex; gap: 12px; min-width: max-content; align-items: flex-start;
+  }
+  .coluna {
+    background: var(--branco); border-radius: 12px; width: 240px; min-width: 240px;
+    border: 1.5px solid var(--borda); overflow: hidden;
+  }
+  .coluna-header {
+    padding: 12px 14px; font-size: 12px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .5px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .coluna-body { padding: 8px; min-height: 80px; }
+  .card {
+    background: white; border: 1.5px solid var(--borda); border-radius: 10px;
+    padding: 12px; margin-bottom: 8px; cursor: pointer;
+    transition: box-shadow .2s, transform .2s; position: relative;
+  }
+  .card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.1); transform: translateY(-2px); }
+  .card-titulo { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+  .card-cliente { font-size: 12px; color: var(--texto2); margin-bottom: 6px; }
+  .card-valor { font-size: 12px; font-weight: 600; color: var(--verde); }
+  .badge-recorrente {
+    position: absolute; top: 8px; right: 8px;
+    background: #fff3cd; color: #856404; font-size: 10px;
+    padding: 2px 6px; border-radius: 20px; font-weight: 600;
+  }
+  .badge-alerta {
+    background: #f8d7da; color: #842029; font-size: 10px;
+    padding: 2px 6px; border-radius: 20px; font-weight: 600;
+    display: inline-block; margin-top: 4px;
+  }
+  .btn-add-card {
+    width: 100%; padding: 8px; background: none; border: 1.5px dashed var(--borda);
+    border-radius: 8px; color: var(--texto2); cursor: pointer; font-size: 13px;
+    margin: 4px 0 8px; transition: all .2s;
+  }
+  .btn-add-card:hover { border-color: var(--verde); color: var(--verde); background: var(--verde-claro); }
+
+  /* CORES DAS COLUNAS */
+  .col-entrada .coluna-header { background: #e3f2fd; color: #1565c0; }
+  .col-contato .coluna-header { background: #f3e5f5; color: #6a1b9a; }
+  .col-nutricao1 .coluna-header { background: #fff8e1; color: #e65100; }
+  .col-orcamento .coluna-header { background: #fce4ec; color: #880e4f; }
+  .col-elaboracao .coluna-header { background: #e8f5e9; color: #1b5e20; }
+  .col-enviada .coluna-header { background: #e0f7fa; color: #006064; }
+  .col-nutricao2 .coluna-header { background: #fff3e0; color: #bf360c; }
+  .col-fechada .coluna-header { background: #e8f5e9; color: #2e7d32; }
+  .col-perdida .coluna-header { background: #ffebee; color: #b71c1c; }
+
+  /* MODAL */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+    z-index: 1000; align-items: center; justify-content: center; padding: 20px;
+  }
+  .modal-overlay.aberto { display: flex; }
+  .modal {
+    background: white; border-radius: 16px; width: 100%; max-width: 600px;
+    max-height: 90vh; overflow-y: auto; padding: 32px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  }
+  .modal h2 { font-size: 20px; margin-bottom: 24px; color: var(--verde); }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .form-grid .full { grid-column: 1/-1; }
+  .campo-check { display: flex; align-items: center; gap: 10px; margin: 8px 0; }
+  .campo-check input[type=checkbox] { width: 18px; height: 18px; cursor: pointer; accent-color: var(--verde); }
+  .modal-btns { display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px; }
+  .btn-cancelar {
+    padding: 10px 20px; border: 1.5px solid var(--borda); background: white;
+    border-radius: 8px; cursor: pointer; font-size: 14px; color: var(--texto2);
+  }
+  .btn-cancelar:hover { background: var(--cinza); }
+  .btn-salvar {
+    padding: 10px 24px; background: var(--verde); color: white;
+    border: none; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600;
+  }
+  .btn-salvar:hover { background: #145530; }
+
+  /* ALERTAS */
+  .alertas-box {
+    background: #fff3cd; border: 1.5px solid #ffc107; border-radius: 10px;
+    padding: 16px 20px; margin-bottom: 20px;
+  }
+  .alertas-box h3 { color: #856404; font-size: 14px; margin-bottom: 8px; }
+  .alerta-item { font-size: 13px; color: #664d03; padding: 4px 0; }
+
+  /* EMPRESA SELECT */
+  .empresa-selector {
+    display: flex; align-items: center; gap: 12px; background: rgba(255,255,255,0.1);
+    padding: 6px 12px; border-radius: 8px;
+  }
+  .empresa-selector select {
+    background: none; border: none; color: white; font-size: 13px;
+    font-weight: 600; cursor: pointer; outline: none;
+  }
+  .empresa-selector select option { color: black; background: white; }
+
+  /* RESPONSIVO */
+  @media (max-width: 600px) {
+    .form-grid { grid-template-columns: 1fr; }
+    .conteudo { padding: 12px; }
+    .modal { padding: 20px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- TELA DE LOGIN -->
+<div id="tela-login">
+  <div class="login-box">
+    <div class="login-logo">
+      <h1>GRUPO-BVEK</h1>
+      <p>Sistema de Gestão de Propostas</p>
+    </div>
+    <div class="campo">
+      <label>E-mail</label>
+      <input type="email" id="login-email" placeholder="seu@email.com">
+    </div>
+    <div class="campo">
+      <label>Senha</label>
+      <input type="password" id="login-senha" placeholder="••••••••">
+    </div>
+    <button class="btn-verde" onclick="fazerLogin()">Entrar</button>
+    <div class="erro" id="login-erro"></div>
+  </div>
+</div>
+
+<!-- APP PRINCIPAL -->
+<div id="app">
+  <div class="topbar">
+    <div class="topbar-logo">GRUPO-BVEK</div>
+    <div class="empresa-selector">
+      <span style="font-size:12px;opacity:.7">Empresa:</span>
+      <select id="select-empresa" onchange="trocarEmpresa()"></select>
+    </div>
+    <div class="topbar-right">
+      <span id="user-nome" style="font-size:13px;opacity:.8"></span>
+      <button class="btn-sair" onclick="sair()">Sair</button>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab ativo" onclick="abrirTab('funil')">Funil de Propostas</div>
+    <div class="tab" onclick="abrirTab('empresas')">Empresas</div>
+    <div class="tab" onclick="abrirTab('clientes')">Clientes</div>
+  </div>
+
+  <div class="conteudo">
+    <!-- ALERTAS DE RECORRÊNCIA -->
+    <div class="alertas-box" id="alertas-box" style="display:none">
+      <h3>⚠️ Propostas recorrentes — renovação próxima</h3>
+      <div id="alertas-lista"></div>
+    </div>
+
+    <!-- FUNIL -->
+    <div id="tab-funil">
+      <div style="display:flex;justify-content:flex-end;margin-bottom:16px">
+        <button class="btn-verde" style="width:auto;padding:10px 20px" onclick="abrirModalCard(null)">+ Nova Proposta</button>
+      </div>
+      <div class="funil-container">
+        <div class="funil" id="funil"></div>
+      </div>
+    </div>
+
+    <!-- EMPRESAS -->
+    <div id="tab-empresas" style="display:none">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+        <h2 style="font-size:18px">Empresas cadastradas</h2>
+        <button class="btn-verde" style="width:auto;padding:10px 20px" onclick="abrirModalEmpresa()">+ Nova Empresa</button>
+      </div>
+      <div id="lista-empresas"></div>
+    </div>
+
+    <!-- CLIENTES -->
+    <div id="tab-clientes" style="display:none">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+        <h2 style="font-size:18px">Clientes cadastrados</h2>
+        <button class="btn-verde" style="width:auto;padding:10px 20px" onclick="abrirModalCliente()">+ Novo Cliente</button>
+      </div>
+      <div id="lista-clientes"></div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CARD/PROPOSTA -->
+<div class="modal-overlay" id="modal-card">
+  <div class="modal">
+    <h2 id="modal-card-titulo">Nova Proposta</h2>
+    <div class="form-grid">
+      <div class="campo full">
+        <label>Título da proposta *</label>
+        <input type="text" id="card-titulo" placeholder="Ex: Projeto elétrico - Galpão Industrial">
+      </div>
+      <div class="campo">
+        <label>Cliente *</label>
+        <select id="card-cliente"></select>
+      </div>
+      <div class="campo">
+        <label>Responsável</label>
+        <input type="text" id="card-responsavel" placeholder="Nome do responsável">
+      </div>
+      <div class="campo">
+        <label>Valor estimado (R$)</label>
+        <input type="number" id="card-valor" placeholder="0,00">
+      </div>
+      <div class="campo">
+        <label>Previsão de fechamento</label>
+        <input type="date" id="card-fechamento">
+      </div>
+      <div class="campo full">
+        <label>Descrição / Observações</label>
+        <textarea id="card-descricao" rows="3" style="width:100%;padding:10px;border:1.5px solid var(--borda);border-radius:8px;font-size:14px;resize:vertical"></textarea>
+      </div>
+      <div class="campo full">
+        <label>Etapa</label>
+        <select id="card-etapa">
+          <option value="entrada">Entrada</option>
+          <option value="contato">Contato</option>
+          <option value="nutricao1">Fluxo de Nutrição 1</option>
+          <option value="orcamento">Orçamento</option>
+          <option value="elaboracao">Elaboração de Proposta</option>
+          <option value="enviada">Proposta Enviada</option>
+          <option value="nutricao2">Fluxo de Nutrição 2</option>
+          <option value="fechada">Proposta Fechada</option>
+          <option value="perdida">Proposta Perdida</option>
+        </select>
+      </div>
+      <div class="campo full">
+        <div class="campo-check">
+          <input type="checkbox" id="card-recorrente" onchange="toggleRecorrente()">
+          <label for="card-recorrente" style="cursor:pointer;font-weight:600">Proposta Recorrente</label>
+        </div>
+      </div>
+      <div class="campo full" id="campo-recorrencia" style="display:none">
+        <label>Renovar a cada quantos dias?</label>
+        <input type="number" id="card-dias" placeholder="Ex: 365 (anual), 180 (semestral), 30 (mensal)">
+      </div>
+    </div>
+    <div class="modal-btns">
+      <button class="btn-cancelar" onclick="fecharModal('modal-card')">Cancelar</button>
+      <button class="btn-salvar" onclick="salvarCard()">Salvar Proposta</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL EMPRESA -->
+<div class="modal-overlay" id="modal-empresa">
+  <div class="modal">
+    <h2>Nova Empresa</h2>
+    <div class="campo">
+      <label>Nome da empresa *</label>
+      <input type="text" id="emp-nome" placeholder="Nome da empresa">
+    </div>
+    <div class="campo">
+      <label>CNPJ</label>
+      <input type="text" id="emp-cnpj" placeholder="00.000.000/0000-00">
+    </div>
+    <div class="modal-btns">
+      <button class="btn-cancelar" onclick="fecharModal('modal-empresa')">Cancelar</button>
+      <button class="btn-salvar" onclick="salvarEmpresa()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CLIENTE -->
+<div class="modal-overlay" id="modal-cliente">
+  <div class="modal">
+    <h2>Novo Cliente</h2>
+    <div class="form-grid">
+      <div class="campo full">
+        <label>Nome do contato *</label>
+        <input type="text" id="cli-nome" placeholder="Nome completo">
+      </div>
+      <div class="campo full">
+        <label>Empresa do cliente</label>
+        <input type="text" id="cli-empresa" placeholder="Nome da empresa do cliente">
+      </div>
+      <div class="campo">
+        <label>E-mail</label>
+        <input type="email" id="cli-email" placeholder="email@exemplo.com">
+      </div>
+      <div class="campo">
+        <label>Telefone</label>
+        <input type="text" id="cli-telefone" placeholder="(21) 99999-9999">
+      </div>
+      <div class="campo full">
+        <label>Cargo</label>
+        <input type="text" id="cli-cargo" placeholder="Ex: Engenheiro, Gerente">
+      </div>
+    </div>
+    <div class="modal-btns">
+      <button class="btn-cancelar" onclick="fecharModal('modal-cliente')">Cancelar</button>
+      <button class="btn-salvar" onclick="salvarCliente()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL = 'COLE_SUA_URL_AQUI';
+const SUPABASE_KEY = 'COLE_SUA_CHAVE_AQUI';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let empresaAtual = null;
+let cardEditandoId = null;
+
+const ETAPAS = [
+  { id: 'entrada',    label: 'Entrada',               classe: 'col-entrada' },
+  { id: 'contato',    label: 'Contato',               classe: 'col-contato' },
+  { id: 'nutricao1',  label: 'Nutrição (1ª fase)',    classe: 'col-nutricao1' },
+  { id: 'orcamento',  label: 'Orçamento',             classe: 'col-orcamento' },
+  { id: 'elaboracao', label: 'Elaboração de Proposta',classe: 'col-elaboracao' },
+  { id: 'enviada',    label: 'Proposta Enviada',      classe: 'col-enviada' },
+  { id: 'nutricao2',  label: 'Nutrição (2ª fase)',    classe: 'col-nutricao2' },
+  { id: 'fechada',    label: 'Fechadas',              classe: 'col-fechada' },
+  { id: 'perdida',    label: 'Perdidas',              classe: 'col-perdida' },
+];
+
+async function fazerLogin() {
+  const email = document.getElementById('login-email').value;
+  const senha = document.getElementById('login-senha').value;
+  document.getElementById('login-erro').textContent = '';
+  const { error } = await sb.auth.signInWithPassword({ email, password: senha });
+  if (error) {
+    document.getElementById('login-erro').textContent = 'E-mail ou senha incorretos.';
+    return;
+  }
+  iniciarApp();
+}
+
+async function sair() {
+  await sb.auth.signOut();
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('tela-login').style.display = 'flex';
+}
+
+async function iniciarApp() {
+  const { data: { user } } = await sb.auth.getUser();
+  if (!user) return;
+  document.getElementById('tela-login').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  document.getElementById('user-nome').textContent = user.email;
+  await carregarEmpresas();
+  await verificarAlertasRecorrencia();
+  carregarFunil();
+}
+
+async function carregarEmpresas() {
+  const { data } = await sb.from('empresas').select('*').eq('ativa', true).order('nome');
+  const sel = document.getElementById('select-empresa');
+  sel.innerHTML = '';
+  (data || []).forEach(e => {
+    const opt = document.createElement('option');
+    opt.value = e.id; opt.textContent = e.nome;
+    sel.appendChild(opt);
+  });
+  if (data && data.length > 0) { empresaAtual = data[0].id; }
+  renderizarListaEmpresas(data || []);
+}
+
+function trocarEmpresa() {
+  empresaAtual = document.getElementById('select-empresa').value;
+  carregarFunil();
+  verificarAlertasRecorrencia();
+}
+
+async function verificarAlertasRecorrencia() {
+  if (!empresaAtual) return;
+  const { data } = await sb.from('cards')
+    .select('*, clientes(nome, empresa_cliente)')
+    .eq('empresa_id', empresaAtual)
+    .eq('recorrente', true)
+    .eq('etapa', 'fechada');
+  const hoje = new Date();
+  const alertas = [];
+  (data || []).forEach(card => {
+    if (!card.dias_recorrencia || !card.atualizado_em) return;
+    const ultima = new Date(card.atualizado_em);
+    const proxima = new Date(ultima.getTime() + card.dias_recorrencia * 86400000);
+    const diff = Math.ceil((proxima - hoje) / 86400000);
+    if (diff <= 15 && diff >= 0) {
+      alertas.push(`<div class="alerta-item">📋 <strong>${card.titulo}</strong> — renovação em <strong>${diff} dias</strong> (${proxima.toLocaleDateString('pt-BR')})</div>`);
+      criarCardRecorrente(card);
+    }
+  });
+  const box = document.getElementById('alertas-box');
+  const lista = document.getElementById('alertas-lista');
+  if (alertas.length > 0) {
+    lista.innerHTML = alertas.join('');
+    box.style.display = 'block';
+  } else {
+    box.style.display = 'none';
+  }
+}
+
+async function criarCardRecorrente(cardOrigem) {
+  const { data: existe } = await sb.from('cards')
+    .select('id').eq('card_origem_id', cardOrigem.id).eq('etapa', 'entrada').limit(1);
+  if (existe && existe.length > 0) return;
+  await sb.from('cards').insert({
+    empresa_id: cardOrigem.empresa_id,
+    cliente_id: cardOrigem.cliente_id,
+    titulo: '🔄 ' + cardOrigem.titulo + ' (Recorrente)',
+    descricao: cardOrigem.descricao,
+    etapa: 'entrada',
+    valor_estimado: cardOrigem.valor_estimado,
+    responsavel: cardOrigem.responsavel,
+    recorrente: true,
+    dias_recorrencia: cardOrigem.dias_recorrencia,
+    card_origem_id: cardOrigem.id,
+  });
+}
+
+async function carregarFunil() {
+  if (!empresaAtual) return;
+  const { data: cards } = await sb.from('cards')
+    .select('*, clientes(nome, empresa_cliente)')
+    .eq('empresa_id', empresaAtual)
+    .order('criado_em', { ascending: false });
+
+  const funil = document.getElementById('funil');
+  funil.innerHTML = '';
+  ETAPAS.forEach(etapa => {
+    const cardsEtapa = (cards || []).filter(c => c.etapa === etapa.id);
+    const col = document.createElement('div');
+    col.className = `coluna ${etapa.classe}`;
+    col.innerHTML = `
+      <div class="coluna-header">
+        <span>${etapa.label}</span>
+        <span style="background:rgba(0,0,0,0.1);border-radius:20px;padding:2px 8px;font-size:11px">${cardsEtapa.length}</span>
+      </div>
+      <div class="coluna-body">
+        ${cardsEtapa.map(c => renderCard(c)).join('')}
+        <button class="btn-add-card" onclick="abrirModalCard('${etapa.id}')">+ Adicionar</button>
+      </div>`;
+    funil.appendChild(col);
+  });
+}
+
+function renderCard(c) {
+  const cliente = c.clientes ? (c.clientes.empresa_cliente || c.clientes.nome) : '—';
+  const valor = c.valor_estimado ? 'R$ ' + Number(c.valor_estimado).toLocaleString('pt-BR', {minimumFractionDigits:2}) : '';
+  const recBadge = c.recorrente ? '<span class="badge-recorrente">🔄 Recorrente</span>' : '';
+  const origemBadge = c.card_origem_id ? '<span class="badge-alerta">Renovação automática</span>' : '';
+  return `<div class="card" onclick="abrirModalCard(null,'${c.id}')">
+    ${recBadge}
+    <div class="card-titulo">${c.titulo}</div>
+    <div class="card-cliente">${cliente}</div>
+    ${valor ? `<div class="card-valor">${valor}</div>` : ''}
+    ${origemBadge}
+  </div>`;
+}
+
+async function abrirModalCard(etapa, id = null) {
+  cardEditandoId = id;
+  const modal = document.getElementById('modal-card');
+  document.getElementById('modal-card-titulo').textContent = id ? 'Editar Proposta' : 'Nova Proposta';
+  await carregarClientesSelect();
+  if (id) {
+    const { data } = await sb.from('cards').select('*').eq('id', id).single();
+    document.getElementById('card-titulo').value = data.titulo || '';
+    document.getElementById('card-cliente').value = data.cliente_id || '';
+    document.getElementById('card-responsavel').value = data.responsavel || '';
+    document.getElementById('card-valor').value = data.valor_estimado || '';
+    document.getElementById('card-fechamento').value = data.data_fechamento_prevista || '';
+    document.getElementById('card-descricao').value = data.descricao || '';
+    document.getElementById('card-etapa').value = data.etapa || 'entrada';
+    document.getElementById('card-recorrente').checked = data.recorrente || false;
+    document.getElementById('card-dias').value = data.dias_recorrencia || '';
+    document.getElementById('campo-recorrencia').style.display = data.recorrente ? 'block' : 'none';
+  } else {
+    document.getElementById('card-titulo').value = '';
+    document.getElementById('card-responsavel').value = '';
+    document.getElementById('card-valor').value = '';
+    document.getElementById('card-fechamento').value = '';
+    document.getElementById('card-descricao').value = '';
+    document.getElementById('card-etapa').value = etapa || 'entrada';
+    document.getElementById('card-recorrente').checked = false;
+    document.getElementById('card-dias').value = '';
+    document.getElementById('campo-recorrencia').style.display = 'none';
+  }
+  modal.classList.add('aberto');
+}
+
+async function carregarClientesSelect() {
+  const { data } = await sb.from('clientes').select('*').order('nome');
+  const sel = document.getElementById('card-cliente');
+  sel.innerHTML = '<option value="">Selecione o cliente</option>';
+  (data || []).forEach(c => {
+    const opt = document.createElement('option');
+    opt.value = c.id;
+    opt.textContent = c.nome + (c.empresa_cliente ? ` (${c.empresa_cliente})` : '');
+    sel.appendChild(opt);
+  });
+}
+
+function toggleRecorrente() {
+  const checked = document.getElementById('card-recorrente').checked;
+  document.getElementById('campo-recorrencia').style.display = checked ? 'block' : 'none';
+}
+
+async function salvarCard() {
+  const titulo = document.getElementById('card-titulo').value.trim();
+  if (!titulo) { alert('Informe o título da proposta.'); return; }
+  const dados = {
+    empresa_id: empresaAtual,
+    cliente_id: document.getElementById('card-cliente').value || null,
+    titulo,
+    responsavel: document.getElementById('card-responsavel').value,
+    valor_estimado: document.getElementById('card-valor').value || null,
+    data_fechamento_prevista: document.getElementById('card-fechamento').value || null,
+    descricao: document.getElementById('card-descricao').value,
+    etapa: document.getElementById('card-etapa').value,
+    recorrente: document.getElementById('card-recorrente').checked,
+    dias_recorrencia: document.getElementById('card-dias').value || null,
+    atualizado_em: new Date().toISOString(),
+  };
+  if (cardEditandoId) {
+    await sb.from('cards').update(dados).eq('id', cardEditandoId);
+  } else {
+    await sb.from('cards').insert(dados);
+  }
+  fecharModal('modal-card');
+  carregarFunil();
+  verificarAlertasRecorrencia();
+}
+
+function fecharModal(id) {
+  document.getElementById(id).classList.remove('aberto');
+}
+
+function abrirTab(tab) {
+  ['funil','empresas','clientes'].forEach(t => {
+    document.getElementById('tab-' + t).style.display = t === tab ? 'block' : 'none';
+  });
+  document.querySelectorAll('.tab').forEach((el, i) => {
+    el.classList.toggle('ativo', ['funil','empresas','clientes'][i] === tab);
+  });
+  if (tab === 'clientes') carregarListaClientes();
+}
+
+function renderizarListaEmpresas(empresas) {
+  const div = document.getElementById('lista-empresas');
+  if (!div) return;
+  div.innerHTML = empresas.map(e => `
+    <div style="background:white;border:1.5px solid var(--borda);border-radius:10px;padding:16px 20px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center">
+      <div>
+        <div style="font-weight:600">${e.nome}</div>
+        ${e.cnpj ? `<div style="font-size:13px;color:var(--texto2)">${e.cnpj}</div>` : ''}
+      </div>
+    </div>`).join('');
+}
+
+function abrirModalEmpresa() {
+  document.getElementById('emp-nome').value = '';
+  document.getElementById('emp-cnpj').value = '';
+  document.getElementById('modal-empresa').classList.add('aberto');
+}
+
+async function salvarEmpresa() {
+  const nome = document.getElementById('emp-nome').value.trim();
+  if (!nome) { alert('Informe o nome da empresa.'); return; }
+  await sb.from('empresas').insert({ nome, cnpj: document.getElementById('emp-cnpj').value });
+  fecharModal('modal-empresa');
+  await carregarEmpresas();
+  abrirTab('empresas');
+}
+
+async function carregarListaClientes() {
+  const { data } = await sb.from('clientes').select('*').order('nome');
+  const div = document.getElementById('lista-clientes');
+  div.innerHTML = (data || []).map(c => `
+    <div style="background:white;border:1.5px solid var(--borda);border-radius:10px;padding:16px 20px;margin-bottom:10px">
+      <div style="font-weight:600">${c.nome}</div>
+      ${c.empresa_cliente ? `<div style="font-size:13px;color:var(--texto2)">${c.empresa_cliente}</div>` : ''}
+      <div style="font-size:13px;color:var(--texto2);margin-top:4px">${c.email || ''} ${c.telefone ? '· ' + c.telefone : ''}</div>
+    </div>`).join('') || '<p style="color:var(--texto2)">Nenhum cliente cadastrado ainda.</p>';
+}
+
+function abrirModalCliente() {
+  ['cli-nome','cli-empresa','cli-email','cli-telefone','cli-cargo'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('modal-cliente').classList.add('aberto');
+}
+
+async function salvarCliente() {
+  const nome = document.getElementById('cli-nome').value.trim();
+  if (!nome) { alert('Informe o nome do cliente.'); return; }
+  await sb.from('clientes').insert({
+    empresa_id: empresaAtual,
+    nome,
+    empresa_cliente: document.getElementById('cli-empresa').value,
+    email: document.getElementById('cli-email').value,
+    telefone: document.getElementById('cli-telefone').value,
+    cargo: document.getElementById('cli-cargo').value,
+  });
+  fecharModal('modal-cliente');
+  carregarListaClientes();
+}
+
+// Verificar sessão ao carregar
+sb.auth.getSession().then(({ data: { session } }) => {
+  if (session) iniciarApp();
+});
+</script>
+</body>
+</html>
