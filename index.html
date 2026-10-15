@@ -7,45 +7,62 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-:root{--verde:#1a6b3c;--verde-claro:#e8f5ee;--cinza:#f4f4f4;--borda:#ddd;--texto:#222;--texto2:#666;--branco:#fff;--vermelho:#c0392b;--azul:#2980b9}
-body{font-family:'Segoe UI',sans-serif;background:var(--cinza);color:var(--texto)}
-#tela-login{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#1a6b3c,#0d3d22)}
-.login-box{background:#fff;border-radius:16px;padding:48px 40px;width:360px;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+:root{--verde:#1a6b3c;--verde-escuro:#145530;--verde-claro:#e8f5ee;--cinza:#f4f4f4;--borda:#ddd;--texto:#222;--texto2:#666;--branco:#fff;--vermelho:#c0392b;--azul:#2980b9;--amarelo:#fff3cd;--laranja:#e67e22}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--cinza);color:var(--texto)}
+button{font-family:inherit}
+#tela-login{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#1a6b3c,#0d3d22);padding:16px}
+.login-box{background:#fff;border-radius:16px;padding:48px 40px;width:360px;max-width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3)}
 .login-logo{text-align:center;margin-bottom:32px}
 .login-logo h1{color:var(--verde);font-size:26px;font-weight:700}
 .login-logo p{color:var(--texto2);font-size:13px;margin-top:4px}
-.campo{margin-bottom:16px}
+.campo{margin-bottom:14px}
 .campo label{display:block;font-size:13px;font-weight:600;margin-bottom:6px}
-.campo input,.campo select,.campo textarea{width:100%;padding:10px 14px;border:1.5px solid var(--borda);border-radius:8px;font-size:14px;outline:none;transition:border .2s;font-family:inherit}
+.campo input,.campo select,.campo textarea{width:100%;padding:10px 12px;border:1.5px solid var(--borda);border-radius:8px;font-size:14px;outline:none;transition:border .2s;font-family:inherit;background:#fff}
 .campo input:focus,.campo select:focus,.campo textarea:focus{border-color:var(--verde)}
+.campo input[readonly]{background:#f7f7f7;color:var(--texto2)}
+.dica{font-size:11px;color:var(--texto2);margin-top:4px}
 .btn-verde{width:100%;padding:12px;background:var(--verde);color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer}
-.btn-verde:hover{background:#145530}
+.btn-verde:hover{background:var(--verde-escuro)}
 .erro{color:var(--vermelho);font-size:13px;margin-top:8px;text-align:center}
 #app{display:none}
-.topbar{background:var(--verde);color:#fff;padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:56px;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.15)}
-.topbar-logo{font-weight:700;font-size:18px;letter-spacing:1px}
+.topbar{background:var(--verde);color:#fff;padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:56px;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.15);gap:12px}
+.topbar-logo{font-weight:700;font-size:18px;letter-spacing:1px;white-space:nowrap}
 .topbar-right{display:flex;align-items:center;gap:16px}
 .btn-sair{background:rgba(255,255,255,.15);border:none;color:#fff;padding:6px 14px;border-radius:6px;cursor:pointer;font-size:13px}
 .empresa-selector{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.15);padding:6px 12px;border-radius:8px}
 .empresa-selector label{font-size:12px;opacity:.8;white-space:nowrap}
 .empresa-selector select{background:none;border:none;color:#fff;font-size:14px;font-weight:600;cursor:pointer;outline:none;max-width:220px}
 .empresa-selector select option{color:#000;background:#fff}
-.tabs{background:#fff;border-bottom:2px solid var(--borda);display:flex;padding:0 24px}
-.tab{padding:14px 20px;cursor:pointer;font-size:14px;font-weight:500;color:var(--texto2);border-bottom:3px solid transparent;margin-bottom:-2px;transition:all .2s}
+.tabs{background:#fff;border-bottom:2px solid var(--borda);display:flex;padding:0 24px;overflow-x:auto}
+.tab{padding:14px 18px;cursor:pointer;font-size:14px;font-weight:500;color:var(--texto2);border-bottom:3px solid transparent;margin-bottom:-2px;transition:all .2s;white-space:nowrap}
 .tab.ativo{color:var(--verde);border-bottom-color:var(--verde)}
 .conteudo{padding:24px;max-width:1500px;margin:0 auto}
-.barra-acoes{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px}
-.barra-acoes h2{font-size:15px;color:var(--texto2);font-weight:500}
-.btn-novo{background:var(--verde);color:#fff;border:none;padding:11px 24px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer}
-.btn-novo:hover{background:#145530}
+.barra-acoes{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:12px}
+.barra-acoes h2{font-size:18px;font-weight:600}
+.filtros{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px}
+.filtros input,.filtros select{padding:8px 12px;border:1.5px solid var(--borda);border-radius:8px;font-size:13px;font-family:inherit;background:#fff;outline:none}
+.filtros input:focus,.filtros select:focus{border-color:var(--verde)}
+.filtros input[type=search]{min-width:260px}
+.btn-novo{background:var(--verde);color:#fff;border:none;padding:11px 22px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer}
+.btn-novo:hover{background:var(--verde-escuro)}
+.btn-sec{background:#fff;color:var(--verde);border:1.5px solid var(--verde);padding:7px 14px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer}
+.btn-sec:hover{background:var(--verde-claro)}
+.btn-link{background:none;border:none;color:var(--azul);cursor:pointer;font-size:13px;padding:0;text-decoration:underline}
+.aviso{background:#fdecea;border:1.5px solid var(--vermelho);color:#7b1e14;border-radius:10px;padding:14px 18px;margin-bottom:20px;font-size:14px;line-height:1.5}
+/* FUNIL */
 .funil-container{overflow-x:auto;padding-bottom:16px}
 .funil{display:flex;gap:12px;min-width:max-content;align-items:flex-start}
-.coluna{background:#fff;border-radius:12px;width:230px;min-width:230px;border:1.5px solid var(--borda);overflow:hidden}
-.coluna-header{padding:10px 14px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;display:flex;align-items:center;justify-content:space-between}
-.coluna-body{padding:8px;min-height:120px}
-.coluna-vazia{text-align:center;color:#ccc;font-size:12px;padding:20px 8px}
-.card{background:#fff;border:1.5px solid var(--borda);border-radius:10px;padding:12px;margin-bottom:8px;cursor:pointer;transition:box-shadow .2s,transform .2s}
+.coluna{background:#fff;border-radius:12px;width:240px;min-width:240px;border:1.5px solid var(--borda);overflow:hidden}
+.coluna-header{padding:10px 14px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+.coluna-header .linha1{display:flex;align-items:center;justify-content:space-between}
+.coluna-header .soma{font-size:11px;font-weight:600;text-transform:none;letter-spacing:0;opacity:.85;margin-top:3px}
+.contador{background:rgba(0,0,0,.12);border-radius:20px;padding:1px 8px;font-size:11px}
+.coluna-body{padding:8px;min-height:140px;transition:background .15s}
+.coluna-body.drag-sobre{background:var(--verde-claro);outline:2px dashed var(--verde);outline-offset:-6px}
+.coluna-vazia{text-align:center;color:#bbb;font-size:12px;padding:20px 8px}
+.card{background:#fff;border:1.5px solid var(--borda);border-radius:10px;padding:11px 12px;margin-bottom:8px;cursor:pointer;transition:box-shadow .2s,transform .2s}
 .card:hover{box-shadow:0 4px 16px rgba(0,0,0,.1);transform:translateY(-2px)}
+.card.arrastando{opacity:.4}
 .card-empresa-tag{font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;display:inline-block;margin-bottom:5px}
 .tag-VB{background:#e8f5e9;color:#1b5e20}
 .tag-EK{background:#e3f2fd;color:#1565c0}
@@ -55,10 +72,15 @@ body{font-family:'Segoe UI',sans-serif;background:var(--cinza);color:var(--texto
 .card-titulo{font-size:13px;font-weight:600;margin-bottom:4px;line-height:1.3}
 .card-cliente{font-size:12px;color:var(--texto2);margin-bottom:4px}
 .card-valor{font-size:12px;font-weight:600;color:var(--verde)}
-.card-data{font-size:11px;color:var(--texto2);margin-top:4px}
-.badge{font-size:10px;padding:2px 7px;border-radius:20px;font-weight:600;display:inline-block;margin-bottom:4px}
+.card-rodape{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;font-size:11px;color:var(--texto2)}
+.cod{font-family:Consolas,monospace;font-weight:700;color:var(--verde);font-size:.95em}
+.badge{font-size:10px;padding:2px 7px;border-radius:20px;font-weight:600;display:inline-block}
 .badge-rec{background:#fff3cd;color:#856404}
-.badge-auto{background:#f8d7da;color:#842029}
+.badge-atraso{background:#f8d7da;color:#842029}
+.badge-hoje{background:#fff3cd;color:#856404}
+.badge-ok{background:#e8f5e9;color:#1b5e20}
+.badge-cinza{background:#eee;color:#555}
+.badge-parado{background:#ffe0cc;color:#a0410d}
 .col-entrada .coluna-header{background:#e3f2fd;color:#1565c0}
 .col-contato .coluna-header{background:#f3e5f5;color:#6a1b9a}
 .col-nutricao1 .coluna-header{background:#fff8e1;color:#e65100}
@@ -66,49 +88,102 @@ body{font-family:'Segoe UI',sans-serif;background:var(--cinza);color:var(--texto
 .col-elaboracao .coluna-header{background:#e8f5e9;color:#1b5e20}
 .col-enviada .coluna-header{background:#e0f7fa;color:#006064}
 .col-nutricao2 .coluna-header{background:#fff3e0;color:#bf360c}
-.col-fechada .coluna-header{background:#e8f5e9;color:#2e7d32}
+.col-fechada .coluna-header{background:#c8e6c9;color:#1b5e20}
 .col-perdida .coluna-header{background:#ffebee;color:#b71c1c}
+/* PAINEL */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:20px}
+.kpi{background:#fff;border:1.5px solid var(--borda);border-radius:12px;padding:16px 18px}
+.kpi .rot{font-size:12px;color:var(--texto2);font-weight:600;text-transform:uppercase;letter-spacing:.4px}
+.kpi .val{font-size:24px;font-weight:700;color:var(--verde);margin-top:6px;font-variant-numeric:tabular-nums}
+.kpi .sub{font-size:12px;color:var(--texto2);margin-top:4px}
+.paineis{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:16px}
+.painel{background:#fff;border:1.5px solid var(--borda);border-radius:12px;padding:16px 18px}
+.painel h3{font-size:14px;margin-bottom:12px;color:var(--texto)}
+.barra-linha{display:grid;grid-template-columns:130px 1fr 110px;gap:10px;align-items:center;font-size:12px;margin-bottom:8px}
+.barra-linha .nome{color:var(--texto2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.barra-trilho{background:#f0f0f0;border-radius:4px;height:14px;overflow:hidden}
+.barra-cheia{background:var(--verde);height:100%;border-radius:4px;min-width:2px}
+.barra-cheia.vermelha{background:#c0392b}
+.barra-linha .num{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
+.lista-mini{font-size:13px}
+.lista-mini .item{padding:8px 0;border-bottom:1px solid #f0f0f0;display:flex;justify-content:space-between;gap:10px;align-items:flex-start;cursor:pointer}
+.lista-mini .item:last-child{border-bottom:none}
+.lista-mini .item:hover{background:#fafafa}
+/* TABELAS */
+.tabela-wrap{background:#fff;border:1.5px solid var(--borda);border-radius:12px;overflow-x:auto}
+table.tabela{width:100%;border-collapse:collapse;font-size:13px}
+table.tabela th{background:var(--verde-claro);color:var(--verde);padding:10px 12px;text-align:left;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;white-space:nowrap}
+table.tabela td{padding:9px 12px;border-bottom:1px solid #eee;vertical-align:top}
+table.tabela tr.clicavel{cursor:pointer}
+table.tabela tr.clicavel:hover td{background:#fafafa}
+table.tabela td.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.inativo td{opacity:.5}
+/* MODAL */
 .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto}
 .modal-overlay.aberto{display:flex}
-.modal{background:#fff;border-radius:16px;width:100%;max-width:800px;padding:32px;box-shadow:0 20px 60px rgba(0,0,0,.3);margin:auto}
+.modal{background:#fff;border-radius:16px;width:100%;max-width:800px;padding:30px;box-shadow:0 20px 60px rgba(0,0,0,.3);margin:auto}
 .modal-lg{max-width:1000px}
+.modal-sm{max-width:480px}
 .modal h2{font-size:20px;margin-bottom:6px;color:var(--verde)}
-.modal-sub{font-size:13px;color:var(--texto2);margin-bottom:20px}
-.secao{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--verde);margin:20px 0 12px;padding-bottom:6px;border-bottom:1.5px solid var(--verde-claro)}
-.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.modal-sub{font-size:13px;color:var(--texto2);margin-bottom:18px}
+.secao{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--verde);margin:20px 0 12px;padding-bottom:6px;border-bottom:1.5px solid var(--verde-claro);display:flex;justify-content:space-between;align-items:center}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 14px}
 .form-grid .full{grid-column:1/-1}
-.form-grid .tri{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
 .campo-check{display:flex;align-items:center;gap:10px;padding:4px 0}
 .campo-check input[type=checkbox]{width:18px;height:18px;cursor:pointer;accent-color:var(--verde)}
 .campo-check label{cursor:pointer;font-weight:600;font-size:14px}
-.etapa-box{background:var(--verde-claro);border:1.5px solid var(--verde);border-radius:8px;padding:10px 14px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
+.checks-linha{display:flex;gap:18px;padding:8px 0}
+.checks-linha label{display:flex;gap:6px;align-items:center;font-weight:500;font-size:14px;cursor:pointer}
+.checks-linha input{width:16px;height:16px;accent-color:var(--verde)}
+.etapa-box{background:var(--verde-claro);border:1.5px solid var(--verde);border-radius:8px;padding:10px 14px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
 .etapa-box span{font-size:13px;color:var(--verde);font-weight:600}
 .etapa-box select{border:1.5px solid var(--verde);border-radius:6px;padding:6px 10px;font-size:13px;color:var(--verde);font-weight:600;background:#fff;cursor:pointer;outline:none}
-.numero-box{background:#f0f9ff;border:1.5px solid var(--azul);border-radius:8px;padding:10px 14px;margin-bottom:16px;display:flex;align-items:center;gap:12px}
+.perda-box{background:#fdecea;border:1.5px solid #e6a19a;border-radius:8px;padding:12px 14px 2px;margin-bottom:12px}
+.numero-box{background:#f0f9ff;border:1.5px solid var(--azul);border-radius:8px;padding:10px 14px;margin-bottom:12px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 .numero-box span{font-size:13px;color:var(--azul);font-weight:700}
-.modal-btns{display:flex;gap:12px;justify-content:flex-end;margin-top:28px;flex-wrap:wrap}
+.info-box{background:#f7f7f7;border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.modal-btns{display:flex;gap:12px;justify-content:flex-end;margin-top:24px;flex-wrap:wrap}
 .btn-cancelar{padding:10px 20px;border:1.5px solid var(--borda);background:#fff;border-radius:8px;cursor:pointer;font-size:14px;color:var(--texto2)}
 .btn-salvar{padding:10px 28px;background:var(--verde);color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600}
+.btn-salvar:disabled{opacity:.6;cursor:wait}
 .btn-excluir{padding:10px 20px;background:var(--vermelho);color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:14px}
 .btn-pdf{padding:10px 20px;background:var(--azul);color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600}
 .btn-versao{padding:10px 20px;background:#8e44ad;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:14px}
+.btn-projeto{padding:10px 20px;background:var(--laranja);color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600}
 .alertas-box{background:#fff3cd;border:1.5px solid #ffc107;border-radius:10px;padding:14px 18px;margin-bottom:20px}
 .alertas-box h3{color:#856404;font-size:13px;margin-bottom:6px}
 .alerta-item{font-size:13px;color:#664d03;padding:3px 0}
 .card-lista{background:#fff;border:1.5px solid var(--borda);border-radius:10px;padding:16px 20px;margin-bottom:10px}
-.vazio{color:var(--texto2);font-size:14px;padding:20px 0}
+.vazio{color:var(--texto2);font-size:13px;padding:12px 0}
+.sub-lista{border:1.5px solid var(--borda);border-radius:10px;overflow:hidden}
+.sub-item{padding:10px 14px;border-bottom:1px solid #eee;font-size:13px;display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.sub-item:last-child{border-bottom:none}
+.sub-item.clicavel{cursor:pointer}
+.sub-item.clicavel:hover{background:#fafafa}
+.sub-item .acoes{display:flex;gap:10px;flex-shrink:0}
+.ativ-feita .ativ-desc{text-decoration:line-through;color:#999}
+.ativ-form{display:grid;grid-template-columns:130px 1fr 170px auto;gap:8px;margin-top:10px;align-items:start}
+.ativ-form input,.ativ-form select{padding:8px 10px;border:1.5px solid var(--borda);border-radius:8px;font-size:13px;font-family:inherit;width:100%}
+.timeline{font-size:12px;color:var(--texto2)}
+.timeline div{padding:3px 0}
 /* TABELA ITENS */
 .tabela-itens{width:100%;border-collapse:collapse;margin-top:8px;font-size:13px}
 .tabela-itens th{background:var(--verde-claro);color:var(--verde);padding:8px;text-align:left;font-size:11px;font-weight:700;text-transform:uppercase}
 .tabela-itens td{padding:6px 8px;border-bottom:1px solid var(--borda);vertical-align:middle}
 .tabela-itens input{width:100%;border:none;outline:none;font-size:13px;font-family:inherit;background:transparent}
 .tabela-itens input:focus{background:#f9f9f9;border-radius:4px}
-.tabela-itens tr:hover td{background:#fafafa}
 .btn-add-item{background:none;border:1.5px dashed var(--borda);border-radius:6px;padding:6px 14px;cursor:pointer;font-size:12px;color:var(--texto2);margin-top:8px}
 .btn-add-item:hover{border-color:var(--verde);color:var(--verde)}
 .btn-rm-item{background:none;border:none;color:var(--vermelho);cursor:pointer;font-size:16px;padding:2px 6px}
 .total-box{text-align:right;margin-top:12px;font-size:16px;font-weight:700;color:var(--verde)}
-@media(max-width:600px){.form-grid{grid-template-columns:1fr}.form-grid .tri{grid-template-columns:1fr}.conteudo{padding:12px}.modal{padding:20px}.topbar{padding:0 12px}}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#222;color:#fff;padding:12px 20px;border-radius:8px;font-size:14px;z-index:2000;opacity:0;transition:opacity .3s;pointer-events:none;max-width:90vw}
+.toast.mostrar{opacity:1}
+@media(max-width:700px){
+  .form-grid{grid-template-columns:1fr}.conteudo{padding:12px}.modal{padding:18px}.topbar{padding:0 12px}
+  .topbar-logo{font-size:15px}.empresa-selector label{display:none}#user-nome{display:none}.empresa-selector{padding:6px 8px;min-width:0}.empresa-selector select{max-width:150px;font-size:13px}.topbar{gap:8px}.btn-sair{padding:6px 10px}
+  .ativ-form{grid-template-columns:1fr}.barra-linha{grid-template-columns:90px 1fr 90px}
+  .filtros input[type=search]{min-width:0;width:100%}
+}
 </style>
 </head>
 <body>
@@ -117,16 +192,10 @@ body{font-family:'Segoe UI',sans-serif;background:var(--cinza);color:var(--texto
   <div class="login-box">
     <div class="login-logo">
       <h1>GRUPO-BVEK</h1>
-      <p>Sistema de Gestão de Propostas</p>
+      <p>CRM · Funil de vendas e propostas</p>
     </div>
-    <div class="campo">
-      <label>E-mail</label>
-      <input type="email" id="login-email" placeholder="seu@email.com">
-    </div>
-    <div class="campo">
-      <label>Senha</label>
-      <input type="password" id="login-senha" placeholder="••••••••" onkeydown="if(event.key==='Enter')fazerLogin()">
-    </div>
+    <div class="campo"><label>E-mail</label><input type="email" id="login-email" placeholder="seu@email.com"></div>
+    <div class="campo"><label>Senha</label><input type="password" id="login-senha" placeholder="••••••••" onkeydown="if(event.key==='Enter')fazerLogin()"></div>
     <button class="btn-verde" onclick="fazerLogin()">Entrar</button>
     <div class="erro" id="login-erro"></div>
   </div>
@@ -137,45 +206,127 @@ body{font-family:'Segoe UI',sans-serif;background:var(--cinza);color:var(--texto
     <div class="topbar-logo">GRUPO-BVEK</div>
     <div class="empresa-selector">
       <label>Empresa:</label>
-      <select id="select-empresa" onchange="trocarEmpresa()">
-        <option value="todas">— Todas as empresas —</option>
-      </select>
+      <select id="select-empresa" onchange="trocarEmpresa()"><option value="todas">— Todas as empresas —</option></select>
     </div>
     <div class="topbar-right">
       <span id="user-nome" style="font-size:12px;opacity:.8"></span>
       <button class="btn-sair" onclick="sair()">Sair</button>
     </div>
   </div>
-  <div class="tabs">
-    <div class="tab ativo" onclick="abrirTab('funil')">Funil de Propostas</div>
-    <div class="tab" onclick="abrirTab('empresas')">Empresas</div>
-    <div class="tab" onclick="abrirTab('clientes')">Clientes</div>
+  <div class="tabs" id="tabs">
+    <div class="tab ativo" data-tab="painel">Painel</div>
+    <div class="tab" data-tab="funil">Funil de Propostas</div>
+    <div class="tab" data-tab="clientes">Clientes</div>
+    <div class="tab" data-tab="projetos">Projetos</div>
+    <div class="tab" data-tab="atividades">Atividades <span id="tab-ativ-badge"></span></div>
+    <div class="tab" data-tab="empresas">Empresas</div>
   </div>
   <div class="conteudo">
+    <div class="aviso" id="aviso-migracao" style="display:none"></div>
     <div class="alertas-box" id="alertas-box" style="display:none">
       <h3>⚠️ Propostas recorrentes com renovação próxima</h3>
       <div id="alertas-lista"></div>
     </div>
-    <div id="tab-funil">
+
+    <!-- PAINEL -->
+    <div id="tab-painel">
       <div class="barra-acoes">
-        <h2 id="titulo-funil">Funil de atendimentos — Todas as empresas</h2>
+        <h2 id="titulo-painel">Painel</h2>
+        <div class="filtros" style="margin:0">
+          <select id="painel-ano" onchange="renderPainel()"></select>
+        </div>
+      </div>
+      <div class="kpis" id="kpis"></div>
+      <div class="paineis">
+        <div class="painel"><h3>Funil — propostas em aberto por etapa</h3><div id="p-funil"></div></div>
+        <div class="painel"><h3>Fechamentos por mês</h3><div id="p-meses"></div></div>
+        <div class="painel"><h3>Atividades atrasadas e de hoje</h3><div id="p-ativ" class="lista-mini"></div></div>
+        <div class="painel"><h3>Propostas paradas há mais de 15 dias</h3><div id="p-parados" class="lista-mini"></div></div>
+        <div class="painel"><h3>Motivos de perda</h3><div id="p-perdas"></div></div>
+        <div class="painel"><h3>Maiores clientes (valor fechado)</h3><div id="p-clientes"></div></div>
+      </div>
+    </div>
+
+    <!-- FUNIL -->
+    <div id="tab-funil" style="display:none">
+      <div class="barra-acoes">
+        <h2 id="titulo-funil">Funil de atendimentos</h2>
         <button class="btn-novo" onclick="abrirModalCard()">+ Novo Atendimento</button>
+      </div>
+      <div class="filtros">
+        <input type="search" id="funil-busca" placeholder="Buscar por título, cliente, código ou nº da proposta" oninput="renderFunil()">
+        <select id="funil-resp" onchange="renderFunil()"><option value="">Todos os responsáveis</option></select>
+        <select id="funil-periodo" onchange="renderFunil()">
+          <option value="90">Fechadas/perdidas: últimos 90 dias</option>
+          <option value="365">Fechadas/perdidas: últimos 12 meses</option>
+          <option value="0">Fechadas/perdidas: todas</option>
+        </select>
+        <span class="dica">Arraste os cards entre as colunas para mudar a etapa.</span>
       </div>
       <div class="funil-container"><div class="funil" id="funil"></div></div>
     </div>
+
+    <!-- CLIENTES -->
+    <div id="tab-clientes" style="display:none">
+      <div class="barra-acoes">
+        <h2>Clientes</h2>
+        <button class="btn-novo" onclick="abrirModalCliente()">+ Novo Cliente</button>
+      </div>
+      <div class="filtros">
+        <input type="search" id="cli-busca" placeholder="Buscar por código, nome, razão social, CNPJ ou contato" oninput="renderClientes()">
+        <select id="cli-filtro" onchange="renderClientes()">
+          <option value="">Todos</option>
+          <option value="Cliente">Clientes</option>
+          <option value="Prospect">Prospects</option>
+          <option value="semcodigo">Sem código (a conferir)</option>
+          <option value="inativos">Inativos / mesclados</option>
+        </select>
+        <span class="dica" id="cli-contagem"></span>
+      </div>
+      <div class="tabela-wrap"><table class="tabela" id="tabela-clientes"></table></div>
+    </div>
+
+    <!-- PROJETOS -->
+    <div id="tab-projetos" style="display:none">
+      <div class="barra-acoes">
+        <h2>Projetos</h2>
+        <button class="btn-novo" onclick="abrirModalProjeto()">+ Novo Projeto</button>
+      </div>
+      <div class="filtros">
+        <input type="search" id="proj-busca" placeholder="Buscar por código, cliente ou nome" oninput="renderProjetos()">
+        <select id="proj-status" onchange="renderProjetos()">
+          <option value="">Todos os status</option>
+          <option>Em andamento</option><option>Concluído</option><option>Paralisado</option><option>Cancelado</option>
+        </select>
+        <span class="dica" id="proj-proximo"></span>
+      </div>
+      <div class="tabela-wrap"><table class="tabela" id="tabela-projetos"></table></div>
+    </div>
+
+    <!-- ATIVIDADES -->
+    <div id="tab-atividades" style="display:none">
+      <div class="barra-acoes">
+        <h2>Atividades e tarefas</h2>
+        <button class="btn-novo" onclick="abrirModalAtividade()">+ Nova Atividade</button>
+      </div>
+      <div class="filtros">
+        <select id="ativ-filtro" onchange="renderAtividades()">
+          <option value="pendentes">Pendentes</option>
+          <option value="concluidas">Concluídas</option>
+          <option value="todas">Todas</option>
+        </select>
+        <select id="ativ-resp" onchange="renderAtividades()"><option value="">Todos os responsáveis</option></select>
+      </div>
+      <div id="lista-atividades"></div>
+    </div>
+
+    <!-- EMPRESAS -->
     <div id="tab-empresas" style="display:none">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
-        <h2 style="font-size:18px">Empresas</h2>
+      <div class="barra-acoes">
+        <h2>Empresas do grupo</h2>
         <button class="btn-novo" onclick="abrirModalEmpresa()">+ Nova Empresa</button>
       </div>
       <div id="lista-empresas"></div>
-    </div>
-    <div id="tab-clientes" style="display:none">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
-        <h2 style="font-size:18px">Clientes</h2>
-        <button class="btn-novo" onclick="abrirModalCliente()">+ Novo Cliente</button>
-      </div>
-      <div id="lista-clientes"></div>
     </div>
   </div>
 </div>
@@ -184,72 +335,80 @@ body{font-family:'Segoe UI',sans-serif;background:var(--cinza);color:var(--texto
 <div class="modal-overlay" id="modal-card">
   <div class="modal modal-lg">
     <h2 id="modal-titulo">Novo Atendimento</h2>
-    <p class="modal-sub">Preencha os dados completos para gerar a proposta automaticamente.</p>
+    <p class="modal-sub">Preencha os dados para acompanhar no funil e gerar a proposta.</p>
 
     <div class="numero-box" id="numero-box" style="display:none">
       <span id="numero-display">—</span>
       <span style="font-size:12px;color:var(--texto2)">Número da proposta</span>
+      <span id="projeto-display" style="margin-left:auto"></span>
     </div>
 
     <div class="etapa-box" id="etapa-box" style="display:none">
-      <span>Etapa atual:</span>
-      <select id="card-etapa-select" onchange="salvarEtapa()">
-        <option value="entrada">Entrada</option>
-        <option value="contato">Contato</option>
-        <option value="nutricao1">Nutrição 1ª fase</option>
-        <option value="orcamento">Orçamento</option>
-        <option value="elaboracao">Elaboração de Proposta</option>
-        <option value="enviada">Proposta Enviada</option>
-        <option value="nutricao2">Nutrição 2ª fase</option>
-        <option value="fechada">Proposta Fechada ✅</option>
-        <option value="perdida">Proposta Perdida ❌</option>
-      </select>
+      <span>Etapa atual: <small id="etapa-desde" style="font-weight:400"></small></span>
+      <select id="card-etapa-select" onchange="mudouEtapaModal()"></select>
+    </div>
+    <div class="perda-box" id="perda-box" style="display:none">
+      <div class="form-grid">
+        <div class="campo"><label>Motivo da perda *</label><select id="card-motivo-perda"></select></div>
+        <div class="campo"><label>Detalhe</label><input type="text" id="card-motivo-detalhe" placeholder="Ex.: concorrente 15% mais barato"></div>
+      </div>
     </div>
 
     <div class="secao">Empresa e cliente</div>
     <div class="form-grid">
       <div class="campo">
         <label>Empresa responsável *</label>
-        <select id="card-empresa-id">
-          <option value="">Selecione a empresa</option>
-        </select>
+        <select id="card-empresa-id"><option value="">Selecione a empresa</option></select>
       </div>
       <div class="campo">
         <label>Responsável interno</label>
-        <input type="text" id="card-responsavel" placeholder="Quem vai atender">
+        <input type="text" id="card-responsavel" list="dl-responsaveis" placeholder="Quem vai atender">
       </div>
-      <div class="campo full"><label>Nome do contato / cliente *</label><input type="text" id="cli-nome" placeholder="Nome completo do contato"></div>
-      <div class="campo full"><label>Empresa do cliente</label><input type="text" id="cli-empresa-nome" placeholder="Nome da empresa do cliente"></div>
-      <div class="campo"><label>Telefone</label><input type="text" id="cli-tel" placeholder="(21) 99999-9999"></div>
-      <div class="campo"><label>E-mail</label><input type="email" id="cli-email-campo" placeholder="email@cliente.com"></div>
-      <div class="campo full"><label>Cargo</label><input type="text" id="cli-cargo" placeholder="Ex: Engenheiro, Gerente de Obras"></div>
+      <div class="campo full">
+        <label>Cliente * <button class="btn-link" style="margin-left:8px" onclick="abrirModalCliente(null,true)">+ cadastrar cliente novo</button></label>
+        <input type="text" id="card-cliente" list="dl-clientes" placeholder="Digite o código ou o nome (ex.: C009 ou ARKEMA)" onchange="clienteEscolhidoNoCard()" oninput="clienteEscolhidoNoCard()">
+        <div class="dica" id="card-cliente-info"></div>
+      </div>
+      <div class="campo">
+        <label>Contato</label>
+        <select id="card-contato" onchange="toggleNovoContato()"><option value="">— escolha o cliente primeiro —</option></select>
+      </div>
+      <div class="campo">
+        <label>Origem do atendimento</label>
+        <select id="card-origem">
+          <option value="">—</option><option>Indicação</option><option>Cliente atual</option><option>Prospecção ativa</option>
+          <option>Site / e-mail</option><option>Redes sociais</option><option>Licitação</option><option>Parceiro</option><option>Outro</option>
+        </select>
+      </div>
+      <div id="novo-contato-box" class="full" style="display:none">
+        <div class="form-grid" style="background:#f7f7f7;border-radius:8px;padding:12px 12px 0">
+          <div class="campo"><label>Nome do contato *</label><input type="text" id="nct-nome"></div>
+          <div class="campo"><label>Cargo</label><input type="text" id="nct-cargo" placeholder="Ex.: Engenheiro, Síndico"></div>
+          <div class="campo"><label>Telefone</label><input type="text" id="nct-tel" placeholder="(21) 99999-9999"></div>
+          <div class="campo"><label>E-mail</label><input type="email" id="nct-email"></div>
+        </div>
+      </div>
     </div>
 
     <div class="secao">Dados da proposta</div>
     <div class="form-grid">
       <div class="campo full"><label>Título / Objeto da proposta *</label><input type="text" id="card-titulo" placeholder="Ex: Retrofit Laboratório Arkema — Térreo"></div>
-      <div class="campo"><label>Valor total (R$)</label><input type="number" id="card-valor" placeholder="0,00" oninput="atualizarTotal()"></div>
+      <div class="campo"><label>Valor total (R$)</label><input type="number" step="0.01" id="card-valor" placeholder="0,00"></div>
+      <div class="campo"><label>Chance de fechar</label>
+        <select id="card-prob"><option value="">—</option><option value="10">10%</option><option value="25">25%</option><option value="50">50%</option><option value="75">75%</option><option value="90">90%</option><option value="100">100%</option></select>
+      </div>
       <div class="campo"><label>Previsão de fechamento</label><input type="date" id="card-fechamento"></div>
       <div class="campo"><label>Prazo de execução (meses)</label><input type="number" id="card-prazo" placeholder="Ex: 5"></div>
-      <div class="campo"><label>Validade da proposta (dias)</label><input type="number" id="card-validade" placeholder="30" value="30"></div>
+      <div class="campo"><label>Validade da proposta (dias)</label><input type="number" id="card-validade" value="30"></div>
+      <div class="campo"><label>Forma de pagamento</label><input type="text" id="card-pagamento" placeholder="Ex: Crédito em conta, conforme medições"></div>
       <div class="campo full"><label>Escopo dos serviços</label><textarea id="card-escopo" rows="4" placeholder="Descreva detalhadamente o escopo dos serviços..."></textarea></div>
-      <div class="campo full"><label>Forma de pagamento</label><input type="text" id="card-pagamento" placeholder="Ex: Crédito em conta, conforme medições mensais"></div>
-      <div class="campo">
-        <label>% Mão de obra</label>
-        <input type="number" id="card-pct-mao" placeholder="30" value="30">
-      </div>
-      <div class="campo">
-        <label>% Insumos e equipamentos</label>
-        <input type="number" id="card-pct-ins" placeholder="70" value="70">
-      </div>
-      <div class="campo full"><label>Observações gerais</label><textarea id="card-obs" rows="2" placeholder="Observações adicionais..."></textarea></div>
+      <div class="campo"><label>% Mão de obra</label><input type="number" id="card-pct-mao" value="30"></div>
+      <div class="campo"><label>% Insumos e equipamentos</label><input type="number" id="card-pct-ins" value="70"></div>
+      <div class="campo full"><label>Observações gerais</label><textarea id="card-obs" rows="2"></textarea></div>
       <div class="campo full"><label>Nota 1</label><input type="text" id="card-nota1" placeholder="Ex: Em dias chuvosos..."></div>
       <div class="campo full"><label>Nota 2</label><input type="text" id="card-nota2" placeholder="Ex: Caso haja necessidade de paralisação..."></div>
       <div class="campo full">
-        <div class="campo-check">
-          <input type="checkbox" id="card-recorrente" onchange="toggleRecorrente()">
-          <label for="card-recorrente">Proposta Recorrente</label>
-        </div>
+        <div class="campo-check"><input type="checkbox" id="card-recorrente" onchange="toggleRecorrente()"><label for="card-recorrente">Proposta recorrente</label></div>
       </div>
       <div class="campo full" id="campo-recorrencia" style="display:none">
         <label>Renovar a cada quantos dias?</label>
@@ -258,43 +417,179 @@ body{font-family:'Segoe UI',sans-serif;background:var(--cinza);color:var(--texto
     </div>
 
     <div class="secao">Itens do orçamento</div>
-    <table class="tabela-itens" id="tabela-itens">
-      <thead>
-        <tr>
-          <th style="width:60px">Item</th>
-          <th style="width:80px">Código</th>
-          <th>Descrição</th>
-          <th style="width:60px">Und</th>
-          <th style="width:80px">Qtd</th>
-          <th style="width:100px">Vl Unit (R$)</th>
-          <th style="width:100px">Total (R$)</th>
-          <th style="width:36px"></th>
-        </tr>
-      </thead>
+    <div style="overflow-x:auto">
+    <table class="tabela-itens">
+      <thead><tr>
+        <th style="width:60px">Item</th><th style="width:80px">Código</th><th>Descrição</th><th style="width:60px">Und</th>
+        <th style="width:80px">Qtd</th><th style="width:110px">Vl Unit (R$)</th><th style="width:110px">Total (R$)</th><th style="width:36px"></th>
+      </tr></thead>
       <tbody id="itens-body"></tbody>
     </table>
+    </div>
     <button class="btn-add-item" onclick="addItem()">+ Adicionar item</button>
     <div class="total-box">Total: R$ <span id="total-geral">0,00</span></div>
+
+    <div id="card-extras" style="display:none">
+      <div class="secao">Atividades deste atendimento</div>
+      <div id="card-atividades"></div>
+      <div class="ativ-form">
+        <select id="ca-tipo"></select>
+        <input type="text" id="ca-desc" placeholder="O que fazer / o que aconteceu">
+        <input type="datetime-local" id="ca-data">
+        <button class="btn-sec" onclick="addAtividadeCard()">Adicionar</button>
+      </div>
+      <div class="secao">Histórico de etapas</div>
+      <div class="timeline" id="card-historico"></div>
+      <div id="card-versoes-box" style="display:none">
+        <div class="secao">Versões desta proposta</div>
+        <div id="card-versoes"></div>
+      </div>
+    </div>
 
     <div class="modal-btns">
       <button class="btn-excluir" id="btn-excluir" style="display:none" onclick="excluirCard()">Excluir</button>
       <button class="btn-versao" id="btn-versao" style="display:none" onclick="criarNovaVersao()">+ Nova versão</button>
+      <button class="btn-projeto" id="btn-projeto" style="display:none" onclick="abrirModalProjeto(null,cardEditandoId)">Gerar projeto</button>
       <button class="btn-pdf" id="btn-pdf" style="display:none" onclick="gerarPDF()">📄 Gerar Proposta</button>
       <button class="btn-cancelar" onclick="fecharModal('modal-card')">Cancelar</button>
-      <button class="btn-salvar" onclick="salvarCard()">Salvar</button>
+      <button class="btn-salvar" id="btn-salvar-card" onclick="salvarCard()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL MOTIVO DE PERDA (ao arrastar para Perdidas) -->
+<div class="modal-overlay" id="modal-perda">
+  <div class="modal modal-sm">
+    <h2>Proposta perdida</h2>
+    <p class="modal-sub" id="perda-titulo"></p>
+    <div class="campo"><label>Motivo *</label><select id="mp-motivo"></select></div>
+    <div class="campo"><label>Detalhe</label><input type="text" id="mp-detalhe" placeholder="Opcional"></div>
+    <div class="modal-btns">
+      <button class="btn-cancelar" onclick="fecharModal('modal-perda')">Cancelar</button>
+      <button class="btn-salvar" onclick="confirmarPerda()">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CLIENTE -->
+<div class="modal-overlay" id="modal-cliente">
+  <div class="modal modal-lg">
+    <h2 id="mc-titulo">Novo Cliente</h2>
+    <div class="info-box" id="mc-info"></div>
+    <div class="form-grid">
+      <div class="campo"><label>Código</label><input type="text" id="mc-codigo" readonly></div>
+      <div class="campo"><label>Situação</label><select id="mc-situacao"><option>Prospect</option><option>Cliente</option></select></div>
+      <div class="campo full"><label>Nome padrão * <small style="font-weight:400;color:var(--texto2)">(como aparece nas pastas e nos nomes de arquivo — sem acento)</small></label><input type="text" id="mc-nome" placeholder="Ex.: SESC TIJUCA" oninput="this.value=this.value.toUpperCase();atualizarPastaCliente()"></div>
+      <div class="campo full"><label>Razão social / nome completo</label><input type="text" id="mc-razao"></div>
+      <div class="campo"><label>CPF / CNPJ</label><input type="text" id="mc-doc" placeholder="CNPJ 00.000.000/0000-00"></div>
+      <div class="campo"><label>Atendido por</label>
+        <div class="checks-linha" id="mc-empresas"></div>
+      </div>
+      <div class="campo full"><label>Endereço / local</label><input type="text" id="mc-endereco"></div>
+      <div class="campo full"><label>Observações</label><textarea id="mc-obs" rows="3"></textarea></div>
+    </div>
+    <div id="mc-extras" style="display:none">
+      <div class="secao">Contatos <button class="btn-sec" onclick="editarContato()">+ Contato</button></div>
+      <div id="mc-contatos"></div>
+      <div class="secao">Propostas / atendimentos</div>
+      <div id="mc-cards"></div>
+      <div class="secao">Projetos <button class="btn-sec" id="mc-btn-proj">+ Projeto</button></div>
+      <div id="mc-projetos"></div>
+      <div class="secao">Atividades</div>
+      <div id="mc-atividades"></div>
+      <div class="ativ-form">
+        <select id="mca-tipo"></select>
+        <input type="text" id="mca-desc" placeholder="O que fazer / o que aconteceu">
+        <input type="datetime-local" id="mca-data">
+        <button class="btn-sec" onclick="addAtividadeCliente()">Adicionar</button>
+      </div>
+      <div id="mc-referencias" class="dica" style="margin-top:16px"></div>
+    </div>
+    <div class="modal-btns">
+      <button class="btn-excluir" id="mc-btn-mesclar" style="display:none" onclick="abrirMesclar()">Mesclar em outro cliente</button>
+      <button class="btn-sec" id="mc-btn-codigo" style="display:none" onclick="gerarCodigoCliente()">Gerar código</button>
+      <button class="btn-sec" id="mc-btn-inativar" style="display:none" onclick="alternarAtivoCliente()">Inativar</button>
+      <button class="btn-cancelar" onclick="fecharModal('modal-cliente')">Fechar</button>
+      <button class="btn-salvar" onclick="salvarCliente()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CONTATO -->
+<div class="modal-overlay" id="modal-contato">
+  <div class="modal modal-sm">
+    <h2 id="mct-titulo">Contato</h2>
+    <div class="campo"><label>Nome *</label><input type="text" id="mct-nome"></div>
+    <div class="campo"><label>Cargo</label><input type="text" id="mct-cargo"></div>
+    <div class="campo"><label>Telefone</label><input type="text" id="mct-tel"></div>
+    <div class="campo"><label>E-mail</label><input type="email" id="mct-email"></div>
+    <div class="campo-check"><input type="checkbox" id="mct-principal"><label for="mct-principal">Contato principal</label></div>
+    <div class="modal-btns">
+      <button class="btn-excluir" id="mct-excluir" style="display:none" onclick="excluirContato()">Excluir</button>
+      <button class="btn-cancelar" onclick="fecharModal('modal-contato')">Cancelar</button>
+      <button class="btn-salvar" onclick="salvarContato()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL MESCLAR -->
+<div class="modal-overlay" id="modal-mesclar">
+  <div class="modal modal-sm">
+    <h2>Mesclar cliente</h2>
+    <p class="modal-sub">Use quando este cadastro é repetido. Os atendimentos, contatos, atividades e projetos passam para o cliente escolhido, e este cadastro fica inativo (nada é apagado).</p>
+    <div class="campo"><label>Mesclar em *</label><input type="text" id="mm-destino" list="dl-clientes" placeholder="Código ou nome do cliente correto"></div>
+    <div class="modal-btns">
+      <button class="btn-cancelar" onclick="fecharModal('modal-mesclar')">Cancelar</button>
+      <button class="btn-salvar" onclick="confirmarMesclar()">Mesclar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL PROJETO -->
+<div class="modal-overlay" id="modal-projeto">
+  <div class="modal">
+    <h2 id="mp-titulo">Novo Projeto</h2>
+    <p class="modal-sub" id="mp-sub">O código é gerado automaticamente: código do cliente + próximo número da sequência do grupo.</p>
+    <div class="form-grid">
+      <div class="campo full"><label>Cliente *</label><input type="text" id="mpj-cliente" list="dl-clientes" placeholder="Código ou nome do cliente"></div>
+      <div class="campo full"><label>Nome do projeto * <small style="font-weight:400;color:var(--texto2)">(sem acento — vira o nome da pasta)</small></label><input type="text" id="mpj-nome" oninput="this.value=this.value.toUpperCase()"></div>
+      <div class="campo"><label>Empresa executora</label><select id="mpj-empresa"></select></div>
+      <div class="campo"><label>Status</label><select id="mpj-status"><option>Em andamento</option><option>Concluído</option><option>Paralisado</option><option>Cancelado</option></select></div>
+      <div class="campo"><label>Local</label><input type="text" id="mpj-local"></div>
+      <div class="campo"><label>Ano</label><input type="number" id="mpj-ano"></div>
+      <div class="campo full"><label>Observações</label><textarea id="mpj-obs" rows="2"></textarea></div>
+      <div class="campo full" id="mpj-pasta-box" style="display:none"><label>Pasta na rede</label><input type="text" id="mpj-pasta" readonly></div>
+    </div>
+    <div class="modal-btns">
+      <button class="btn-cancelar" onclick="fecharModal('modal-projeto')">Cancelar</button>
+      <button class="btn-salvar" id="mpj-salvar" onclick="salvarProjeto()">Criar projeto</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL ATIVIDADE (avulsa) -->
+<div class="modal-overlay" id="modal-atividade">
+  <div class="modal modal-sm">
+    <h2>Nova atividade</h2>
+    <div class="campo"><label>Tipo</label><select id="ma-tipo"></select></div>
+    <div class="campo"><label>Descrição *</label><input type="text" id="ma-desc"></div>
+    <div class="campo"><label>Cliente</label><input type="text" id="ma-cliente" list="dl-clientes" placeholder="Opcional"></div>
+    <div class="campo"><label>Data / hora</label><input type="datetime-local" id="ma-data"></div>
+    <div class="campo"><label>Responsável</label><input type="text" id="ma-resp" list="dl-responsaveis"></div>
+    <div class="modal-btns">
+      <button class="btn-cancelar" onclick="fecharModal('modal-atividade')">Cancelar</button>
+      <button class="btn-salvar" onclick="salvarAtividadeAvulsa()">Salvar</button>
     </div>
   </div>
 </div>
 
 <!-- MODAL EMPRESA -->
 <div class="modal-overlay" id="modal-empresa">
-  <div class="modal">
+  <div class="modal modal-sm">
     <h2>Nova Empresa</h2>
-    <div class="form-grid" style="margin-top:20px">
-      <div class="campo full"><label>Nome *</label><input type="text" id="emp-nome" placeholder="Nome da empresa"></div>
-      <div class="campo"><label>Sigla (2-3 letras)</label><input type="text" id="emp-sigla" placeholder="Ex: VB" maxlength="5"></div>
-      <div class="campo"><label>CNPJ</label><input type="text" id="emp-cnpj" placeholder="00.000.000/0000-00"></div>
-    </div>
+    <div class="campo" style="margin-top:16px"><label>Nome *</label><input type="text" id="emp-nome"></div>
+    <div class="campo"><label>Sigla (2-3 letras)</label><input type="text" id="emp-sigla" placeholder="Ex: VB" maxlength="5"></div>
+    <div class="campo"><label>CNPJ</label><input type="text" id="emp-cnpj" placeholder="00.000.000/0000-00"></div>
     <div class="modal-btns">
       <button class="btn-cancelar" onclick="fecharModal('modal-empresa')">Cancelar</button>
       <button class="btn-salvar" onclick="salvarEmpresa()">Salvar</button>
@@ -302,29 +597,21 @@ body{font-family:'Segoe UI',sans-serif;background:var(--cinza);color:var(--texto
   </div>
 </div>
 
-<!-- MODAL CLIENTE -->
-<div class="modal-overlay" id="modal-cliente">
-  <div class="modal">
-    <h2>Novo Cliente</h2>
-    <div class="form-grid" style="margin-top:20px">
-      <div class="campo full"><label>Nome *</label><input type="text" id="ncli-nome" placeholder="Nome completo"></div>
-      <div class="campo full"><label>Empresa</label><input type="text" id="ncli-empresa" placeholder="Empresa do cliente"></div>
-      <div class="campo"><label>E-mail</label><input type="email" id="ncli-email" placeholder="email@exemplo.com"></div>
-      <div class="campo"><label>Telefone</label><input type="text" id="ncli-tel" placeholder="(21) 99999-9999"></div>
-      <div class="campo full"><label>Cargo</label><input type="text" id="ncli-cargo" placeholder="Ex: Engenheiro"></div>
-    </div>
-    <div class="modal-btns">
-      <button class="btn-cancelar" onclick="fecharModal('modal-cliente')">Cancelar</button>
-      <button class="btn-salvar" onclick="salvarCliente()">Salvar</button>
-    </div>
-  </div>
-</div>
+<datalist id="dl-clientes"></datalist>
+<datalist id="dl-responsaveis"></datalist>
+<div class="toast" id="toast"></div>
 
 <script>
 const SUPABASE_URL='https://smusenaszgkqkjjwblyi.supabase.co';
 const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNtdXNlbmFzemdrcWtqandibHlpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0MTIwNTMsImV4cCI6MjA5Nzk4ODA1M30.IU1Z9ddIUpktjHvWqrSZaEWuo4gbmZfrfmYJ_NoXbWs';
 const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
-let empresaAtual='todas',cardEditandoId=null,clienteEditandoId=null,todasEmpresas=[],itensLocais=[];
+
+/* ================= ESTADO ================= */
+let usuario=null,empresaAtual='todas',tabAtual='painel';
+let todasEmpresas=[],todosClientes=[],todosCards=[],todasAtividades=[],todosProjetos=[];
+let cardEditandoId=null,cardOriginal=null,itensLocais=[],contatosDoCliente=[];
+let clienteEditandoId=null,clienteVoltarParaCard=false,contatoEditandoId=null;
+let projetoEditandoId=null,projetoCardId=null,perdaPendente=null,migracaoOk=true;
 
 const ETAPAS=[
   {id:'entrada',label:'Entrada',cls:'col-entrada'},
@@ -337,318 +624,860 @@ const ETAPAS=[
   {id:'fechada',label:'Fechadas ✅',cls:'col-fechada'},
   {id:'perdida',label:'Perdidas ❌',cls:'col-perdida'},
 ];
+const ETAPA_LABEL=Object.fromEntries(ETAPAS.map(e=>[e.id,e.label]));
+const ABERTAS=ETAPAS.filter(e=>!['fechada','perdida'].includes(e.id)).map(e=>e.id);
+const MOTIVOS_PERDA=['Preço acima do concorrente','Cliente sem verba / orçamento','Escolheu outro fornecedor','Prazo de execução','Sem retorno do cliente','Escopo não atendido','Projeto cancelado ou adiado','Outro'];
+const TIPOS_ATIV=[['tarefa','✅ Tarefa'],['ligacao','📞 Ligação'],['email','✉️ E-mail'],['reuniao','👥 Reunião'],['visita','📍 Visita técnica'],['followup','🔁 Follow-up'],['nota','📝 Nota']];
+const TIPO_LABEL=Object.fromEntries(TIPOS_ATIV);
 
+/* ================= UTILITÁRIOS ================= */
+const $=id=>document.getElementById(id);
+function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function fmtMoeda(v){return Number(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function fmtCurto(v){v=Number(v||0);if(v>=1e6)return'R$ '+(v/1e6).toLocaleString('pt-BR',{maximumFractionDigits:1})+' mi';if(v>=1e3)return'R$ '+(v/1e3).toLocaleString('pt-BR',{maximumFractionDigits:0})+' mil';return'R$ '+fmtMoeda(v);}
+function fmtData(d){if(!d)return'';const dt=d.length===10?new Date(d+'T00:00:00'):new Date(d);return dt.toLocaleDateString('pt-BR');}
+function fmtDataHora(d){if(!d)return'';const dt=new Date(d);return dt.toLocaleDateString('pt-BR')+' '+dt.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});}
+function diasDesde(d){if(!d)return 0;return Math.floor((Date.now()-new Date(d).getTime())/86400000);}
+function semAcento(s){return String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'');}
+function norm(s){return semAcento(s).toUpperCase().replace(/[^A-Z0-9]/g,'');}
+function toast(msg){const t=$('toast');t.textContent=msg;t.classList.add('mostrar');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('mostrar'),3200);}
+function fecharModal(id){$(id).classList.remove('aberto');}
+function abrirModal(id){$(id).classList.add('aberto');}
+function erroSB(error,msg){if(error){console.error(error);alert((msg||'Erro ao salvar')+':\n'+(error.message||error));return true;}return false;}
+function localParaISO(v){return v?new Date(v).toISOString():null;}
+function rotuloCliente(c){return c?(c.codigo?c.codigo+' · ':'')+c.nome:'';}
+function acharClientePorRotulo(txt){
+  txt=(txt||'').trim();if(!txt)return null;
+  const m=txt.match(/^(C\d{3,})\b/i);
+  if(m){const c=todosClientes.find(x=>x.codigo&&x.codigo.toUpperCase()===m[1].toUpperCase()&&x.ativo!==false);if(c)return c;}
+  const n=norm(txt.replace(/^C\d+\s*·\s*/i,''));
+  return todosClientes.find(x=>x.ativo!==false&&norm(x.nome)===n)||null;
+}
+function clientePorId(id){return todosClientes.find(c=>c.id===id);}
+function empresaPorId(id){return todasEmpresas.find(e=>e.id===id);}
+function pastaCliente(c){return c&&c.codigo?`BVEK/03_CLIENTES/${c.codigo}_${semAcento(c.nome).toUpperCase()}`:'';}
+function filtraEmpresa(lista){return empresaAtual==='todas'?lista:lista.filter(x=>x.empresa_id===empresaAtual);}
+function preencherSelect(sel,opcoes,vazio){sel.innerHTML=(vazio!==undefined?`<option value="">${esc(vazio)}</option>`:'')+opcoes.map(([v,t])=>`<option value="${esc(v)}">${esc(t)}</option>`).join('');}
+
+/* ================= LOGIN ================= */
 async function fazerLogin(){
-  const email=document.getElementById('login-email').value.trim();
-  const senha=document.getElementById('login-senha').value;
-  document.getElementById('login-erro').textContent='';
+  const email=$('login-email').value.trim(),senha=$('login-senha').value;
+  $('login-erro').textContent='';
   const{error}=await sb.auth.signInWithPassword({email,password:senha});
-  if(error){document.getElementById('login-erro').textContent='E-mail ou senha incorretos.';return;}
+  if(error){$('login-erro').textContent='E-mail ou senha incorretos.';return;}
   iniciarApp();
 }
-async function sair(){await sb.auth.signOut();document.getElementById('app').style.display='none';document.getElementById('tela-login').style.display='flex';}
+async function sair(){await sb.auth.signOut();$('app').style.display='none';$('tela-login').style.display='flex';}
 async function iniciarApp(){
   const{data:{user}}=await sb.auth.getUser();
   if(!user)return;
-  document.getElementById('tela-login').style.display='none';
-  document.getElementById('app').style.display='block';
-  document.getElementById('user-nome').textContent=user.email;
-  await carregarEmpresas();
+  usuario=user;
+  $('tela-login').style.display='none';$('app').style.display='block';
+  $('user-nome').textContent=user.email;
+  preencherSelect($('card-etapa-select'),ETAPAS.map(e=>[e.id,e.label]));
+  preencherSelect($('card-motivo-perda'),MOTIVOS_PERDA.map(m=>[m,m]),'Selecione');
+  preencherSelect($('mp-motivo'),MOTIVOS_PERDA.map(m=>[m,m]),'Selecione');
+  ['ca-tipo','mca-tipo','ma-tipo'].forEach(id=>preencherSelect($(id),TIPOS_ATIV));
+  const anoAtual=new Date().getFullYear();
+  preencherSelect($('painel-ano'),[[String(anoAtual),String(anoAtual)],[String(anoAtual-1),String(anoAtual-1)],['todos','Todos os anos']]);
+  document.querySelectorAll('#tabs .tab').forEach(t=>t.onclick=()=>abrirTab(t.dataset.tab));
+  await carregarTudo();
 }
 
+/* ================= CARGA DE DADOS ================= */
+async function carregarTudo(){
+  await carregarEmpresas();
+  await Promise.all([carregarClientes(),carregarCards(),carregarAtividades(),carregarProjetos()]);
+  atualizarDatalists();
+  renderTabAtual();
+  verificarAlertas();
+}
 async function carregarEmpresas(){
   const{data}=await sb.from('empresas').select('*').eq('ativa',true).order('nome');
   todasEmpresas=data||[];
-  const sel=document.getElementById('select-empresa');
-  // manter opção "todas"
+  const sel=$('select-empresa');const atual=sel.value;
   while(sel.options.length>1)sel.remove(1);
-  todasEmpresas.forEach(e=>{
-    const opt=document.createElement('option');
-    opt.value=e.id;opt.textContent=e.nome;sel.appendChild(opt);
-  });
-  // popular select do modal
-  const selModal=document.getElementById('card-empresa-id');
-  selModal.innerHTML='<option value="">Selecione a empresa</option>';
-  todasEmpresas.forEach(e=>{
-    const opt=document.createElement('option');
-    opt.value=e.id;opt.textContent=e.nome+' ('+e.sigla+')';selModal.appendChild(opt);
-  });
-  renderizarListaEmpresas(todasEmpresas);
-  await carregarFunil();
-  await verificarAlertas();
+  todasEmpresas.forEach(e=>{const o=document.createElement('option');o.value=e.id;o.textContent=e.nome;sel.appendChild(o);});
+  sel.value=atual||'todas';
+  preencherSelect($('card-empresa-id'),todasEmpresas.map(e=>[e.id,`${e.nome} (${e.sigla})`]),'Selecione a empresa');
+  preencherSelect($('mpj-empresa'),todasEmpresas.map(e=>[e.id,`${e.nome} (${e.sigla})`]),'—');
+  renderEmpresas();
 }
+async function carregarClientes(){
+  const{data,error}=await sb.from('clientes').select('*').order('codigo',{ascending:true,nullsFirst:false}).order('nome');
+  if(error&&/codigo|ativo/.test(error.message||'')){avisarMigracao();const r=await sb.from('clientes').select('*').order('nome');todosClientes=r.data||[];return;}
+  todosClientes=data||[];
+}
+async function carregarCards(){
+  const{data,error}=await sb.from('cards').select('*,clientes(id,codigo,nome,razao_social,empresa_cliente),empresas(nome,sigla)').order('criado_em',{ascending:false});
+  if(error){console.error(error);todosCards=[];return;}
+  todosCards=data||[];
+}
+async function carregarAtividades(){
+  const{data,error}=await sb.from('atividades').select('*').order('data_prevista',{ascending:true,nullsFirst:false});
+  if(error){todasAtividades=[];if(/atividades/.test(error.message||''))avisarMigracao();return;}
+  todasAtividades=data||[];
+  const pend=todasAtividades.filter(a=>!a.concluida&&a.data_prevista&&new Date(a.data_prevista)<fimDoDia()).length;
+  $('tab-ativ-badge').innerHTML=pend?`<span class="badge badge-atraso">${pend}</span>`:'';
+}
+async function carregarProjetos(){
+  const{data,error}=await sb.from('projetos').select('*').order('seq',{ascending:false});
+  if(error){todosProjetos=[];return;}
+  todosProjetos=data||[];
+}
+function avisarMigracao(){
+  if(!migracaoOk)return;migracaoOk=false;
+  const a=$('aviso-migracao');a.style.display='block';
+  a.innerHTML='<strong>Falta atualizar o banco de dados.</strong> Esta versão do CRM precisa das tabelas novas (códigos de cliente, contatos, atividades, projetos). No Supabase, abra <em>SQL Editor → New query</em>, cole o conteúdo do arquivo <code>supabase/migracao_crm_v2.sql</code> e clique em <em>Run</em>. Depois recarregue esta página.';
+}
+function atualizarDatalists(){
+  $('dl-clientes').innerHTML=todosClientes.filter(c=>c.ativo!==false).map(c=>`<option value="${esc(rotuloCliente(c))}">`).join('');
+  const resps=[...new Set([...todosCards.map(c=>c.responsavel),...todasAtividades.map(a=>a.responsavel)].filter(Boolean).map(s=>s.trim()))].sort();
+  $('dl-responsaveis').innerHTML=resps.map(r=>`<option value="${esc(r)}">`).join('');
+  ['funil-resp','ativ-resp'].forEach(id=>{const s=$(id),v=s.value;preencherSelect(s,resps.map(r=>[r,r]),'Todos os responsáveis');s.value=v;});
+}
+function fimDoDia(){const d=new Date();d.setHours(23,59,59,999);return d;}
+function inicioDoDia(){const d=new Date();d.setHours(0,0,0,0);return d;}
 
+/* ================= NAVEGAÇÃO ================= */
+function abrirTab(tab){
+  tabAtual=tab;
+  ['painel','funil','clientes','projetos','atividades','empresas'].forEach(t=>{$('tab-'+t).style.display=t===tab?'block':'none';});
+  document.querySelectorAll('#tabs .tab').forEach(el=>el.classList.toggle('ativo',el.dataset.tab===tab));
+  renderTabAtual();
+}
+function renderTabAtual(){
+  ({painel:renderPainel,funil:renderFunil,clientes:renderClientes,projetos:renderProjetos,atividades:renderAtividades,empresas:renderEmpresas}[tabAtual]||(()=>{}))();
+}
 function trocarEmpresa(){
-  empresaAtual=document.getElementById('select-empresa').value;
-  const sel=document.getElementById('select-empresa');
-  const nomeEmp=empresaAtual==='todas'?'Todas as empresas':sel.options[sel.selectedIndex].text;
-  document.getElementById('titulo-funil').textContent='Funil de atendimentos — '+nomeEmp;
-  carregarFunil();verificarAlertas();
+  empresaAtual=$('select-empresa').value;
+  renderTabAtual();verificarAlertas();
+}
+function nomeEmpresaAtual(){if(empresaAtual==='todas')return'Todas as empresas';const e=empresaPorId(empresaAtual);return e?e.nome:'';}
+
+/* ================= PAINEL ================= */
+function renderPainel(){
+  $('titulo-painel').textContent='Painel — '+nomeEmpresaAtual();
+  const ano=$('painel-ano').value;
+  const cards=filtraEmpresa(todosCards);
+  const doAno=c=>{if(ano==='todos')return true;const d=c.data_fechamento_real||c.atualizado_em||c.criado_em;return d&&String(d).slice(0,4)===ano;};
+  const abertos=cards.filter(c=>ABERTAS.includes(c.etapa));
+  const fechados=cards.filter(c=>c.etapa==='fechada'&&doAno(c));
+  const perdidos=cards.filter(c=>c.etapa==='perdida'&&doAno(c));
+  const soma=l=>l.reduce((s,c)=>s+Number(c.valor_estimado||0),0);
+  const ponderado=abertos.reduce((s,c)=>s+Number(c.valor_estimado||0)*(c.probabilidade!=null?c.probabilidade/100:0),0);
+  const semProb=abertos.filter(c=>c.probabilidade==null).length;
+  const conv=fechados.length+perdidos.length?Math.round(100*fechados.length/(fechados.length+perdidos.length)):null;
+  const rotAno=ano==='todos'?'todos os anos':ano;
+  $('kpis').innerHTML=[
+    ['Em aberto no funil',fmtCurto(soma(abertos)),`${abertos.length} atendimento(s)`],
+    ['Previsão ponderada',fmtCurto(ponderado),semProb?`${semProb} sem chance informada`:'valor × chance de fechar'],
+    ['Fechado',fmtCurto(soma(fechados)),`${fechados.length} proposta(s) · ${rotAno}`],
+    ['Taxa de conversão',conv==null?'—':conv+'%',`${fechados.length} fechadas × ${perdidos.length} perdidas`],
+    ['Ticket médio fechado',fechados.length?fmtCurto(soma(fechados)/fechados.length):'—',rotAno],
+  ].map(([r,v,s])=>`<div class="kpi"><div class="rot">${esc(r)}</div><div class="val">${esc(v)}</div><div class="sub">${esc(s)}</div></div>`).join('');
+
+  // funil
+  const porEtapa=ABERTAS.map(id=>{const l=abertos.filter(c=>c.etapa===id);return{n:ETAPA_LABEL[id],q:l.length,v:soma(l)};});
+  const maxQ=Math.max(1,...porEtapa.map(e=>e.q));
+  $('p-funil').innerHTML=porEtapa.map(e=>`<div class="barra-linha"><span class="nome">${esc(e.n)}</span><div class="barra-trilho"><div class="barra-cheia" style="width:${100*e.q/maxQ}%"></div></div><span class="num">${e.q} · ${esc(fmtCurto(e.v))}</span></div>`).join('');
+
+  // meses
+  const meses={};
+  fechados.forEach(c=>{const d=String(c.data_fechamento_real||c.atualizado_em||'').slice(0,7);if(d)meses[d]=(meses[d]||0)+Number(c.valor_estimado||0);});
+  const chaves=Object.keys(meses).sort().slice(-12);
+  const maxM=Math.max(1,...chaves.map(k=>meses[k]));
+  const nomesMes=['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+  $('p-meses').innerHTML=chaves.length?chaves.map(k=>`<div class="barra-linha"><span class="nome">${nomesMes[+k.slice(5)-1]}/${k.slice(2,4)}</span><div class="barra-trilho"><div class="barra-cheia" style="width:${100*meses[k]/maxM}%"></div></div><span class="num">${esc(fmtCurto(meses[k]))}</span></div>`).join(''):'<p class="vazio">Nenhuma proposta fechada no período.</p>';
+
+  // atividades
+  const idsCards=new Set(cards.map(c=>c.id));
+  const ativs=todasAtividades.filter(a=>!a.concluida&&a.data_prevista&&new Date(a.data_prevista)<=fimDoDia()&&(empresaAtual==='todas'||(a.card_id&&idsCards.has(a.card_id))||!a.card_id)).slice(0,10);
+  $('p-ativ').innerHTML=ativs.length?ativs.map(a=>itemAtividadeMini(a)).join(''):'<p class="vazio">Nada atrasado nem para hoje. 👍</p>';
+
+  // parados
+  const parados=abertos.filter(c=>diasDesde(c.etapa_desde||c.atualizado_em)>15).sort((a,b)=>new Date(a.etapa_desde||a.atualizado_em)-new Date(b.etapa_desde||b.atualizado_em)).slice(0,10);
+  $('p-parados').innerHTML=parados.length?parados.map(c=>`<div class="item" data-card="${esc(c.id)}"><div><strong>${esc(c.titulo)}</strong><br><span style="color:var(--texto2)">${c.clientes?`<span class="cod">${esc(c.clientes.codigo||'')}</span> ${esc(c.clientes.nome)} · `:''}${esc(ETAPA_LABEL[c.etapa]||c.etapa)}</span></div><span class="badge badge-parado">${diasDesde(c.etapa_desde||c.atualizado_em)} dias</span></div>`).join(''):'<p class="vazio">Nenhuma proposta parada.</p>';
+
+  // perdas
+  const mot={};perdidos.forEach(c=>{const m=c.motivo_perda||'Não informado';mot[m]=(mot[m]||0)+1;});
+  const lm=Object.entries(mot).sort((a,b)=>b[1]-a[1]);const maxP=Math.max(1,...lm.map(x=>x[1]));
+  $('p-perdas').innerHTML=lm.length?lm.map(([m,q])=>`<div class="barra-linha"><span class="nome" title="${esc(m)}">${esc(m)}</span><div class="barra-trilho"><div class="barra-cheia vermelha" style="width:${100*q/maxP}%"></div></div><span class="num">${q}</span></div>`).join(''):'<p class="vazio">Nenhuma proposta perdida no período.</p>';
+
+  // clientes
+  const pc={};fechados.forEach(c=>{if(!c.clientes)return;const k=c.cliente_id;pc[k]=pc[k]||{c:c.clientes,v:0};pc[k].v+=Number(c.valor_estimado||0);});
+  const top=Object.values(pc).sort((a,b)=>b.v-a.v).slice(0,8);const maxC=Math.max(1,...top.map(x=>x.v));
+  $('p-clientes').innerHTML=top.length?top.map(x=>`<div class="barra-linha"><span class="nome" title="${esc(x.c.nome)}"><span class="cod">${esc(x.c.codigo||'')}</span> ${esc(x.c.nome)}</span><div class="barra-trilho"><div class="barra-cheia" style="width:${100*x.v/maxC}%"></div></div><span class="num">${esc(fmtCurto(x.v))}</span></div>`).join(''):'<p class="vazio">Sem fechamentos no período.</p>';
+
+  ligarCliques($('tab-painel'));
+}
+function itemAtividadeMini(a){
+  const atras=new Date(a.data_prevista)<inicioDoDia();
+  const card=a.card_id?todosCards.find(c=>c.id===a.card_id):null;
+  const cli=a.cliente_id?clientePorId(a.cliente_id):(card&&card.clientes);
+  return`<div class="item" ${a.card_id?`data-card="${esc(a.card_id)}"`:a.cliente_id?`data-cliente="${esc(a.cliente_id)}"`:''}><div>${esc(TIPO_LABEL[a.tipo]||a.tipo)} <strong>${esc(a.descricao)}</strong><br><span style="color:var(--texto2)">${cli?`<span class="cod">${esc(cli.codigo||'')}</span> ${esc(cli.nome)}`:''}${card?' · '+esc(card.titulo):''}</span></div><span class="badge ${atras?'badge-atraso':'badge-hoje'}">${atras?'atrasada':'hoje'} · ${esc(fmtData(a.data_prevista))}</span></div>`;
+}
+function ligarCliques(raiz){
+  raiz.querySelectorAll('[data-card]').forEach(el=>el.onclick=ev=>{if(ev.target.closest('input,button,select'))return;abrirModalCard(el.dataset.card);});
+  raiz.querySelectorAll('[data-cliente]').forEach(el=>el.onclick=ev=>{if(ev.target.closest('input,button,select'))return;abrirModalCliente(el.dataset.cliente);});
+  raiz.querySelectorAll('[data-projeto]').forEach(el=>el.onclick=ev=>{if(ev.target.closest('input,button,select'))return;abrirModalProjeto(el.dataset.projeto);});
 }
 
-async function carregarFunil(){
-  let query=sb.from('cards').select('*,clientes(nome,empresa_cliente),empresas(nome,sigla)').order('criado_em',{ascending:false});
-  if(empresaAtual!=='todas')query=query.eq('empresa_id',empresaAtual);
-  const{data:cards}=await query;
-  const funil=document.getElementById('funil');
-  funil.innerHTML='';
+/* ================= FUNIL ================= */
+function renderFunil(){
+  $('titulo-funil').textContent='Funil de atendimentos — '+nomeEmpresaAtual();
+  const busca=norm($('funil-busca').value);
+  const resp=$('funil-resp').value;
+  const periodo=+$('funil-periodo').value;
+  const pend={};
+  todasAtividades.filter(a=>!a.concluida&&a.card_id).forEach(a=>{if(!pend[a.card_id]||(a.data_prevista&&(!pend[a.card_id].data_prevista||a.data_prevista<pend[a.card_id].data_prevista)))pend[a.card_id]=a;});
+  let cards=filtraEmpresa(todosCards).filter(c=>{
+    if(resp&&(c.responsavel||'').trim()!==resp)return false;
+    if(periodo&&['fechada','perdida'].includes(c.etapa)&&diasDesde(c.data_fechamento_real||c.atualizado_em)>periodo)return false;
+    if(busca){const alvo=norm([c.titulo,c.numero_proposta,c.clientes&&c.clientes.nome,c.clientes&&c.clientes.codigo,c.clientes&&c.clientes.razao_social].join(' '));if(!alvo.includes(busca))return false;}
+    return true;
+  });
+  const funil=$('funil');funil.innerHTML='';
   ETAPAS.forEach(etapa=>{
-    const lista=(cards||[]).filter(c=>c.etapa===etapa.id);
+    const lista=cards.filter(c=>c.etapa===etapa.id);
+    const total=lista.reduce((s,c)=>s+Number(c.valor_estimado||0),0);
     const col=document.createElement('div');
     col.className=`coluna ${etapa.cls}`;
-    col.innerHTML=`<div class="coluna-header"><span>${etapa.label}</span><span style="background:rgba(0,0,0,.12);border-radius:20px;padding:1px 8px;font-size:11px">${lista.length}</span></div>
-    <div class="coluna-body">${lista.length===0?'<div class="coluna-vazia">Nenhum atendimento</div>':lista.map(c=>renderCard(c)).join('')}</div>`;
+    col.innerHTML=`<div class="coluna-header"><div class="linha1"><span>${esc(etapa.label)}</span><span class="contador">${lista.length}</span></div><div class="soma">${total?esc(fmtCurto(total)):'&nbsp;'}</div></div>
+      <div class="coluna-body" data-etapa="${etapa.id}">${lista.length===0?'<div class="coluna-vazia">Nenhum atendimento</div>':lista.map(c=>renderCard(c,pend[c.id])).join('')}</div>`;
     funil.appendChild(col);
   });
-  document.querySelectorAll('.card').forEach(el=>{el.onclick=()=>abrirModalCard(el.dataset.id);});
+  funil.querySelectorAll('.card').forEach(el=>{
+    el.onclick=()=>abrirModalCard(el.dataset.id);
+    el.addEventListener('dragstart',ev=>{ev.dataTransfer.setData('text/plain',el.dataset.id);ev.dataTransfer.effectAllowed='move';el.classList.add('arrastando');});
+    el.addEventListener('dragend',()=>el.classList.remove('arrastando'));
+  });
+  funil.querySelectorAll('.coluna-body').forEach(body=>{
+    body.addEventListener('dragover',ev=>{ev.preventDefault();body.classList.add('drag-sobre');});
+    body.addEventListener('dragleave',()=>body.classList.remove('drag-sobre'));
+    body.addEventListener('drop',ev=>{ev.preventDefault();body.classList.remove('drag-sobre');const id=ev.dataTransfer.getData('text/plain');if(id)moverCard(id,body.dataset.etapa);});
+  });
 }
-
-function renderCard(c){
-  const cliente=c.clientes?(c.clientes.empresa_cliente||c.clientes.nome):'—';
-  const valor=c.valor_estimado?'R$ '+Number(c.valor_estimado).toLocaleString('pt-BR',{minimumFractionDigits:2}):'';
-  const data=c.data_fechamento_prevista?new Date(c.data_fechamento_prevista+'T00:00:00').toLocaleDateString('pt-BR'):'';
+function renderCard(c,prox){
+  const cli=c.clientes;
   const sigla=c.empresas?c.empresas.sigla:'?';
-  const num=c.numero_proposta?`<div class="card-numero">${c.numero_proposta}${c.versao>1?' · V'+c.versao:''}</div>`:'';
-  return`<div class="card" data-id="${c.id}">
-    <span class="card-empresa-tag tag-${sigla}">${sigla} · ${c.empresas?c.empresas.nome:''}</span>
-    ${c.recorrente?'<span class="badge badge-rec">🔄 Recorrente</span>':''}
+  const num=c.numero_proposta?`<div class="card-numero">${esc(c.numero_proposta)}${c.versao>1?' · V'+esc(c.versao):''}</div>`:'';
+  const dias=diasDesde(c.etapa_desde||c.atualizado_em);
+  const aberto=ABERTAS.includes(c.etapa);
+  let badges='';
+  if(c.recorrente)badges+='<span class="badge badge-rec">🔄 Recorrente</span>';
+  if(prox&&prox.data_prevista){const atras=new Date(prox.data_prevista)<inicioDoDia();const hoje=!atras&&new Date(prox.data_prevista)<=fimDoDia();badges+=`<span class="badge ${atras?'badge-atraso':hoje?'badge-hoje':'badge-cinza'}" title="${esc(prox.descricao)}">⏰ ${esc(fmtData(prox.data_prevista))}</span>`;}
+  else if(aberto&&!prox)badges+='<span class="badge badge-cinza" title="Nenhuma próxima atividade agendada">sem próximo passo</span>';
+  if(aberto&&dias>15)badges+=`<span class="badge badge-parado">${dias}d na etapa</span>`;
+  if(c.etapa==='perdida'&&c.motivo_perda)badges+=`<span class="badge badge-atraso">${esc(c.motivo_perda)}</span>`;
+  return`<div class="card" draggable="true" data-id="${esc(c.id)}">
+    <span class="card-empresa-tag tag-${esc(sigla)}">${esc(sigla)}</span>
     ${num}
-    <div class="card-titulo">${c.titulo}</div>
-    <div class="card-cliente">${cliente}</div>
-    ${valor?`<div class="card-valor">${valor}</div>`:''}
-    ${data?`<div class="card-data">📅 ${data}</div>`:''}
+    <div class="card-titulo">${esc(c.titulo)}</div>
+    <div class="card-cliente">${cli?`<span class="cod">${esc(cli.codigo||'s/ código')}</span> ${esc(cli.nome)}`:'—'}</div>
+    ${c.valor_estimado?`<div class="card-valor">R$ ${esc(fmtMoeda(c.valor_estimado))}${c.probabilidade!=null&&aberto?` <span style="color:var(--texto2);font-weight:400">· ${esc(c.probabilidade)}%</span>`:''}</div>`:''}
+    <div class="card-rodape">${badges}${c.responsavel?`<span>👤 ${esc(c.responsavel)}</span>`:''}</div>
   </div>`;
 }
-
-async function gerarNumeroProposta(empresaId){
-  const agora=new Date();
-  const mes=agora.getMonth()+1;
-  const ano=agora.getFullYear();
-  const emp=todasEmpresas.find(e=>e.id===empresaId);
-  if(!emp)return null;
-  // Buscar ou criar sequência
-  let{data:seq}=await sb.from('sequencia_propostas').select('*').eq('empresa_id',empresaId).eq('mes',mes).eq('ano',ano).single();
-  if(!seq){
-    const{data:novo}=await sb.from('sequencia_propostas').insert({empresa_id:empresaId,mes,ano,ultimo_numero:1}).select().single();
-    seq=novo;
-  } else {
-    const novoNum=seq.ultimo_numero+1;
-    await sb.from('sequencia_propostas').update({ultimo_numero:novoNum}).eq('id',seq.id);
-    seq.ultimo_numero=novoNum;
-  }
-  const num=String(seq.ultimo_numero).padStart(3,'0');
-  const mesStr=String(mes).padStart(2,'0');
-  return`${emp.sigla}${num}-${mesStr}${String(ano).slice(2)}`;
+async function moverCard(id,etapa){
+  const c=todosCards.find(x=>x.id===id);
+  if(!c||c.etapa===etapa)return;
+  if(etapa==='perdida'){perdaPendente=id;$('perda-titulo').textContent=c.titulo;$('mp-motivo').value='';$('mp-detalhe').value='';abrirModal('modal-perda');return;}
+  const{error}=await sb.from('cards').update({etapa,atualizado_em:new Date().toISOString()}).eq('id',id);
+  if(erroSB(error,'Não foi possível mover'))return;
+  await carregarCards();renderFunil();
+  toast(`Movido para ${ETAPA_LABEL[etapa]}`);
+  if(etapa==='fechada'&&!c.projeto_id&&confirm('Proposta fechada! 🎉\nDeseja já criar o projeto (código C###-NNNN) para este atendimento?'))abrirModalProjeto(null,id);
+}
+async function confirmarPerda(){
+  const motivo=$('mp-motivo').value;
+  if(!motivo){alert('Escolha o motivo da perda.');return;}
+  const{error}=await sb.from('cards').update({etapa:'perdida',motivo_perda:motivo,motivo_perda_detalhe:$('mp-detalhe').value||null,atualizado_em:new Date().toISOString()}).eq('id',perdaPendente);
+  if(erroSB(error))return;
+  fecharModal('modal-perda');await carregarCards();renderTabAtual();toast('Marcada como perdida');
 }
 
+/* ================= NÚMERO DA PROPOSTA ================= */
+async function gerarNumeroProposta(empresaId){
+  const{data,error}=await sb.rpc('gerar_numero_proposta',{p_empresa:empresaId});
+  if(!error&&data)return data;
+  // reserva (caso a função do banco ainda não exista)
+  const agora=new Date(),mes=agora.getMonth()+1,ano=agora.getFullYear();
+  const emp=empresaPorId(empresaId);if(!emp)return null;
+  let{data:seq}=await sb.from('sequencia_propostas').select('*').eq('empresa_id',empresaId).eq('mes',mes).eq('ano',ano).maybeSingle();
+  if(!seq){const{data:novo}=await sb.from('sequencia_propostas').insert({empresa_id:empresaId,mes,ano,ultimo_numero:1}).select().single();seq=novo;}
+  else{const n=seq.ultimo_numero+1;await sb.from('sequencia_propostas').update({ultimo_numero:n}).eq('id',seq.id);seq.ultimo_numero=n;}
+  return`${emp.sigla}${String(seq.ultimo_numero).padStart(3,'0')}-${String(mes).padStart(2,'0')}${String(ano).slice(2)}`;
+}
+
+/* ================= MODAL ATENDIMENTO ================= */
 async function abrirModalCard(id=null){
-  cardEditandoId=id;clienteEditandoId=null;itensLocais=[];
-  ['cli-nome','cli-empresa-nome','cli-tel','cli-email-campo','cli-cargo','card-titulo','card-responsavel','card-valor','card-fechamento','card-prazo','card-escopo','card-pagamento','card-obs','card-nota1','card-nota2','card-dias'].forEach(i=>{const el=document.getElementById(i);if(el)el.value='';});
-  document.getElementById('card-validade').value='30';
-  document.getElementById('card-pct-mao').value='30';
-  document.getElementById('card-pct-ins').value='70';
-  document.getElementById('card-recorrente').checked=false;
-  document.getElementById('campo-recorrencia').style.display='none';
-  document.getElementById('btn-excluir').style.display='none';
-  document.getElementById('btn-versao').style.display='none';
-  document.getElementById('btn-pdf').style.display='none';
-  document.getElementById('etapa-box').style.display='none';
-  document.getElementById('numero-box').style.display='none';
+  cardEditandoId=id;cardOriginal=null;itensLocais=[];contatosDoCliente=[];
+  ['card-cliente','card-titulo','card-responsavel','card-valor','card-fechamento','card-prazo','card-escopo','card-pagamento','card-obs','card-nota1','card-nota2','card-dias','nct-nome','nct-cargo','nct-tel','nct-email','card-motivo-detalhe','ca-desc','ca-data'].forEach(i=>{$(i).value='';});
+  $('card-validade').value='30';$('card-pct-mao').value='30';$('card-pct-ins').value='70';
+  $('card-prob').value='';$('card-origem').value='';$('card-motivo-perda').value='';
+  $('card-recorrente').checked=false;$('campo-recorrencia').style.display='none';
+  ['btn-excluir','btn-versao','btn-pdf','btn-projeto'].forEach(b=>$(b).style.display='none');
+  $('etapa-box').style.display='none';$('numero-box').style.display='none';$('perda-box').style.display='none';
+  $('card-extras').style.display='none';$('novo-contato-box').style.display='none';
+  $('card-cliente-info').textContent='';
+  preencherSelect($('card-contato'),[],'— escolha o cliente primeiro —');
   renderItens();
   if(id){
-    document.getElementById('modal-titulo').textContent='Editar Atendimento';
-    document.getElementById('btn-excluir').style.display='inline-block';
-    document.getElementById('btn-versao').style.display='inline-block';
-    document.getElementById('btn-pdf').style.display='inline-block';
-    document.getElementById('etapa-box').style.display='flex';
-    const{data:card}=await sb.from('cards').select('*,clientes(*)').eq('id',id).single();
-    if(card){
-      if(card.numero_proposta){
-        document.getElementById('numero-box').style.display='flex';
-        document.getElementById('numero-display').textContent=card.numero_proposta+'.V'+card.versao;
-      }
-      document.getElementById('card-etapa-select').value=card.etapa||'entrada';
-      document.getElementById('card-empresa-id').value=card.empresa_id||'';
-      document.getElementById('card-titulo').value=card.titulo||'';
-      document.getElementById('card-responsavel').value=card.responsavel||'';
-      document.getElementById('card-valor').value=card.valor_estimado||'';
-      document.getElementById('card-fechamento').value=card.data_fechamento_prevista||'';
-      document.getElementById('card-prazo').value=card.prazo_execucao_meses||'';
-      document.getElementById('card-validade').value=card.validade_proposta_dias||30;
-      document.getElementById('card-escopo').value=card.escopo||'';
-      document.getElementById('card-pagamento').value=card.forma_pagamento||'';
-      document.getElementById('card-pct-mao').value=card.percentual_mao_obra||30;
-      document.getElementById('card-pct-ins').value=card.percentual_insumos||70;
-      document.getElementById('card-obs').value=card.observacoes||'';
-      document.getElementById('card-nota1').value=card.nota1||'';
-      document.getElementById('card-nota2').value=card.nota2||'';
-      document.getElementById('card-recorrente').checked=card.recorrente||false;
-      document.getElementById('card-dias').value=card.dias_recorrencia||'';
-      document.getElementById('campo-recorrencia').style.display=card.recorrente?'block':'none';
-      if(card.clientes){
-        clienteEditandoId=card.cliente_id;
-        document.getElementById('cli-nome').value=card.clientes.nome||'';
-        document.getElementById('cli-empresa-nome').value=card.clientes.empresa_cliente||'';
-        document.getElementById('cli-tel').value=card.clientes.telefone||'';
-        document.getElementById('cli-email-campo').value=card.clientes.email||'';
-        document.getElementById('cli-cargo').value=card.clientes.cargo||'';
-      }
-      // carregar itens
-      const{data:itens}=await sb.from('itens_proposta').select('*').eq('card_id',id).order('ordem');
-      itensLocais=(itens||[]).map(i=>({...i}));
-      renderItens();
-    }
-  } else {
-    document.getElementById('modal-titulo').textContent='Novo Atendimento';
-    if(empresaAtual!=='todas')document.getElementById('card-empresa-id').value=empresaAtual;
+    const{data:card,error}=await sb.from('cards').select('*,clientes(*)').eq('id',id).single();
+    if(erroSB(error,'Não foi possível abrir'))return;
+    cardOriginal=card;
+    $('modal-titulo').textContent='Editar Atendimento';
+    ['btn-excluir','btn-versao','btn-pdf'].forEach(b=>$(b).style.display='inline-block');
+    $('etapa-box').style.display='flex';$('card-extras').style.display='block';
+    if(card.numero_proposta){$('numero-box').style.display='flex';$('numero-display').textContent=card.numero_proposta+'.V'+(card.versao||1);}
+    const proj=card.projeto_id?todosProjetos.find(p=>p.id===card.projeto_id):null;
+    $('projeto-display').innerHTML=proj?`Projeto <span class="cod">${esc(proj.codigo)}</span>`:'';
+    if(proj){$('numero-box').style.display='flex';}
+    $('btn-projeto').style.display=(card.etapa==='fechada'&&!card.projeto_id)?'inline-block':'none';
+    $('card-etapa-select').value=card.etapa||'entrada';
+    $('etapa-desde').textContent=card.etapa_desde?`(desde ${fmtData(card.etapa_desde)})`:'';
+    $('card-motivo-perda').value=card.motivo_perda||'';$('card-motivo-detalhe').value=card.motivo_perda_detalhe||'';
+    $('perda-box').style.display=card.etapa==='perdida'?'block':'none';
+    $('card-empresa-id').value=card.empresa_id||'';
+    $('card-titulo').value=card.titulo||'';
+    $('card-responsavel').value=card.responsavel||'';
+    $('card-valor').value=card.valor_estimado??'';
+    $('card-prob').value=card.probabilidade??'';
+    $('card-origem').value=card.origem||'';
+    $('card-fechamento').value=card.data_fechamento_prevista||'';
+    $('card-prazo').value=card.prazo_execucao_meses||'';
+    $('card-validade').value=card.validade_proposta_dias||30;
+    $('card-escopo').value=card.escopo||'';
+    $('card-pagamento').value=card.forma_pagamento||'';
+    $('card-pct-mao').value=card.percentual_mao_obra??30;
+    $('card-pct-ins').value=card.percentual_insumos??70;
+    $('card-obs').value=card.observacoes||'';
+    $('card-nota1').value=card.nota1||'';$('card-nota2').value=card.nota2||'';
+    $('card-recorrente').checked=!!card.recorrente;$('card-dias').value=card.dias_recorrencia||'';
+    $('campo-recorrencia').style.display=card.recorrente?'block':'none';
+    if(card.clientes){$('card-cliente').value=rotuloCliente(card.clientes);await carregarContatosCard(card.cliente_id,card.contato_id);}
+    const{data:itens}=await sb.from('itens_proposta').select('*').eq('card_id',id).order('ordem');
+    itensLocais=(itens||[]).map(i=>({...i}));
+    renderItens(false);
+    renderAtividadesCard();
+    carregarHistorico(id);
+    carregarVersoes(card);
+  }else{
+    $('modal-titulo').textContent='Novo Atendimento';
+    if(empresaAtual!=='todas')$('card-empresa-id').value=empresaAtual;
+    if(usuario)$('card-responsavel').value='';
   }
-  document.getElementById('modal-card').classList.add('aberto');
+  abrirModal('modal-card');
 }
+function mudouEtapaModal(){
+  const e=$('card-etapa-select').value;
+  $('perda-box').style.display=e==='perdida'?'block':'none';
+}
+async function clienteEscolhidoNoCard(){
+  const c=acharClientePorRotulo($('card-cliente').value);
+  if(!c){$('card-cliente-info').textContent=$('card-cliente').value?'Cliente não encontrado — escolha da lista ou cadastre um novo.':'';preencherSelect($('card-contato'),[],'— escolha o cliente primeiro —');contatosDoCliente=[];return;}
+  if($('card-contato').dataset.cliente===c.id)return;
+  $('card-cliente-info').textContent=[c.razao_social,c.documento].filter(Boolean).join(' · ');
+  await carregarContatosCard(c.id,null);
+}
+async function carregarContatosCard(clienteId,contatoId){
+  const{data}=await sb.from('contatos').select('*').eq('cliente_id',clienteId).order('principal',{ascending:false}).order('nome');
+  contatosDoCliente=data||[];
+  const sel=$('card-contato');sel.dataset.cliente=clienteId;
+  sel.innerHTML='<option value="">— sem contato —</option>'+contatosDoCliente.map(ct=>`<option value="${esc(ct.id)}">${esc(ct.nome)}${ct.cargo?' — '+esc(ct.cargo):''}</option>`).join('')+'<option value="__novo">+ Novo contato…</option>';
+  sel.value=contatoId||(contatosDoCliente.find(c=>c.principal)||{}).id||'';
+  toggleNovoContato();
+}
+function toggleNovoContato(){$('novo-contato-box').style.display=$('card-contato').value==='__novo'?'block':'none';}
+function toggleRecorrente(){$('campo-recorrencia').style.display=$('card-recorrente').checked?'block':'none';}
 
-// ITENS
-function renderItens(){
-  const tbody=document.getElementById('itens-body');
-  tbody.innerHTML='';
+/* itens */
+function renderItens(sincronizar=true){
+  const tbody=$('itens-body');tbody.innerHTML='';
   itensLocais.forEach((item,idx)=>{
     const tr=document.createElement('tr');
     tr.innerHTML=`
-      <td><input value="${item.item||''}" onchange="itensLocais[${idx}].item=this.value" placeholder="1.1"></td>
-      <td><input value="${item.codigo||''}" onchange="itensLocais[${idx}].codigo=this.value" placeholder="00001"></td>
-      <td><input value="${item.descricao||''}" onchange="itensLocais[${idx}].descricao=this.value;calcLinha(${idx})" placeholder="Descrição do serviço"></td>
-      <td><input value="${item.unidade||''}" onchange="itensLocais[${idx}].unidade=this.value" placeholder="m²"></td>
-      <td><input type="number" value="${item.quantidade||''}" onchange="itensLocais[${idx}].quantidade=parseFloat(this.value)||0;calcLinha(${idx})" placeholder="0"></td>
-      <td><input type="number" value="${item.valor_unitario||''}" onchange="itensLocais[${idx}].valor_unitario=parseFloat(this.value)||0;calcLinha(${idx})" placeholder="0,00"></td>
-      <td style="font-weight:600;color:var(--verde)">${fmtMoeda(item.valor_total||0)}</td>
-      <td><button class="btn-rm-item" onclick="rmItem(${idx})">×</button></td>`;
+      <td><input value="${esc(item.item)}" data-k="item" placeholder="1.1"></td>
+      <td><input value="${esc(item.codigo)}" data-k="codigo" placeholder="00001"></td>
+      <td><input value="${esc(item.descricao)}" data-k="descricao" placeholder="Descrição do serviço"></td>
+      <td><input value="${esc(item.unidade)}" data-k="unidade" placeholder="m²"></td>
+      <td><input type="number" step="any" value="${esc(item.quantidade||'')}" data-k="quantidade" data-n="1" placeholder="0"></td>
+      <td><input type="number" step="0.01" value="${esc(item.valor_unitario||'')}" data-k="valor_unitario" data-n="1" placeholder="0,00"></td>
+      <td style="font-weight:600;color:var(--verde)" class="tot">${fmtMoeda(item.valor_total||0)}</td>
+      <td><button class="btn-rm-item" title="Remover">×</button></td>`;
+    tr.querySelectorAll('input').forEach(inp=>inp.oninput=()=>{
+      const k=inp.dataset.k;item[k]=inp.dataset.n?(parseFloat(inp.value)||0):inp.value;
+      if(inp.dataset.n){item.valor_total=(item.quantidade||0)*(item.valor_unitario||0);tr.querySelector('.tot').textContent=fmtMoeda(item.valor_total);atualizarTotal(true);}
+    });
+    tr.querySelector('.btn-rm-item').onclick=()=>{itensLocais.splice(idx,1);renderItens();};
     tbody.appendChild(tr);
   });
-  atualizarTotal();
+  atualizarTotal(sincronizar);
 }
-function calcLinha(idx){
-  const i=itensLocais[idx];
-  i.valor_total=(i.quantidade||0)*(i.valor_unitario||0);
-  renderItens();
-}
-function addItem(){itensLocais.push({item:'',codigo:'',descricao:'',unidade:'',quantidade:0,valor_unitario:0,valor_total:0,ordem:itensLocais.length});renderItens();}
-function rmItem(idx){itensLocais.splice(idx,1);renderItens();}
-function atualizarTotal(){
+function addItem(){itensLocais.push({item:String(itensLocais.length+1),codigo:'',descricao:'',unidade:'',quantidade:0,valor_unitario:0,valor_total:0});renderItens(false);}
+function atualizarTotal(sincronizar){
   const total=itensLocais.reduce((s,i)=>s+(i.valor_total||0),0);
-  document.getElementById('total-geral').textContent=fmtMoeda(total);
-  // sincronizar campo valor
-  if(total>0)document.getElementById('card-valor').value=total.toFixed(2);
+  $('total-geral').textContent=fmtMoeda(total);
+  if(sincronizar&&total>0)$('card-valor').value=total.toFixed(2);
 }
-function fmtMoeda(v){return Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2});}
-
-async function salvarEtapa(){
-  if(!cardEditandoId)return;
-  await sb.from('cards').update({etapa:document.getElementById('card-etapa-select').value,atualizado_em:new Date().toISOString()}).eq('id',cardEditandoId);
-  await carregarFunil();
-}
-
-function toggleRecorrente(){document.getElementById('campo-recorrencia').style.display=document.getElementById('card-recorrente').checked?'block':'none';}
 
 async function salvarCard(){
-  const nomeCliente=document.getElementById('cli-nome').value.trim();
-  const titulo=document.getElementById('card-titulo').value.trim();
-  const empId=document.getElementById('card-empresa-id').value;
-  if(!nomeCliente){alert('Informe o nome do contato.');return;}
-  if(!titulo){alert('Informe o título.');return;}
+  const titulo=$('card-titulo').value.trim(),empId=$('card-empresa-id').value;
+  const cli=acharClientePorRotulo($('card-cliente').value);
   if(!empId){alert('Selecione a empresa responsável.');return;}
-
-  let clienteId=clienteEditandoId;
-  const dadosCli={empresa_id:empId,nome:nomeCliente,empresa_cliente:document.getElementById('cli-empresa-nome').value,telefone:document.getElementById('cli-tel').value,email:document.getElementById('cli-email-campo').value,cargo:document.getElementById('cli-cargo').value};
-  if(clienteId){await sb.from('clientes').update(dadosCli).eq('id',clienteId);}
-  else{const{data:nc}=await sb.from('clientes').insert(dadosCli).select().single();clienteId=nc?.id;}
-
-  let numProposta=null;
-  if(!cardEditandoId){numProposta=await gerarNumeroProposta(empId);}
-
-  const dadosCard={
-    empresa_id:empId,cliente_id:clienteId,titulo,
-    responsavel:document.getElementById('card-responsavel').value,
-    valor_estimado:document.getElementById('card-valor').value||null,
-    data_fechamento_prevista:document.getElementById('card-fechamento').value||null,
-    escopo:document.getElementById('card-escopo').value,
-    prazo_execucao_meses:document.getElementById('card-prazo').value||null,
-    validade_proposta_dias:document.getElementById('card-validade').value||30,
-    forma_pagamento:document.getElementById('card-pagamento').value,
-    percentual_mao_obra:document.getElementById('card-pct-mao').value||30,
-    percentual_insumos:document.getElementById('card-pct-ins').value||70,
-    observacoes:document.getElementById('card-obs').value,
-    nota1:document.getElementById('card-nota1').value,
-    nota2:document.getElementById('card-nota2').value,
-    recorrente:document.getElementById('card-recorrente').checked,
-    dias_recorrencia:document.getElementById('card-dias').value||null,
-    etapa:cardEditandoId?document.getElementById('card-etapa-select').value:'entrada',
-    atualizado_em:new Date().toISOString(),
-  };
-  if(numProposta)dadosCard.numero_proposta=numProposta;
-  if(!cardEditandoId)dadosCard.versao=1;
-
-  let savedId=cardEditandoId;
-  if(cardEditandoId){await sb.from('cards').update(dadosCard).eq('id',cardEditandoId);}
-  else{const{data:nc}=await sb.from('cards').insert(dadosCard).select().single();savedId=nc?.id;}
-
-  // salvar itens
-  if(savedId){
-    await sb.from('itens_proposta').delete().eq('card_id',savedId);
-    if(itensLocais.length>0){
-      await sb.from('itens_proposta').insert(itensLocais.map((i,idx)=>({...i,card_id:savedId,ordem:idx,id:undefined})));
+  if(!cli){alert('Escolha o cliente da lista (digite o código ou o nome) ou cadastre um cliente novo.');return;}
+  if(!titulo){alert('Informe o título da proposta.');return;}
+  let etapa=cardEditandoId?$('card-etapa-select').value:'entrada';
+  if(etapa==='perdida'&&!$('card-motivo-perda').value){alert('Informe o motivo da perda.');return;}
+  const btn=$('btn-salvar-card');btn.disabled=true;
+  try{
+    let contatoId=$('card-contato').value||null;
+    if(contatoId==='__novo'){
+      const nome=$('nct-nome').value.trim();
+      if(!nome){alert('Informe o nome do novo contato.');return;}
+      const{data:nc,error}=await sb.from('contatos').insert({cliente_id:cli.id,nome,cargo:$('nct-cargo').value||null,telefone:$('nct-tel').value||null,email:$('nct-email').value||null,principal:contatosDoCliente.length===0}).select().single();
+      if(erroSB(error,'Erro ao salvar o contato'))return;
+      contatoId=nc.id;
     }
-  }
-  fecharModal('modal-card');await carregarFunil();await verificarAlertas();
+    const dados={
+      empresa_id:empId,cliente_id:cli.id,contato_id:contatoId,titulo,
+      responsavel:$('card-responsavel').value.trim()||null,
+      valor_estimado:$('card-valor').value||null,
+      probabilidade:$('card-prob').value===''?null:+$('card-prob').value,
+      origem:$('card-origem').value||null,
+      data_fechamento_prevista:$('card-fechamento').value||null,
+      escopo:$('card-escopo').value,
+      prazo_execucao_meses:$('card-prazo').value||null,
+      validade_proposta_dias:$('card-validade').value||30,
+      forma_pagamento:$('card-pagamento').value,
+      percentual_mao_obra:$('card-pct-mao').value||30,
+      percentual_insumos:$('card-pct-ins').value||70,
+      observacoes:$('card-obs').value,
+      nota1:$('card-nota1').value,nota2:$('card-nota2').value,
+      recorrente:$('card-recorrente').checked,
+      dias_recorrencia:$('card-dias').value||null,
+      etapa,
+      motivo_perda:etapa==='perdida'?$('card-motivo-perda').value:null,
+      motivo_perda_detalhe:etapa==='perdida'?($('card-motivo-detalhe').value||null):null,
+      atualizado_em:new Date().toISOString(),
+    };
+    let savedId=cardEditandoId;
+    if(cardEditandoId){
+      const{error}=await sb.from('cards').update(dados).eq('id',cardEditandoId);
+      if(erroSB(error))return;
+    }else{
+      dados.numero_proposta=await gerarNumeroProposta(empId);dados.versao=1;
+      const{data:nc,error}=await sb.from('cards').insert(dados).select().single();
+      if(erroSB(error))return;
+      savedId=nc.id;
+    }
+    await sb.from('itens_proposta').delete().eq('card_id',savedId);
+    if(itensLocais.length){
+      const{error}=await sb.from('itens_proposta').insert(itensLocais.map((i,idx)=>({card_id:savedId,ordem:idx,item:i.item||'',codigo:i.codigo||'',descricao:i.descricao||'',unidade:i.unidade||'',quantidade:i.quantidade||0,valor_unitario:i.valor_unitario||0,valor_total:i.valor_total||0})));
+      if(erroSB(error,'Erro ao salvar os itens'))return;
+    }
+    const virouFechada=etapa==='fechada'&&cardOriginal&&cardOriginal.etapa!=='fechada'&&!cardOriginal.projeto_id;
+    fecharModal('modal-card');
+    await carregarCards();atualizarDatalists();renderTabAtual();verificarAlertas();
+    toast('Atendimento salvo');
+    if(virouFechada&&confirm('Proposta fechada! 🎉\nDeseja já criar o projeto (código C###-NNNN)?'))abrirModalProjeto(null,savedId);
+  }finally{btn.disabled=false;}
 }
 
 async function criarNovaVersao(){
   if(!cardEditandoId)return;
-  const{data:original}=await sb.from('cards').select('*').eq('id',cardEditandoId).single();
-  if(!original)return;
-  const novaVersao=(original.versao||1)+1;
-  const{data:nova}=await sb.from('cards').insert({
-    ...original,id:undefined,versao:novaVersao,
-    card_pai_id:original.card_pai_id||original.id,
-    etapa:'elaboracao',atualizado_em:new Date().toISOString(),criado_em:undefined
-  }).select().single();
-  // copiar itens
+  const{data:o}=await sb.from('cards').select('*').eq('id',cardEditandoId).single();
+  if(!o)return;
+  const raiz=o.card_pai_id||o.id;
+  const{data:irmas}=await sb.from('cards').select('versao').or(`id.eq.${raiz},card_pai_id.eq.${raiz}`);
+  const novaVersao=Math.max(o.versao||1,...(irmas||[]).map(x=>x.versao||1))+1;
+  const copia={...o};
+  ['id','criado_em','etapa_desde','data_fechamento_real','projeto_id','clientes','empresas'].forEach(k=>delete copia[k]);
+  Object.assign(copia,{versao:novaVersao,card_pai_id:raiz,etapa:'elaboracao',motivo_perda:null,motivo_perda_detalhe:null,atualizado_em:new Date().toISOString()});
+  const{data:nova,error}=await sb.from('cards').insert(copia).select().single();
+  if(erroSB(error))return;
   const{data:itens}=await sb.from('itens_proposta').select('*').eq('card_id',cardEditandoId);
-  if(itens&&itens.length>0){
-    await sb.from('itens_proposta').insert(itens.map(i=>({...i,id:undefined,card_id:nova.id})));
-  }
-  fecharModal('modal-card');
-  await carregarFunil();
-  alert(`Nova versão criada: ${original.numero_proposta}.V${novaVersao}`);
-  setTimeout(()=>abrirModalCard(nova.id),300);
+  if(itens&&itens.length)await sb.from('itens_proposta').insert(itens.map(i=>{const x={...i,card_id:nova.id};delete x.id;return x;}));
+  fecharModal('modal-card');await carregarCards();renderTabAtual();
+  toast(`Nova versão criada: ${o.numero_proposta}.V${novaVersao}`);
+  setTimeout(()=>abrirModalCard(nova.id),250);
 }
-
 async function excluirCard(){
-  if(!confirm('Excluir este atendimento?'))return;
+  if(!confirm('Excluir este atendimento? Esta ação não pode ser desfeita.'))return;
   await sb.from('itens_proposta').delete().eq('card_id',cardEditandoId);
-  await sb.from('cards').delete().eq('id',cardEditandoId);
-  fecharModal('modal-card');carregarFunil();
+  const{error}=await sb.from('cards').delete().eq('id',cardEditandoId);
+  if(erroSB(error,'Não foi possível excluir'))return;
+  fecharModal('modal-card');await Promise.all([carregarCards(),carregarAtividades()]);renderTabAtual();
+}
+async function carregarHistorico(id){
+  const{data,error}=await sb.from('historico_etapas').select('*').eq('card_id',id).order('criado_em');
+  if(error||!data||!data.length){$('card-historico').innerHTML='<div>Sem histórico registrado (o histórico começa a ser gravado após a atualização do banco).</div>';return;}
+  $('card-historico').innerHTML=data.map(h=>`<div>${esc(fmtDataHora(h.criado_em))} — ${h.etapa_de?esc(ETAPA_LABEL[h.etapa_de]||h.etapa_de)+' → ':'Criado em '}<strong>${esc(ETAPA_LABEL[h.etapa_para]||h.etapa_para)}</strong>${h.usuario?' · '+esc(h.usuario):''}</div>`).join('');
+}
+async function carregarVersoes(card){
+  const raiz=card.card_pai_id||card.id;
+  const{data}=await sb.from('cards').select('id,versao,etapa,valor_estimado,atualizado_em').or(`id.eq.${raiz},card_pai_id.eq.${raiz}`).order('versao');
+  if(!data||data.length<2){$('card-versoes-box').style.display='none';return;}
+  $('card-versoes-box').style.display='block';
+  $('card-versoes').innerHTML='<div class="sub-lista">'+data.map(v=>`<div class="sub-item clicavel" data-v="${esc(v.id)}"><span><strong>V${esc(v.versao||1)}</strong> ${v.id===card.id?'(esta)':''} · ${esc(ETAPA_LABEL[v.etapa]||v.etapa)}</span><span>R$ ${esc(fmtMoeda(v.valor_estimado))}</span></div>`).join('')+'</div>';
+  $('card-versoes').querySelectorAll('[data-v]').forEach(el=>el.onclick=()=>{if(el.dataset.v!==card.id)abrirModalCard(el.dataset.v);});
 }
 
-// GERAR PDF
+/* ================= ATIVIDADES ================= */
+function htmlAtividade(a,mostrarContexto){
+  const atras=!a.concluida&&a.data_prevista&&new Date(a.data_prevista)<inicioDoDia();
+  const hoje=!a.concluida&&!atras&&a.data_prevista&&new Date(a.data_prevista)<=fimDoDia();
+  const card=a.card_id?todosCards.find(c=>c.id===a.card_id):null;
+  const cli=a.cliente_id?clientePorId(a.cliente_id):(card&&card.clientes);
+  const ctx=mostrarContexto?`<div style="color:var(--texto2);font-size:12px;margin-top:2px">${cli?`<span class="cod">${esc(cli.codigo||'')}</span> ${esc(cli.nome)}`:''}${card?' · '+esc(card.titulo):''}</div>`:'';
+  return`<div class="sub-item ${a.concluida?'ativ-feita':''} ${mostrarContexto&&(a.card_id||a.cliente_id)?'clicavel':''}" ${mostrarContexto?(a.card_id?`data-card="${esc(a.card_id)}"`:a.cliente_id?`data-cliente="${esc(a.cliente_id)}"`:''):''}>
+    <div style="display:flex;gap:10px;align-items:flex-start">
+      <input type="checkbox" ${a.concluida?'checked':''} data-concluir="${esc(a.id)}" style="width:17px;height:17px;margin-top:2px;accent-color:var(--verde)" title="Marcar como feita">
+      <div><span class="ativ-desc">${esc(TIPO_LABEL[a.tipo]||a.tipo)} ${esc(a.descricao)}</span>${ctx}</div>
+    </div>
+    <div class="acoes">${a.data_prevista?`<span class="badge ${atras?'badge-atraso':hoje?'badge-hoje':a.concluida?'badge-ok':'badge-cinza'}">${esc(fmtDataHora(a.data_prevista))}</span>`:''}${a.responsavel?`<span style="font-size:12px;color:var(--texto2)">👤 ${esc(a.responsavel)}</span>`:''}<button class="btn-link" data-excluir-ativ="${esc(a.id)}" style="color:var(--vermelho)">excluir</button></div>
+  </div>`;
+}
+function ligarAtividades(raiz,depois){
+  raiz.querySelectorAll('[data-concluir]').forEach(cb=>cb.onchange=async()=>{
+    const{error}=await sb.from('atividades').update({concluida:cb.checked,concluida_em:cb.checked?new Date().toISOString():null}).eq('id',cb.dataset.concluir);
+    if(erroSB(error))return;await carregarAtividades();depois();
+  });
+  raiz.querySelectorAll('[data-excluir-ativ]').forEach(b=>b.onclick=async ev=>{
+    ev.stopPropagation();if(!confirm('Excluir esta atividade?'))return;
+    await sb.from('atividades').delete().eq('id',b.dataset.excluirAtiv);await carregarAtividades();depois();
+  });
+}
+function renderAtividadesCard(){
+  const l=todasAtividades.filter(a=>a.card_id===cardEditandoId).sort(ordemAtiv);
+  const box=$('card-atividades');
+  box.innerHTML=l.length?'<div class="sub-lista">'+l.map(a=>htmlAtividade(a,false)).join('')+'</div>':'<p class="vazio">Nenhuma atividade. Registre ligações, visitas e o próximo passo deste atendimento.</p>';
+  ligarAtividades(box,renderAtividadesCard);
+}
+function ordemAtiv(a,b){if(a.concluida!==b.concluida)return a.concluida?1:-1;return String(a.data_prevista||'9999').localeCompare(String(b.data_prevista||'9999'));}
+async function addAtividadeCard(){
+  const desc=$('ca-desc').value.trim();if(!desc){alert('Descreva a atividade.');return;}
+  const tipo=$('ca-tipo').value;
+  const{error}=await sb.from('atividades').insert({card_id:cardEditandoId,cliente_id:cardOriginal?cardOriginal.cliente_id:null,tipo,descricao:desc,data_prevista:localParaISO($('ca-data').value),concluida:tipo==='nota',concluida_em:tipo==='nota'?new Date().toISOString():null,responsavel:$('card-responsavel').value||null,criado_por:usuario?usuario.email:null});
+  if(erroSB(error))return;
+  $('ca-desc').value='';$('ca-data').value='';
+  await carregarAtividades();renderAtividadesCard();
+}
+function renderAtividades(){
+  const f=$('ativ-filtro').value,resp=$('ativ-resp').value;
+  const idsCards=new Set(filtraEmpresa(todosCards).map(c=>c.id));
+  let l=todasAtividades.filter(a=>(f==='todas'||(f==='pendentes'?!a.concluida:a.concluida))&&(!resp||(a.responsavel||'').trim()===resp)&&(empresaAtual==='todas'||!a.card_id||idsCards.has(a.card_id)));
+  l.sort(ordemAtiv);
+  const box=$('lista-atividades');
+  if(!l.length){box.innerHTML='<p class="vazio">Nenhuma atividade.</p>';return;}
+  if(f==='pendentes'){
+    const g={'Atrasadas':[],'Hoje':[],'Próximas':[],'Sem data':[]};
+    l.forEach(a=>{if(!a.data_prevista)g['Sem data'].push(a);else if(new Date(a.data_prevista)<inicioDoDia())g['Atrasadas'].push(a);else if(new Date(a.data_prevista)<=fimDoDia())g['Hoje'].push(a);else g['Próximas'].push(a);});
+    box.innerHTML=Object.entries(g).filter(([,v])=>v.length).map(([k,v])=>`<div class="secao">${esc(k)} (${v.length})</div><div class="sub-lista" style="background:#fff">${v.map(a=>htmlAtividade(a,true)).join('')}</div>`).join('');
+  }else{
+    box.innerHTML='<div class="sub-lista" style="background:#fff">'+l.map(a=>htmlAtividade(a,true)).join('')+'</div>';
+  }
+  ligarAtividades(box,renderAtividades);ligarCliques(box);
+}
+function abrirModalAtividade(){
+  ['ma-desc','ma-cliente','ma-data'].forEach(i=>$(i).value='');
+  $('ma-tipo').value='tarefa';$('ma-resp').value='';
+  abrirModal('modal-atividade');
+}
+async function salvarAtividadeAvulsa(){
+  const desc=$('ma-desc').value.trim();if(!desc){alert('Descreva a atividade.');return;}
+  let cliId=null;if($('ma-cliente').value){const c=acharClientePorRotulo($('ma-cliente').value);if(!c){alert('Cliente não encontrado.');return;}cliId=c.id;}
+  const tipo=$('ma-tipo').value;
+  const{error}=await sb.from('atividades').insert({cliente_id:cliId,tipo,descricao:desc,data_prevista:localParaISO($('ma-data').value),responsavel:$('ma-resp').value||null,concluida:tipo==='nota',criado_por:usuario?usuario.email:null});
+  if(erroSB(error))return;
+  fecharModal('modal-atividade');await carregarAtividades();atualizarDatalists();renderTabAtual();
+}
+
+/* ================= CLIENTES ================= */
+function renderClientes(){
+  const busca=norm($('cli-busca').value),f=$('cli-filtro').value;
+  const stats={};
+  todosCards.forEach(c=>{const s=stats[c.cliente_id]=stats[c.cliente_id]||{ab:0,vab:0,fe:0,vfe:0};if(ABERTAS.includes(c.etapa)){s.ab++;s.vab+=Number(c.valor_estimado||0);}if(c.etapa==='fechada'){s.fe++;s.vfe+=Number(c.valor_estimado||0);}});
+  let l=todosClientes.filter(c=>{
+    if(f==='inativos'){if(c.ativo!==false)return false;}
+    else if(c.ativo===false)return false;
+    if(f==='Cliente'||f==='Prospect'){if((c.situacao||'Prospect')!==f)return false;}
+    if(f==='semcodigo'&&c.codigo)return false;
+    if(busca&&!norm([c.codigo,c.nome,c.razao_social,c.documento,c.empresa_cliente,c.endereco].join(' ')).includes(busca))return false;
+    return true;
+  });
+  $('cli-contagem').textContent=`${l.length} de ${todosClientes.filter(c=>c.ativo!==false).length} clientes`;
+  $('tabela-clientes').innerHTML=`<thead><tr><th>Código</th><th>Nome</th><th>Razão social / CPF-CNPJ</th><th>Situação</th><th>Empresas</th><th class="num">Em aberto</th><th class="num">Fechado</th></tr></thead><tbody>`+
+    (l.length?l.map(c=>{const s=stats[c.id]||{};return`<tr class="clicavel ${c.ativo===false?'inativo':''}" data-cliente="${esc(c.id)}">
+      <td>${c.codigo?`<span class="cod">${esc(c.codigo)}</span>`:'<span class="badge badge-atraso">sem código</span>'}</td>
+      <td><strong>${esc(c.nome)}</strong>${c.endereco?`<div style="font-size:12px;color:var(--texto2)">${esc(c.endereco)}</div>`:''}</td>
+      <td>${esc(c.razao_social||'')}${c.documento?`<div style="font-size:12px;color:var(--texto2)">${esc(c.documento)}</div>`:''}</td>
+      <td><span class="badge ${c.situacao==='Cliente'?'badge-ok':'badge-cinza'}">${esc(c.situacao||'Prospect')}</span>${c.ativo===false?' <span class="badge badge-cinza">inativo</span>':''}</td>
+      <td>${esc(c.empresas_atendidas||'')}</td>
+      <td class="num">${s.ab?`${s.ab} · ${esc(fmtCurto(s.vab))}`:''}</td>
+      <td class="num">${s.fe?`${s.fe} · ${esc(fmtCurto(s.vfe))}`:''}</td></tr>`;}).join(''):'<tr><td colspan="7" class="vazio">Nenhum cliente encontrado.</td></tr>')+'</tbody>';
+  ligarCliques($('tabela-clientes'));
+}
+function checksEmpresas(valor){
+  const sel=(valor||'').toUpperCase().split(/[\/,\s]+/).filter(Boolean);
+  const siglas=todasEmpresas.map(e=>e.sigla).filter(Boolean);
+  $('mc-empresas').innerHTML=siglas.map(s=>`<label><input type="checkbox" value="${esc(s)}" ${sel.includes(s.toUpperCase())?'checked':''}> ${esc(s)}</label>`).join('');
+}
+function lerChecksEmpresas(){return[...$('mc-empresas').querySelectorAll('input:checked')].map(i=>i.value).join('/')||null;}
+async function proximoCodigo(){
+  const{data,error}=await sb.rpc('proximo_codigo_cliente');
+  if(!error&&data)return data;
+  const max=Math.max(0,...todosClientes.map(c=>/^C\d+$/.test(c.codigo||'')?+c.codigo.slice(1):0));
+  return'C'+String(max+1).padStart(3,'0');
+}
+async function abrirModalCliente(id=null,voltarParaCard=false){
+  clienteEditandoId=id;clienteVoltarParaCard=voltarParaCard;
+  ['mc-nome','mc-razao','mc-doc','mc-endereco','mc-obs','mc-codigo'].forEach(i=>$(i).value='');
+  $('mc-situacao').value='Prospect';
+  $('mc-extras').style.display='none';
+  ['mc-btn-mesclar','mc-btn-codigo','mc-btn-inativar'].forEach(b=>$(b).style.display='none');
+  if(id){
+    const c=clientePorId(id);if(!c)return;
+    $('mc-titulo').textContent=c.codigo?`${c.codigo} · ${c.nome}`:c.nome;
+    $('mc-codigo').value=c.codigo||'(sem código)';
+    $('mc-nome').value=c.nome||'';$('mc-razao').value=c.razao_social||c.empresa_cliente||'';
+    $('mc-doc').value=c.documento||'';$('mc-endereco').value=c.endereco||'';$('mc-obs').value=c.observacoes||'';
+    $('mc-situacao').value=c.situacao||'Prospect';
+    checksEmpresas(c.empresas_atendidas);
+    $('mc-extras').style.display='block';
+    $('mc-btn-mesclar').style.display=c.ativo===false?'none':'inline-block';
+    $('mc-btn-codigo').style.display=c.codigo?'none':'inline-block';
+    $('mc-btn-inativar').style.display='inline-block';
+    $('mc-btn-inativar').textContent=c.ativo===false?'Reativar':'Inativar';
+    $('mc-btn-proj').onclick=()=>{fecharModal('modal-cliente');abrirModalProjeto(null,null,c.id);};
+    $('mc-referencias').innerHTML=c.referencias_rede?`<strong>Onde estavam os arquivos antes da reorganização:</strong> ${esc(c.referencias_rede)}`:'';
+    renderDetalheCliente(c);
+  }else{
+    $('mc-titulo').textContent='Novo Cliente';
+    $('mc-codigo').value='será gerado: '+await proximoCodigo();
+    checksEmpresas(empresaAtual!=='todas'?(empresaPorId(empresaAtual)||{}).sigla:'');
+  }
+  atualizarPastaCliente();
+  abrirModal('modal-cliente');
+}
+function atualizarPastaCliente(){
+  const c=clienteEditandoId?clientePorId(clienteEditandoId):null;
+  const cod=c&&c.codigo?c.codigo:($('mc-codigo').value.match(/C\d+/)||[''])[0];
+  const nome=$('mc-nome').value;
+  $('mc-info').innerHTML=cod&&nome?`📁 Pasta na rede: <span class="cod">BVEK/03_CLIENTES/${esc(cod)}_${esc(semAcento(nome).toUpperCase())}</span>`:'📁 A pasta na rede usa o código + nome padrão: <span class="cod">BVEK/03_CLIENTES/C###_NOME</span>';
+}
+async function renderDetalheCliente(c){
+  const{data:cts}=await sb.from('contatos').select('*').eq('cliente_id',c.id).order('principal',{ascending:false}).order('nome');
+  $('mc-contatos').innerHTML=(cts&&cts.length)?'<div class="sub-lista">'+cts.map(ct=>`<div class="sub-item clicavel" data-ct="${esc(ct.id)}"><div><strong>${esc(ct.nome)}</strong>${ct.principal?' <span class="badge badge-ok">principal</span>':''}${ct.cargo?`<div style="color:var(--texto2);font-size:12px">${esc(ct.cargo)}</div>`:''}</div><div style="text-align:right;font-size:12px;color:var(--texto2)">${esc(ct.telefone||'')}${ct.email?`<br><a href="mailto:${esc(ct.email)}" onclick="event.stopPropagation()">${esc(ct.email)}</a>`:''}</div></div>`).join('')+'</div>':'<p class="vazio">Nenhum contato cadastrado.</p>';
+  $('mc-contatos').querySelectorAll('[data-ct]').forEach(el=>el.onclick=()=>editarContato(cts.find(x=>x.id===el.dataset.ct)));
+  const cards=todosCards.filter(x=>x.cliente_id===c.id);
+  $('mc-cards').innerHTML=cards.length?'<div class="sub-lista">'+cards.map(x=>`<div class="sub-item clicavel" data-card="${esc(x.id)}"><div><strong>${esc(x.titulo)}</strong><div style="font-size:12px;color:var(--texto2)">${esc(x.numero_proposta||'')}${x.versao>1?' · V'+esc(x.versao):''} · ${esc(x.empresas?x.empresas.sigla:'')} · ${esc(fmtData(x.criado_em))}</div></div><div style="text-align:right"><span class="badge ${x.etapa==='fechada'?'badge-ok':x.etapa==='perdida'?'badge-atraso':'badge-cinza'}">${esc(ETAPA_LABEL[x.etapa]||x.etapa)}</span><div style="font-size:12px;margin-top:3px">R$ ${esc(fmtMoeda(x.valor_estimado))}</div></div></div>`).join('')+'</div>':'<p class="vazio">Nenhum atendimento ainda.</p>';
+  const projs=todosProjetos.filter(p=>p.cliente_id===c.id);
+  $('mc-projetos').innerHTML=projs.length?'<div class="sub-lista">'+projs.map(p=>`<div class="sub-item clicavel" data-projeto="${esc(p.id)}"><div><span class="cod">${esc(p.codigo)}</span> <strong>${esc(p.nome)}</strong></div><span class="badge ${p.status==='Concluído'?'badge-ok':'badge-cinza'}">${esc(p.status)}</span></div>`).join('')+'</div>':'<p class="vazio">Nenhum projeto.</p>';
+  const ativs=todasAtividades.filter(a=>a.cliente_id===c.id).sort(ordemAtiv);
+  $('mc-atividades').innerHTML=ativs.length?'<div class="sub-lista">'+ativs.map(a=>htmlAtividade(a,false)).join('')+'</div>':'<p class="vazio">Nenhuma atividade.</p>';
+  ligarAtividades($('mc-atividades'),()=>renderDetalheCliente(clientePorId(c.id)));
+  $('mc-cards').querySelectorAll('[data-card]').forEach(el=>el.onclick=()=>{fecharModal('modal-cliente');abrirModalCard(el.dataset.card);});
+  $('mc-projetos').querySelectorAll('[data-projeto]').forEach(el=>el.onclick=()=>{fecharModal('modal-cliente');abrirModalProjeto(el.dataset.projeto);});
+}
+async function salvarCliente(){
+  const nome=semAcento($('mc-nome').value).toUpperCase().trim();
+  if(!nome){alert('Informe o nome padrão do cliente.');return;}
+  const dup=todosClientes.find(c=>c.ativo!==false&&c.id!==clienteEditandoId&&norm(c.nome)===norm(nome));
+  if(dup&&!confirm(`Já existe o cliente ${rotuloCliente(dup)}.\nSalvar mesmo assim como outro cliente?`))return;
+  const dados={nome,razao_social:$('mc-razao').value.trim()||null,documento:$('mc-doc').value.trim()||null,endereco:$('mc-endereco').value.trim()||null,observacoes:$('mc-obs').value||null,situacao:$('mc-situacao').value,empresas_atendidas:lerChecksEmpresas(),empresa_cliente:$('mc-razao').value.trim()||null};
+  let salvo;
+  if(clienteEditandoId){
+    const{data,error}=await sb.from('clientes').update(dados).eq('id',clienteEditandoId).select().single();
+    if(erroSB(error))return;salvo=data;
+  }else{
+    const{data,error}=await sb.from('clientes').insert(dados).select().single();
+    if(erroSB(error))return;salvo=data;
+  }
+  await carregarClientes();atualizarDatalists();
+  fecharModal('modal-cliente');
+  toast(salvo&&salvo.codigo?`Cliente ${salvo.codigo} salvo — crie a pasta ${pastaCliente(salvo)}`:'Cliente salvo');
+  if(clienteVoltarParaCard&&salvo){$('card-cliente').value=rotuloCliente(salvo);$('card-contato').dataset.cliente='';await clienteEscolhidoNoCard();}
+  else renderTabAtual();
+}
+async function gerarCodigoCliente(){
+  if(!confirm('Gerar o próximo código livre para este cliente? Confira antes se ele não é repetido de um cliente que já tem código (nesse caso, use "Mesclar").'))return;
+  const{data,error}=await sb.rpc('gerar_codigo_cliente',{p_cliente:clienteEditandoId});
+  if(erroSB(error))return;
+  await carregarClientes();atualizarDatalists();toast('Código gerado: '+data);
+  abrirModalCliente(clienteEditandoId);renderTabAtual();
+}
+async function alternarAtivoCliente(){
+  const c=clientePorId(clienteEditandoId);if(!c)return;
+  const novo=c.ativo===false;
+  if(!novo&&!confirm('Inativar este cliente? Ele some das listas, mas nada é apagado.'))return;
+  const{error}=await sb.from('clientes').update({ativo:novo}).eq('id',c.id);
+  if(erroSB(error))return;
+  await carregarClientes();atualizarDatalists();fecharModal('modal-cliente');renderTabAtual();
+}
+function abrirMesclar(){$('mm-destino').value='';abrirModal('modal-mesclar');}
+async function confirmarMesclar(){
+  const destino=acharClientePorRotulo($('mm-destino').value);
+  if(!destino||destino.id===clienteEditandoId){alert('Escolha o cliente correto na lista.');return;}
+  const origem=clientePorId(clienteEditandoId);
+  if(!confirm(`Mesclar "${rotuloCliente(origem)}" em "${rotuloCliente(destino)}"?\nTudo passa para ${destino.codigo||destino.nome}.`))return;
+  const{error}=await sb.rpc('mesclar_clientes',{p_origem:clienteEditandoId,p_destino:destino.id});
+  if(erroSB(error))return;
+  fecharModal('modal-mesclar');fecharModal('modal-cliente');
+  await carregarTudo();toast('Clientes mesclados');
+}
+/* contatos */
+function editarContato(ct=null){
+  contatoEditandoId=ct?ct.id:null;
+  $('mct-titulo').textContent=ct?'Editar contato':'Novo contato';
+  $('mct-nome').value=ct?ct.nome:'';$('mct-cargo').value=ct?ct.cargo||'':'';$('mct-tel').value=ct?ct.telefone||'':'';$('mct-email').value=ct?ct.email||'':'';
+  $('mct-principal').checked=ct?!!ct.principal:false;
+  $('mct-excluir').style.display=ct?'inline-block':'none';
+  abrirModal('modal-contato');
+}
+async function salvarContato(){
+  const nome=$('mct-nome').value.trim();if(!nome){alert('Informe o nome.');return;}
+  const dados={cliente_id:clienteEditandoId,nome,cargo:$('mct-cargo').value||null,telefone:$('mct-tel').value||null,email:$('mct-email').value||null,principal:$('mct-principal').checked};
+  if(dados.principal)await sb.from('contatos').update({principal:false}).eq('cliente_id',clienteEditandoId);
+  const{error}=contatoEditandoId?await sb.from('contatos').update(dados).eq('id',contatoEditandoId):await sb.from('contatos').insert(dados);
+  if(erroSB(error))return;
+  fecharModal('modal-contato');renderDetalheCliente(clientePorId(clienteEditandoId));
+}
+async function excluirContato(){
+  if(!confirm('Excluir este contato?'))return;
+  const{error}=await sb.from('contatos').delete().eq('id',contatoEditandoId);
+  if(erroSB(error,'Não foi possível excluir'))return;
+  fecharModal('modal-contato');renderDetalheCliente(clientePorId(clienteEditandoId));
+}
+async function addAtividadeCliente(){
+  const desc=$('mca-desc').value.trim();if(!desc){alert('Descreva a atividade.');return;}
+  const tipo=$('mca-tipo').value;
+  const{error}=await sb.from('atividades').insert({cliente_id:clienteEditandoId,tipo,descricao:desc,data_prevista:localParaISO($('mca-data').value),concluida:tipo==='nota',concluida_em:tipo==='nota'?new Date().toISOString():null,criado_por:usuario?usuario.email:null});
+  if(erroSB(error))return;
+  $('mca-desc').value='';$('mca-data').value='';
+  await carregarAtividades();renderDetalheCliente(clientePorId(clienteEditandoId));
+}
+
+/* ================= PROJETOS ================= */
+function renderProjetos(){
+  const busca=norm($('proj-busca').value),st=$('proj-status').value;
+  let l=filtraEmpresa(todosProjetos).filter(p=>{
+    if(st&&p.status!==st)return false;
+    const c=clientePorId(p.cliente_id);
+    if(busca&&!norm([p.codigo,p.nome,c&&c.nome,c&&c.codigo,p.local].join(' ')).includes(busca))return false;
+    return true;
+  });
+  const prox=Math.max(0,...todosProjetos.map(p=>p.seq||0))+1;
+  $('proj-proximo').textContent=`Próximo número livre da sequência: ${String(prox).padStart(4,'0')}`;
+  $('tabela-projetos').innerHTML=`<thead><tr><th>Código</th><th>Cliente</th><th>Projeto</th><th>Empresa</th><th>Ano</th><th>Status</th><th>Pasta na rede</th></tr></thead><tbody>`+
+    (l.length?l.map(p=>{const c=clientePorId(p.cliente_id),e=empresaPorId(p.empresa_id);return`<tr class="clicavel" data-projeto="${esc(p.id)}">
+      <td><span class="cod">${esc(p.codigo)}</span></td><td>${c?esc(c.nome):''}</td><td><strong>${esc(p.nome)}</strong>${p.local?`<div style="font-size:12px;color:var(--texto2)">${esc(p.local)}</div>`:''}</td>
+      <td>${e?esc(e.sigla):''}</td><td>${esc(p.ano||'')}</td><td><span class="badge ${p.status==='Concluído'?'badge-ok':p.status==='Em andamento'?'badge-hoje':'badge-cinza'}">${esc(p.status)}</span></td>
+      <td style="font-size:12px;color:var(--texto2)">${esc(p.pasta_rede||'')}</td></tr>`;}).join(''):'<tr><td colspan="7" class="vazio">Nenhum projeto.</td></tr>')+'</tbody>';
+  ligarCliques($('tabela-projetos'));
+}
+function abrirModalProjeto(id=null,cardId=null,clienteId=null){
+  projetoEditandoId=id;projetoCardId=cardId;
+  ['mpj-cliente','mpj-nome','mpj-local','mpj-obs','mpj-pasta'].forEach(i=>$(i).value='');
+  $('mpj-ano').value=new Date().getFullYear();$('mpj-status').value='Em andamento';$('mpj-empresa').value='';
+  $('mpj-cliente').readOnly=false;$('mpj-pasta-box').style.display='none';
+  if(id){
+    const p=todosProjetos.find(x=>x.id===id);if(!p)return;
+    $('mp-titulo').textContent='Projeto '+p.codigo;$('mp-sub').textContent='O código do projeto não muda. Para outro cliente, crie um projeto novo.';
+    $('mpj-cliente').value=rotuloCliente(clientePorId(p.cliente_id));$('mpj-cliente').readOnly=true;
+    $('mpj-nome').value=p.nome;$('mpj-local').value=p.local||'';$('mpj-ano').value=p.ano||'';$('mpj-status').value=p.status;$('mpj-empresa').value=p.empresa_id||'';$('mpj-obs').value=p.observacoes||'';
+    $('mpj-pasta').value=p.pasta_rede||'';$('mpj-pasta-box').style.display='block';
+    $('mpj-salvar').textContent='Salvar';
+  }else{
+    $('mp-titulo').textContent='Novo Projeto';$('mp-sub').textContent='O código é gerado automaticamente: código do cliente + próximo número da sequência do grupo.';
+    $('mpj-salvar').textContent='Criar projeto';
+    if(cardId){
+      fecharModal('modal-card');
+      const c=todosCards.find(x=>x.id===cardId);
+      if(c){$('mpj-cliente').value=rotuloCliente(clientePorId(c.cliente_id)||c.clientes);$('mpj-nome').value=semAcento(c.titulo||'').toUpperCase();$('mpj-empresa').value=c.empresa_id||'';}
+    }else if(clienteId){$('mpj-cliente').value=rotuloCliente(clientePorId(clienteId));}
+    if(!$('mpj-empresa').value&&empresaAtual!=='todas')$('mpj-empresa').value=empresaAtual;
+  }
+  abrirModal('modal-projeto');
+}
+async function salvarProjeto(){
+  const nome=semAcento($('mpj-nome').value).toUpperCase().trim();
+  if(!nome){alert('Informe o nome do projeto.');return;}
+  if(projetoEditandoId){
+    const{error}=await sb.from('projetos').update({nome,local:$('mpj-local').value||null,ano:$('mpj-ano').value||null,status:$('mpj-status').value,empresa_id:$('mpj-empresa').value||null,observacoes:$('mpj-obs').value||null}).eq('id',projetoEditandoId);
+    if(erroSB(error))return;
+    fecharModal('modal-projeto');await carregarProjetos();renderTabAtual();toast('Projeto salvo');return;
+  }
+  const cli=acharClientePorRotulo($('mpj-cliente').value);
+  if(!cli){alert('Escolha o cliente da lista.');return;}
+  if(!cli.codigo){alert('Este cliente ainda não tem código. Abra o cliente e clique em "Gerar código" (ou mescle com o cadastro correto).');return;}
+  const{data,error}=await sb.rpc('criar_projeto',{p_cliente:cli.id,p_nome:nome,p_empresa:$('mpj-empresa').value||null,p_card:projetoCardId||null,p_local:$('mpj-local').value||null,p_ano:$('mpj-ano').value?+$('mpj-ano').value:null,p_status:$('mpj-status').value});
+  if(erroSB(error,'Não foi possível criar o projeto'))return;
+  if($('mpj-obs').value&&data&&data.id)await sb.from('projetos').update({observacoes:$('mpj-obs').value}).eq('id',data.id);
+  fecharModal('modal-projeto');await Promise.all([carregarProjetos(),carregarCards()]);renderTabAtual();
+  alert(`Projeto ${data.codigo} criado.\n\nCrie a pasta na rede:\n${data.pasta_rede}`);
+}
+
+/* ================= EMPRESAS ================= */
+function renderEmpresas(){
+  const div=$('lista-empresas');if(!div)return;
+  div.innerHTML=todasEmpresas.length?todasEmpresas.map(e=>`<div class="card-lista"><div style="font-weight:600">${esc(e.nome)} <span class="card-empresa-tag tag-${esc(e.sigla)}">${esc(e.sigla||'')}</span></div>${e.cnpj?`<div style="font-size:13px;color:var(--texto2)">${esc(e.cnpj)}</div>`:''}</div>`).join(''):'<p class="vazio">Nenhuma empresa cadastrada.</p>';
+}
+function abrirModalEmpresa(){['emp-nome','emp-cnpj','emp-sigla'].forEach(i=>$(i).value='');abrirModal('modal-empresa');}
+async function salvarEmpresa(){
+  const nome=$('emp-nome').value.trim();if(!nome){alert('Informe o nome.');return;}
+  const{error}=await sb.from('empresas').insert({nome,cnpj:$('emp-cnpj').value,sigla:$('emp-sigla').value.toUpperCase()});
+  if(erroSB(error))return;
+  fecharModal('modal-empresa');await carregarEmpresas();
+}
+
+/* ================= RECORRÊNCIA ================= */
+async function verificarAlertas(){
+  const hoje=new Date(),alertas=[];
+  for(const card of filtraEmpresa(todosCards).filter(c=>c.recorrente&&c.etapa==='fechada')){
+    if(!card.dias_recorrencia||!card.atualizado_em)continue;
+    const proxima=new Date(new Date(card.atualizado_em).getTime()+card.dias_recorrencia*86400000);
+    const diff=Math.ceil((proxima-hoje)/86400000);
+    if(diff<=15&&diff>=0){alertas.push(`<div class="alerta-item">📋 <strong>${esc(card.titulo)}</strong> — renovação em <strong>${diff} dia(s)</strong> (${esc(proxima.toLocaleDateString('pt-BR'))})</div>`);await criarRecorrente(card);}
+  }
+  $('alertas-lista').innerHTML=alertas.join('');
+  $('alertas-box').style.display=alertas.length?'block':'none';
+}
+async function criarRecorrente(c){
+  const{data:existe}=await sb.from('cards').select('id').eq('card_origem_id',c.id).in('etapa',ABERTAS).limit(1);
+  if(existe&&existe.length)return;
+  const numero=await gerarNumeroProposta(c.empresa_id);
+  await sb.from('cards').insert({empresa_id:c.empresa_id,cliente_id:c.cliente_id,contato_id:c.contato_id||null,titulo:'🔄 '+c.titulo.replace(/^🔄\s*/,'').replace(/\s*\(Recorrente\)$/,'')+' (Recorrente)',descricao:c.descricao,etapa:'entrada',valor_estimado:c.valor_estimado,responsavel:c.responsavel,recorrente:true,dias_recorrencia:c.dias_recorrencia,card_origem_id:c.id,numero_proposta:numero,versao:1,origem:'Cliente atual'});
+  await carregarCards();if(tabAtual==='funil')renderFunil();
+}
+
+/* ================= PDF DA PROPOSTA ================= */
 async function gerarPDF(){
   if(!cardEditandoId)return;
   const{data:card}=await sb.from('cards').select('*,clientes(*),empresas(*)').eq('id',cardEditandoId).single();
   const{data:itens}=await sb.from('itens_proposta').select('*').eq('card_id',cardEditandoId).order('ordem');
-  const emp=card.empresas||{};
-  const cli=card.clientes||{};
+  let contato=null;
+  if(card.contato_id){const r=await sb.from('contatos').select('*').eq('id',card.contato_id).maybeSingle();contato=r.data;}
+  const emp=card.empresas||{},cli=card.clientes||{};
   const hoje=new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric'});
   const total=fmtMoeda(card.valor_estimado||0);
-  const itensHTML=(itens||[]).map(i=>`<tr><td>${i.item||''}</td><td>${i.codigo||''}</td><td>${i.descricao||''}</td><td>${i.unidade||''}</td><td>${fmtNum(i.quantidade)}</td><td>${fmtMoeda(i.valor_unitario||0)}</td><td><strong>${fmtMoeda(i.valor_total||0)}</strong></td></tr>`).join('');
-  function fmtNum(v){return v?Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2}):'—';}
-
+  const fmtNum=v=>v?Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2}):'—';
+  const itensHTML=(itens||[]).map(i=>`<tr><td>${esc(i.item)}</td><td>${esc(i.codigo)}</td><td>${esc(i.descricao)}</td><td>${esc(i.unidade)}</td><td>${fmtNum(i.quantidade)}</td><td>${fmtMoeda(i.valor_unitario)}</td><td><strong>${fmtMoeda(i.valor_total)}</strong></td></tr>`).join('');
+  const nomeCliente=cli.razao_social||cli.empresa_cliente||cli.nome||'';
+  const quem=contato||{};
+  const br=s=>esc(s).replace(/\n/g,'<br>');
+  // nome do arquivo no padrão da rede: VB-COM-PRP-C### NOME DESCRIÇÃO
+  const nomeArquivo=semAcento(`${emp.sigla||'BVK'}-COM-PRP-${cli.codigo||'C000'} ${cli.nome||''} ${card.titulo||''} ${card.numero_proposta||''}.V${card.versao||1}`).toUpperCase().replace(/[\\/:*?"<>|]/g,' ').replace(/\s+/g,' ').trim();
   const html=`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">
-  <title>Proposta ${card.numero_proposta||''}</title>
+  <title>${esc(nomeArquivo)}</title>
   <style>
     body{font-family:Arial,sans-serif;font-size:11px;color:#222;margin:0;padding:0}
     .pagina{padding:30px 40px;max-width:800px;margin:0 auto}
     .topo{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px;padding-bottom:16px;border-bottom:2px solid #1a6b3c}
     .logo-area h1{color:#1a6b3c;font-size:20px;margin:0}
     .logo-area p{color:#666;font-size:10px;margin:2px 0 0}
-    .sites{font-size:9px;color:#666}
-    .data-local{text-align:right;font-size:11px}
+    .sites{font-size:9px;color:#666;text-align:right}
     h2{color:#1a6b3c;font-size:13px;margin:20px 0 6px;border-bottom:1px solid #e8f5ee;padding-bottom:4px}
     .destinatario{margin:16px 0}
     .destinatario strong{display:block;font-size:13px}
@@ -664,118 +1493,50 @@ async function gerarPDF(){
     .ass-item{flex:1;text-align:center}
     .ass-linha{border-top:1px solid #222;margin:40px 0 6px;padding-top:6px}
     .rodape{margin-top:30px;padding-top:10px;border-top:1px solid #ddd;font-size:9px;color:#999;text-align:center}
+    .ref{font-size:9px;color:#888}
     @media print{body{margin:0}.pagina{padding:20px}}
   </style></head><body><div class="pagina">
   <div class="topo">
-    <div class="logo-area">
-      <h1>${emp.nome||'GRUPO-BVEK'}</h1>
-      <p>Rio de Janeiro, ${hoje}</p>
-    </div>
-    <div class="data-local sites">
-      www.engekat.com.br | www.brasilimp.com.br<br>www.verdebrasilis.com.br | www.katseguros.com.br
-    </div>
+    <div class="logo-area"><h1>${esc(emp.nome||'GRUPO-BVEK')}</h1><p>Rio de Janeiro, ${esc(hoje)}</p></div>
+    <div class="sites">www.engekat.com.br | www.brasilimp.com.br<br>www.verdebrasilis.com.br | www.katseguros.com.br</div>
   </div>
   <div class="destinatario">
     <p>A</p>
-    <strong>${cli.empresa_cliente||cli.nome||''}</strong>
-    ${cli.nome&&cli.empresa_cliente?`<p>At.: ${cli.nome}${cli.cargo?' — '+cli.cargo:''}</p>`:''}
+    <strong>${esc(nomeCliente)}</strong>
+    ${quem.nome?`<p>At.: ${esc(quem.nome)}${quem.cargo?' — '+esc(quem.cargo):''}</p>`:''}
+    <p class="ref">Ref. cliente: ${esc(cli.codigo||'')}</p>
   </div>
-  <div class="numero-prop">Proposta de Serviços — ${card.titulo||''} — ${card.numero_proposta||''}.V${card.versao||1}</div>
+  <div class="numero-prop">Proposta de Serviços — ${esc(card.titulo)} — ${esc(card.numero_proposta||'')}.V${esc(card.versao||1)}</div>
   <p><strong>Prezados Senhores,</strong></p>
-  <p>A ${emp.nome||''} é uma empresa especializada, que atende as principais demandas de nossos clientes e parceiros com funcionários próprios, ganhando agilidade e qualidade em todos os processos.</p>
-  ${card.escopo?`<h2>Escopo dos Serviços</h2><p>${card.escopo.replace(/\n/g,'<br>')}</p>`:''}
-  ${(itens&&itens.length>0)?`<h2>Orçamento Sintético</h2>
+  <p>A ${esc(emp.nome||'')} é uma empresa especializada, que atende as principais demandas de nossos clientes e parceiros com funcionários próprios, ganhando agilidade e qualidade em todos os processos.</p>
+  ${card.escopo?`<h2>Escopo dos Serviços</h2><p>${br(card.escopo)}</p>`:''}
+  ${(itens&&itens.length)?`<h2>Orçamento Sintético</h2>
   <table><thead><tr><th>Item</th><th>Código</th><th>Descrição</th><th>Und</th><th>Qtd</th><th>Vl Unit</th><th>Total</th></tr></thead>
   <tbody>${itensHTML}</tbody>
-  <tfoot><tr class="total-row"><td colspan="6" style="text-align:right">VALOR TOTAL</td><td>R$ ${total}</td></tr></tfoot>
-  </table>`:''}
+  <tfoot><tr class="total-row"><td colspan="6" style="text-align:right">VALOR TOTAL</td><td>R$ ${total}</td></tr></tfoot></table>`:''}
   <div class="valor-total">Valor total dos serviços, materiais, insumos e mão de obra: R$ ${total}</div>
-  ${card.prazo_execucao_meses?`<p><strong>Prazo de Execução:</strong> até ${card.prazo_execucao_meses} ${card.prazo_execucao_meses==1?'mês':'meses'}</p>`:''}
-  <p><strong>Validade da proposta:</strong> ${card.validade_proposta_dias||30} dias.</p>
-  ${card.forma_pagamento?`<p><strong>Forma de Pagamento:</strong> ${card.forma_pagamento}</p>`:''}
-  ${card.percentual_mao_obra?`<p><strong>Composição de Custos:</strong> ${card.percentual_mao_obra}% Mão de Obra + ${card.percentual_insumos}% Insumos e Equipamentos</p>`:''}
-  ${card.observacoes?`<p><strong>Observações:</strong> ${card.observacoes}</p>`:''}
-  ${card.nota1?`<p><strong>Nota 1:</strong> ${card.nota1}</p>`:''}
-  ${card.nota2?`<p><strong>Nota 2:</strong> ${card.nota2}</p>`:''}
+  ${card.prazo_execucao_meses?`<p><strong>Prazo de Execução:</strong> até ${esc(card.prazo_execucao_meses)} ${card.prazo_execucao_meses==1?'mês':'meses'}</p>`:''}
+  <p><strong>Validade da proposta:</strong> ${esc(card.validade_proposta_dias||30)} dias.</p>
+  ${card.forma_pagamento?`<p><strong>Forma de Pagamento:</strong> ${esc(card.forma_pagamento)}</p>`:''}
+  ${card.percentual_mao_obra?`<p><strong>Composição de Custos:</strong> ${esc(card.percentual_mao_obra)}% Mão de Obra + ${esc(card.percentual_insumos)}% Insumos e Equipamentos</p>`:''}
+  ${card.observacoes?`<p><strong>Observações:</strong> ${br(card.observacoes)}</p>`:''}
+  ${card.nota1?`<p><strong>Nota 1:</strong> ${esc(card.nota1)}</p>`:''}
+  ${card.nota2?`<p><strong>Nota 2:</strong> ${esc(card.nota2)}</p>`:''}
   <div class="assinaturas">
     <div class="ass-item"><div class="ass-linha"></div><strong>André F. Lessa</strong><br>Diretor Comercial<br><small>Tel: 21-3040-3700 | Cel: 21-99675-0707</small></div>
-    <div class="ass-item"><div class="ass-linha"></div><strong>${cli.nome||'Cliente'}</strong><br>${cli.cargo||'Representante'}<br><small>${cli.empresa_cliente||''}</small></div>
+    <div class="ass-item"><div class="ass-linha"></div><strong>${esc(quem.nome||'Cliente')}</strong><br>${esc(quem.cargo||'Representante')}<br><small>${esc(nomeCliente)}</small></div>
   </div>
   <div class="rodape">www.engekat.com.br | www.brasilimp.com.br | www.verdebrasilis.com.br | www.katseguros.com.br</div>
   </div></body></html>`;
-
   const win=window.open('','_blank');
-  win.document.write(html);
-  win.document.close();
+  if(!win){alert('O navegador bloqueou a janela da proposta. Permita pop-ups para este site.');return;}
+  win.document.write(html);win.document.close();
   setTimeout(()=>win.print(),800);
+  toast('Ao salvar o PDF, o nome sugerido já segue o padrão da rede');
 }
 
-async function verificarAlertas(){
-  let query=sb.from('cards').select('*,clientes(nome)').eq('recorrente',true).eq('etapa','fechada');
-  if(empresaAtual!=='todas')query=query.eq('empresa_id',empresaAtual);
-  const{data}=await query;
-  const hoje=new Date();const alertas=[];
-  for(const card of(data||[])){
-    if(!card.dias_recorrencia||!card.atualizado_em)continue;
-    const proxima=new Date(new Date(card.atualizado_em).getTime()+card.dias_recorrencia*86400000);
-    const diff=Math.ceil((proxima-hoje)/86400000);
-    if(diff<=15&&diff>=0){alertas.push(`<div class="alerta-item">📋 <strong>${card.titulo}</strong> — renovação em <strong>${diff} dia(s)</strong> (${proxima.toLocaleDateString('pt-BR')})</div>`);await criarRecorrente(card);}
-  }
-  const box=document.getElementById('alertas-box');
-  if(alertas.length>0){document.getElementById('alertas-lista').innerHTML=alertas.join('');box.style.display='block';}
-  else box.style.display='none';
-}
-
-async function criarRecorrente(c){
-  const{data:existe}=await sb.from('cards').select('id').eq('card_origem_id',c.id).eq('etapa','entrada').limit(1);
-  if(existe&&existe.length>0)return;
-  await sb.from('cards').insert({empresa_id:c.empresa_id,cliente_id:c.cliente_id,titulo:'🔄 '+c.titulo+' (Recorrente)',descricao:c.descricao,etapa:'entrada',valor_estimado:c.valor_estimado,responsavel:c.responsavel,recorrente:true,dias_recorrencia:c.dias_recorrencia,card_origem_id:c.id});
-}
-
-function abrirTab(tab){
-  ['funil','empresas','clientes'].forEach(t=>{document.getElementById('tab-'+t).style.display=t===tab?'block':'none';});
-  document.querySelectorAll('.tab').forEach((el,i)=>{el.classList.toggle('ativo',['funil','empresas','clientes'][i]===tab);});
-  if(tab==='clientes')carregarListaClientes();
-  if(tab==='empresas')carregarEmpresas();
-}
-
-function renderizarListaEmpresas(empresas){
-  const div=document.getElementById('lista-empresas');if(!div)return;
-  div.innerHTML=empresas.length?empresas.map(e=>`<div class="card-lista"><div style="font-weight:600">${e.nome} <span style="background:#e8f5ee;color:#1b5e20;font-size:11px;padding:2px 8px;border-radius:20px;font-weight:700">${e.sigla||''}</span></div>${e.cnpj?`<div style="font-size:13px;color:var(--texto2)">${e.cnpj}</div>`:''}</div>`).join(''):'<p class="vazio">Nenhuma empresa cadastrada.</p>';
-}
-
-function abrirModalEmpresa(){
-  document.getElementById('emp-nome').value='';document.getElementById('emp-cnpj').value='';document.getElementById('emp-sigla').value='';
-  document.getElementById('modal-empresa').classList.add('aberto');
-}
-
-async function salvarEmpresa(){
-  const nome=document.getElementById('emp-nome').value.trim();
-  if(!nome){alert('Informe o nome.');return;}
-  await sb.from('empresas').insert({nome,cnpj:document.getElementById('emp-cnpj').value,sigla:document.getElementById('emp-sigla').value.toUpperCase()});
-  fecharModal('modal-empresa');await carregarEmpresas();abrirTab('empresas');
-}
-
-async function carregarListaClientes(){
-  const{data}=await sb.from('clientes').select('*').order('nome');
-  const div=document.getElementById('lista-clientes');
-  div.innerHTML=(data||[]).length?(data||[]).map(c=>`<div class="card-lista"><div style="font-weight:600">${c.nome}</div>${c.empresa_cliente?`<div style="font-size:13px;color:var(--texto2)">${c.empresa_cliente}</div>`:''}<div style="font-size:12px;color:var(--texto2);margin-top:2px">${c.email||''} ${c.telefone?'· '+c.telefone:''}</div></div>`).join(''):'<p class="vazio">Nenhum cliente cadastrado.</p>';
-}
-
-function abrirModalCliente(){
-  ['ncli-nome','ncli-empresa','ncli-email','ncli-tel','ncli-cargo'].forEach(id=>document.getElementById(id).value='');
-  document.getElementById('modal-cliente').classList.add('aberto');
-}
-
-async function salvarCliente(){
-  const nome=document.getElementById('ncli-nome').value.trim();
-  if(!nome){alert('Informe o nome.');return;}
-  await sb.from('clientes').insert({empresa_id:empresaAtual==='todas'?todasEmpresas[0]?.id:empresaAtual,nome,empresa_cliente:document.getElementById('ncli-empresa').value,email:document.getElementById('ncli-email').value,telefone:document.getElementById('ncli-tel').value,cargo:document.getElementById('ncli-cargo').value});
-  fecharModal('modal-cliente');carregarListaClientes();
-}
-
-function fecharModal(id){document.getElementById(id).classList.remove('aberto');}
-
+/* ================= INÍCIO ================= */
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){const abertos=[...document.querySelectorAll('.modal-overlay.aberto')];if(abertos.length)abertos[abertos.length-1].classList.remove('aberto');}});
 sb.auth.getSession().then(({data:{session}})=>{if(session)iniciarApp();});
 </script>
 </body>
