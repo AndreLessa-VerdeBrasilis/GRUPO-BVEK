@@ -1412,6 +1412,7 @@ async function salvarProjeto(){
   const cli=acharClientePorRotulo($('mpj-cliente').value);
   if(!cli){alert('Escolha o cliente da lista.');return;}
   if(!cli.codigo){alert('Este cliente ainda não tem código. Abra o cliente e clique em "Gerar código" (ou mescle com o cadastro correto).');return;}
+  if(!$('mpj-empresa').value){alert('Escolha a empresa executora. A pasta do projeto fica na pasta da empresa (10.2 Engekat, 20.2 Verde Brasilis, 30.2 BrasiLimp).');return;}
   const{data,error}=await sb.rpc('criar_projeto',{p_cliente:cli.id,p_nome:nome,p_empresa:$('mpj-empresa').value||null,p_card:projetoCardId||null,p_local:$('mpj-local').value||null,p_ano:$('mpj-ano').value?+$('mpj-ano').value:null,p_status:$('mpj-status').value});
   if(erroSB(error,'Não foi possível criar o projeto'))return;
   if($('mpj-obs').value&&data&&data.id)await sb.from('projetos').update({observacoes:$('mpj-obs').value}).eq('id',data.id);
