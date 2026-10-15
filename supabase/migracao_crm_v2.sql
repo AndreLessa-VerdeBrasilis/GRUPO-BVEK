@@ -500,12 +500,30 @@ create trigger bvek_clientes_codigo before insert on public.clientes
 do $$
 declare t text;
 begin
+  -- remove as políticas antigas "acesso_total_*", que liberavam tudo para qualquer visitante
+  for t in select tablename||'|'||policyname from pg_policies
+            where schemaname='public' and policyname like 'acesso_total_%' loop
+    execute format('drop policy if exists %I on public.%I', split_part(t,'|',2), split_part(t,'|',1));
+  end loop;
   foreach t in array array['empresas','clientes','contatos','cards','itens_proposta',
                            'sequencia_propostas','historico_etapas','atividades','projetos'] loop
     execute format('alter table public.%I enable row level security', t);
     execute format('drop policy if exists bvek_autenticado on public.%I', t);
     execute format('create policy bvek_autenticado on public.%I for all to authenticated using (true) with check (true)', t);
     execute format('grant select, insert, update, delete on public.%I to authenticated', t);
+  end loop;
+end $$;
+
+-- tabelas antigas que continuam existindo
+do $$
+declare t text;
+begin
+  foreach t in array array['historico_cards','propostas'] loop
+    if to_regclass('public.'||t) is not null then
+      execute format('alter table public.%I enable row level security', t);
+      execute format('drop policy if exists bvek_autenticado on public.%I', t);
+      execute format('create policy bvek_autenticado on public.%I for all to authenticated using (true) with check (true)', t);
+    end if;
   end loop;
 end $$;
 
