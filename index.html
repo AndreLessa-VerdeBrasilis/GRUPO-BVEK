@@ -655,7 +655,7 @@ function acharClientePorRotulo(txt){
 }
 function clientePorId(id){return todosClientes.find(c=>c.id===id);}
 function empresaPorId(id){return todasEmpresas.find(e=>e.id===id);}
-function pastaCliente(c){return c&&c.codigo?`BVEK/03_CLIENTES/${c.codigo}_${semAcento(c.nome).toUpperCase()}`:'';}
+function pastaCliente(c){return c&&c.codigo?`Grupo BVEK/03_CLIENTES/${c.codigo}_${semAcento(c.nome).toUpperCase()}`:'';}
 function filtraEmpresa(lista){return empresaAtual==='todas'?lista:lista.filter(x=>x.empresa_id===empresaAtual);}
 function preencherSelect(sel,opcoes,vazio){sel.innerHTML=(vazio!==undefined?`<option value="">${esc(vazio)}</option>`:'')+opcoes.map(([v,t])=>`<option value="${esc(v)}">${esc(t)}</option>`).join('');}
 
@@ -1265,7 +1265,7 @@ function atualizarPastaCliente(){
   const c=clienteEditandoId?clientePorId(clienteEditandoId):null;
   const cod=c&&c.codigo?c.codigo:($('mc-codigo').value.match(/C\d+/)||[''])[0];
   const nome=$('mc-nome').value;
-  $('mc-info').innerHTML=cod&&nome?`📁 Pasta na rede: <span class="cod">BVEK/03_CLIENTES/${esc(cod)}_${esc(semAcento(nome).toUpperCase())}</span>`:'📁 A pasta na rede usa o código + nome padrão: <span class="cod">BVEK/03_CLIENTES/C###_NOME</span>';
+  $('mc-info').innerHTML=cod&&nome?`📁 Pasta na rede: <span class="cod">Grupo BVEK/03_CLIENTES/${esc(cod)}_${esc(semAcento(nome).toUpperCase())}</span>`:'📁 A pasta na rede usa o código + nome padrão: <span class="cod">Grupo BVEK/03_CLIENTES/C###_NOME</span>';
 }
 async function renderDetalheCliente(c){
   const{data:cts}=await sb.from('contatos').select('*').eq('cliente_id',c.id).order('principal',{ascending:false}).order('nome');
