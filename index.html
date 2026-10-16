@@ -128,6 +128,10 @@ table.tabela td.num{text-align:right;font-variant-numeric:tabular-nums;white-spa
 .modal-sub{font-size:13px;color:var(--texto2);margin-bottom:18px}
 .secao{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--verde);margin:20px 0 12px;padding-bottom:6px;border-bottom:1.5px solid var(--verde-claro);display:flex;justify-content:space-between;align-items:center}
 .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 14px}
+.linha-flex{display:flex;gap:8px}.linha-flex>*{flex:1;min-width:0}
+.caixa-pdf{border:1px dashed #b9c6bf;border-radius:8px;padding:10px 12px;background:#f7faf8}
+.caixa-pdf .info{font-size:12px;color:var(--texto2);margin-top:6px}
+.campo-preenchido{outline:2px solid #f3c34f;outline-offset:1px}
 .form-grid .full{grid-column:1/-1}
 .campo-check{display:flex;align-items:center;gap:10px;padding:4px 0}
 .campo-check input[type=checkbox]{width:18px;height:18px;cursor:pointer;accent-color:var(--verde)}
@@ -384,7 +388,7 @@ table.tabela td.num{text-align:right;font-variant-numeric:tabular-nums;white-spa
         <div class="form-grid" style="background:#f7f7f7;border-radius:8px;padding:12px 12px 0">
           <div class="campo"><label>Nome do contato *</label><input type="text" id="nct-nome"></div>
           <div class="campo"><label>Cargo</label><input type="text" id="nct-cargo" placeholder="Ex.: Engenheiro, Síndico"></div>
-          <div class="campo"><label>Telefone</label><input type="text" id="nct-tel" placeholder="(21) 99999-9999"></div>
+          <div class="campo"><label>Telefone</label><input type="tel" inputmode="numeric" id="nct-tel" placeholder="(21) 99999-9999" maxlength="15" oninput="mascaraTel(this)"></div>
           <div class="campo"><label>E-mail</label><input type="email" id="nct-email"></div>
         </div>
       </div>
@@ -392,15 +396,36 @@ table.tabela td.num{text-align:right;font-variant-numeric:tabular-nums;white-spa
 
     <div class="secao">Dados da proposta</div>
     <div class="form-grid">
+      <div class="campo full"><label>Proposta enviada ao cliente (PDF)</label>
+        <div class="caixa-pdf">
+          <input type="file" id="card-arquivo" accept="application/pdf,.pdf" onchange="lerPdfProposta(this)">
+          <div class="info" id="card-arquivo-info">Envie o PDF da proposta: o arquivo fica guardado no atendimento e o CRM tenta preencher os campos sozinho (confira os campos destacados em amarelo).</div>
+        </div>
+      </div>
       <div class="campo full"><label>Título / Objeto da proposta *</label><input type="text" id="card-titulo" placeholder="Ex: Retrofit Laboratório Arkema — Térreo"></div>
-      <div class="campo"><label>Valor total (R$)</label><input type="number" step="0.01" id="card-valor" placeholder="0,00"></div>
+      <div class="campo"><label>Valor total (R$)</label><input type="text" inputmode="numeric" id="card-valor" placeholder="0,00" oninput="mascaraMoeda(this)"></div>
       <div class="campo"><label>Chance de fechar</label>
         <select id="card-prob"><option value="">—</option><option value="10">10%</option><option value="25">25%</option><option value="50">50%</option><option value="75">75%</option><option value="90">90%</option><option value="100">100%</option></select>
       </div>
       <div class="campo"><label>Previsão de fechamento</label><input type="date" id="card-fechamento"></div>
-      <div class="campo"><label>Prazo de execução (meses)</label><input type="number" id="card-prazo" placeholder="Ex: 5"></div>
+      <div class="campo"><label>Prazo de execução</label><div class="linha-flex"><input type="number" min="1" step="1" id="card-prazo" placeholder="Ex: 5"><select id="card-prazo-unid"><option value="dias">dia(s)</option><option value="semanas">semana(s)</option><option value="meses" selected>mês(es)</option></select></div></div>
       <div class="campo"><label>Validade da proposta (dias)</label><input type="number" id="card-validade" value="30"></div>
-      <div class="campo"><label>Forma de pagamento</label><input type="text" id="card-pagamento" placeholder="Ex: Crédito em conta, conforme medições"></div>
+      <div class="campo full"><label>Forma de pagamento</label>
+        <div class="linha-flex" style="flex-wrap:wrap">
+          <select id="card-pag-tipo" onchange="atualizarPagamento()" style="min-width:210px">
+            <option value="">— escolha —</option>
+            <option value="medicao">Por medição</option>
+            <option value="conclusao">Após a conclusão do serviço</option>
+            <option value="sinal_conclusao">Sinal para início + saldo na conclusão</option>
+            <option value="sinal_medicao">Sinal para início + saldo por medição</option>
+            <option value="outra">Outra (texto livre)</option>
+          </select>
+          <select id="card-pag-periodo" onchange="atualizarPagamento()" style="display:none"><option value="mensal">medição mensal</option><option value="quinzenal">medição quinzenal</option><option value="semanal">medição semanal</option></select>
+          <span id="box-pag-sinal" style="display:none"><input type="number" min="1" max="100" id="card-pag-sinal" placeholder="Sinal %" oninput="atualizarPagamento()"></span>
+          <span id="box-pag-dias" style="display:none"><input type="number" min="0" id="card-pag-dias" placeholder="Pagar em X dias" oninput="atualizarPagamento()"></span>
+        </div>
+        <input type="text" id="card-pagamento" style="margin-top:6px" placeholder="Texto que sai na proposta" readonly>
+      </div>
       <div class="campo full"><label>Escopo dos serviços</label><textarea id="card-escopo" rows="4" placeholder="Descreva detalhadamente o escopo dos serviços..."></textarea></div>
       <div class="campo"><label>% Mão de obra</label><input type="number" id="card-pct-mao" value="30"></div>
       <div class="campo"><label>% Insumos e equipamentos</label><input type="number" id="card-pct-ins" value="70"></div>
@@ -521,7 +546,7 @@ table.tabela td.num{text-align:right;font-variant-numeric:tabular-nums;white-spa
     <h2 id="mct-titulo">Contato</h2>
     <div class="campo"><label>Nome *</label><input type="text" id="mct-nome"></div>
     <div class="campo"><label>Cargo</label><input type="text" id="mct-cargo"></div>
-    <div class="campo"><label>Telefone</label><input type="text" id="mct-tel"></div>
+    <div class="campo"><label>Telefone</label><input type="tel" inputmode="numeric" id="mct-tel" placeholder="(21) 99999-9999" maxlength="15" oninput="mascaraTel(this)"></div>
     <div class="campo"><label>E-mail</label><input type="email" id="mct-email"></div>
     <div class="campo-check"><input type="checkbox" id="mct-principal"><label for="mct-principal">Contato principal</label></div>
     <div class="modal-btns">
@@ -609,7 +634,7 @@ const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 /* ================= ESTADO ================= */
 let usuario=null,empresaAtual='todas',tabAtual='painel';
 let todasEmpresas=[],todosClientes=[],todosCards=[],todasAtividades=[],todosProjetos=[];
-let cardEditandoId=null,cardOriginal=null,itensLocais=[],contatosDoCliente=[];
+let cardEditandoId=null,cardOriginal=null,itensLocais=[],contatosDoCliente=[],arquivoPdfNovo=null;
 let clienteEditandoId=null,clienteVoltarParaCard=false,contatoEditandoId=null;
 let projetoEditandoId=null,projetoCardId=null,perdaPendente=null,migracaoOk=true;
 
@@ -634,7 +659,48 @@ const TIPO_LABEL=Object.fromEntries(TIPOS_ATIV);
 const $=id=>document.getElementById(id);
 function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function fmtMoeda(v){return Number(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});}
-function fmtCurto(v){v=Number(v||0);if(v>=1e6)return'R$ '+(v/1e6).toLocaleString('pt-BR',{maximumFractionDigits:1})+' mi';if(v>=1e3)return'R$ '+(v/1e3).toLocaleString('pt-BR',{maximumFractionDigits:0})+' mil';return'R$ '+fmtMoeda(v);}
+function fmtCurto(v){v=Number(v||0);if(Math.abs(v)>=1e6)return'R$ '+(v/1e6).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})+' mi';return'R$ '+fmtMoeda(v);}
+// Valor em reais: só aceita dígitos e formata como 1.234,56 enquanto digita
+function mascaraMoeda(inp){const d=inp.value.replace(/\D/g,'').replace(/^0+(?=\d)/,'').slice(0,13);inp.value=d?fmtMoeda(Number(d)/100):'';}
+function parseMoeda(t){t=String(t||'').trim();if(!/\d/.test(t))return null;const n=Number(t.replace(/[^\d,.-]/g,'').replace(/\./g,'').replace(',','.'));return isFinite(n)?Math.round(n*100)/100:null;}
+// Telefone: (DD) 9XXXX-XXXX celular ou (DD) XXXX-XXXX fixo
+function fmtTel(t){const d=String(t||'').replace(/\D/g,'').replace(/^55(?=\d{10,11}$)/,'').slice(0,11);if(!d)return'';if(d.length<=2)return'('+d;if(d.length<=6)return`(${d.slice(0,2)}) ${d.slice(2)}`;if(d.length<=10)return`(${d.slice(0,2)}) ${d.slice(2,6)}-${d.slice(6)}`;return`(${d.slice(0,2)}) ${d.slice(2,7)}-${d.slice(7)}`;}
+function mascaraTel(inp){inp.value=fmtTel(inp.value);}
+function telValido(t){const n=String(t||'').replace(/\D/g,'').length;return n===0||n===10||n===11;}
+// Prazo de execução
+const UNID_PRAZO={dias:['dia','dias'],semanas:['semana','semanas'],meses:['mês','meses']};
+function textoPrazo(q,u){q=Number(q);if(!q)return'';const r=UNID_PRAZO[u||'meses']||UNID_PRAZO.meses;return q+' '+(q===1?r[0]:r[1]);}
+// Forma de pagamento estruturada -> texto da proposta
+function textoPagamento(p){
+  if(!p||!p.tipo)return'';
+  const dias=p.dias!=null&&p.dias!==''?Number(p.dias):null;
+  const emDias=dias===0?'à vista':dias?`em ${dias} dias`:'';
+  const med=`medição ${p.periodo||'mensal'}`;
+  switch(p.tipo){
+    case'medicao':return`Por ${med}, com pagamento ${emDias||'conforme aprovação'} após a aprovação de cada medição.`;
+    case'conclusao':return`Pagamento ${emDias||'à vista'} após a conclusão do serviço.`;
+    case'sinal_conclusao':return`Sinal de ${p.sinal||'__'}% para início dos serviços e saldo ${emDias||'à vista'} após a conclusão.`;
+    case'sinal_medicao':return`Sinal de ${p.sinal||'__'}% para início dos serviços e saldo por ${med}, com pagamento ${emDias||'conforme aprovação'} após cada medição.`;
+    default:return p.texto||'';
+  }
+}
+function lerPagamentoForm(){const tipo=$('card-pag-tipo').value;if(!tipo)return null;return{tipo,periodo:$('card-pag-periodo').value,sinal:$('card-pag-sinal').value?Number($('card-pag-sinal').value):null,dias:$('card-pag-dias').value===''?null:Number($('card-pag-dias').value),texto:tipo==='outra'?$('card-pagamento').value:undefined};}
+function atualizarPagamento(){
+  const t=$('card-pag-tipo').value;
+  $('card-pag-periodo').style.display=(t==='medicao'||t==='sinal_medicao')?'':'none';
+  $('box-pag-sinal').style.display=(t==='sinal_conclusao'||t==='sinal_medicao')?'':'none';
+  $('box-pag-dias').style.display=(t&&t!=='outra')?'':'none';
+  const livre=!t||t==='outra';$('card-pagamento').readOnly=!livre;
+  if(!livre)$('card-pagamento').value=textoPagamento(lerPagamentoForm());
+}
+function preencherPagamentoForm(p,textoAntigo){
+  $('card-pag-tipo').value=p&&p.tipo?p.tipo:(textoAntigo?'outra':'');
+  $('card-pag-periodo').value=(p&&p.periodo)||'mensal';
+  $('card-pag-sinal').value=p&&p.sinal!=null?p.sinal:'';
+  $('card-pag-dias').value=p&&p.dias!=null?p.dias:'';
+  $('card-pagamento').value=textoAntigo||'';
+  atualizarPagamento();
+}
 function fmtData(d){if(!d)return'';const dt=d.length===10?new Date(d+'T00:00:00'):new Date(d);return dt.toLocaleDateString('pt-BR');}
 function fmtDataHora(d){if(!d)return'';const dt=new Date(d);return dt.toLocaleDateString('pt-BR')+' '+dt.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});}
 function diasDesde(d){if(!d)return 0;return Math.floor((Date.now()-new Date(d).getTime())/86400000);}
@@ -915,6 +981,10 @@ async function abrirModalCard(id=null){
   cardEditandoId=id;cardOriginal=null;itensLocais=[];contatosDoCliente=[];
   ['card-cliente','card-titulo','card-responsavel','card-valor','card-fechamento','card-prazo','card-escopo','card-pagamento','card-obs','card-nota1','card-nota2','card-dias','nct-nome','nct-cargo','nct-tel','nct-email','card-motivo-detalhe','ca-desc','ca-data'].forEach(i=>{$(i).value='';});
   $('card-validade').value='30';$('card-pct-mao').value='30';$('card-pct-ins').value='70';
+  $('card-prazo-unid').value='meses';preencherPagamentoForm(null,'');
+  arquivoPdfNovo=null;$('card-arquivo').value='';
+  $('card-arquivo-info').innerHTML='Envie o PDF da proposta: o arquivo fica guardado no atendimento e o CRM tenta preencher os campos sozinho (confira os campos destacados em amarelo).';
+  document.querySelectorAll('#modal-card .campo-preenchido').forEach(e=>e.classList.remove('campo-preenchido'));
   $('card-prob').value='';$('card-origem').value='';$('card-motivo-perda').value='';
   $('card-recorrente').checked=false;$('campo-recorrencia').style.display='none';
   ['btn-excluir','btn-versao','btn-pdf','btn-projeto'].forEach(b=>$(b).style.display='none');
@@ -942,14 +1012,15 @@ async function abrirModalCard(id=null){
     $('card-empresa-id').value=card.empresa_id||'';
     $('card-titulo').value=card.titulo||'';
     $('card-responsavel').value=card.responsavel||'';
-    $('card-valor').value=card.valor_estimado??'';
+    $('card-valor').value=card.valor_estimado!=null?fmtMoeda(card.valor_estimado):'';
     $('card-prob').value=card.probabilidade??'';
     $('card-origem').value=card.origem||'';
     $('card-fechamento').value=card.data_fechamento_prevista||'';
-    $('card-prazo').value=card.prazo_execucao_meses||'';
+    $('card-prazo').value=card.prazo_execucao_meses||'';$('card-prazo-unid').value=card.prazo_execucao_unidade||'meses';
     $('card-validade').value=card.validade_proposta_dias||30;
     $('card-escopo').value=card.escopo||'';
-    $('card-pagamento').value=card.forma_pagamento||'';
+    preencherPagamentoForm(card.pagamento,card.forma_pagamento||'');
+    mostrarArquivoProposta(card);
     $('card-pct-mao').value=card.percentual_mao_obra??30;
     $('card-pct-ins').value=card.percentual_insumos??70;
     $('card-obs').value=card.observacoes||'';
@@ -1019,7 +1090,7 @@ function addItem(){itensLocais.push({item:String(itensLocais.length+1),codigo:''
 function atualizarTotal(sincronizar){
   const total=itensLocais.reduce((s,i)=>s+(i.valor_total||0),0);
   $('total-geral').textContent=fmtMoeda(total);
-  if(sincronizar&&total>0)$('card-valor').value=total.toFixed(2);
+  if(sincronizar&&total>0)$('card-valor').value=fmtMoeda(total);
 }
 
 async function salvarCard(){
@@ -1028,6 +1099,12 @@ async function salvarCard(){
   if(!empId){alert('Selecione a empresa responsável.');return;}
   if(!cli){alert('Escolha o cliente da lista (digite o código ou o nome) ou cadastre um cliente novo.');return;}
   if(!titulo){alert('Informe o título da proposta.');return;}
+  const valorTxt=$('card-valor').value.trim(),valor=parseMoeda(valorTxt);
+  if(valorTxt&&(valor==null||valor<0)){alert('Valor total inválido. Digite só os números: 498000 vira 4.980,00.');return;}
+  if($('card-prazo').value&&!(Number($('card-prazo').value)>0)){alert('Prazo de execução inválido.');return;}
+  if($('card-contato').value==='__novo'&&!telValido($('nct-tel').value)){alert('Telefone do contato incompleto. Use DDD + número: (21) 99999-9999 ou (21) 3333-4444.');return;}
+  const pag=lerPagamentoForm();
+  if(pag&&(pag.tipo==='sinal_conclusao'||pag.tipo==='sinal_medicao')&&!(pag.sinal>0&&pag.sinal<100)){alert('Informe o percentual do sinal (entre 1 e 99%).');return;}
   let etapa=cardEditandoId?$('card-etapa-select').value:'entrada';
   if(etapa==='perdida'&&!$('card-motivo-perda').value){alert('Informe o motivo da perda.');return;}
   const btn=$('btn-salvar-card');btn.disabled=true;
@@ -1036,21 +1113,23 @@ async function salvarCard(){
     if(contatoId==='__novo'){
       const nome=$('nct-nome').value.trim();
       if(!nome){alert('Informe o nome do novo contato.');return;}
-      const{data:nc,error}=await sb.from('contatos').insert({cliente_id:cli.id,nome,cargo:$('nct-cargo').value||null,telefone:$('nct-tel').value||null,email:$('nct-email').value||null,principal:contatosDoCliente.length===0}).select().single();
+      const{data:nc,error}=await sb.from('contatos').insert({cliente_id:cli.id,nome,cargo:$('nct-cargo').value||null,telefone:fmtTel($('nct-tel').value)||null,email:$('nct-email').value||null,principal:contatosDoCliente.length===0}).select().single();
       if(erroSB(error,'Erro ao salvar o contato'))return;
       contatoId=nc.id;
     }
     const dados={
       empresa_id:empId,cliente_id:cli.id,contato_id:contatoId,titulo,
       responsavel:$('card-responsavel').value.trim()||null,
-      valor_estimado:$('card-valor').value||null,
+      valor_estimado:valor,
       probabilidade:$('card-prob').value===''?null:+$('card-prob').value,
       origem:$('card-origem').value||null,
       data_fechamento_prevista:$('card-fechamento').value||null,
       escopo:$('card-escopo').value,
-      prazo_execucao_meses:$('card-prazo').value||null,
+      prazo_execucao_meses:$('card-prazo').value?Math.round(Number($('card-prazo').value)):null,
+      prazo_execucao_unidade:$('card-prazo').value?$('card-prazo-unid').value:null,
       validade_proposta_dias:$('card-validade').value||30,
-      forma_pagamento:$('card-pagamento').value,
+      forma_pagamento:pag?(pag.tipo==='outra'?$('card-pagamento').value:textoPagamento(pag)):($('card-pagamento').value||null),
+      pagamento:pag,
       percentual_mao_obra:$('card-pct-mao').value||30,
       percentual_insumos:$('card-pct-ins').value||70,
       observacoes:$('card-obs').value,
@@ -1070,12 +1149,16 @@ async function salvarCard(){
       dados.numero_proposta=await gerarNumeroProposta(empId);dados.versao=1;
       const{data:nc,error}=await sb.from('cards').insert(dados).select().single();
       if(erroSB(error))return;
-      savedId=nc.id;
+      savedId=nc.id;cardEditandoId=savedId;
     }
     await sb.from('itens_proposta').delete().eq('card_id',savedId);
     if(itensLocais.length){
       const{error}=await sb.from('itens_proposta').insert(itensLocais.map((i,idx)=>({card_id:savedId,ordem:idx,item:i.item||'',codigo:i.codigo||'',descricao:i.descricao||'',unidade:i.unidade||'',quantidade:i.quantidade||0,valor_unitario:i.valor_unitario||0,valor_total:i.valor_total||0})));
       if(erroSB(error,'Erro ao salvar os itens'))return;
+    }
+    if(arquivoPdfNovo){
+      const ok=await enviarArquivoProposta(savedId,dados.numero_proposta||(cardOriginal&&cardOriginal.numero_proposta),arquivoPdfNovo);
+      if(!ok)return;
     }
     const virouFechada=etapa==='fechada'&&cardOriginal&&cardOriginal.etapa!=='fechada'&&!cardOriginal.projeto_id;
     fecharModal('modal-card');
@@ -1093,7 +1176,7 @@ async function criarNovaVersao(){
   const{data:irmas}=await sb.from('cards').select('versao').or(`id.eq.${raiz},card_pai_id.eq.${raiz}`);
   const novaVersao=Math.max(o.versao||1,...(irmas||[]).map(x=>x.versao||1))+1;
   const copia={...o};
-  ['id','criado_em','etapa_desde','data_fechamento_real','projeto_id','clientes','empresas'].forEach(k=>delete copia[k]);
+  ['id','criado_em','etapa_desde','data_fechamento_real','projeto_id','clientes','empresas','arquivo_proposta','arquivo_proposta_nome'].forEach(k=>delete copia[k]);
   Object.assign(copia,{versao:novaVersao,card_pai_id:raiz,etapa:'elaboracao',motivo_perda:null,motivo_perda_detalhe:null,atualizado_em:new Date().toISOString()});
   const{data:nova,error}=await sb.from('cards').insert(copia).select().single();
   if(erroSB(error))return;
@@ -1269,7 +1352,7 @@ function atualizarPastaCliente(){
 }
 async function renderDetalheCliente(c){
   const{data:cts}=await sb.from('contatos').select('*').eq('cliente_id',c.id).order('principal',{ascending:false}).order('nome');
-  $('mc-contatos').innerHTML=(cts&&cts.length)?'<div class="sub-lista">'+cts.map(ct=>`<div class="sub-item clicavel" data-ct="${esc(ct.id)}"><div><strong>${esc(ct.nome)}</strong>${ct.principal?' <span class="badge badge-ok">principal</span>':''}${ct.cargo?`<div style="color:var(--texto2);font-size:12px">${esc(ct.cargo)}</div>`:''}</div><div style="text-align:right;font-size:12px;color:var(--texto2)">${esc(ct.telefone||'')}${ct.email?`<br><a href="mailto:${esc(ct.email)}" onclick="event.stopPropagation()">${esc(ct.email)}</a>`:''}</div></div>`).join('')+'</div>':'<p class="vazio">Nenhum contato cadastrado.</p>';
+  $('mc-contatos').innerHTML=(cts&&cts.length)?'<div class="sub-lista">'+cts.map(ct=>`<div class="sub-item clicavel" data-ct="${esc(ct.id)}"><div><strong>${esc(ct.nome)}</strong>${ct.principal?' <span class="badge badge-ok">principal</span>':''}${ct.cargo?`<div style="color:var(--texto2);font-size:12px">${esc(ct.cargo)}</div>`:''}</div><div style="text-align:right;font-size:12px;color:var(--texto2)">${esc(fmtTel(ct.telefone))}${ct.email?`<br><a href="mailto:${esc(ct.email)}" onclick="event.stopPropagation()">${esc(ct.email)}</a>`:''}</div></div>`).join('')+'</div>':'<p class="vazio">Nenhum contato cadastrado.</p>';
   $('mc-contatos').querySelectorAll('[data-ct]').forEach(el=>el.onclick=()=>editarContato(cts.find(x=>x.id===el.dataset.ct)));
   const cards=todosCards.filter(x=>x.cliente_id===c.id);
   $('mc-cards').innerHTML=cards.length?'<div class="sub-lista">'+cards.map(x=>`<div class="sub-item clicavel" data-card="${esc(x.id)}"><div><strong>${esc(x.titulo)}</strong><div style="font-size:12px;color:var(--texto2)">${esc(x.numero_proposta||'')}${x.versao>1?' · V'+esc(x.versao):''} · ${esc(x.empresas?x.empresas.sigla:'')} · ${esc(fmtData(x.criado_em))}</div></div><div style="text-align:right"><span class="badge ${x.etapa==='fechada'?'badge-ok':x.etapa==='perdida'?'badge-atraso':'badge-cinza'}">${esc(ETAPA_LABEL[x.etapa]||x.etapa)}</span><div style="font-size:12px;margin-top:3px">R$ ${esc(fmtMoeda(x.valor_estimado))}</div></div></div>`).join('')+'</div>':'<p class="vazio">Nenhum atendimento ainda.</p>';
@@ -1331,14 +1414,15 @@ async function confirmarMesclar(){
 function editarContato(ct=null){
   contatoEditandoId=ct?ct.id:null;
   $('mct-titulo').textContent=ct?'Editar contato':'Novo contato';
-  $('mct-nome').value=ct?ct.nome:'';$('mct-cargo').value=ct?ct.cargo||'':'';$('mct-tel').value=ct?ct.telefone||'':'';$('mct-email').value=ct?ct.email||'':'';
+  $('mct-nome').value=ct?ct.nome:'';$('mct-cargo').value=ct?ct.cargo||'':'';$('mct-tel').value=ct?fmtTel(ct.telefone):'';$('mct-email').value=ct?ct.email||'':'';
   $('mct-principal').checked=ct?!!ct.principal:false;
   $('mct-excluir').style.display=ct?'inline-block':'none';
   abrirModal('modal-contato');
 }
 async function salvarContato(){
   const nome=$('mct-nome').value.trim();if(!nome){alert('Informe o nome.');return;}
-  const dados={cliente_id:clienteEditandoId,nome,cargo:$('mct-cargo').value||null,telefone:$('mct-tel').value||null,email:$('mct-email').value||null,principal:$('mct-principal').checked};
+  if(!telValido($('mct-tel').value)){alert('Telefone incompleto. Use DDD + número: (21) 99999-9999 ou (21) 3333-4444.');return;}
+  const dados={cliente_id:clienteEditandoId,nome,cargo:$('mct-cargo').value||null,telefone:fmtTel($('mct-tel').value)||null,email:$('mct-email').value||null,principal:$('mct-principal').checked};
   if(dados.principal)await sb.from('contatos').update({principal:false}).eq('cliente_id',clienteEditandoId);
   const{error}=contatoEditandoId?await sb.from('contatos').update(dados).eq('id',contatoEditandoId):await sb.from('contatos').insert(dados);
   if(erroSB(error))return;
@@ -1453,6 +1537,127 @@ async function criarRecorrente(c){
   await carregarCards();if(tabAtual==='funil')renderFunil();
 }
 
+/* ================= PROPOSTA ENVIADA (PDF): guardar e ler ================= */
+const BUCKET_PROPOSTAS='propostas';
+const NOSSOS_CNPJS=['27400958000126','15017005000102'];
+let pdfjsPronto=null;
+function carregarPdfJs(){
+  if(pdfjsPronto)return pdfjsPronto;
+  pdfjsPronto=new Promise((ok,falha)=>{
+    const sc=document.createElement('script');
+    sc.src='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+    sc.onload=()=>{window.pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';ok(window.pdfjsLib);};
+    sc.onerror=()=>{pdfjsPronto=null;falha(new Error('Não foi possível carregar o leitor de PDF.'));};
+    document.head.appendChild(sc);
+  });
+  return pdfjsPronto;
+}
+// Texto do PDF linha a linha (agrupa os pedaços pela altura na página)
+async function textoDoPdf(arquivo){
+  const lib=await carregarPdfJs();
+  const pdf=await lib.getDocument({data:await arquivo.arrayBuffer()}).promise;
+  const linhas=[];
+  for(let n=1;n<=Math.min(pdf.numPages,15);n++){
+    const pg=await pdf.getPage(n);const tc=await pg.getTextContent();
+    const porY={};
+    tc.items.forEach(it=>{if(!it.str)return;const y=Math.round(it.transform[5]);const k=Object.keys(porY).find(v=>Math.abs(v-y)<=2)||y;(porY[k]=porY[k]||[]).push(it);});
+    Object.keys(porY).map(Number).sort((a,b)=>b-a).forEach(y=>{
+      const l=porY[y].sort((a,b)=>a.transform[4]-b.transform[4]).map(i=>i.str).join(' ').replace(/\s+/g,' ').trim();
+      if(l)linhas.push(l);
+    });
+  }
+  return linhas;
+}
+const numBR=t=>Number(String(t).replace(/\./g,'').replace(',','.'));
+function extrairDadosProposta(linhas){
+  const txt=linhas.join('\n'),plano=linhas.join(' ');
+  const r={};
+  // valor total: prioriza a frase "valor total"; senão, o maior valor em R$
+  let m=plano.match(/valor\s+(?:global|total)[^R\d]{0,140}R\$\s*([\d.]+,\d{2})/i);
+  if(m)r.valor=numBR(m[1]);
+  else{const vs=[...plano.matchAll(/R\$\s*([\d.]+,\d{2})/g)].map(x=>numBR(x[1]));if(vs.length)r.valor=Math.max(...vs);}
+  // prazo
+  m=plano.match(/prazo\s+(?:de\s+)?(?:execu[cç][aã]o|entrega|conclus[aã]o)[^\d]{0,40}?(\d{1,4})\s*\(?[^)]{0,20}\)?\s*(dias?|semanas?|m[eê]s(?:es)?)/i);
+  if(m){r.prazo=Number(m[1]);r.unid=/^d/i.test(m[2])?'dias':/^s/i.test(m[2])?'semanas':'meses';}
+  // validade
+  m=plano.match(/validade[^\d]{0,60}(\d{1,3})\s*\(?[^)]{0,20}\)?\s*dias/i);if(m)r.validade=Number(m[1]);
+  // forma de pagamento
+  const iPag=linhas.findIndex(l=>/(?:forma|condi[cç][oõ]es?)\s+de\s+pagamento/i.test(l));
+  if(iPag>=0){
+    let fp=linhas[iPag].replace(/^.*?(?:forma|condi[cç][oõ]es?)\s+de\s+pagamento\s*[:\-–]?\s*/i,'');
+    // continua na linha seguinte só se a frase não terminou e a próxima não é outro título ("Algo:")
+    for(let k=iPag+1;k<linhas.length&&k<=iPag+3&&(!fp||!/[.;]\s*$/.test(fp))&&!/^[^:]{1,40}:/.test(linhas[k]);k++)fp+=' '+linhas[k];
+    fp=fp.replace(/\s+/g,' ').trim();
+  if(fp.length>=3){
+    r.pagTexto=fp;
+    const pg={tipo:'outra',texto:fp};
+    const sinal=fp.match(/(\d{1,2})\s*%[^.]{0,40}(?:sinal|entrada|in[ií]cio|adiantamento)|(?:sinal|entrada|adiantamento)[^.%]{0,40}?(\d{1,2})\s*%/i);
+    const dias=fp.match(/(\d{1,3})\s*(?:\([^)]*\)\s*)?dias/i);
+    const medicao=/medi[cç][aã]o|medi[cç][oõ]es/i.test(fp),conclusao=/conclus[aã]o|t[eé]rmino|final(?:iza[cç][aã]o)?\s+d/i.test(fp);
+    if(sinal){pg.tipo=medicao?'sinal_medicao':'sinal_conclusao';pg.sinal=Number(sinal[1]||sinal[2]);}
+    else if(medicao)pg.tipo='medicao';
+    else if(conclusao)pg.tipo='conclusao';
+    if(pg.tipo!=='outra'){delete pg.texto;pg.dias=dias?Number(dias[1]):null;pg.periodo=/quinzen/i.test(fp)?'quinzenal':/seman/i.test(fp)?'semanal':'mensal';}
+    r.pagamento=pg;
+  }}
+  // título / objeto
+  m=txt.match(/(?:^|\n)\s*(?:objeto|assunto|ref(?:er[eê]ncia)?\.?)\s*[:\-–]\s*([^\n]{4,160})/i);
+  if(m)r.titulo=m[1].trim();
+  // escopo: do título "escopo"/"especificação" até a próxima seção de valor/prazo/pagamento
+  m=txt.match(/(?:escopo(?:\s+dos\s+servi[cç]os)?|especifica[cç][aã]o(?:\s+dos\s+servi[cç]os)?|descri[cç][aã]o\s+dos\s+servi[cç]os)\s*:?\s*\n([\s\S]{20,3000}?)(?=\n[^\n]{0,30}(?:valor|prazo|forma\s+de\s+pagamento|condi[cç][oõ]es|validade|investimento)\b)/i);
+  if(m)r.escopo=m[1].trim();
+  // número da proposta no padrão do CRM (EK001-1026)
+  m=plano.match(/\b((?:EK|VB|BL|BVK)\d{3}-\d{4})(?:\.V(\d+))?/);if(m)r.numero=m[1];
+  // cliente pelo CNPJ/CPF (ignorando os do próprio grupo)
+  const docs=[...plano.matchAll(/\d{2}\.?\d{3}\.?\d{3}\/?\d{4}-?\d{2}|\d{3}\.\d{3}\.\d{3}-\d{2}/g)].map(x=>x[0].replace(/\D/g,'')).filter(d=>!NOSSOS_CNPJS.includes(d));
+  for(const d of docs){const c=todosClientes.find(c=>String(c.documento||'').replace(/\D/g,'')===d);if(c){r.cliente=c;break;}}
+  if(!r.cliente){const cod=plano.match(/\bC(\d{3})\b/);if(cod){const c=todosClientes.find(c=>c.codigo==='C'+cod[1]);if(c)r.cliente=c;}}
+  return r;
+}
+function marcarPreenchido(id){const e=$(id);if(e){e.classList.add('campo-preenchido');e.addEventListener('input',()=>e.classList.remove('campo-preenchido'),{once:true});}}
+async function lerPdfProposta(inp){
+  const f=inp.files&&inp.files[0];arquivoPdfNovo=null;
+  if(!f)return;
+  if(!/\.pdf$/i.test(f.name)&&f.type!=='application/pdf'){alert('Envie um arquivo PDF.');inp.value='';return;}
+  if(f.size>20*1024*1024){alert('PDF maior que 20 MB.');inp.value='';return;}
+  arquivoPdfNovo=f;
+  const info=$('card-arquivo-info');info.textContent='Lendo o PDF…';
+  let d;
+  try{d=extrairDadosProposta(await textoDoPdf(f));}
+  catch(e){console.error(e);info.textContent=`"${f.name}" será guardado ao salvar, mas não consegui ler o texto (PDF escaneado?). Preencha os campos à mão.`;return;}
+  const temValor=id=>!!$(id).value.trim();
+  const algumPreenchido=['card-titulo','card-valor','card-prazo','card-escopo'].some(temValor);
+  const sobrescrever=!algumPreenchido||confirm('Alguns campos já estão preenchidos. Substituir pelo que foi lido no PDF?\n(OK = substituir · Cancelar = preencher só os vazios)');
+  const pode=id=>sobrescrever||!temValor(id);
+  const feitos=[];
+  if(d.cliente&&pode('card-cliente')){$('card-cliente').value=rotuloCliente(d.cliente);marcarPreenchido('card-cliente');feitos.push('cliente');await clienteEscolhidoNoCard();}
+  if(d.titulo&&pode('card-titulo')){$('card-titulo').value=d.titulo;marcarPreenchido('card-titulo');feitos.push('título');}
+  if(d.valor&&pode('card-valor')){$('card-valor').value=fmtMoeda(d.valor);marcarPreenchido('card-valor');feitos.push('valor');}
+  if(d.prazo&&pode('card-prazo')){$('card-prazo').value=d.prazo;$('card-prazo-unid').value=d.unid;marcarPreenchido('card-prazo');feitos.push('prazo');}
+  if(d.validade&&pode('card-validade')){$('card-validade').value=d.validade;marcarPreenchido('card-validade');feitos.push('validade');}
+  if(d.pagamento&&(sobrescrever||!$('card-pag-tipo').value)){preencherPagamentoForm(d.pagamento,d.pagamento.tipo==='outra'?d.pagTexto:'');marcarPreenchido('card-pag-tipo');feitos.push('forma de pagamento');}
+  if(d.escopo&&pode('card-escopo')){$('card-escopo').value=d.escopo;marcarPreenchido('card-escopo');feitos.push('escopo');}
+  info.innerHTML=`📎 <strong>${esc(f.name)}</strong> será guardado ao salvar.<br>`+(feitos.length?`Preenchido a partir do PDF: ${esc(feitos.join(', '))}. Confira os campos em amarelo antes de salvar.`:'Não encontrei campos para preencher automaticamente — preencha à mão.')+(d.numero?`<br>Número encontrado no PDF: <span class="cod">${esc(d.numero)}</span>`:'');
+}
+async function enviarArquivoProposta(cardId,numero,f){
+  const limpo=semAcento(f.name).replace(/[^\w.\- ]+/g,'_').replace(/\s+/g,' ').trim();
+  const caminho=`${numero||cardId}/${Date.now()}_${limpo}`;
+  const{error}=await sb.storage.from(BUCKET_PROPOSTAS).upload(caminho,f,{contentType:'application/pdf',upsert:false});
+  if(erroSB(error,'O atendimento foi salvo, mas o PDF não pôde ser enviado'))return false;
+  const{error:e2}=await sb.from('cards').update({arquivo_proposta:caminho,arquivo_proposta_nome:f.name}).eq('id',cardId);
+  if(erroSB(e2,'O PDF foi enviado, mas não ficou ligado ao atendimento'))return false;
+  arquivoPdfNovo=null;return true;
+}
+function mostrarArquivoProposta(card){
+  if(!card||!card.arquivo_proposta)return;
+  $('card-arquivo-info').innerHTML=`📎 Proposta guardada: <a href="#" onclick="abrirArquivoProposta('${esc(card.arquivo_proposta)}');return false">${esc(card.arquivo_proposta_nome||'abrir PDF')}</a> · para trocar, escolha outro arquivo.`;
+}
+async function abrirArquivoProposta(caminho){
+  const{data,error}=await sb.storage.from(BUCKET_PROPOSTAS).createSignedUrl(caminho,600);
+  if(erroSB(error,'Não foi possível abrir o PDF'))return;
+  window.open(data.signedUrl,'_blank','noopener');
+}
+
 /* ================= PDF DA PROPOSTA ================= */
 async function gerarPDF(){
   if(!cardEditandoId)return;
@@ -1516,7 +1721,7 @@ async function gerarPDF(){
   <tbody>${itensHTML}</tbody>
   <tfoot><tr class="total-row"><td colspan="6" style="text-align:right">VALOR TOTAL</td><td>R$ ${total}</td></tr></tfoot></table>`:''}
   <div class="valor-total">Valor total dos serviços, materiais, insumos e mão de obra: R$ ${total}</div>
-  ${card.prazo_execucao_meses?`<p><strong>Prazo de Execução:</strong> até ${esc(card.prazo_execucao_meses)} ${card.prazo_execucao_meses==1?'mês':'meses'}</p>`:''}
+  ${card.prazo_execucao_meses?`<p><strong>Prazo de Execução:</strong> até ${esc(textoPrazo(card.prazo_execucao_meses,card.prazo_execucao_unidade))}</p>`:''}
   <p><strong>Validade da proposta:</strong> ${esc(card.validade_proposta_dias||30)} dias.</p>
   ${card.forma_pagamento?`<p><strong>Forma de Pagamento:</strong> ${esc(card.forma_pagamento)}</p>`:''}
   ${card.percentual_mao_obra?`<p><strong>Composição de Custos:</strong> ${esc(card.percentual_mao_obra)}% Mão de Obra + ${esc(card.percentual_insumos)}% Insumos e Equipamentos</p>`:''}
