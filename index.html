@@ -182,6 +182,45 @@ table.tabela td.num{text-align:right;font-variant-numeric:tabular-nums;white-spa
 .total-box{text-align:right;margin-top:12px;font-size:16px;font-weight:700;color:var(--verde)}
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#222;color:#fff;padding:12px 20px;border-radius:8px;font-size:14px;z-index:2000;opacity:0;transition:opacity .3s;pointer-events:none;max-width:90vw}
 .toast.mostrar{opacity:1}
+/* PERFIS / SOMENTE LEITURA */
+.so-leitura .so-edicao{display:none!important}
+.so-leitura input:disabled,.so-leitura select:disabled,.so-leitura textarea:disabled{background:#f7f7f7;color:#444;cursor:default}
+.aviso-leitura{display:none;background:#f0f4ff;border:1.5px solid #9db4e8;color:#24427a;border-radius:8px;padding:8px 12px;font-size:12px;margin-bottom:12px}
+.so-leitura .aviso-leitura{display:block}
+.btn-topo{background:rgba(255,255,255,.15);border:none;color:#fff;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:13px}
+.perfil-tag{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;background:rgba(255,255,255,.22);padding:2px 8px;border-radius:20px;margin-left:6px}
+/* COBRANÇA NO FUNIL */
+.col-cobranca1 .coluna-header{background:#fff3e0;color:#bf360c}
+.col-cobranca2 .coluna-header{background:#ffe0cc;color:#a0410d}
+.col-negociacao .coluna-header{background:#ede7f6;color:#4527a0}
+.badge-cobrar{background:#ffe0cc;color:#a0410d}
+.btn-cobrei{background:#fff;border:1.5px solid var(--laranja);color:#a0410d;border-radius:20px;font-size:10px;font-weight:700;padding:1px 8px;cursor:pointer}
+.btn-cobrei:hover{background:#fff3e0}
+.cobranca-linha{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:13px;color:var(--verde)}
+.cobranca-linha input{border:1.5px solid var(--verde);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit}
+/* DOCUMENTOS / AVISOS */
+.avisos-dia{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:16px;margin-bottom:20px}
+.painel-alerta{border-color:#f1b5ae}
+.painel h3 .contagem{float:right;font-size:12px;font-weight:600}
+.resumo-docs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.resumo-docs .pilula{border-radius:8px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid transparent}
+.pilula.vermelha{background:#f8d7da;color:#842029}
+.pilula.amarela{background:#fff3cd;color:#856404}
+.pilula.verde{background:#e8f5e9;color:#1b5e20}
+.pilula.cinza{background:#eee;color:#555}
+.pilula.marcada{border-color:currentColor}
+tr.doc-vencido td{background:#fff5f5}
+.modal-avisos .grupo-aviso{margin-top:14px}
+.modal-avisos .grupo-aviso h4{font-size:13px;margin-bottom:6px}
+.modal-avisos .lista-mini{max-height:300px;overflow-y:auto;border:1.5px solid var(--borda);border-radius:10px;padding:0 12px}
+.radios{display:flex;gap:18px;padding:8px 0}
+.radios label{display:flex;gap:6px;align-items:center;font-weight:500;font-size:14px;cursor:pointer}
+.radios input{accent-color:var(--verde);width:auto!important;padding:0!important;margin:0}
+.radios label{margin:0!important;font-size:14px!important}
+.tabela select,.tabela input[type=text]{padding:6px 8px;border:1.5px solid var(--borda);border-radius:6px;font-size:13px;font-family:inherit;background:#fff}
+.legenda-perfis{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin-bottom:16px}
+.legenda-perfis div{background:#fff;border:1.5px solid var(--borda);border-radius:10px;padding:10px 14px;font-size:12px;color:var(--texto2)}
+.legenda-perfis strong{display:block;color:var(--texto);font-size:13px;margin-bottom:3px}
 @media(max-width:700px){
   .form-grid{grid-template-columns:1fr}.conteudo{padding:12px}.modal{padding:18px}.topbar{padding:0 12px}
   .topbar-logo{font-size:15px}.empresa-selector label{display:none}#user-nome{display:none}.empresa-selector{padding:6px 8px;min-width:0}.empresa-selector select{max-width:150px;font-size:13px}.topbar{gap:8px}.btn-sair{padding:6px 10px}
@@ -213,17 +252,20 @@ table.tabela td.num{text-align:right;font-variant-numeric:tabular-nums;white-spa
       <select id="select-empresa" onchange="trocarEmpresa()"><option value="todas">— Todas as empresas —</option></select>
     </div>
     <div class="topbar-right">
-      <span id="user-nome" style="font-size:12px;opacity:.8"></span>
+      <span id="user-nome" style="font-size:12px;opacity:.9"></span>
+      <button class="btn-topo" onclick="abrirModalSenha()" title="Trocar minha senha">🔑 Senha</button>
       <button class="btn-sair" onclick="sair()">Sair</button>
     </div>
   </div>
   <div class="tabs" id="tabs">
     <div class="tab ativo" data-tab="painel">Painel</div>
+    <div class="tab" data-tab="documentos">Documentos <span id="tab-docs-badge"></span></div>
     <div class="tab" data-tab="funil">Funil de Propostas</div>
     <div class="tab" data-tab="clientes">Clientes</div>
     <div class="tab" data-tab="projetos">Projetos</div>
     <div class="tab" data-tab="atividades">Atividades <span id="tab-ativ-badge"></span></div>
     <div class="tab" data-tab="empresas">Empresas</div>
+    <div class="tab" data-tab="usuarios" id="tab-btn-usuarios" style="display:none">Usuários</div>
   </div>
   <div class="conteudo">
     <div class="aviso" id="aviso-migracao" style="display:none"></div>
@@ -240,6 +282,10 @@ table.tabela td.num{text-align:right;font-variant-numeric:tabular-nums;white-spa
           <select id="painel-ano" onchange="renderPainel()"></select>
         </div>
       </div>
+      <div class="avisos-dia">
+        <div class="painel" id="pa-docs"><h3>📄 Documentos e certidões <span class="contagem" id="pa-docs-cont"></span></h3><div id="p-docs-resumo" class="resumo-docs"></div><div id="p-docs" class="lista-mini"></div></div>
+        <div class="painel" id="pa-cobr"><h3>📞 Cobrar retorno de propostas <span class="contagem" id="pa-cobr-cont"></span></h3><div id="p-cobr" class="lista-mini"></div></div>
+      </div>
       <div class="kpis" id="kpis"></div>
       <div class="paineis">
         <div class="painel"><h3>Funil — propostas em aberto por etapa</h3><div id="p-funil"></div></div>
@@ -255,7 +301,7 @@ table.tabela td.num{text-align:right;font-variant-numeric:tabular-nums;white-spa
     <div id="tab-funil" style="display:none">
       <div class="barra-acoes">
         <h2 id="titulo-funil">Funil de atendimentos</h2>
-        <button class="btn-novo" onclick="abrirModalCard()">+ Novo Atendimento</button>
+        <button class="btn-novo" id="btn-novo-card" onclick="abrirModalCard()">+ Novo Atendimento</button>
       </div>
       <div class="filtros">
         <input type="search" id="funil-busca" placeholder="Buscar por título, cliente, código ou nº da proposta" oninput="renderFunil()">
@@ -265,7 +311,7 @@ table.tabela td.num{text-align:right;font-variant-numeric:tabular-nums;white-spa
           <option value="365">Fechadas/perdidas: últimos 12 meses</option>
           <option value="0">Fechadas/perdidas: todas</option>
         </select>
-        <span class="dica">Arraste os cards entre as colunas para mudar a etapa.</span>
+        <span class="dica" id="funil-dica">Arraste os cards entre as colunas para mudar a etapa.</span>
       </div>
       <div class="funil-container"><div class="funil" id="funil"></div></div>
     </div>
@@ -274,7 +320,7 @@ table.tabela td.num{text-align:right;font-variant-numeric:tabular-nums;white-spa
     <div id="tab-clientes" style="display:none">
       <div class="barra-acoes">
         <h2>Clientes</h2>
-        <button class="btn-novo" onclick="abrirModalCliente()">+ Novo Cliente</button>
+        <button class="btn-novo" id="btn-novo-cliente" onclick="abrirModalCliente()">+ Novo Cliente</button>
       </div>
       <div class="filtros">
         <input type="search" id="cli-busca" placeholder="Buscar por código, nome, razão social, CNPJ ou contato" oninput="renderClientes()">
@@ -294,7 +340,7 @@ table.tabela td.num{text-align:right;font-variant-numeric:tabular-nums;white-spa
     <div id="tab-projetos" style="display:none">
       <div class="barra-acoes">
         <h2>Projetos</h2>
-        <button class="btn-novo" onclick="abrirModalProjeto()">+ Novo Projeto</button>
+        <button class="btn-novo" id="btn-novo-projeto" onclick="abrirModalProjeto()">+ Novo Projeto</button>
       </div>
       <div class="filtros">
         <input type="search" id="proj-busca" placeholder="Buscar por código, cliente ou nome" oninput="renderProjetos()">
@@ -311,7 +357,7 @@ table.tabela td.num{text-align:right;font-variant-numeric:tabular-nums;white-spa
     <div id="tab-atividades" style="display:none">
       <div class="barra-acoes">
         <h2>Atividades e tarefas</h2>
-        <button class="btn-novo" onclick="abrirModalAtividade()">+ Nova Atividade</button>
+        <button class="btn-novo" id="btn-nova-ativ" onclick="abrirModalAtividade()">+ Nova Atividade</button>
       </div>
       <div class="filtros">
         <select id="ativ-filtro" onchange="renderAtividades()">
@@ -328,9 +374,61 @@ table.tabela td.num{text-align:right;font-variant-numeric:tabular-nums;white-spa
     <div id="tab-empresas" style="display:none">
       <div class="barra-acoes">
         <h2>Empresas do grupo</h2>
-        <button class="btn-novo" onclick="abrirModalEmpresa()">+ Nova Empresa</button>
+        <button class="btn-novo" id="btn-nova-empresa" onclick="abrirModalEmpresa()">+ Nova Empresa</button>
       </div>
       <div id="lista-empresas"></div>
+    </div>
+
+    <!-- DOCUMENTOS E CERTIDÕES -->
+    <div id="tab-documentos" style="display:none">
+      <div class="barra-acoes">
+        <h2 id="titulo-docs">Documentos e certidões</h2>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn-sec" onclick="abrirModalFuncionarios()">👷 Funcionários</button>
+          <button class="btn-sec" id="btn-tipos-doc" onclick="abrirModalTipos()">⚙️ Tipos de documento</button>
+          <button class="btn-novo" id="btn-novo-doc" onclick="abrirModalDocumento()">+ Novo documento</button>
+        </div>
+      </div>
+      <div class="resumo-docs" id="docs-resumo"></div>
+      <div class="filtros">
+        <input type="search" id="doc-busca" placeholder="Buscar por documento, funcionário, número ou órgão" oninput="renderDocumentos()">
+        <select id="doc-titular" onchange="renderDocumentos()">
+          <option value="">Empresas e funcionários</option>
+          <option value="empresa">Só documentos das empresas</option>
+          <option value="funcionario">Só documentos de funcionários</option>
+        </select>
+        <select id="doc-status" onchange="renderDocumentos()">
+          <option value="">Todos os status</option>
+          <option value="atencao">Vencidos + a vencer (aviso)</option>
+          <option value="vencido">Vencidos</option>
+          <option value="aviso">A vencer (dentro do aviso)</option>
+          <option value="ok">Em dia</option>
+          <option value="sem">Sem vencimento</option>
+        </select>
+        <select id="doc-situacao" onchange="renderDocumentos()">
+          <option value="vigente">Documentos atuais</option>
+          <option value="substituido">Histórico (já renovados)</option>
+          <option value="arquivado">Arquivados</option>
+        </select>
+        <span class="dica" id="doc-contagem"></span>
+      </div>
+      <div class="tabela-wrap"><table class="tabela" id="tabela-docs"></table></div>
+    </div>
+
+    <!-- USUÁRIOS (só administrador) -->
+    <div id="tab-usuarios" style="display:none">
+      <div class="barra-acoes"><h2>Usuários e perfis de acesso</h2></div>
+      <div class="info-box" style="display:block;line-height:1.6">
+        <strong>Para dar acesso a um funcionário:</strong> no Supabase, abra <em>Authentication → Users → Add user → Create new user</em>, informe o e-mail e uma senha provisória e marque <em>Auto Confirm User</em>. Ele aparece aqui como <em>Aguardando liberação</em>: escolha o perfil e clique em Salvar. Depois do primeiro acesso, ele troca a senha no botão 🔑 Senha.<br>
+        <strong>Funcionário saiu?</strong> Desmarque "Ativo" — o login para de funcionar no CRM e o histórico continua guardado.
+      </div>
+      <div class="legenda-perfis">
+        <div><strong>Administrador</strong>Tudo: usuários, empresas, exclusões e todas as abas.</div>
+        <div><strong>Comercial</strong>Funil, propostas, clientes, contatos, projetos e atividades. Não exclui atendimentos nem clientes. Documentos só consulta.</div>
+        <div><strong>Administrativo</strong>Documentos e certidões, funcionários, projetos e atividades. Funil e clientes só consulta.</div>
+        <div><strong>Consulta</strong>Vê tudo, não altera nada.</div>
+      </div>
+      <div class="tabela-wrap"><table class="tabela" id="tabela-usuarios"></table></div>
     </div>
   </div>
 </div>
@@ -340,6 +438,7 @@ table.tabela td.num{text-align:right;font-variant-numeric:tabular-nums;white-spa
   <div class="modal modal-lg">
     <h2 id="modal-titulo">Novo Atendimento</h2>
     <p class="modal-sub">Preencha os dados para acompanhar no funil e gerar a proposta.</p>
+    <div class="aviso-leitura">🔒 Seu perfil pode consultar este atendimento, mas não alterar.</div>
 
     <div class="numero-box" id="numero-box" style="display:none">
       <span id="numero-display">—</span>
@@ -350,6 +449,12 @@ table.tabela td.num{text-align:right;font-variant-numeric:tabular-nums;white-spa
     <div class="etapa-box" id="etapa-box" style="display:none">
       <span>Etapa atual: <small id="etapa-desde" style="font-weight:400"></small></span>
       <select id="card-etapa-select" onchange="mudouEtapaModal()"></select>
+      <div class="cobranca-linha" id="cobranca-box" style="display:none;flex-basis:100%">
+        <span>📞 Próxima cobrança de retorno:</span>
+        <input type="date" id="card-prox-cobranca">
+        <span id="cobranca-info" style="font-weight:400;color:var(--texto2)"></span>
+        <button class="btn-sec so-edicao" id="btn-registrar-cobranca" onclick="registrarCobranca(cardEditandoId,true)">Registrar cobrança feita</button>
+      </div>
     </div>
     <div class="perda-box" id="perda-box" style="display:none">
       <div class="form-grid">
@@ -369,7 +474,7 @@ table.tabela td.num{text-align:right;font-variant-numeric:tabular-nums;white-spa
         <input type="text" id="card-responsavel" list="dl-responsaveis" placeholder="Quem vai atender">
       </div>
       <div class="campo full">
-        <label>Cliente * <button class="btn-link" style="margin-left:8px" onclick="abrirModalCliente(null,true)">+ cadastrar cliente novo</button></label>
+        <label>Cliente * <button class="btn-link so-edicao" style="margin-left:8px" onclick="abrirModalCliente(null,true)">+ cadastrar cliente novo</button></label>
         <input type="text" id="card-cliente" list="dl-clientes" placeholder="Digite o código ou o nome (ex.: C009 ou ARKEMA)" onchange="clienteEscolhidoNoCard()" oninput="clienteEscolhidoNoCard()">
         <div class="dica" id="card-cliente-info"></div>
       </div>
@@ -451,13 +556,13 @@ table.tabela td.num{text-align:right;font-variant-numeric:tabular-nums;white-spa
       <tbody id="itens-body"></tbody>
     </table>
     </div>
-    <button class="btn-add-item" onclick="addItem()">+ Adicionar item</button>
+    <button class="btn-add-item so-edicao" onclick="addItem()">+ Adicionar item</button>
     <div class="total-box">Total: R$ <span id="total-geral">0,00</span></div>
 
     <div id="card-extras" style="display:none">
       <div class="secao">Atividades deste atendimento</div>
       <div id="card-atividades"></div>
-      <div class="ativ-form">
+      <div class="ativ-form so-edicao">
         <select id="ca-tipo"></select>
         <input type="text" id="ca-desc" placeholder="O que fazer / o que aconteceu">
         <input type="datetime-local" id="ca-data">
@@ -473,11 +578,11 @@ table.tabela td.num{text-align:right;font-variant-numeric:tabular-nums;white-spa
 
     <div class="modal-btns">
       <button class="btn-excluir" id="btn-excluir" style="display:none" onclick="excluirCard()">Excluir</button>
-      <button class="btn-versao" id="btn-versao" style="display:none" onclick="criarNovaVersao()">+ Nova versão</button>
-      <button class="btn-projeto" id="btn-projeto" style="display:none" onclick="abrirModalProjeto(null,cardEditandoId)">Gerar projeto</button>
+      <button class="btn-versao so-edicao" id="btn-versao" style="display:none" onclick="criarNovaVersao()">+ Nova versão</button>
+      <button class="btn-projeto so-edicao" id="btn-projeto" style="display:none" onclick="abrirModalProjeto(null,cardEditandoId)">Gerar projeto</button>
       <button class="btn-pdf" id="btn-pdf" style="display:none" onclick="gerarPDF()">📄 Gerar Proposta</button>
       <button class="btn-cancelar" onclick="fecharModal('modal-card')">Cancelar</button>
-      <button class="btn-salvar" id="btn-salvar-card" onclick="salvarCard()">Salvar</button>
+      <button class="btn-salvar so-edicao" id="btn-salvar-card" onclick="salvarCard()">Salvar</button>
     </div>
   </div>
 </div>
@@ -500,6 +605,7 @@ table.tabela td.num{text-align:right;font-variant-numeric:tabular-nums;white-spa
 <div class="modal-overlay" id="modal-cliente">
   <div class="modal modal-lg">
     <h2 id="mc-titulo">Novo Cliente</h2>
+    <div class="aviso-leitura">🔒 Seu perfil pode consultar este cliente, mas não alterar.</div>
     <div class="info-box" id="mc-info"></div>
     <div class="form-grid">
       <div class="campo"><label>Código</label><input type="text" id="mc-codigo" readonly></div>
@@ -514,15 +620,15 @@ table.tabela td.num{text-align:right;font-variant-numeric:tabular-nums;white-spa
       <div class="campo full"><label>Observações</label><textarea id="mc-obs" rows="3"></textarea></div>
     </div>
     <div id="mc-extras" style="display:none">
-      <div class="secao">Contatos <button class="btn-sec" onclick="editarContato()">+ Contato</button></div>
+      <div class="secao">Contatos <button class="btn-sec so-edicao" onclick="editarContato()">+ Contato</button></div>
       <div id="mc-contatos"></div>
       <div class="secao">Propostas / atendimentos</div>
       <div id="mc-cards"></div>
-      <div class="secao">Projetos <button class="btn-sec" id="mc-btn-proj">+ Projeto</button></div>
+      <div class="secao">Projetos <button class="btn-sec so-edicao" id="mc-btn-proj">+ Projeto</button></div>
       <div id="mc-projetos"></div>
       <div class="secao">Atividades</div>
       <div id="mc-atividades"></div>
-      <div class="ativ-form">
+      <div class="ativ-form so-edicao">
         <select id="mca-tipo"></select>
         <input type="text" id="mca-desc" placeholder="O que fazer / o que aconteceu">
         <input type="datetime-local" id="mca-data">
@@ -531,11 +637,11 @@ table.tabela td.num{text-align:right;font-variant-numeric:tabular-nums;white-spa
       <div id="mc-referencias" class="dica" style="margin-top:16px"></div>
     </div>
     <div class="modal-btns">
-      <button class="btn-excluir" id="mc-btn-mesclar" style="display:none" onclick="abrirMesclar()">Mesclar em outro cliente</button>
-      <button class="btn-sec" id="mc-btn-codigo" style="display:none" onclick="gerarCodigoCliente()">Gerar código</button>
-      <button class="btn-sec" id="mc-btn-inativar" style="display:none" onclick="alternarAtivoCliente()">Inativar</button>
+      <button class="btn-excluir so-edicao" id="mc-btn-mesclar" style="display:none" onclick="abrirMesclar()">Mesclar em outro cliente</button>
+      <button class="btn-sec so-edicao" id="mc-btn-codigo" style="display:none" onclick="gerarCodigoCliente()">Gerar código</button>
+      <button class="btn-sec so-edicao" id="mc-btn-inativar" style="display:none" onclick="alternarAtivoCliente()">Inativar</button>
       <button class="btn-cancelar" onclick="fecharModal('modal-cliente')">Fechar</button>
-      <button class="btn-salvar" onclick="salvarCliente()">Salvar</button>
+      <button class="btn-salvar so-edicao" onclick="salvarCliente()">Salvar</button>
     </div>
   </div>
 </div>
@@ -550,9 +656,9 @@ table.tabela td.num{text-align:right;font-variant-numeric:tabular-nums;white-spa
     <div class="campo"><label>E-mail</label><input type="email" id="mct-email"></div>
     <div class="campo-check"><input type="checkbox" id="mct-principal"><label for="mct-principal">Contato principal</label></div>
     <div class="modal-btns">
-      <button class="btn-excluir" id="mct-excluir" style="display:none" onclick="excluirContato()">Excluir</button>
-      <button class="btn-cancelar" onclick="fecharModal('modal-contato')">Cancelar</button>
-      <button class="btn-salvar" onclick="salvarContato()">Salvar</button>
+      <button class="btn-excluir so-edicao" id="mct-excluir" style="display:none" onclick="excluirContato()">Excluir</button>
+      <button class="btn-cancelar" onclick="fecharModal('modal-contato')">Fechar</button>
+      <button class="btn-salvar so-edicao" onclick="salvarContato()">Salvar</button>
     </div>
   </div>
 </div>
@@ -574,6 +680,7 @@ table.tabela td.num{text-align:right;font-variant-numeric:tabular-nums;white-spa
 <div class="modal-overlay" id="modal-projeto">
   <div class="modal">
     <h2 id="mp-titulo">Novo Projeto</h2>
+    <div class="aviso-leitura">🔒 Seu perfil pode consultar este projeto, mas não alterar.</div>
     <p class="modal-sub" id="mp-sub">O código é gerado automaticamente: código do cliente + próximo número da sequência do grupo.</p>
     <div class="form-grid">
       <div class="campo full"><label>Cliente *</label><input type="text" id="mpj-cliente" list="dl-clientes" placeholder="Código ou nome do cliente"></div>
@@ -587,7 +694,7 @@ table.tabela td.num{text-align:right;font-variant-numeric:tabular-nums;white-spa
     </div>
     <div class="modal-btns">
       <button class="btn-cancelar" onclick="fecharModal('modal-projeto')">Cancelar</button>
-      <button class="btn-salvar" id="mpj-salvar" onclick="salvarProjeto()">Criar projeto</button>
+      <button class="btn-salvar so-edicao" id="mpj-salvar" onclick="salvarProjeto()">Criar projeto</button>
     </div>
   </div>
 </div>
@@ -622,6 +729,127 @@ table.tabela td.num{text-align:right;font-variant-numeric:tabular-nums;white-spa
   </div>
 </div>
 
+<!-- MODAL DOCUMENTO / CERTIDÃO -->
+<div class="modal-overlay" id="modal-documento">
+  <div class="modal">
+    <h2 id="md-titulo">Novo documento</h2>
+    <p class="modal-sub" id="md-sub">Cadastre a certidão ou documento com a data de validade. O CRM avisa no painel e no pop-up de entrada quando faltar o número de dias de aviso.</p>
+    <div class="aviso-leitura">🔒 Seu perfil pode consultar este documento, mas não alterar.</div>
+    <div class="info-box" id="md-status" style="display:none"></div>
+    <div class="form-grid">
+      <div class="campo full"><label>Documento de</label>
+        <div class="radios">
+          <label><input type="radio" name="md-titular" value="empresa" checked onchange="mudouTitularDoc()"> Empresa do grupo</label>
+          <label><input type="radio" name="md-titular" value="funcionario" onchange="mudouTitularDoc()"> Funcionário</label>
+        </div>
+      </div>
+      <div class="campo" id="md-box-empresa"><label>Empresa *</label><select id="md-empresa"></select></div>
+      <div class="campo" id="md-box-func" style="display:none"><label>Funcionário * <button class="btn-link so-edicao" style="margin-left:6px" onclick="abrirModalFuncionarios(true)">+ cadastrar</button></label><select id="md-func"></select></div>
+      <div class="campo"><label>Tipo de documento *</label><select id="md-tipo" onchange="mudouTipoDoc()"></select></div>
+      <div class="campo full"><label>Complemento <small style="font-weight:400;color:var(--texto2)">(opcional — ex.: "Matriz", "Filial Niterói", "Município do Rio")</small></label><input type="text" id="md-desc"></div>
+      <div class="campo"><label>Órgão emissor</label><input type="text" id="md-orgao"></div>
+      <div class="campo"><label>Número / código de controle</label><input type="text" id="md-numero"></div>
+      <div class="campo"><label>Data de emissão</label><input type="date" id="md-emissao" onchange="sugerirValidadeDoc()"></div>
+      <div class="campo"><label>Válido até *</label><input type="date" id="md-validade">
+        <div class="campo-check" style="padding-top:6px"><input type="checkbox" id="md-sem-validade" onchange="$('md-validade').disabled=this.checked;if(this.checked)$('md-validade').value=''"><label for="md-sem-validade" style="font-weight:500;font-size:13px">Não tem vencimento</label></div>
+      </div>
+      <div class="campo"><label>Avisar com quantos dias de antecedência?</label><input type="number" min="0" id="md-aviso" value="30"></div>
+      <div class="campo"><label>Responsável pela renovação</label><input type="text" id="md-resp" list="dl-responsaveis"></div>
+      <div class="campo full"><label>Link para emitir / renovar</label><div class="linha-flex"><input type="text" id="md-link" placeholder="https://..." style="flex:4"><button class="btn-sec" style="flex:1" onclick="abrirLinkDoc()">Abrir site</button></div></div>
+      <div class="campo full"><label>Arquivo (PDF ou foto)</label>
+        <div class="caixa-pdf">
+          <input type="file" id="md-arquivo" accept="application/pdf,.pdf,image/jpeg,image/png" class="so-edicao">
+          <div class="info" id="md-arquivo-info">O arquivo fica guardado no CRM junto com o documento.</div>
+        </div>
+      </div>
+      <div class="campo full"><label>Observações</label><textarea id="md-obs" rows="2"></textarea></div>
+    </div>
+    <div id="md-historico-box" style="display:none">
+      <div class="secao">Versões anteriores deste documento</div>
+      <div id="md-historico"></div>
+    </div>
+    <div class="modal-btns">
+      <button class="btn-excluir" id="md-btn-excluir" style="display:none" onclick="excluirDocumento()">Excluir</button>
+      <button class="btn-sec so-edicao" id="md-btn-arquivar" style="display:none" onclick="arquivarDocumento()">Arquivar</button>
+      <button class="btn-projeto so-edicao" id="md-btn-renovar" style="display:none" onclick="renovarDocumento()">🔄 Renovar (nova validade)</button>
+      <button class="btn-cancelar" onclick="fecharModal('modal-documento')">Fechar</button>
+      <button class="btn-salvar so-edicao" id="md-btn-salvar" onclick="salvarDocumento()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL FUNCIONÁRIOS -->
+<div class="modal-overlay" id="modal-funcionarios">
+  <div class="modal">
+    <h2>Funcionários</h2>
+    <p class="modal-sub">Cadastro usado nos documentos de funcionários (ASO, NRs, CAU/CREA do profissional, CNH…). Não precisa ter login no CRM.</p>
+    <div class="aviso-leitura">🔒 Seu perfil pode consultar a lista, mas não alterar.</div>
+    <div class="form-grid so-edicao" style="background:#f7f7f7;border-radius:8px;padding:12px 12px 0;margin-bottom:12px">
+      <div class="campo"><label id="mf-rotulo">Nome do funcionário *</label><input type="text" id="mf-nome"></div>
+      <div class="campo"><label>Cargo / função</label><input type="text" id="mf-cargo"></div>
+      <div class="campo"><label>Empresa</label><select id="mf-empresa"></select></div>
+      <div class="campo" style="display:flex;align-items:flex-end;gap:8px">
+        <button class="btn-salvar" onclick="salvarFuncionario()">Salvar funcionário</button>
+        <button class="btn-cancelar" id="mf-cancelar" style="display:none" onclick="limparFormFuncionario()">Limpar</button>
+      </div>
+    </div>
+    <div class="filtros"><select id="mf-filtro" onchange="renderFuncionarios()"><option value="ativos">Ativos</option><option value="inativos">Inativos (desligados)</option></select></div>
+    <div id="mf-lista"></div>
+    <div class="modal-btns"><button class="btn-cancelar" onclick="fecharModal('modal-funcionarios')">Fechar</button></div>
+  </div>
+</div>
+
+<!-- MODAL TIPOS DE DOCUMENTO -->
+<div class="modal-overlay" id="modal-tipos">
+  <div class="modal modal-lg">
+    <h2>Tipos de documento</h2>
+    <p class="modal-sub">Cada tipo traz a antecedência padrão do aviso, o órgão e o link para emitir. A validade sugerida é usada para calcular o vencimento a partir da data de emissão (confira sempre o que está escrito na certidão).</p>
+    <div class="form-grid" style="background:#f7f7f7;border-radius:8px;padding:12px 12px 0;margin-bottom:12px">
+      <div class="campo full"><label>Nome do tipo *</label><input type="text" id="mt-nome" placeholder="Ex.: Certidão de Regularidade do INEA"></div>
+      <div class="campo"><label>É documento de</label><select id="mt-cat"><option value="empresa">Empresa</option><option value="funcionario">Funcionário</option></select></div>
+      <div class="campo"><label>Órgão emissor</label><input type="text" id="mt-orgao"></div>
+      <div class="campo"><label>Validade sugerida (dias)</label><input type="number" min="0" id="mt-validade" placeholder="vazio = varia"></div>
+      <div class="campo"><label>Avisar com (dias)</label><input type="number" min="0" id="mt-aviso" value="30"></div>
+      <div class="campo full"><label>Link para emitir</label><input type="text" id="mt-link" placeholder="https://..."></div>
+      <div class="campo full" style="display:flex;gap:8px;justify-content:flex-end">
+        <button class="btn-cancelar" id="mt-cancelar" style="display:none" onclick="limparFormTipo()">Limpar</button>
+        <button class="btn-salvar" onclick="salvarTipo()">Salvar tipo</button>
+      </div>
+    </div>
+    <div class="tabela-wrap"><table class="tabela" id="mt-tabela"></table></div>
+    <div class="modal-btns"><button class="btn-cancelar" onclick="fecharModal('modal-tipos')">Fechar</button></div>
+  </div>
+</div>
+
+<!-- POP-UP DE AVISOS (ao entrar no CRM) -->
+<div class="modal-overlay" id="modal-avisos">
+  <div class="modal modal-avisos">
+    <h2>⚠️ Avisos de hoje</h2>
+    <p class="modal-sub" id="av-sub"></p>
+    <div id="av-docs" class="grupo-aviso"></div>
+    <div id="av-cobr" class="grupo-aviso"></div>
+    <div class="modal-btns">
+      <button class="btn-sec" id="av-btn-cobr" onclick="fecharAvisos(true);abrirTab('funil')">Ver funil</button>
+      <button class="btn-sec" onclick="fecharAvisos(true);$('doc-status').value='atencao';abrirTab('documentos')">Ver documentos</button>
+      <button class="btn-salvar" onclick="fecharAvisos(true)">Ciente</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL TROCAR SENHA -->
+<div class="modal-overlay" id="modal-senha">
+  <div class="modal modal-sm">
+    <h2>Trocar minha senha</h2>
+    <p class="modal-sub">Use pelo menos 8 caracteres.</p>
+    <div class="campo"><label>Nova senha</label><input type="password" id="ns-1" autocomplete="new-password"></div>
+    <div class="campo"><label>Repita a nova senha</label><input type="password" id="ns-2" autocomplete="new-password" onkeydown="if(event.key==='Enter')trocarSenha()"></div>
+    <div class="modal-btns">
+      <button class="btn-cancelar" onclick="fecharModal('modal-senha')">Cancelar</button>
+      <button class="btn-salvar" onclick="trocarSenha()">Salvar senha</button>
+    </div>
+  </div>
+</div>
+
 <datalist id="dl-clientes"></datalist>
 <datalist id="dl-responsaveis"></datalist>
 <div class="toast" id="toast"></div>
@@ -637,6 +865,9 @@ let todasEmpresas=[],todosClientes=[],todosCards=[],todasAtividades=[],todosProj
 let cardEditandoId=null,cardOriginal=null,itensLocais=[],contatosDoCliente=[],arquivoPdfNovo=null;
 let clienteEditandoId=null,clienteVoltarParaCard=false,contatoEditandoId=null;
 let projetoEditandoId=null,projetoCardId=null,perdaPendente=null,migracaoOk=true;
+// v11: perfis, documentos, cobrança
+let meuPerfil=null,PERM={},todosPerfis=[],todosDocumentos=[],todosFuncionarios=[],todosTipos=[];
+let docEditandoId=null,docRenovandoDe=null,funcEditandoId=null,tipoEditandoId=null,funcVoltarParaDoc=false,v11Ok=true;
 
 const ETAPAS=[
   {id:'entrada',label:'Entrada',cls:'col-entrada'},
@@ -645,11 +876,25 @@ const ETAPAS=[
   {id:'orcamento',label:'Orçamento',cls:'col-orcamento'},
   {id:'elaboracao',label:'Elaboração de Proposta',cls:'col-elaboracao'},
   {id:'enviada',label:'Proposta Enviada',cls:'col-enviada'},
-  {id:'nutricao2',label:'Nutrição 2ª fase',cls:'col-nutricao2'},
+  {id:'cobranca1',label:'1ª Cobrança',cls:'col-cobranca1'},
+  {id:'cobranca2',label:'2ª Cobrança',cls:'col-cobranca2'},
+  {id:'negociacao',label:'Em Negociação',cls:'col-negociacao'},
   {id:'fechada',label:'Fechadas ✅',cls:'col-fechada'},
   {id:'perdida',label:'Perdidas ❌',cls:'col-perdida'},
 ];
-const ETAPA_LABEL=Object.fromEntries(ETAPAS.map(e=>[e.id,e.label]));
+const ETAPA_LABEL=Object.assign({nutricao2:'Nutrição 2ª fase'},Object.fromEntries(ETAPAS.map(e=>[e.id,e.label])));
+// Cobrança de retorno: dias até a próxima cobrança ao entrar em cada etapa (o banco calcula igual)
+const CADENCIA_COBRANCA={enviada:3,cobranca1:4,cobranca2:7,negociacao:7};
+const ETAPAS_COBRANCA=Object.keys(CADENCIA_COBRANCA);
+const PROXIMA_ETAPA_COBRANCA={enviada:'cobranca1',cobranca1:'cobranca2'};
+// Perfis de acesso (as regras valem no banco; aqui só ajustam a tela)
+const PERFIS=[['administrador','Administrador'],['comercial','Comercial'],['administrativo','Administrativo'],['consulta','Consulta'],['pendente','Aguardando liberação']];
+const PERFIL_LABEL=Object.fromEntries(PERFIS);
+function calcularPermissoes(p){
+  const adm=p==='administrador',com=p==='comercial',admv=p==='administrativo';
+  return{admin:adm,funil:adm||com,clientes:adm||com,projetos:adm||com||admv,ativ:adm||com||admv,docs:adm||admv,excluir:adm};
+}
+const BUCKET_DOCS='documentos';
 const ABERTAS=ETAPAS.filter(e=>!['fechada','perdida'].includes(e.id)).map(e=>e.id);
 const MOTIVOS_PERDA=['Preço acima do concorrente','Cliente sem verba / orçamento','Escolheu outro fornecedor','Prazo de execução','Sem retorno do cliente','Escopo não atendido','Projeto cancelado ou adiado','Outro'];
 const TIPOS_ATIV=[['tarefa','✅ Tarefa'],['ligacao','📞 Ligação'],['email','✉️ E-mail'],['reuniao','👥 Reunião'],['visita','📍 Visita técnica'],['followup','🔁 Follow-up'],['nota','📝 Nota']];
@@ -724,6 +969,21 @@ function empresaPorId(id){return todasEmpresas.find(e=>e.id===id);}
 function pastaCliente(c){return c&&c.codigo?`Grupo BVEK/03_CLIENTES/${c.codigo}_${semAcento(c.nome).toUpperCase()}`:'';}
 function filtraEmpresa(lista){return empresaAtual==='todas'?lista:lista.filter(x=>x.empresa_id===empresaAtual);}
 function preencherSelect(sel,opcoes,vazio){sel.innerHTML=(vazio!==undefined?`<option value="">${esc(vazio)}</option>`:'')+opcoes.map(([v,t])=>`<option value="${esc(v)}">${esc(t)}</option>`).join('');}
+const pad2=n=>String(n).padStart(2,'0');
+function isoLocal(d){return d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate());}
+function hojeISO(){return isoLocal(new Date());}
+function somarDias(iso,n){const d=new Date(iso+'T00:00:00');d.setDate(d.getDate()+Number(n));return isoLocal(d);}
+// dias entre hoje e uma data (negativo = já passou)
+function diasAte(iso){if(!iso)return null;return Math.round((new Date(String(iso).slice(0,10)+'T00:00:00')-inicioDoDia())/86400000);}
+// Liga/desliga o modo "só consulta" de um modal: desabilita campos e esconde os botões .so-edicao
+function modoLeitura(modalId,leitura){
+  const m=$(modalId);if(!m)return;
+  m.classList.toggle('so-leitura',!!leitura);
+  m.querySelectorAll('input,select,textarea').forEach(el=>{
+    if(leitura){if(!el.disabled){el.disabled=true;el.dataset.travado='1';}}
+    else if(el.dataset.travado){el.disabled=false;delete el.dataset.travado;}
+  });
+}
 
 /* ================= LOGIN ================= */
 async function fazerLogin(){
@@ -734,12 +994,28 @@ async function fazerLogin(){
   iniciarApp();
 }
 async function sair(){await sb.auth.signOut();$('app').style.display='none';$('tela-login').style.display='flex';}
+// Lê o perfil de quem entrou. null = a migração v11 ainda não rodou (mantém o acesso de antes)
+async function carregarMeuPerfil(user){
+  const{data,error}=await sb.from('perfis').select('*').eq('id',user.id).maybeSingle();
+  if(error){if(/perfis/.test(error.message||'')){v11Ok=false;return{perfil:'administrador',nome:user.email,ativo:true,semMigracao:true};}console.error(error);return null;}
+  return data;
+}
 async function iniciarApp(){
   const{data:{user}}=await sb.auth.getUser();
   if(!user)return;
   usuario=user;
+  meuPerfil=await carregarMeuPerfil(user);
+  if(!meuPerfil||meuPerfil.perfil==='pendente'||meuPerfil.ativo===false){
+    await sb.auth.signOut();
+    $('app').style.display='none';$('tela-login').style.display='flex';
+    $('login-erro').textContent=meuPerfil&&meuPerfil.ativo===false?'Este login foi desativado. Fale com o administrador.':'Seu acesso ainda não foi liberado. Peça ao administrador para definir o seu perfil no CRM.';
+    return;
+  }
+  PERM=calcularPermissoes(meuPerfil.perfil);
   $('tela-login').style.display='none';$('app').style.display='block';
-  $('user-nome').textContent=user.email;
+  $('user-nome').innerHTML=`${esc(meuPerfil.nome||user.email)}<span class="perfil-tag">${esc(PERFIL_LABEL[meuPerfil.perfil]||meuPerfil.perfil)}</span>`;
+  $('user-nome').title=user.email;
+  aplicarPermissoes();
   preencherSelect($('card-etapa-select'),ETAPAS.map(e=>[e.id,e.label]));
   preencherSelect($('card-motivo-perda'),MOTIVOS_PERDA.map(m=>[m,m]),'Selecione');
   preencherSelect($('mp-motivo'),MOTIVOS_PERDA.map(m=>[m,m]),'Selecione');
@@ -748,15 +1024,66 @@ async function iniciarApp(){
   preencherSelect($('painel-ano'),[[String(anoAtual),String(anoAtual)],[String(anoAtual-1),String(anoAtual-1)],['todos','Todos os anos']]);
   document.querySelectorAll('#tabs .tab').forEach(t=>t.onclick=()=>abrirTab(t.dataset.tab));
   await carregarTudo();
+  mostrarAvisosDoDia();
+}
+// Esconde o que o perfil não pode usar (o banco bloqueia de qualquer forma)
+function aplicarPermissoes(){
+  const mostra=(id,v)=>{const e=$(id);if(e)e.style.display=v?'':'none';};
+  mostra('btn-novo-card',PERM.funil);
+  mostra('btn-novo-cliente',PERM.clientes);
+  mostra('btn-novo-projeto',PERM.projetos);
+  mostra('btn-nova-ativ',PERM.ativ);
+  mostra('btn-nova-empresa',PERM.admin);
+  mostra('btn-novo-doc',PERM.docs);
+  mostra('btn-tipos-doc',PERM.docs);
+  mostra('tab-btn-usuarios',PERM.admin);
+  mostra('pa-cobr',PERM.funil);
+  $('funil-dica').textContent=PERM.funil?'Arraste os cards entre as colunas para mudar a etapa.':'🔒 Seu perfil só consulta o funil.';
+}
+function abrirModalSenha(){$('ns-1').value='';$('ns-2').value='';abrirModal('modal-senha');setTimeout(()=>$('ns-1').focus(),50);}
+async function trocarSenha(){
+  const a=$('ns-1').value,b=$('ns-2').value;
+  if(a.length<8){alert('A senha precisa ter pelo menos 8 caracteres.');return;}
+  if(a!==b){alert('As duas senhas não são iguais.');return;}
+  const{error}=await sb.auth.updateUser({password:a});
+  if(erroSB(error,'Não foi possível trocar a senha'))return;
+  fecharModal('modal-senha');toast('Senha alterada');
 }
 
 /* ================= CARGA DE DADOS ================= */
 async function carregarTudo(){
   await carregarEmpresas();
-  await Promise.all([carregarClientes(),carregarCards(),carregarAtividades(),carregarProjetos()]);
+  await Promise.all([carregarClientes(),carregarCards(),carregarAtividades(),carregarProjetos(),carregarPerfis(),carregarDocsTudo()]);
   atualizarDatalists();
   renderTabAtual();
   verificarAlertas();
+}
+async function carregarPerfis(){
+  if(!v11Ok){todosPerfis=[];return;}
+  const{data,error}=await sb.from('perfis').select('*').order('nome');
+  todosPerfis=error?[]:(data||[]);
+}
+async function carregarDocsTudo(){
+  if(!v11Ok){avisarMigracaoV11();return;}
+  const[t,f,d]=await Promise.all([
+    sb.from('tipos_documento').select('*').order('ordem').order('nome'),
+    sb.from('funcionarios').select('*').order('nome'),
+    sb.from('documentos').select('*').order('data_validade',{ascending:true,nullsFirst:false}),
+  ]);
+  const erro=t.error||f.error||d.error;
+  if(erro){console.error(erro);if(/tipos_documento|funcionarios|documentos/.test(erro.message||''))avisarMigracaoV11();todosTipos=[];todosFuncionarios=[];todosDocumentos=[];return;}
+  todosTipos=t.data||[];todosFuncionarios=f.data||[];todosDocumentos=d.data||[];
+  atualizarBadgeDocs();
+}
+async function carregarDocumentos(){
+  const{data,error}=await sb.from('documentos').select('*').order('data_validade',{ascending:true,nullsFirst:false});
+  if(!error)todosDocumentos=data||[];
+  atualizarBadgeDocs();
+}
+function avisarMigracaoV11(){
+  v11Ok=false;
+  const a=$('aviso-migracao');a.style.display='block';
+  a.innerHTML='<strong>Falta atualizar o banco de dados (v11).</strong> Logins com perfil, documentos e certidões e a cobrança de retorno precisam das tabelas novas. No Supabase, abra <em>SQL Editor → New query</em>, cole o conteúdo do arquivo <code>supabase/migracao_crm_v11_acessos_documentos_cobranca.sql</code> e clique em <em>Run</em>. Depois recarregue esta página.';
 }
 async function carregarEmpresas(){
   const{data}=await sb.from('empresas').select('*').eq('ativa',true).order('nome');
@@ -798,7 +1125,8 @@ function avisarMigracao(){
 }
 function atualizarDatalists(){
   $('dl-clientes').innerHTML=todosClientes.filter(c=>c.ativo!==false).map(c=>`<option value="${esc(rotuloCliente(c))}">`).join('');
-  const resps=[...new Set([...todosCards.map(c=>c.responsavel),...todasAtividades.map(a=>a.responsavel)].filter(Boolean).map(s=>s.trim()))].sort();
+  const nomesUsuarios=todosPerfis.filter(p=>p.ativo&&p.perfil!=='pendente').map(p=>p.nome);
+  const resps=[...new Set([...todosCards.map(c=>c.responsavel),...todasAtividades.map(a=>a.responsavel),...todosDocumentos.map(d=>d.responsavel),...nomesUsuarios].filter(Boolean).map(s=>s.trim()))].sort((a,b)=>a.localeCompare(b,'pt-BR'));
   $('dl-responsaveis').innerHTML=resps.map(r=>`<option value="${esc(r)}">`).join('');
   ['funil-resp','ativ-resp'].forEach(id=>{const s=$(id),v=s.value;preencherSelect(s,resps.map(r=>[r,r]),'Todos os responsáveis');s.value=v;});
 }
@@ -807,23 +1135,25 @@ function inicioDoDia(){const d=new Date();d.setHours(0,0,0,0);return d;}
 
 /* ================= NAVEGAÇÃO ================= */
 function abrirTab(tab){
+  if(tab==='usuarios'&&!PERM.admin)tab='painel';
   tabAtual=tab;
-  ['painel','funil','clientes','projetos','atividades','empresas'].forEach(t=>{$('tab-'+t).style.display=t===tab?'block':'none';});
+  ['painel','documentos','funil','clientes','projetos','atividades','empresas','usuarios'].forEach(t=>{$('tab-'+t).style.display=t===tab?'block':'none';});
   document.querySelectorAll('#tabs .tab').forEach(el=>el.classList.toggle('ativo',el.dataset.tab===tab));
   renderTabAtual();
 }
 function renderTabAtual(){
-  ({painel:renderPainel,funil:renderFunil,clientes:renderClientes,projetos:renderProjetos,atividades:renderAtividades,empresas:renderEmpresas}[tabAtual]||(()=>{}))();
+  ({painel:renderPainel,documentos:renderDocumentos,funil:renderFunil,clientes:renderClientes,projetos:renderProjetos,atividades:renderAtividades,empresas:renderEmpresas,usuarios:renderUsuarios}[tabAtual]||(()=>{}))();
 }
 function trocarEmpresa(){
   empresaAtual=$('select-empresa').value;
-  renderTabAtual();verificarAlertas();
+  renderTabAtual();verificarAlertas();atualizarBadgeDocs();
 }
 function nomeEmpresaAtual(){if(empresaAtual==='todas')return'Todas as empresas';const e=empresaPorId(empresaAtual);return e?e.nome:'';}
 
 /* ================= PAINEL ================= */
 function renderPainel(){
   $('titulo-painel').textContent='Painel — '+nomeEmpresaAtual();
+  renderAvisosPainel();
   const ano=$('painel-ano').value;
   const cards=filtraEmpresa(todosCards);
   const doAno=c=>{if(ano==='todos')return true;const d=c.data_fechamento_real||c.atualizado_em||c.criado_em;return d&&String(d).slice(0,4)===ano;};
@@ -887,6 +1217,8 @@ function ligarCliques(raiz){
   raiz.querySelectorAll('[data-card]').forEach(el=>el.onclick=ev=>{if(ev.target.closest('input,button,select'))return;abrirModalCard(el.dataset.card);});
   raiz.querySelectorAll('[data-cliente]').forEach(el=>el.onclick=ev=>{if(ev.target.closest('input,button,select'))return;abrirModalCliente(el.dataset.cliente);});
   raiz.querySelectorAll('[data-projeto]').forEach(el=>el.onclick=ev=>{if(ev.target.closest('input,button,select'))return;abrirModalProjeto(el.dataset.projeto);});
+  raiz.querySelectorAll('[data-doc]').forEach(el=>el.onclick=ev=>{if(ev.target.closest('input,button,select,a'))return;abrirModalDocumento(el.dataset.doc);});
+  raiz.querySelectorAll('[data-cobrar]').forEach(b=>b.onclick=ev=>{ev.stopPropagation();registrarCobranca(b.dataset.cobrar,false);});
 }
 
 /* ================= FUNIL ================= */
@@ -905,7 +1237,7 @@ function renderFunil(){
   });
   const funil=$('funil');funil.innerHTML='';
   ETAPAS.forEach(etapa=>{
-    const lista=cards.filter(c=>c.etapa===etapa.id);
+    const lista=cards.filter(c=>c.etapa===etapa.id||(etapa.id==='cobranca1'&&c.etapa==='nutricao2'));
     const total=lista.reduce((s,c)=>s+Number(c.valor_estimado||0),0);
     const col=document.createElement('div');
     col.className=`coluna ${etapa.cls}`;
@@ -914,11 +1246,12 @@ function renderFunil(){
     funil.appendChild(col);
   });
   funil.querySelectorAll('.card').forEach(el=>{
-    el.onclick=()=>abrirModalCard(el.dataset.id);
+    el.onclick=ev=>{const b=ev.target.closest('[data-cobrar]');if(b){ev.stopPropagation();registrarCobranca(b.dataset.cobrar,false);return;}abrirModalCard(el.dataset.id);};
+    if(!PERM.funil)return;
     el.addEventListener('dragstart',ev=>{ev.dataTransfer.setData('text/plain',el.dataset.id);ev.dataTransfer.effectAllowed='move';el.classList.add('arrastando');});
     el.addEventListener('dragend',()=>el.classList.remove('arrastando'));
   });
-  funil.querySelectorAll('.coluna-body').forEach(body=>{
+  if(PERM.funil)funil.querySelectorAll('.coluna-body').forEach(body=>{
     body.addEventListener('dragover',ev=>{ev.preventDefault();body.classList.add('drag-sobre');});
     body.addEventListener('dragleave',()=>body.classList.remove('drag-sobre'));
     body.addEventListener('drop',ev=>{ev.preventDefault();body.classList.remove('drag-sobre');const id=ev.dataTransfer.getData('text/plain');if(id)moverCard(id,body.dataset.etapa);});
@@ -936,7 +1269,8 @@ function renderCard(c,prox){
   else if(aberto&&!prox)badges+='<span class="badge badge-cinza" title="Nenhuma próxima atividade agendada">sem próximo passo</span>';
   if(aberto&&dias>15)badges+=`<span class="badge badge-parado">${dias}d na etapa</span>`;
   if(c.etapa==='perdida'&&c.motivo_perda)badges+=`<span class="badge badge-atraso">${esc(c.motivo_perda)}</span>`;
-  return`<div class="card" draggable="true" data-id="${esc(c.id)}">
+  badges+=badgeCobranca(c,true);
+  return`<div class="card" draggable="${PERM.funil?'true':'false'}" data-id="${esc(c.id)}">
     <span class="card-empresa-tag tag-${esc(sigla)}">${esc(sigla)}</span>
     ${num}
     <div class="card-titulo">${esc(c.titulo)}</div>
@@ -946,6 +1280,7 @@ function renderCard(c,prox){
   </div>`;
 }
 async function moverCard(id,etapa){
+  if(!PERM.funil)return;
   const c=todosCards.find(x=>x.id===id);
   if(!c||c.etapa===etapa)return;
   if(etapa==='perdida'){perdaPendente=id;$('perda-titulo').textContent=c.titulo;$('mp-motivo').value='';$('mp-detalhe').value='';abrirModal('modal-perda');return;}
@@ -990,6 +1325,7 @@ async function abrirModalCard(id=null){
   ['btn-excluir','btn-versao','btn-pdf','btn-projeto'].forEach(b=>$(b).style.display='none');
   $('etapa-box').style.display='none';$('numero-box').style.display='none';$('perda-box').style.display='none';
   $('card-extras').style.display='none';$('novo-contato-box').style.display='none';
+  $('cobranca-box').style.display='none';$('card-prox-cobranca').value='';$('cobranca-info').textContent='';
   $('card-cliente-info').textContent='';
   preencherSelect($('card-contato'),[],'— escolha o cliente primeiro —');
   renderItens();
@@ -998,7 +1334,8 @@ async function abrirModalCard(id=null){
     if(erroSB(error,'Não foi possível abrir'))return;
     cardOriginal=card;
     $('modal-titulo').textContent='Editar Atendimento';
-    ['btn-excluir','btn-versao','btn-pdf'].forEach(b=>$(b).style.display='inline-block');
+    ['btn-versao','btn-pdf'].forEach(b=>$(b).style.display='inline-block');
+    $('btn-excluir').style.display=PERM.excluir?'inline-block':'none';
     $('etapa-box').style.display='flex';$('card-extras').style.display='block';
     if(card.numero_proposta){$('numero-box').style.display='flex';$('numero-display').textContent=card.numero_proposta+'.V'+(card.versao||1);}
     const proj=card.projeto_id?todosProjetos.find(p=>p.id===card.projeto_id):null;
@@ -1009,6 +1346,9 @@ async function abrirModalCard(id=null){
     $('etapa-desde').textContent=card.etapa_desde?`(desde ${fmtData(card.etapa_desde)})`:'';
     $('card-motivo-perda').value=card.motivo_perda||'';$('card-motivo-detalhe').value=card.motivo_perda_detalhe||'';
     $('perda-box').style.display=card.etapa==='perdida'?'block':'none';
+    $('card-prox-cobranca').value=card.proxima_cobranca||'';
+    $('cobranca-info').textContent=card.cobrancas_feitas?`${card.cobrancas_feitas} cobrança(s) feita(s)${card.ultima_cobranca?' · última em '+fmtData(card.ultima_cobranca):''}`:(card.enviada_em?`enviada em ${fmtData(card.enviada_em)} · nenhuma cobrança ainda`:'');
+    $('cobranca-box').style.display=ETAPAS_COBRANCA.includes(card.etapa)?'flex':'none';
     $('card-empresa-id').value=card.empresa_id||'';
     $('card-titulo').value=card.titulo||'';
     $('card-responsavel').value=card.responsavel||'';
@@ -1039,11 +1379,16 @@ async function abrirModalCard(id=null){
     if(empresaAtual!=='todas')$('card-empresa-id').value=empresaAtual;
     if(usuario)$('card-responsavel').value='';
   }
+  modoLeitura('modal-card',!PERM.funil);
   abrirModal('modal-card');
 }
 function mudouEtapaModal(){
   const e=$('card-etapa-select').value;
   $('perda-box').style.display=e==='perdida'?'block':'none';
+  const mudou=cardOriginal&&cardOriginal.etapa!==e;
+  $('cobranca-box').style.display=ETAPAS_COBRANCA.includes(e)?'flex':'none';
+  if(mudou&&ETAPAS_COBRANCA.includes(e)){$('card-prox-cobranca').value=somarDias(hojeISO(),CADENCIA_COBRANCA[e]);$('cobranca-info').textContent='data sugerida para esta etapa — pode alterar';}
+  else if(cardOriginal&&!mudou){$('card-prox-cobranca').value=cardOriginal.proxima_cobranca||'';}
 }
 async function clienteEscolhidoNoCard(){
   const c=acharClientePorRotulo($('card-cliente').value);
@@ -1137,6 +1482,7 @@ async function salvarCard(){
       recorrente:$('card-recorrente').checked,
       dias_recorrencia:$('card-dias').value||null,
       etapa,
+      ...(v11Ok?{proxima_cobranca:ETAPAS_COBRANCA.includes(etapa)?($('card-prox-cobranca').value||null):null}:{}),
       motivo_perda:etapa==='perdida'?$('card-motivo-perda').value:null,
       motivo_perda_detalhe:etapa==='perdida'?($('card-motivo-detalhe').value||null):null,
       atualizado_em:new Date().toISOString(),
@@ -1178,6 +1524,7 @@ async function criarNovaVersao(){
   const copia={...o};
   ['id','criado_em','etapa_desde','data_fechamento_real','projeto_id','clientes','empresas','arquivo_proposta','arquivo_proposta_nome'].forEach(k=>delete copia[k]);
   Object.assign(copia,{versao:novaVersao,card_pai_id:raiz,etapa:'elaboracao',motivo_perda:null,motivo_perda_detalhe:null,atualizado_em:new Date().toISOString()});
+  if('cobrancas_feitas' in o)Object.assign(copia,{proxima_cobranca:null,cobrancas_feitas:0,ultima_cobranca:null,enviada_em:null});
   const{data:nova,error}=await sb.from('cards').insert(copia).select().single();
   if(erroSB(error))return;
   const{data:itens}=await sb.from('itens_proposta').select('*').eq('card_id',cardEditandoId);
@@ -1216,10 +1563,10 @@ function htmlAtividade(a,mostrarContexto){
   const ctx=mostrarContexto?`<div style="color:var(--texto2);font-size:12px;margin-top:2px">${cli?`<span class="cod">${esc(cli.codigo||'')}</span> ${esc(cli.nome)}`:''}${card?' · '+esc(card.titulo):''}</div>`:'';
   return`<div class="sub-item ${a.concluida?'ativ-feita':''} ${mostrarContexto&&(a.card_id||a.cliente_id)?'clicavel':''}" ${mostrarContexto?(a.card_id?`data-card="${esc(a.card_id)}"`:a.cliente_id?`data-cliente="${esc(a.cliente_id)}"`:''):''}>
     <div style="display:flex;gap:10px;align-items:flex-start">
-      <input type="checkbox" ${a.concluida?'checked':''} data-concluir="${esc(a.id)}" style="width:17px;height:17px;margin-top:2px;accent-color:var(--verde)" title="Marcar como feita">
+      <input type="checkbox" ${a.concluida?'checked':''} ${PERM.ativ?'':'disabled'} data-concluir="${esc(a.id)}" style="width:17px;height:17px;margin-top:2px;accent-color:var(--verde)" title="Marcar como feita">
       <div><span class="ativ-desc">${esc(TIPO_LABEL[a.tipo]||a.tipo)} ${esc(a.descricao)}</span>${ctx}</div>
     </div>
-    <div class="acoes">${a.data_prevista?`<span class="badge ${atras?'badge-atraso':hoje?'badge-hoje':a.concluida?'badge-ok':'badge-cinza'}">${esc(fmtDataHora(a.data_prevista))}</span>`:''}${a.responsavel?`<span style="font-size:12px;color:var(--texto2)">👤 ${esc(a.responsavel)}</span>`:''}<button class="btn-link" data-excluir-ativ="${esc(a.id)}" style="color:var(--vermelho)">excluir</button></div>
+    <div class="acoes">${a.data_prevista?`<span class="badge ${atras?'badge-atraso':hoje?'badge-hoje':a.concluida?'badge-ok':'badge-cinza'}">${esc(fmtDataHora(a.data_prevista))}</span>`:''}${a.responsavel?`<span style="font-size:12px;color:var(--texto2)">👤 ${esc(a.responsavel)}</span>`:''}${PERM.ativ?`<button class="btn-link" data-excluir-ativ="${esc(a.id)}" style="color:var(--vermelho)">excluir</button>`:''}</div>
   </div>`;
 }
 function ligarAtividades(raiz,depois){
@@ -1342,6 +1689,7 @@ async function abrirModalCliente(id=null,voltarParaCard=false){
     checksEmpresas(empresaAtual!=='todas'?(empresaPorId(empresaAtual)||{}).sigla:'');
   }
   atualizarPastaCliente();
+  modoLeitura('modal-cliente',!PERM.clientes);
   abrirModal('modal-cliente');
 }
 function atualizarPastaCliente(){
@@ -1417,6 +1765,7 @@ function editarContato(ct=null){
   $('mct-nome').value=ct?ct.nome:'';$('mct-cargo').value=ct?ct.cargo||'':'';$('mct-tel').value=ct?fmtTel(ct.telefone):'';$('mct-email').value=ct?ct.email||'':'';
   $('mct-principal').checked=ct?!!ct.principal:false;
   $('mct-excluir').style.display=ct?'inline-block':'none';
+  modoLeitura('modal-contato',!PERM.clientes);
   abrirModal('modal-contato');
 }
 async function salvarContato(){
@@ -1483,6 +1832,7 @@ function abrirModalProjeto(id=null,cardId=null,clienteId=null){
     }else if(clienteId){$('mpj-cliente').value=rotuloCliente(clientePorId(clienteId));}
     if(!$('mpj-empresa').value&&empresaAtual!=='todas')$('mpj-empresa').value=empresaAtual;
   }
+  modoLeitura('modal-projeto',!PERM.projetos);
   abrirModal('modal-projeto');
 }
 async function salvarProjeto(){
@@ -1517,6 +1867,407 @@ async function salvarEmpresa(){
   fecharModal('modal-empresa');await carregarEmpresas();
 }
 
+/* ================= COBRANÇA DE RETORNO DAS PROPOSTAS ================= */
+function cobrancaPendente(c){return ETAPAS_COBRANCA.includes(c.etapa)&&c.proxima_cobranca&&diasAte(c.proxima_cobranca)<=0;}
+function badgeCobranca(c,comBotao){
+  if(!ETAPAS_COBRANCA.includes(c.etapa)||!c.proxima_cobranca)return'';
+  const n=diasAte(c.proxima_cobranca);
+  const txt=n<0?`📞 cobrança atrasada ${-n}d`:n===0?'📞 cobrar hoje':`📞 cobrar ${fmtData(c.proxima_cobranca)}`;
+  const cls=n<0?'badge-atraso':n===0?'badge-cobrar':'badge-cinza';
+  const btn=comBotao&&PERM.funil&&n<=0?`<button class="btn-cobrei" data-cobrar="${esc(c.id)}" title="Registrar que a cobrança foi feita">✓ cobrei</button>`:'';
+  return`<span class="badge ${cls}" title="${c.cobrancas_feitas?esc(c.cobrancas_feitas+' cobrança(s) feita(s)'):'Nenhuma cobrança ainda'}">${txt}</span>${btn}`;
+}
+// Registra a cobrança feita: grava a atividade, conta a tentativa e avança a coluna
+// (Enviada → 1ª Cobrança → 2ª Cobrança; na 2ª e em Negociação só agenda a próxima)
+async function registrarCobranca(id,doModal){
+  if(!PERM.funil||!id)return;
+  const c=todosCards.find(x=>x.id===id);if(!c)return;
+  const prox=PROXIMA_ETAPA_COBRANCA[c.etapa];
+  const nota=prompt(`Cobrança de retorno — ${c.titulo}\n\nComo foi o contato? (opcional — ex.: "pediu mais 1 semana", "não atendeu")`+(prox?`\n\nO card vai para "${ETAPA_LABEL[prox]}".`:''),'');
+  if(nota===null)return;
+  const agora=new Date().toISOString();
+  const{error:e1}=await sb.from('atividades').insert({card_id:c.id,cliente_id:c.cliente_id,tipo:'followup',descricao:'Cobrança de retorno da proposta'+(nota.trim()?': '+nota.trim():''),data_prevista:agora,concluida:true,concluida_em:agora,responsavel:c.responsavel||null,criado_por:usuario?usuario.email:null});
+  if(erroSB(e1,'Não foi possível registrar a atividade'))return;
+  const feitas=(c.cobrancas_feitas||0)+1;
+  const upd={cobrancas_feitas:feitas,ultima_cobranca:agora,atualizado_em:agora};
+  if(prox)upd.etapa=prox;
+  else upd.proxima_cobranca=somarDias(hojeISO(),CADENCIA_COBRANCA[c.etapa]||7);
+  const{error}=await sb.from('cards').update(upd).eq('id',c.id);
+  if(erroSB(error))return;
+  await Promise.all([carregarCards(),carregarAtividades()]);
+  const atual=todosCards.find(x=>x.id===c.id);
+  toast(prox?`Cobrança registrada · movido para ${ETAPA_LABEL[prox]}`:`Cobrança registrada · próxima em ${fmtData(atual&&atual.proxima_cobranca)}`);
+  if(c.etapa==='cobranca2'&&feitas>=3)setTimeout(()=>alert(`Já foram ${feitas} cobranças sem resposta definitiva.\nSe o cliente não der retorno, mova para "Em Negociação" ou para "Perdidas" (motivo: Sem retorno do cliente).`),300);
+  if(doModal)abrirModalCard(c.id);
+  renderTabAtual();
+}
+
+/* ================= DOCUMENTOS E CERTIDÕES ================= */
+function tipoPorId(id){return todosTipos.find(t=>t.id===id);}
+function funcPorId(id){return todosFuncionarios.find(f=>f.id===id);}
+function nomeDoc(d){const t=tipoPorId(d.tipo_id);return(t?t.nome:'Documento')+(d.descricao?' — '+d.descricao:'');}
+function titularDoc(d){
+  if(d.funcionario_id){const f=funcPorId(d.funcionario_id);return'👷 '+(f?f.nome:'(funcionário)');}
+  const e=empresaPorId(d.empresa_id);return e?'🏢 '+e.nome:'🏢 —';
+}
+function statusDoc(d){
+  if(d.situacao&&d.situacao!=='vigente')return{k:d.situacao,txt:d.situacao==='substituido'?'Renovado':'Arquivado',cls:'badge-cinza',ord:9};
+  if(!d.data_validade)return{k:'sem',txt:'Sem vencimento',cls:'badge-cinza',ord:4};
+  const n=diasAte(d.data_validade),av=d.dias_aviso??30;
+  if(n<0)return{k:'vencido',txt:`Vencido há ${-n} dia${-n===1?'':'s'}`,cls:'badge-atraso',ord:0,n};
+  if(n===0)return{k:'aviso',txt:'Vence hoje',cls:'badge-atraso',ord:1,n};
+  if(n<=av)return{k:'aviso',txt:`Vence em ${n} dia${n===1?'':'s'}`,cls:'badge-hoje',ord:1,n};
+  return{k:'ok',txt:`Em dia · ${n} dias`,cls:'badge-ok',ord:3,n};
+}
+function docsVigentes(){return filtraEmpresa(todosDocumentos.filter(d=>(d.situacao||'vigente')==='vigente'));}
+function docsAtencao(){return docsVigentes().map(d=>({d,s:statusDoc(d)})).filter(x=>x.s.k==='vencido'||x.s.k==='aviso').sort((a,b)=>a.s.n-b.s.n);}
+function atualizarBadgeDocs(){
+  const l=docsAtencao(),venc=l.filter(x=>x.s.k==='vencido').length;
+  $('tab-docs-badge').innerHTML=l.length?`<span class="badge ${venc?'badge-atraso':'badge-hoje'}">${l.length}</span>`:'';
+}
+function itemDocMini(x){
+  return`<div class="item" data-doc="${esc(x.d.id)}"><div><strong>${esc(nomeDoc(x.d))}</strong><br><span style="color:var(--texto2)">${esc(titularDoc(x.d))}${x.d.responsavel?' · 👤 '+esc(x.d.responsavel):''}</span></div><span class="badge ${x.s.cls}" style="white-space:nowrap">${esc(x.s.txt)} · ${esc(fmtData(x.d.data_validade))}</span></div>`;
+}
+function itemCobrancaMini(c){
+  return`<div class="item" data-card="${esc(c.id)}"><div><strong>${esc(c.titulo)}</strong><br><span style="color:var(--texto2)">${c.clientes?`<span class="cod">${esc(c.clientes.codigo||'')}</span> ${esc(c.clientes.nome)} · `:''}${esc(ETAPA_LABEL[c.etapa])}${c.responsavel?' · 👤 '+esc(c.responsavel):''}</span></div><span style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end">${badgeCobranca(c,true)}</span></div>`;
+}
+function cobrancasDoDia(){return filtraEmpresa(todosCards).filter(cobrancaPendente).sort((a,b)=>String(a.proxima_cobranca).localeCompare(String(b.proxima_cobranca)));}
+function renderAvisosPainel(){
+  // documentos
+  const vig=docsVigentes(),st=vig.map(d=>statusDoc(d));
+  const nV=st.filter(s=>s.k==='vencido').length,nA=st.filter(s=>s.k==='aviso').length,n60=st.filter(s=>s.k==='ok'&&s.n<=60).length,nOk=st.filter(s=>s.k==='ok').length;
+  $('pa-docs').classList.toggle('painel-alerta',nV+nA>0);
+  $('pa-docs-cont').innerHTML=vig.length?`${vig.length} documento(s)`:'';
+  $('p-docs-resumo').innerHTML=vig.length?[
+    ['vencido','vermelha',`${nV} vencido(s)`],['aviso','amarela',`${nA} a vencer (aviso)`],['ok','verde',`${nOk} em dia${n60?` · ${n60} vencem em até 60 dias`:''}`],
+  ].map(([k,c,t])=>`<span class="pilula ${c}" onclick="$('doc-status').value='${k}';abrirTab('documentos')">${esc(t)}</span>`).join(''):'';
+  const at=docsAtencao();
+  $('p-docs').innerHTML=!v11Ok?'<p class="vazio">Rode a migração v11 no Supabase para ativar o controle de documentos.</p>':
+    !vig.length?`<p class="vazio">Nenhum documento cadastrado ainda.${PERM.docs?' Cadastre as certidões na aba Documentos.':''}</p>`:
+    at.length?at.slice(0,10).map(itemDocMini).join('')+(at.length>10?`<p class="vazio">… e mais ${at.length-10}. Veja a aba Documentos.</p>`:''):'<p class="vazio">Nenhum documento vencido ou dentro do prazo de aviso. 👍</p>';
+  // cobranças
+  if(PERM.funil){
+    const cb=cobrancasDoDia();
+    $('pa-cobr-cont').textContent=cb.length?`${cb.length} para hoje/atrasadas`:'';
+    $('p-cobr').innerHTML=cb.length?cb.slice(0,10).map(itemCobrancaMini).join(''):'<p class="vazio">Nenhuma proposta para cobrar hoje. 👍</p>';
+  }
+}
+function renderDocumentos(){
+  $('titulo-docs').textContent='Documentos e certidões — '+nomeEmpresaAtual();
+  const busca=norm($('doc-busca').value),tit=$('doc-titular').value,stf=$('doc-status').value,sit=$('doc-situacao').value;
+  const base=filtraEmpresa(todosDocumentos.filter(d=>(d.situacao||'vigente')===sit));
+  // resumo (sempre dos atuais)
+  const vig=docsVigentes().map(statusDoc);
+  const cont=k=>vig.filter(s=>s.k===k).length;
+  $('docs-resumo').innerHTML=[['vencido','vermelha','Vencidos'],['aviso','amarela','A vencer (aviso)'],['ok','verde','Em dia'],['sem','cinza','Sem vencimento']]
+    .map(([k,c,t])=>`<span class="pilula ${c} ${stf===k&&sit==='vigente'?'marcada':''}" onclick="$('doc-situacao').value='vigente';$('doc-status').value=($('doc-status').value==='${k}'?'':'${k}');renderDocumentos()">${esc(t)}: ${cont(k)}</span>`).join('');
+  let l=base.map(d=>({d,s:statusDoc(d)})).filter(({d,s})=>{
+    if(tit==='empresa'&&d.funcionario_id)return false;
+    if(tit==='funcionario'&&!d.funcionario_id)return false;
+    if(sit==='vigente'&&stf){if(stf==='atencao'){if(!['vencido','aviso'].includes(s.k))return false;}else if(s.k!==stf)return false;}
+    if(busca){const f=d.funcionario_id?funcPorId(d.funcionario_id):null;if(!norm([nomeDoc(d),f&&f.nome,d.numero,d.orgao,d.responsavel,d.observacoes].join(' ')).includes(busca))return false;}
+    return true;
+  });
+  l.sort((a,b)=>a.s.ord-b.s.ord||String(a.d.data_validade||'9999').localeCompare(String(b.d.data_validade||'9999')));
+  $('doc-contagem').textContent=`${l.length} documento(s)`;
+  $('tabela-docs').innerHTML=`<thead><tr><th>Situação</th><th>Documento</th><th>De</th><th>Válido até</th><th>Nº</th><th>Responsável</th><th>Arquivo</th></tr></thead><tbody>`+
+    (l.length?l.map(({d,s})=>`<tr class="clicavel ${s.k==='vencido'?'doc-vencido':''}" data-doc="${esc(d.id)}">
+      <td><span class="badge ${s.cls}" style="white-space:nowrap">${esc(s.txt)}</span></td>
+      <td><strong>${esc(nomeDoc(d))}</strong>${d.orgao?`<div style="font-size:12px;color:var(--texto2)">${esc(d.orgao)}</div>`:''}</td>
+      <td>${esc(titularDoc(d))}${d.funcionario_id&&empresaPorId(d.empresa_id)?`<div style="font-size:12px;color:var(--texto2)">${esc(empresaPorId(d.empresa_id).sigla||'')}</div>`:''}</td>
+      <td style="white-space:nowrap">${d.data_validade?esc(fmtData(d.data_validade)):'—'}${d.data_validade&&s.k!=='vencido'&&sit==='vigente'?`<div style="font-size:11px;color:var(--texto2)">aviso ${esc(d.dias_aviso)} dias antes</div>`:''}</td>
+      <td>${esc(d.numero||'')}</td><td>${esc(d.responsavel||'')}</td>
+      <td>${d.arquivo?`<a href="#" onclick="abrirArquivoDoc('${esc(d.arquivo)}');return false">📎 abrir</a>`:''}</td></tr>`).join(''):
+      `<tr><td colspan="7" class="vazio">${todosDocumentos.length?'Nenhum documento com estes filtros.':'Nenhum documento cadastrado ainda.'}</td></tr>`)+'</tbody>';
+  ligarCliques($('tabela-docs'));
+}
+function opcoesTipos(cat){return todosTipos.filter(t=>t.categoria===cat&&t.ativo!==false).map(t=>[t.id,t.nome]);}
+function titularSelecionado(){return(document.querySelector('input[name=md-titular]:checked')||{}).value||'empresa';}
+function mudouTitularDoc(){
+  const cat=titularSelecionado(),atual=$('md-tipo').value;
+  $('md-box-empresa').style.display=cat==='empresa'?'':'none';
+  $('md-box-func').style.display=cat==='funcionario'?'':'none';
+  preencherSelect($('md-tipo'),opcoesTipos(cat),'Selecione o tipo');
+  if(atual&&[...$('md-tipo').options].some(o=>o.value===atual))$('md-tipo').value=atual;
+}
+function preencherSelectFuncionarios(selId,valor){
+  const lista=todosFuncionarios.filter(f=>f.ativo!==false||f.id===valor);
+  preencherSelect($(selId),lista.map(f=>[f.id,f.nome+(f.cargo?' — '+f.cargo:'')+(empresaPorId(f.empresa_id)?' ('+empresaPorId(f.empresa_id).sigla+')':'')]),'Selecione o funcionário');
+  if(valor)$(selId).value=valor;
+}
+function mudouTipoDoc(){
+  const t=tipoPorId($('md-tipo').value);if(!t)return;
+  if(!$('md-orgao').value&&t.orgao)$('md-orgao').value=t.orgao;
+  if(!$('md-link').value&&t.link_emissao)$('md-link').value=t.link_emissao;
+  if(!docEditandoId||docRenovandoDe)$('md-aviso').value=t.dias_aviso??30;
+  sugerirValidadeDoc();
+}
+function sugerirValidadeDoc(){
+  const t=tipoPorId($('md-tipo').value),em=$('md-emissao').value;
+  if(t&&t.validade_dias&&em&&!$('md-validade').value&&!$('md-sem-validade').checked){$('md-validade').value=somarDias(em,t.validade_dias);marcarPreenchido('md-validade');}
+}
+function abrirLinkDoc(){let u=$('md-link').value.trim();if(!u){alert('Informe o link.');return;}if(!/^https?:\/\//i.test(u))u='https://'+u;window.open(u,'_blank','noopener');}
+function abrirModalDocumento(id=null){
+  if(!v11Ok){avisarMigracaoV11();return;}
+  docEditandoId=id;docRenovandoDe=null;
+  ['md-desc','md-orgao','md-numero','md-emissao','md-validade','md-resp','md-link','md-obs'].forEach(i=>$(i).value='');
+  $('md-arquivo').value='';$('md-aviso').value=30;$('md-sem-validade').checked=false;$('md-validade').disabled=false;
+  document.querySelectorAll('#modal-documento .campo-preenchido').forEach(e=>e.classList.remove('campo-preenchido'));
+  preencherSelect($('md-empresa'),todasEmpresas.map(e=>[e.id,`${e.nome} (${e.sigla})`]),'Selecione a empresa');
+  $('md-status').style.display='none';$('md-historico-box').style.display='none';
+  ['md-btn-excluir','md-btn-arquivar','md-btn-renovar'].forEach(b=>$(b).style.display='none');
+  $('md-arquivo-info').textContent='O arquivo fica guardado no CRM junto com o documento.';
+  const d=id?todosDocumentos.find(x=>x.id===id):null;
+  const cat=d&&d.funcionario_id?'funcionario':'empresa';
+  document.querySelector(`input[name=md-titular][value=${cat}]`).checked=true;
+  preencherSelectFuncionarios('md-func',d&&d.funcionario_id);
+  mudouTitularDoc();
+  if(d){
+    const s=statusDoc(d);
+    $('md-titulo').textContent=nomeDoc(d);
+    $('md-sub').textContent=titularDoc(d).replace(/^\S+\s/,'');
+    $('md-status').style.display='flex';
+    $('md-status').innerHTML=`<span class="badge ${s.cls}">${esc(s.txt)}</span>${d.situacao==='vigente'&&(s.k==='vencido'||s.k==='aviso')&&PERM.docs?'<span>Já tirou a certidão nova? Clique em <strong>🔄 Renovar</strong> para lançar a nova validade (a atual vai para o histórico).</span>':''}`;
+    $('md-empresa').value=d.empresa_id||'';
+    $('md-tipo').value=d.tipo_id||'';
+    $('md-desc').value=d.descricao||'';$('md-orgao').value=d.orgao||'';$('md-numero').value=d.numero||'';
+    $('md-emissao').value=d.data_emissao||'';$('md-validade').value=d.data_validade||'';
+    $('md-sem-validade').checked=!d.data_validade;$('md-validade').disabled=!d.data_validade;
+    $('md-aviso').value=d.dias_aviso??30;$('md-resp').value=d.responsavel||'';$('md-link').value=d.link_emissao||'';$('md-obs').value=d.observacoes||'';
+    if(d.arquivo)$('md-arquivo-info').innerHTML=`📎 Arquivo guardado: <a href="#" onclick="abrirArquivoDoc('${esc(d.arquivo)}');return false">${esc(d.arquivo_nome||'abrir')}</a> · para trocar, escolha outro arquivo.`;
+    $('md-btn-excluir').style.display=PERM.excluir?'inline-block':'none';
+    $('md-btn-renovar').style.display=d.situacao==='vigente'?'inline-block':'none';
+    $('md-btn-arquivar').style.display='inline-block';
+    $('md-btn-arquivar').textContent=d.situacao==='arquivado'?'Reativar':'Arquivar';
+    renderHistoricoDoc(d);
+  }else{
+    $('md-titulo').textContent='Novo documento';
+    $('md-sub').textContent='Cadastre a certidão ou documento com a data de validade. O CRM avisa no painel e no pop-up de entrada quando faltar o número de dias de aviso.';
+    if(empresaAtual!=='todas')$('md-empresa').value=empresaAtual;
+  }
+  modoLeitura('modal-documento',!PERM.docs);
+  abrirModal('modal-documento');
+}
+function renderHistoricoDoc(d){
+  const ant=todosDocumentos.filter(x=>x.id!==d.id&&x.tipo_id===d.tipo_id&&(x.funcionario_id||null)===(d.funcionario_id||null)&&(d.funcionario_id||x.empresa_id===d.empresa_id)&&x.situacao!=='vigente')
+    .sort((a,b)=>String(b.data_validade||'').localeCompare(String(a.data_validade||'')));
+  if(!ant.length)return;
+  $('md-historico-box').style.display='block';
+  $('md-historico').innerHTML='<div class="sub-lista">'+ant.map(x=>`<div class="sub-item"><span>${x.numero?'Nº '+esc(x.numero)+' · ':''}emitido ${esc(fmtData(x.data_emissao)||'—')} · válido até <strong>${esc(fmtData(x.data_validade)||'—')}</strong> <span class="badge badge-cinza">${x.situacao==='substituido'?'renovado':'arquivado'}</span></span>${x.arquivo?`<a href="#" onclick="abrirArquivoDoc('${esc(x.arquivo)}');return false">📎 abrir</a>`:''}</div>`).join('')+'</div>';
+}
+function renovarDocumento(){
+  const d=todosDocumentos.find(x=>x.id===docEditandoId);if(!d)return;
+  docRenovandoDe=d.id;docEditandoId=null;
+  ['md-numero','md-emissao','md-validade','md-obs'].forEach(i=>$(i).value='');
+  $('md-arquivo').value='';$('md-sem-validade').checked=false;$('md-validade').disabled=false;
+  $('md-arquivo-info').textContent='Anexe o arquivo da certidão nova.';
+  $('md-titulo').textContent='Renovar: '+nomeDoc(d);
+  $('md-status').style.display='flex';
+  $('md-status').innerHTML=`<span>A versão atual (válida até <strong>${esc(fmtData(d.data_validade)||'—')}</strong>) vai para o histórico quando você salvar a nova.</span>`;
+  ['md-btn-excluir','md-btn-arquivar','md-btn-renovar'].forEach(b=>$(b).style.display='none');
+  $('md-emissao').value=hojeISO();sugerirValidadeDoc();
+  $('md-validade').focus();
+}
+async function salvarDocumento(){
+  if(!PERM.docs)return;
+  const cat=titularSelecionado();
+  const tipoId=$('md-tipo').value,funcId=cat==='funcionario'?$('md-func').value:null;
+  let empId=cat==='empresa'?$('md-empresa').value:null;
+  if(cat==='empresa'&&!empId){alert('Escolha a empresa.');return;}
+  if(cat==='funcionario'){if(!funcId){alert('Escolha o funcionário (ou cadastre em "+ cadastrar").');return;}const f=funcPorId(funcId);empId=f?f.empresa_id||null:null;}
+  if(!tipoId){alert('Escolha o tipo de documento.');return;}
+  const semVal=$('md-sem-validade').checked,val=$('md-validade').value;
+  if(!semVal&&!val){alert('Informe até quando o documento é válido (ou marque "Não tem vencimento").');return;}
+  const em=$('md-emissao').value;
+  if(em&&val&&val<em){alert('A validade está antes da data de emissão. Confira as datas.');return;}
+  const aviso=$('md-aviso').value===''?30:Math.max(0,Math.round(Number($('md-aviso').value)));
+  const arq=$('md-arquivo').files&&$('md-arquivo').files[0];
+  if(arq){
+    if(!/\.(pdf|jpe?g|png)$/i.test(arq.name)){alert('Envie um PDF, JPG ou PNG.');return;}
+    if(arq.size>20*1024*1024){alert('Arquivo maior que 20 MB.');return;}
+  }
+  const dados={tipo_id:tipoId,descricao:$('md-desc').value.trim()||null,empresa_id:empId,funcionario_id:funcId,orgao:$('md-orgao').value.trim()||null,numero:$('md-numero').value.trim()||null,
+    data_emissao:em||null,data_validade:semVal?null:val,dias_aviso:aviso,responsavel:$('md-resp').value.trim()||null,link_emissao:$('md-link').value.trim()||null,observacoes:$('md-obs').value.trim()||null,atualizado_em:new Date().toISOString()};
+  const btn=$('md-btn-salvar');btn.disabled=true;
+  try{
+    let id=docEditandoId;
+    if(id){const{error}=await sb.from('documentos').update(dados).eq('id',id);if(erroSB(error))return;}
+    else{
+      dados.situacao='vigente';dados.criado_por=usuario?usuario.email:null;
+      const{data,error}=await sb.from('documentos').insert(dados).select().single();if(erroSB(error))return;id=data.id;
+      if(docRenovandoDe){
+        const{error:e2}=await sb.from('documentos').update({situacao:'substituido',substituido_por:id,atualizado_em:new Date().toISOString()}).eq('id',docRenovandoDe);
+        if(erroSB(e2,'A versão nova foi salva, mas a antiga não foi para o histórico'))return;
+      }
+    }
+    if(arq){
+      const emp=empresaPorId(empId);
+      const limpo=semAcento(arq.name).replace(/[^\w.\- ]+/g,'_').replace(/\s+/g,' ').trim();
+      const caminho=`${(emp&&emp.sigla)||'GERAL'}/${id}/${Date.now()}_${limpo}`;
+      const{error:e3}=await sb.storage.from(BUCKET_DOCS).upload(caminho,arq,{contentType:arq.type||undefined,upsert:false});
+      if(erroSB(e3,'O documento foi salvo, mas o arquivo não pôde ser enviado'))return;
+      const{error:e4}=await sb.from('documentos').update({arquivo:caminho,arquivo_nome:arq.name}).eq('id',id);
+      if(erroSB(e4,'O arquivo foi enviado, mas não ficou ligado ao documento'))return;
+    }
+    fecharModal('modal-documento');
+    await carregarDocumentos();atualizarDatalists();renderTabAtual();
+    toast(docRenovandoDe?'Renovação registrada — a versão anterior foi para o histórico':'Documento salvo');
+    docRenovandoDe=null;
+  }finally{btn.disabled=false;}
+}
+async function arquivarDocumento(){
+  const d=todosDocumentos.find(x=>x.id===docEditandoId);if(!d||!PERM.docs)return;
+  const reativar=d.situacao==='arquivado';
+  if(!reativar&&!confirm('Arquivar este documento? Ele deixa de gerar avisos (use quando a empresa não precisa mais dele). Nada é apagado.'))return;
+  const{error}=await sb.from('documentos').update({situacao:reativar?'vigente':'arquivado',atualizado_em:new Date().toISOString()}).eq('id',d.id);
+  if(erroSB(error))return;
+  fecharModal('modal-documento');await carregarDocumentos();renderTabAtual();toast(reativar?'Documento reativado':'Documento arquivado');
+}
+async function excluirDocumento(){
+  if(!PERM.excluir||!docEditandoId)return;
+  if(!confirm('Excluir este documento definitivamente? Prefira "Arquivar" ou "Renovar", que guardam o histórico.'))return;
+  await sb.from('documentos').update({substituido_por:null}).eq('substituido_por',docEditandoId);
+  const{error}=await sb.from('documentos').delete().eq('id',docEditandoId);
+  if(erroSB(error,'Não foi possível excluir'))return;
+  fecharModal('modal-documento');await carregarDocumentos();renderTabAtual();
+}
+async function abrirArquivoDoc(caminho){
+  const{data,error}=await sb.storage.from(BUCKET_DOCS).createSignedUrl(caminho,600);
+  if(erroSB(error,'Não foi possível abrir o arquivo'))return;
+  window.open(data.signedUrl,'_blank','noopener');
+}
+
+/* funcionários */
+function abrirModalFuncionarios(voltarParaDoc=false){
+  if(!v11Ok){avisarMigracaoV11();return;}
+  funcVoltarParaDoc=voltarParaDoc;
+  preencherSelect($('mf-empresa'),todasEmpresas.map(e=>[e.id,`${e.nome} (${e.sigla})`]),'—');
+  limparFormFuncionario();$('mf-filtro').value='ativos';
+  renderFuncionarios();
+  modoLeitura('modal-funcionarios',!PERM.docs);
+  $('mf-filtro').disabled=false;
+  abrirModal('modal-funcionarios');
+  if(PERM.docs)setTimeout(()=>$('mf-nome').focus(),50);
+}
+function limparFormFuncionario(){
+  funcEditandoId=null;['mf-nome','mf-cargo'].forEach(i=>$(i).value='');
+  $('mf-empresa').value=empresaAtual!=='todas'?empresaAtual:'';
+  $('mf-rotulo').textContent='Nome do funcionário *';$('mf-cancelar').style.display='none';
+}
+function renderFuncionarios(){
+  const ativos=$('mf-filtro').value==='ativos';
+  const l=todosFuncionarios.filter(f=>(f.ativo!==false)===ativos);
+  const nDocs={};todosDocumentos.filter(d=>d.situacao==='vigente'&&d.funcionario_id).forEach(d=>{const s=statusDoc(d);const x=nDocs[d.funcionario_id]=nDocs[d.funcionario_id]||{t:0,a:0};x.t++;if(s.k==='vencido'||s.k==='aviso')x.a++;});
+  $('mf-lista').innerHTML=l.length?'<div class="sub-lista">'+l.map(f=>{const e=empresaPorId(f.empresa_id),n=nDocs[f.id]||{t:0,a:0};return`<div class="sub-item"><div><strong>${esc(f.nome)}</strong>${f.cargo?` — ${esc(f.cargo)}`:''}${e?` <span class="card-empresa-tag tag-${esc(e.sigla)}">${esc(e.sigla)}</span>`:''}<div style="font-size:12px;color:var(--texto2)">${n.t} documento(s)${n.a?` · <span style="color:var(--vermelho);font-weight:600">${n.a} precisando de atenção</span>`:''}</div></div>
+    <div class="acoes"><button class="btn-link" onclick="verDocsFuncionario('${esc(f.id)}')">ver documentos</button>${PERM.docs?`<button class="btn-link" onclick="editarFuncionario('${esc(f.id)}')">editar</button><button class="btn-link" style="color:var(--texto2)" onclick="alternarFuncionario('${esc(f.id)}')">${f.ativo!==false?'desligar':'reativar'}</button>`:''}</div></div>`;}).join('')+'</div>':`<p class="vazio">${ativos?'Nenhum funcionário cadastrado.':'Nenhum funcionário desligado.'}</p>`;
+}
+function editarFuncionario(id){
+  const f=funcPorId(id);if(!f)return;funcEditandoId=id;
+  $('mf-nome').value=f.nome;$('mf-cargo').value=f.cargo||'';$('mf-empresa').value=f.empresa_id||'';
+  $('mf-rotulo').textContent='Editando: nome do funcionário *';$('mf-cancelar').style.display='inline-block';$('mf-nome').focus();
+}
+async function salvarFuncionario(){
+  const nome=$('mf-nome').value.trim().toUpperCase();if(!nome){alert('Informe o nome.');return;}
+  const dados={nome,cargo:$('mf-cargo').value.trim()||null,empresa_id:$('mf-empresa').value||null};
+  if(!funcEditandoId&&todosFuncionarios.some(f=>norm(f.nome)===norm(nome))&&!confirm(`Já existe um funcionário "${nome}". Cadastrar mesmo assim?`))return;
+  const r=funcEditandoId?await sb.from('funcionarios').update(dados).eq('id',funcEditandoId).select().single():await sb.from('funcionarios').insert(dados).select().single();
+  if(erroSB(r.error))return;
+  if(funcEditandoId&&dados.empresa_id)await sb.from('documentos').update({empresa_id:dados.empresa_id}).eq('funcionario_id',funcEditandoId);
+  const{data}=await sb.from('funcionarios').select('*').order('nome');todosFuncionarios=data||[];
+  if(funcEditandoId)await carregarDocumentos();
+  toast('Funcionário salvo');
+  if(funcVoltarParaDoc&&r.data){fecharModal('modal-funcionarios');funcVoltarParaDoc=false;preencherSelectFuncionarios('md-func',r.data.id);return;}
+  limparFormFuncionario();renderFuncionarios();
+}
+async function alternarFuncionario(id){
+  const f=funcPorId(id);if(!f)return;const novo=f.ativo===false;
+  if(!novo&&!confirm(`Marcar ${f.nome} como desligado? Os documentos dele deixam de gerar avisos.`))return;
+  const{error}=await sb.from('funcionarios').update({ativo:novo}).eq('id',id);if(erroSB(error))return;
+  if(!novo)await sb.from('documentos').update({situacao:'arquivado',atualizado_em:new Date().toISOString()}).eq('funcionario_id',id).eq('situacao','vigente');
+  const{data}=await sb.from('funcionarios').select('*').order('nome');todosFuncionarios=data||[];
+  await carregarDocumentos();renderFuncionarios();renderTabAtual();
+}
+function verDocsFuncionario(id){
+  const f=funcPorId(id);if(!f)return;
+  fecharModal('modal-funcionarios');
+  $('doc-busca').value=f.nome;$('doc-titular').value='funcionario';$('doc-status').value='';$('doc-situacao').value=f.ativo===false?'arquivado':'vigente';
+  abrirTab('documentos');
+}
+
+/* tipos de documento */
+function abrirModalTipos(){if(!PERM.docs)return;limparFormTipo();renderTipos();abrirModal('modal-tipos');}
+function limparFormTipo(){tipoEditandoId=null;['mt-nome','mt-orgao','mt-validade','mt-link'].forEach(i=>$(i).value='');$('mt-aviso').value=30;$('mt-cat').value='empresa';$('mt-cancelar').style.display='none';}
+function renderTipos(){
+  const uso={};todosDocumentos.forEach(d=>{uso[d.tipo_id]=(uso[d.tipo_id]||0)+1;});
+  $('mt-tabela').innerHTML='<thead><tr><th>Tipo</th><th>De</th><th>Órgão</th><th class="num">Validade sugerida</th><th class="num">Aviso</th><th class="num">Em uso</th><th></th></tr></thead><tbody>'+
+    todosTipos.map(t=>`<tr class="${t.ativo===false?'inativo':''}"><td><strong>${esc(t.nome)}</strong>${t.link_emissao?`<div style="font-size:11px"><a href="${esc(t.link_emissao)}" target="_blank" rel="noopener">site para emitir</a></div>`:''}</td><td>${t.categoria==='funcionario'?'Funcionário':'Empresa'}</td><td>${esc(t.orgao||'')}</td>
+      <td class="num">${t.validade_dias?esc(t.validade_dias)+' dias':'varia'}</td><td class="num">${esc(t.dias_aviso)} dias</td><td class="num">${uso[t.id]||0}</td>
+      <td style="white-space:nowrap"><button class="btn-link" onclick="editarTipo('${esc(t.id)}')">editar</button> <button class="btn-link" style="color:var(--texto2)" onclick="alternarTipo('${esc(t.id)}')">${t.ativo===false?'reativar':'ocultar'}</button></td></tr>`).join('')+'</tbody>';
+}
+function editarTipo(id){
+  const t=tipoPorId(id);if(!t)return;tipoEditandoId=id;
+  $('mt-nome').value=t.nome;$('mt-cat').value=t.categoria;$('mt-orgao').value=t.orgao||'';$('mt-validade').value=t.validade_dias||'';$('mt-aviso').value=t.dias_aviso??30;$('mt-link').value=t.link_emissao||'';
+  $('mt-cancelar').style.display='inline-block';$('mt-nome').focus();
+}
+async function salvarTipo(){
+  const nome=$('mt-nome').value.trim();if(!nome){alert('Informe o nome do tipo.');return;}
+  if(todosTipos.some(t=>t.id!==tipoEditandoId&&norm(t.nome)===norm(nome))){alert('Já existe um tipo com este nome.');return;}
+  const dados={nome,categoria:$('mt-cat').value,orgao:$('mt-orgao').value.trim()||null,validade_dias:$('mt-validade').value?Math.round(Number($('mt-validade').value)):null,dias_aviso:$('mt-aviso').value===''?30:Math.max(0,Math.round(Number($('mt-aviso').value))),link_emissao:$('mt-link').value.trim()||null};
+  const{error}=tipoEditandoId?await sb.from('tipos_documento').update(dados).eq('id',tipoEditandoId):await sb.from('tipos_documento').insert({...dados,ordem:500});
+  if(erroSB(error))return;
+  const{data}=await sb.from('tipos_documento').select('*').order('ordem').order('nome');todosTipos=data||[];
+  limparFormTipo();renderTipos();toast('Tipo salvo');
+}
+async function alternarTipo(id){
+  const t=tipoPorId(id);if(!t)return;
+  const{error}=await sb.from('tipos_documento').update({ativo:t.ativo===false}).eq('id',id);if(erroSB(error))return;
+  const{data}=await sb.from('tipos_documento').select('*').order('ordem').order('nome');todosTipos=data||[];renderTipos();
+}
+
+/* pop-up de avisos ao entrar (uma vez por dia por usuário, até clicar em "Ciente") */
+function chaveAvisos(){return'bvek_avisos_'+(usuario?usuario.id:'')+'_'+hojeISO();}
+function mostrarAvisosDoDia(){
+  try{if(localStorage.getItem(chaveAvisos()))return;}catch(e){}
+  const docs=filtraEmpresa(todosDocumentos.filter(d=>(d.situacao||'vigente')==='vigente')).map(d=>({d,s:statusDoc(d)})).filter(x=>x.s.k==='vencido'||x.s.k==='aviso').sort((a,b)=>a.s.n-b.s.n);
+  const cobr=PERM.funil?cobrancasDoDia():[];
+  if(!docs.length&&!cobr.length)return;
+  const nV=docs.filter(x=>x.s.k==='vencido').length;
+  $('av-sub').textContent=[docs.length?`${docs.length} documento(s) ${nV?`(${nV} vencido${nV>1?'s':''}) `:''}precisando de renovação`:'',cobr.length?`${cobr.length} proposta(s) para cobrar retorno`:''].filter(Boolean).join(' · ');
+  $('av-docs').innerHTML=docs.length?`<h4>📄 Documentos e certidões</h4><div class="lista-mini">${docs.map(itemDocMini).join('')}</div>`:'';
+  $('av-cobr').innerHTML=cobr.length?`<h4>📞 Cobrar retorno de propostas</h4><div class="lista-mini">${cobr.map(itemCobrancaMini).join('')}</div>`:'';
+  $('av-btn-cobr').style.display=cobr.length?'':'none';
+  ligarCliques($('modal-avisos'));
+  // ao clicar num item, abre o documento/atendimento por cima e marca como visto
+  $('modal-avisos').querySelectorAll('[data-doc],[data-card]').forEach(el=>el.addEventListener('click',()=>fecharAvisos(true)));
+  abrirModal('modal-avisos');
+}
+function fecharAvisos(ciente){
+  if(ciente){try{localStorage.setItem(chaveAvisos(),'1');}catch(e){}}
+  fecharModal('modal-avisos');
+}
+
+/* ================= USUÁRIOS (administrador) ================= */
+function renderUsuarios(){
+  if(!PERM.admin)return;
+  const l=[...todosPerfis].sort((a,b)=>(a.perfil==='pendente'?0:1)-(b.perfil==='pendente'?0:1)||String(a.nome||a.email).localeCompare(String(b.nome||b.email),'pt-BR'));
+  $('tabela-usuarios').innerHTML='<thead><tr><th>Nome</th><th>E-mail</th><th>Perfil</th><th>Ativo</th><th></th></tr></thead><tbody>'+
+    (l.length?l.map(p=>`<tr class="${p.ativo?'':'inativo'}" data-u="${esc(p.id)}">
+      <td><input type="text" value="${esc(p.nome||'')}" data-campo="nome" style="min-width:160px"></td>
+      <td>${esc(p.email||'')}${p.id===usuario.id?' <span class="badge badge-ok">você</span>':''}</td>
+      <td><select data-campo="perfil">${PERFIS.map(([v,t])=>`<option value="${v}" ${p.perfil===v?'selected':''}>${t}</option>`).join('')}</select>${p.perfil==='pendente'?' <span class="badge badge-hoje">novo</span>':''}</td>
+      <td><input type="checkbox" data-campo="ativo" ${p.ativo?'checked':''} style="width:17px;height:17px;accent-color:var(--verde)"></td>
+      <td><button class="btn-sec" data-salvar-u>Salvar</button></td></tr>`).join(''):'<tr><td colspan="5" class="vazio">Nenhum usuário encontrado. Rode a migração v11.</td></tr>')+'</tbody>';
+  $('tabela-usuarios').querySelectorAll('[data-salvar-u]').forEach(b=>b.onclick=async()=>{
+    const tr=b.closest('tr'),id=tr.dataset.u;
+    const dados={nome:tr.querySelector('[data-campo=nome]').value.trim()||null,perfil:tr.querySelector('[data-campo=perfil]').value,ativo:tr.querySelector('[data-campo=ativo]').checked};
+    if(id===usuario.id&&(dados.perfil!=='administrador'||!dados.ativo)&&!confirm('Você está tirando o seu próprio acesso de administrador. Continuar?'))return;
+    const{error}=await sb.from('perfis').update(dados).eq('id',id);
+    if(erroSB(error))return;
+    await carregarPerfis();atualizarDatalists();renderUsuarios();toast('Usuário atualizado');
+    if(id===usuario.id)setTimeout(()=>location.reload(),600);
+  });
+}
+
 /* ================= RECORRÊNCIA ================= */
 async function verificarAlertas(){
   const hoje=new Date(),alertas=[];
@@ -1524,7 +2275,7 @@ async function verificarAlertas(){
     if(!card.dias_recorrencia||!card.atualizado_em)continue;
     const proxima=new Date(new Date(card.atualizado_em).getTime()+card.dias_recorrencia*86400000);
     const diff=Math.ceil((proxima-hoje)/86400000);
-    if(diff<=15&&diff>=0){alertas.push(`<div class="alerta-item">📋 <strong>${esc(card.titulo)}</strong> — renovação em <strong>${diff} dia(s)</strong> (${esc(proxima.toLocaleDateString('pt-BR'))})</div>`);await criarRecorrente(card);}
+    if(diff<=15&&diff>=0){alertas.push(`<div class="alerta-item">📋 <strong>${esc(card.titulo)}</strong> — renovação em <strong>${diff} dia(s)</strong> (${esc(proxima.toLocaleDateString('pt-BR'))})</div>`);if(PERM.funil)await criarRecorrente(card);}
   }
   $('alertas-lista').innerHTML=alertas.join('');
   $('alertas-box').style.display=alertas.length?'block':'none';
