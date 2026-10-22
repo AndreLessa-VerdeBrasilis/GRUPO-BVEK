@@ -210,6 +210,9 @@ table.tabela td.num{text-align:right;font-variant-numeric:tabular-nums;white-spa
 .pilula.cinza{background:#eee;color:#555}
 .pilula.marcada{border-color:currentColor}
 tr.doc-vencido td{background:#fff5f5}
+.caixa-drop{transition:background .15s,border-color .15s}
+.caixa-drop.drag-sobre{background:var(--verde-claro);border-color:var(--verde);border-style:solid}
+.caixa-drop .dica-drop{font-size:13px;font-weight:600;color:var(--verde);margin-bottom:6px}
 .modal-avisos .grupo-aviso{margin-top:14px}
 .modal-avisos .grupo-aviso h4{font-size:13px;margin-bottom:6px}
 .modal-avisos .lista-mini{max-height:300px;overflow-y:auto;border:1.5px solid var(--borda);border-radius:10px;padding:0 12px}
@@ -757,8 +760,9 @@ tr.doc-vencido td{background:#fff5f5}
       <div class="campo"><label>Responsável pela renovação</label><input type="text" id="md-resp" list="dl-responsaveis"></div>
       <div class="campo full"><label>Link para emitir / renovar</label><div class="linha-flex"><input type="text" id="md-link" placeholder="https://..." style="flex:4"><button class="btn-sec" style="flex:1" onclick="abrirLinkDoc()">Abrir site</button></div></div>
       <div class="campo full"><label>Arquivo (PDF ou foto)</label>
-        <div class="caixa-pdf">
-          <input type="file" id="md-arquivo" accept="application/pdf,.pdf,image/jpeg,image/png" class="so-edicao">
+        <div class="caixa-pdf caixa-drop" id="md-drop">
+          <div class="dica-drop so-edicao">⬇️ Arraste aqui o PDF que você baixou (ou clique em "Escolher arquivo")</div>
+          <input type="file" id="md-arquivo" accept="application/pdf,.pdf,image/jpeg,image/png" class="so-edicao" onchange="escolheuArquivoDoc(this.files&&this.files[0])">
           <div class="info" id="md-arquivo-info">O arquivo fica guardado no CRM junto com o documento.</div>
         </div>
       </div>
@@ -867,6 +871,7 @@ let clienteEditandoId=null,clienteVoltarParaCard=false,contatoEditandoId=null;
 let projetoEditandoId=null,projetoCardId=null,perdaPendente=null,migracaoOk=true;
 // v11: perfis, documentos, cobrança
 let meuPerfil=null,PERM={},todosPerfis=[],todosDocumentos=[],todosFuncionarios=[],todosTipos=[];
+let arquivoDocNovo=null;
 let docEditandoId=null,docRenovandoDe=null,funcEditandoId=null,tipoEditandoId=null,funcVoltarParaDoc=false,v11Ok=true;
 
 const ETAPAS=[
@@ -2011,7 +2016,7 @@ function abrirModalDocumento(id=null){
   if(!v11Ok){avisarMigracaoV11();return;}
   docEditandoId=id;docRenovandoDe=null;
   ['md-desc','md-orgao','md-numero','md-emissao','md-validade','md-resp','md-link','md-obs'].forEach(i=>$(i).value='');
-  $('md-arquivo').value='';$('md-aviso').value=30;$('md-sem-validade').checked=false;$('md-validade').disabled=false;
+  $('md-arquivo').value='';arquivoDocNovo=null;$('md-aviso').value=30;$('md-sem-validade').checked=false;$('md-validade').disabled=false;
   document.querySelectorAll('#modal-documento .campo-preenchido').forEach(e=>e.classList.remove('campo-preenchido'));
   preencherSelect($('md-empresa'),todasEmpresas.map(e=>[e.id,`${e.nome} (${e.sigla})`]),'Selecione a empresa');
   $('md-status').style.display='none';$('md-historico-box').style.display='none';
@@ -2021,6 +2026,7 @@ function abrirModalDocumento(id=null){
   const cat=d&&d.funcionario_id?'funcionario':'empresa';
   document.querySelector(`input[name=md-titular][value=${cat}]`).checked=true;
   preencherSelectFuncionarios('md-func',d&&d.funcionario_id);
+  $('md-tipo').innerHTML='';
   mudouTitularDoc();
   if(d){
     const s=statusDoc(d);
@@ -2034,7 +2040,7 @@ function abrirModalDocumento(id=null){
     $('md-emissao').value=d.data_emissao||'';$('md-validade').value=d.data_validade||'';
     $('md-sem-validade').checked=!d.data_validade;$('md-validade').disabled=!d.data_validade;
     $('md-aviso').value=d.dias_aviso??30;$('md-resp').value=d.responsavel||'';$('md-link').value=d.link_emissao||'';$('md-obs').value=d.observacoes||'';
-    if(d.arquivo)$('md-arquivo-info').innerHTML=`📎 Arquivo guardado: <a href="#" onclick="abrirArquivoDoc('${esc(d.arquivo)}');return false">${esc(d.arquivo_nome||'abrir')}</a> · para trocar, escolha outro arquivo.`;
+    if(d.arquivo)$('md-arquivo-info').innerHTML=`📎 Arquivo guardado: <a href="#" onclick="abrirArquivoDoc('${esc(d.arquivo)}');return false">${esc(d.arquivo_nome||'abrir')}</a> · para trocar, arraste ou escolha outro arquivo.`;
     $('md-btn-excluir').style.display=PERM.excluir?'inline-block':'none';
     $('md-btn-renovar').style.display=d.situacao==='vigente'?'inline-block':'none';
     $('md-btn-arquivar').style.display='inline-block';
@@ -2059,8 +2065,8 @@ function renovarDocumento(){
   const d=todosDocumentos.find(x=>x.id===docEditandoId);if(!d)return;
   docRenovandoDe=d.id;docEditandoId=null;
   ['md-numero','md-emissao','md-validade','md-obs'].forEach(i=>$(i).value='');
-  $('md-arquivo').value='';$('md-sem-validade').checked=false;$('md-validade').disabled=false;
-  $('md-arquivo-info').textContent='Anexe o arquivo da certidão nova.';
+  $('md-arquivo').value='';arquivoDocNovo=null;$('md-sem-validade').checked=false;$('md-validade').disabled=false;
+  $('md-arquivo-info').textContent='Arraste aqui o PDF da certidão nova: o CRM lê as datas e o número sozinho.';
   $('md-titulo').textContent='Renovar: '+nomeDoc(d);
   $('md-status').style.display='flex';
   $('md-status').innerHTML=`<span>A versão atual (válida até <strong>${esc(fmtData(d.data_validade)||'—')}</strong>) vai para o histórico quando você salvar a nova.</span>`;
@@ -2081,7 +2087,7 @@ async function salvarDocumento(){
   const em=$('md-emissao').value;
   if(em&&val&&val<em){alert('A validade está antes da data de emissão. Confira as datas.');return;}
   const aviso=$('md-aviso').value===''?30:Math.max(0,Math.round(Number($('md-aviso').value)));
-  const arq=$('md-arquivo').files&&$('md-arquivo').files[0];
+  const arq=arquivoDocNovo;
   if(arq){
     if(!/\.(pdf|jpe?g|png)$/i.test(arq.name)){alert('Envie um PDF, JPG ou PNG.');return;}
     if(arq.size>20*1024*1024){alert('Arquivo maior que 20 MB.');return;}
@@ -2112,7 +2118,7 @@ async function salvarDocumento(){
     fecharModal('modal-documento');
     await carregarDocumentos();atualizarDatalists();renderTabAtual();
     toast(docRenovandoDe?'Renovação registrada — a versão anterior foi para o histórico':'Documento salvo');
-    docRenovandoDe=null;
+    docRenovandoDe=null;arquivoDocNovo=null;
   }finally{btn.disabled=false;}
 }
 async function arquivarDocumento(){
@@ -2135,6 +2141,100 @@ async function abrirArquivoDoc(caminho){
   const{data,error}=await sb.storage.from(BUCKET_DOCS).createSignedUrl(caminho,600);
   if(erroSB(error,'Não foi possível abrir o arquivo'))return;
   window.open(data.signedUrl,'_blank','noopener');
+}
+
+/* arquivo da certidão: arrastar e soltar + leitura automática do PDF */
+const dataBRparaISO=t=>{const m=String(t||'').match(/(\d{2})\/(\d{2})\/(\d{4})/);return m?`${m[3]}-${m[2]}-${m[1]}`:null;};
+function extrairDadosCertidao(linhas){
+  const plano=linhas.join(' ').replace(/\s+/g,' ');
+  const D='(\\d{2}\\/\\d{2}\\/\\d{4})';
+  const r={};let m;
+  // FGTS (CRF): "Validade: 15/10/2026 a 13/11/2026"
+  m=plano.match(new RegExp('validade\\s*:?\\s*(?:de\\s*)?'+D+'\\s*(?:a|at[eé])\\s*'+D,'i'));
+  if(m){r.emissao=dataBRparaISO(m[1]);r.validade=dataBRparaISO(m[2]);}
+  if(!r.validade){
+    for(const re of[
+      new RegExp('v[aá]lid[ao]\\s+at[eé]\\s*(?:o\\s+dia\\s*)?:?\\s*'+D,'i'),
+      new RegExp('validade\\s*:?\\s*'+D,'i'),
+      new RegExp('(?:data\\s+de\\s+)?vencimento\\s*:?\\s*'+D,'i'),
+      new RegExp('v[aá]lid[ao]\\s+(?:por|pelo prazo)[\\s\\S]{0,60}?'+D,'i'),
+    ]){m=plano.match(re);if(m){r.validade=dataBRparaISO(m[1]);break;}}
+  }
+  if(!r.emissao){
+    for(const re of[
+      new RegExp('(?:emitida|expedida|emiss[aã]o|expedi[cç][aã]o|data\\s+da\\s+certid[aã]o|informa[cç][aã]o\\s+obtida\\s+em)[\\s\\S]{0,45}?'+D,'i'),
+      new RegExp('do\\s+dia\\s+'+D,'i'),
+    ]){m=plano.match(re);if(m){r.emissao=dataBRparaISO(m[1]);break;}}
+  }
+  if(r.emissao&&r.validade&&r.emissao>r.validade)delete r.emissao;
+  // número / código de controle
+  for(const re of[
+    /c[oó]digo\s+de\s+(?:controle|autenticidade|verifica[cç][aã]o)(?:\s+da\s+certid[aã]o)?\s*:?\s*([A-Z0-9][A-Z0-9.\-\/]{5,})/i,
+    /certifica[cç][aã]o\s+n[uú]mero\s*:?\s*([0-9][0-9.\-\/]{5,})/i,
+    /certid[aã]o\s+n?[ºo°.]*\s*(?:n[uú]mero)?\s*:\s*([0-9][0-9.\-\/]{4,})/i,
+    /certid[aã]o\s+n[ºo°]\s*([0-9][0-9.\-\/]{4,})/i,
+    /n[ºo°]\s+da\s+certid[aã]o\s*:?\s*([0-9][0-9.\-\/]{4,})/i,
+  ]){m=plano.match(re);if(m){r.numero=m[1].replace(/[.\-\/]+$/,'');break;}}
+  // tipo pelo assunto da certidão
+  const t=semAcento(plano).toUpperCase();
+  const achaTipo=trecho=>todosTipos.find(x=>x.ativo!==false&&semAcento(x.nome).toUpperCase().includes(trecho));
+  if(/FGTS|FUNDO DE GARANTIA/.test(t))r.tipo=achaTipo('FGTS');
+  else if(/DEBITOS TRABALHISTAS/.test(t))r.tipo=achaTipo('CNDT');
+  else if(/DIVIDA ATIVA DA UNIAO|RECEITA FEDERAL/.test(t))r.tipo=achaTipo('CND FEDERAL');
+  else if(/FALENCIA|RECUPERACAO JUDICIAL/.test(t))r.tipo=achaTipo('FALENCIA');
+  else if(/CONSELHO DE ARQUITETURA|\bCAU\b/.test(t))r.tipo=achaTipo('CAU');
+  else if(/CONSELHO REGIONAL DE ENGENHARIA|\bCREA\b/.test(t))r.tipo=achaTipo('CREA');
+  // empresa do grupo pelo CNPJ que aparece na certidão
+  const cnpjs=[...plano.matchAll(/\d{2}\.?\d{3}\.?\d{3}\/?\d{4}-?\d{2}/g)].map(x=>x[0].replace(/\D/g,''));
+  r.empresa=todasEmpresas.find(e=>e.cnpj&&cnpjs.includes(String(e.cnpj).replace(/\D/g,'')))||null;
+  return r;
+}
+async function escolheuArquivoDoc(f){
+  arquivoDocNovo=null;
+  if(!f)return;
+  if(!PERM.docs){return;}
+  if(!/\.(pdf|jpe?g|png)$/i.test(f.name)){alert('Envie um PDF, JPG ou PNG.');return;}
+  if(f.size>20*1024*1024){alert('Arquivo maior que 20 MB.');return;}
+  arquivoDocNovo=f;
+  const info=$('md-arquivo-info');
+  if(!/\.pdf$/i.test(f.name)){info.innerHTML=`📎 <strong>${esc(f.name)}</strong> será guardado ao salvar. (Foto: preencha as datas à mão.)`;return;}
+  info.textContent='Lendo a certidão…';
+  let d;
+  try{d=extrairDadosCertidao(await textoDoPdf(f));}
+  catch(e){console.error(e);info.innerHTML=`📎 <strong>${esc(f.name)}</strong> será guardado ao salvar, mas não consegui ler o texto (PDF escaneado?). Preencha as datas à mão.`;return;}
+  // documento já salvo (sem ser renovação): pergunta antes de trocar o que já está preenchido
+  const editando=!!docEditandoId;
+  const temAlgo=['md-validade','md-numero','md-emissao'].some(id=>$(id).value);
+  const sobrescrever=!editando||!temAlgo||confirm('Substituir as datas e o número pelo que foi lido na certidão?\n(OK = substituir · Cancelar = preencher só os vazios)');
+  const pode=id=>sobrescrever||!$(id).value;
+  const feitos=[];
+  if(d.tipo&&!editando&&!docRenovandoDe&&!$('md-tipo').value){
+    const cat=d.tipo.categoria;document.querySelector(`input[name=md-titular][value=${cat}]`).checked=true;mudouTitularDoc();
+    $('md-tipo').value=d.tipo.id;mudouTipoDoc();marcarPreenchido('md-tipo');feitos.push('tipo');
+  }
+  if(d.empresa&&titularSelecionado()==='empresa'&&!$('md-empresa').value){$('md-empresa').value=d.empresa.id;marcarPreenchido('md-empresa');feitos.push('empresa');}
+  if(d.emissao&&pode('md-emissao')){$('md-emissao').value=d.emissao;marcarPreenchido('md-emissao');feitos.push('emissão');}
+  if(d.validade&&pode('md-validade')){$('md-sem-validade').checked=false;$('md-validade').disabled=false;$('md-validade').value=d.validade;marcarPreenchido('md-validade');feitos.push('validade');}
+  else if(!d.validade&&docRenovandoDe){$('md-validade').value='';sugerirValidadeDoc();}
+  if(d.numero&&pode('md-numero')){$('md-numero').value=d.numero;marcarPreenchido('md-numero');feitos.push('número');}
+  info.innerHTML=`📎 <strong>${esc(f.name)}</strong> será guardado ao salvar.<br>`+(feitos.length?`Lido da certidão: ${esc(feitos.join(', '))}. Confira os campos em amarelo antes de salvar.`:'Não encontrei as datas no PDF — preencha à mão.')+(d.validade?'':' <strong>Confira a validade.</strong>');
+}
+function ligarArrastarDoc(){
+  const zona=$('md-drop'),modal=$('modal-documento');
+  const temArquivo=ev=>ev.dataTransfer&&[...ev.dataTransfer.types].includes('Files');
+  // solta em qualquer ponto da janela do documento
+  modal.addEventListener('dragover',ev=>{if(!temArquivo(ev)||!PERM.docs)return;ev.preventDefault();ev.dataTransfer.dropEffect='copy';zona.classList.add('drag-sobre');});
+  modal.addEventListener('dragleave',ev=>{if(ev.target===modal)zona.classList.remove('drag-sobre');});
+  modal.addEventListener('drop',ev=>{
+    if(!temArquivo(ev))return;ev.preventDefault();zona.classList.remove('drag-sobre');
+    if(!PERM.docs)return;
+    const f=ev.dataTransfer.files&&ev.dataTransfer.files[0];if(!f)return;
+    try{const dt=new DataTransfer();dt.items.add(f);$('md-arquivo').files=dt.files;}catch(e){}
+    escolheuArquivoDoc(f);
+  });
+  // fora da janela: não deixa o navegador abrir o arquivo no lugar do CRM
+  window.addEventListener('dragover',ev=>{if(temArquivo(ev))ev.preventDefault();});
+  window.addEventListener('drop',ev=>{if(temArquivo(ev)&&!modal.contains(ev.target)&&!(ev.target.matches&&ev.target.matches('input[type=file]')))ev.preventDefault();});
 }
 
 /* funcionários */
@@ -2493,6 +2593,7 @@ async function gerarPDF(){
 }
 
 /* ================= INÍCIO ================= */
+ligarArrastarDoc();
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){const abertos=[...document.querySelectorAll('.modal-overlay.aberto')];if(abertos.length)abertos[abertos.length-1].classList.remove('aberto');}});
 sb.auth.getSession().then(({data:{session}})=>{if(session)iniciarApp();});
 </script>
