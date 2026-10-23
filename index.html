@@ -792,6 +792,7 @@ tr.doc-vencido td{background:#fff5f5}
       <div class="campo"><label id="mf-rotulo">Nome do funcionário *</label><input type="text" id="mf-nome"></div>
       <div class="campo"><label>Cargo / função</label><input type="text" id="mf-cargo"></div>
       <div class="campo"><label>Empresa</label><select id="mf-empresa"></select></div>
+      <div class="campo" style="grid-column:1/-1"><label>Link da pasta na rede (01.2.1.1_ATIVOS)</label><input type="url" id="mf-pasta" placeholder="https://andrelessaverdebrasiliscom.sharepoint.com/..."></div>
       <div class="campo" style="display:flex;align-items:flex-end;gap:8px">
         <button class="btn-salvar" onclick="salvarFuncionario()">Salvar funcionário</button>
         <button class="btn-cancelar" id="mf-cancelar" style="display:none" onclick="limparFormFuncionario()">Limpar</button>
@@ -2250,7 +2251,7 @@ function abrirModalFuncionarios(voltarParaDoc=false){
   if(PERM.docs)setTimeout(()=>$('mf-nome').focus(),50);
 }
 function limparFormFuncionario(){
-  funcEditandoId=null;['mf-nome','mf-cargo'].forEach(i=>$(i).value='');
+  funcEditandoId=null;['mf-nome','mf-cargo','mf-pasta'].forEach(i=>$(i).value='');
   $('mf-empresa').value=empresaAtual!=='todas'?empresaAtual:'';
   $('mf-rotulo').textContent='Nome do funcionário *';$('mf-cancelar').style.display='none';
 }
@@ -2259,18 +2260,22 @@ function renderFuncionarios(){
   const l=todosFuncionarios.filter(f=>(f.ativo!==false)===ativos);
   const nDocs={};todosDocumentos.filter(d=>d.situacao==='vigente'&&d.funcionario_id).forEach(d=>{const s=statusDoc(d);const x=nDocs[d.funcionario_id]=nDocs[d.funcionario_id]||{t:0,a:0};x.t++;if(s.k==='vencido'||s.k==='aviso')x.a++;});
   $('mf-lista').innerHTML=l.length?'<div class="sub-lista">'+l.map(f=>{const e=empresaPorId(f.empresa_id),n=nDocs[f.id]||{t:0,a:0};return`<div class="sub-item"><div><strong>${esc(f.nome)}</strong>${f.cargo?` — ${esc(f.cargo)}`:''}${e?` <span class="card-empresa-tag tag-${esc(e.sigla)}">${esc(e.sigla)}</span>`:''}<div style="font-size:12px;color:var(--texto2)">${n.t} documento(s)${n.a?` · <span style="color:var(--vermelho);font-weight:600">${n.a} precisando de atenção</span>`:''}</div></div>
-    <div class="acoes"><button class="btn-link" onclick="verDocsFuncionario('${esc(f.id)}')">ver documentos</button>${PERM.docs?`<button class="btn-link" onclick="editarFuncionario('${esc(f.id)}')">editar</button><button class="btn-link" style="color:var(--texto2)" onclick="alternarFuncionario('${esc(f.id)}')">${f.ativo!==false?'desligar':'reativar'}</button>`:''}</div></div>`;}).join('')+'</div>':`<p class="vazio">${ativos?'Nenhum funcionário cadastrado.':'Nenhum funcionário desligado.'}</p>`;
+    <div class="acoes">${f.pasta_url?`<a class="btn-link" href="${esc(f.pasta_url)}" target="_blank" rel="noopener">📁 abrir pasta</a>`:''}<button class="btn-link" onclick="verDocsFuncionario('${esc(f.id)}')">ver documentos</button>${PERM.docs?`<button class="btn-link" onclick="editarFuncionario('${esc(f.id)}')">editar</button><button class="btn-link" style="color:var(--texto2)" onclick="alternarFuncionario('${esc(f.id)}')">${f.ativo!==false?'desligar':'reativar'}</button>`:''}</div></div>`;}).join('')+'</div>':`<p class="vazio">${ativos?'Nenhum funcionário cadastrado.':'Nenhum funcionário desligado.'}</p>`;
 }
 function editarFuncionario(id){
   const f=funcPorId(id);if(!f)return;funcEditandoId=id;
-  $('mf-nome').value=f.nome;$('mf-cargo').value=f.cargo||'';$('mf-empresa').value=f.empresa_id||'';
+  $('mf-nome').value=f.nome;$('mf-cargo').value=f.cargo||'';$('mf-pasta').value=f.pasta_url||'';$('mf-empresa').value=f.empresa_id||'';
   $('mf-rotulo').textContent='Editando: nome do funcionário *';$('mf-cancelar').style.display='inline-block';$('mf-nome').focus();
 }
 async function salvarFuncionario(){
   const nome=$('mf-nome').value.trim().toUpperCase();if(!nome){alert('Informe o nome.');return;}
+  const pasta=$('mf-pasta').value.trim();
+  if(pasta&&!/^https?:\/\//i.test(pasta)){alert('O link da pasta deve começar com https://');return;}
   const dados={nome,cargo:$('mf-cargo').value.trim()||null,empresa_id:$('mf-empresa').value||null};
+  if(pasta||todosFuncionarios.some(f=>'pasta_url' in f))dados.pasta_url=pasta||null;
   if(!funcEditandoId&&todosFuncionarios.some(f=>norm(f.nome)===norm(nome))&&!confirm(`Já existe um funcionário "${nome}". Cadastrar mesmo assim?`))return;
   const r=funcEditandoId?await sb.from('funcionarios').update(dados).eq('id',funcEditandoId).select().single():await sb.from('funcionarios').insert(dados).select().single();
+  if(r.error&&/pasta_url/.test(r.error.message||'')){alert('Para guardar o link da pasta, rode antes a migração v12 (migracao_crm_v12_funcionarios_ativos.sql) no Supabase.');return;}
   if(erroSB(r.error))return;
   if(funcEditandoId&&dados.empresa_id)await sb.from('documentos').update({empresa_id:dados.empresa_id}).eq('funcionario_id',funcEditandoId);
   const{data}=await sb.from('funcionarios').select('*').order('nome');todosFuncionarios=data||[];
