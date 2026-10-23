@@ -839,7 +839,9 @@ tr.doc-vencido td{background:#fff5f5}
         <button class="btn-cancelar" id="mf-cancelar" style="display:none" onclick="limparFormFuncionario()">Limpar</button>
       </div>
     </div>
-    <div class="filtros"><select id="mf-filtro" onchange="renderFuncionarios()"><option value="ativos">Ativos</option><option value="inativos">Inativos (desligados)</option></select></div>
+    <div class="filtros"><select id="mf-filtro" onchange="renderFuncionarios()"><option value="ativos">Ativos</option><option value="inativos">Inativos (desligados)</option></select>
+      <button class="btn-sec so-edicao" id="mf-btn-secullum" onclick="buscarFuncionariosSecullum()">🔄 Buscar CPF e PIS no Secullum</button>
+      <span class="dica" id="mf-sem-cpf"></span></div>
     <div id="mf-lista"></div>
     <div class="modal-btns"><button class="btn-cancelar" onclick="fecharModal('modal-funcionarios')">Fechar</button></div>
   </div>
@@ -890,6 +892,25 @@ tr.doc-vencido td{background:#fff5f5}
       </div>
     </div>
     <div class="modal-btns"><button class="btn-cancelar" onclick="fecharModal('modal-benef-func')">Fechar</button></div>
+  </div>
+</div>
+
+<!-- MODAL IMPORTAR DO SECULLUM -->
+<div class="modal-overlay" id="modal-secullum">
+  <div class="modal modal-lg">
+    <h2>Dados do Secullum</h2>
+    <p class="modal-sub" id="msc-sub"></p>
+    <div class="info-box" style="display:block;line-height:1.5">O CRM encontrou cada funcionário pelo <strong>nome</strong>. Confira a coluna "Secullum" antes de aplicar: só as linhas marcadas recebem CPF, PIS e data de admissão. Linhas em que o CRM já tinha um CPF diferente vêm desmarcadas.</div>
+    <div class="tabela-wrap"><table class="tabela" id="msc-tabela"></table></div>
+    <div id="msc-novos-box" style="display:none">
+      <div class="secao">No Secullum, mas não no CRM</div>
+      <p class="dica" style="margin-bottom:8px">Funcionários ativos no ponto que não estão no cadastro do CRM. Marque os que quiser cadastrar.</p>
+      <div class="tabela-wrap"><table class="tabela" id="msc-novos"></table></div>
+    </div>
+    <div class="modal-btns">
+      <button class="btn-cancelar" onclick="fecharModal('modal-secullum')">Cancelar</button>
+      <button class="btn-salvar" id="msc-aplicar" onclick="aplicarSecullum()">Aplicar no CRM</button>
+    </div>
   </div>
 </div>
 
@@ -2342,7 +2363,7 @@ function abrirModalFuncionarios(voltarParaDoc=false){
   limparFormFuncionario();$('mf-filtro').value='ativos';
   renderFuncionarios();
   modoLeitura('modal-funcionarios',!PERM.docs);
-  $('mf-filtro').disabled=false;
+  $('mf-filtro').disabled=false;$('mf-btn-secullum').disabled=false;
   abrirModal('modal-funcionarios');
   if(PERM.docs)setTimeout(()=>$('mf-nome').focus(),50);
 }
@@ -2353,6 +2374,8 @@ function limparFormFuncionario(){
 }
 function renderFuncionarios(){
   const ativos=$('mf-filtro').value==='ativos';
+  const semCpf=todosFuncionarios.filter(f=>f.ativo!==false&&!f.cpf).length;
+  $('mf-sem-cpf').textContent=semCpf?`${semCpf} funcionário(s) ativo(s) sem CPF`:'';
   const l=todosFuncionarios.filter(f=>(f.ativo!==false)===ativos);
   const nDocs={};todosDocumentos.filter(d=>d.situacao==='vigente'&&d.funcionario_id).forEach(d=>{const s=statusDoc(d);const x=nDocs[d.funcionario_id]=nDocs[d.funcionario_id]||{t:0,a:0};x.t++;if(s.k==='vencido'||s.k==='aviso')x.a++;});
   $('mf-lista').innerHTML=l.length?'<div class="sub-lista">'+l.map(f=>{const e=empresaPorId(f.empresa_id),n=nDocs[f.id]||{t:0,a:0};return`<div class="sub-item"><div><strong>${esc(f.nome)}</strong>${f.cargo?` — ${esc(f.cargo)}`:''}${e?` <span class="card-empresa-tag tag-${esc(e.sigla)}">${esc(e.sigla)}</span>`:''}<div style="font-size:12px;color:var(--texto2)">${n.t} documento(s)${n.a?` · <span style="color:var(--vermelho);font-weight:600">${n.a} precisando de atenção</span>`:''}</div></div>
@@ -2401,6 +2424,85 @@ function verDocsFuncionario(id){
   fecharModal('modal-funcionarios');
   $('doc-busca').value=f.nome;$('doc-titular').value='funcionario';$('doc-status').value='';$('doc-situacao').value=f.ativo===false?'arquivado':'vigente';
   abrirTab('documentos');
+}
+
+/* importar CPF/PIS/admissão do Secullum (função "secullum" no Supabase) */
+let secullumPropostas=[],secullumNovos=[];
+async function chamarSecullum(acao,extra={}){
+  const{data,error}=await sb.functions.invoke('secullum',{body:{acao,...extra}});
+  if(error){
+    let msg=error.message||String(error);
+    try{const r=error.context&&await error.context.json();if(r&&r.erro)msg=r.erro+(r.detalhe?` (${r.detalhe})`:'');}catch(e){}
+    if(/Failed to send|NOT_FOUND|404/i.test(msg))msg='A função "secullum" ainda não foi publicada no Supabase.';
+    throw new Error(msg);
+  }
+  if(data&&data.erro)throw new Error(data.erro);
+  return data;
+}
+// nome comparável: sem acento, maiúsculo, só letras e espaços simples
+const nomeCmp=t=>semAcento(t).toUpperCase().replace(/[^A-Z ]/g,' ').replace(/\s+/g,' ').trim();
+function acharNoSecullum(f,lista){
+  const n=nomeCmp(f.nome);if(!n)return null;
+  let l=lista.filter(s=>nomeCmp(s.nome)===n);if(l.length===1)return l[0];
+  const pal=n.split(' '),pri=pal[0],ult=pal[pal.length-1];
+  // mesmo primeiro e último nome
+  l=lista.filter(s=>{const p=nomeCmp(s.nome).split(' ');return p[0]===pri&&p[p.length-1]===ult;});if(l.length===1)return l[0];
+  // todas as palavras do nome do CRM aparecem no nome do Secullum (nome mais curto no CRM)
+  if(pal.length>=2){l=lista.filter(s=>{const p=new Set(nomeCmp(s.nome).split(' '));return pal.every(x=>p.has(x));});if(l.length===1)return l[0];}
+  return null;
+}
+async function buscarFuncionariosSecullum(){
+  if(!PERM.docs)return;
+  const btn=$('mf-btn-secullum'),txt=btn.textContent;btn.disabled=true;btn.textContent='Buscando no Secullum…';
+  let r;
+  try{r=await chamarSecullum('funcionarios');}
+  catch(e){alert('Não foi possível buscar no Secullum:\n'+e.message);return;}
+  finally{btn.disabled=false;btn.textContent=txt;}
+  const lista=(r.funcionarios||[]).filter(s=>s.nome);
+  const usados=new Set();
+  secullumPropostas=todosFuncionarios.filter(f=>f.ativo!==false).map(f=>{
+    const s=acharNoSecullum(f,lista);if(s)usados.add(s);
+    const cpfS=s&&s.cpf?fmtCPF(s.cpf):null,pisS=s&&s.pis?fmtPIS(s.pis):null;
+    const cpfDiferente=!!(s&&f.cpf&&cpfS&&f.cpf.replace(/\D/g,'')!==cpfS.replace(/\D/g,''));
+    const muda=!!(s&&((cpfS&&cpfS!==f.cpf)||(pisS&&pisS!==f.pis)||(s.admissao&&s.admissao!==f.data_admissao)));
+    return{f,s,cpf:cpfS,pis:pisS,admissao:s&&s.admissao,cpfDiferente,marcar:muda&&!cpfDiferente,muda};
+  }).sort((a,b)=>(a.s?1:0)-(b.s?1:0)||a.f.nome.localeCompare(b.f.nome,'pt-BR'));
+  secullumNovos=lista.filter(s=>!usados.has(s)&&!s.demissao&&!todosFuncionarios.some(f=>f.cpf&&s.cpf&&f.cpf.replace(/\D/g,'')===String(s.cpf).replace(/\D/g,'')));
+  const ach=secullumPropostas.filter(p=>p.s).length;
+  $('msc-sub').textContent=`Banco do Secullum: ${r.banco||'—'} · ${lista.length} funcionário(s) no ponto · ${ach} de ${secullumPropostas.length} do CRM encontrados`;
+  $('msc-tabela').innerHTML='<thead><tr><th></th><th>No CRM</th><th>Secullum</th><th>CPF</th><th>PIS</th><th>Admissão</th></tr></thead><tbody>'+
+    secullumPropostas.map((p,i)=>{
+      if(!p.s)return`<tr><td></td><td><strong>${esc(p.f.nome)}</strong></td><td colspan="4"><span class="badge badge-atraso">não encontrado no Secullum</span> <span class="dica">confira a grafia do nome ou preencha o CPF à mão</span></td></tr>`;
+      const dif=(v,a)=>v&&v!==a?`<strong>${esc(v)}</strong>${a?`<div class="dica">no CRM: ${esc(a)}</div>`:''}`:esc(v||a||'—');
+      return`<tr><td><input type="checkbox" data-msc="${i}" ${p.marcar?'checked':''} ${p.muda?'':'disabled'} style="width:17px;height:17px;accent-color:var(--verde)"></td>
+        <td><strong>${esc(p.f.nome)}</strong></td><td>${esc(p.s.nome)}${p.s.demissao?` <span class="badge badge-atraso">demitido em ${esc(fmtData(p.s.demissao))}</span>`:''}${p.s.funcao?`<div class="dica">${esc(p.s.funcao)}</div>`:''}</td>
+        <td>${dif(p.cpf,p.f.cpf)}${p.cpfDiferente?' <span class="badge badge-atraso">CPF diferente</span>':''}</td><td>${dif(p.pis,p.f.pis)}</td><td>${p.admissao&&p.admissao!==p.f.data_admissao?`<strong>${esc(fmtData(p.admissao))}</strong>`:esc(fmtData(p.admissao||p.f.data_admissao)||'—')}</td></tr>`;
+    }).join('')+'</tbody>';
+  $('msc-novos-box').style.display=secullumNovos.length?'block':'none';
+  $('msc-novos').innerHTML='<thead><tr><th></th><th>Nome no Secullum</th><th>Função</th><th>CPF</th><th>Admissão</th></tr></thead><tbody>'+
+    secullumNovos.map((s,i)=>`<tr><td><input type="checkbox" data-msn="${i}" style="width:17px;height:17px;accent-color:var(--verde)"></td><td>${esc(s.nome)}</td><td>${esc(s.funcao||'')}</td><td>${esc(s.cpf?fmtCPF(s.cpf):'')}</td><td>${esc(fmtData(s.admissao)||'')}</td></tr>`).join('')+'</tbody>';
+  abrirModal('modal-secullum');
+}
+async function aplicarSecullum(){
+  const marcados=[...document.querySelectorAll('#msc-tabela [data-msc]:checked')].map(c=>secullumPropostas[+c.dataset.msc]);
+  const novos=[...document.querySelectorAll('#msc-novos [data-msn]:checked')].map(c=>secullumNovos[+c.dataset.msn]);
+  if(!marcados.length&&!novos.length){alert('Nenhuma linha marcada.');return;}
+  if(!confirm(`Atualizar ${marcados.length} funcionário(s)${novos.length?` e cadastrar ${novos.length} novo(s)`:''} com os dados do Secullum?`))return;
+  const btn=$('msc-aplicar');btn.disabled=true;let erros=0;
+  try{
+    for(const p of marcados){
+      const d={};if(p.cpf)d.cpf=p.cpf;if(p.pis)d.pis=p.pis;if(p.admissao)d.data_admissao=p.admissao;
+      const{error}=await sb.from('funcionarios').update(d).eq('id',p.f.id);if(error){console.error(error);erros++;}
+    }
+    for(const s of novos){
+      const{error}=await sb.from('funcionarios').insert({nome:nomeCmp(s.nome),cargo:s.funcao||null,cpf:s.cpf?fmtCPF(s.cpf):null,pis:s.pis?fmtPIS(s.pis):null,data_admissao:s.admissao||null});
+      if(error){console.error(error);erros++;}
+    }
+  }finally{btn.disabled=false;}
+  const{data}=await sb.from('funcionarios').select('*').order('nome');todosFuncionarios=data||[];
+  fecharModal('modal-secullum');renderFuncionarios();renderTabAtual();
+  if(erros)alert(`${erros} linha(s) não puderam ser gravadas. As demais foram atualizadas.`);
+  else toast(`Dados do Secullum aplicados: ${marcados.length} atualizado(s)${novos.length?`, ${novos.length} novo(s)`:''}`);
 }
 
 /* tipos de documento */
