@@ -10,6 +10,7 @@
 //
 // Ações (POST com JSON):
 //   { "acao": "funcionarios" }  → lista nome, CPF, PIS, admissão, demissão
+//   { "acao": "bancos" }        → nomes dos bancos do Ponto Web da conta
 //
 // Só Administrador e Administrativo do CRM podem chamar.
 // =====================================================================
@@ -79,18 +80,38 @@ Deno.serve(async (req) => {
     if (!bancos.length) {
       return json({ erro: "Nenhum banco do Ponto Web liberado para este usuário. Confira com a Tecnoponto se a integração externa está ativa." }, 502);
     }
+    // identificador do banco sem traços (formato "N" do exemplo oficial)
+    // deno-lint-ignore no-explicit-any
+    const idDe = (b: any) => String(campo(b, "identificador") || "").replace(/[-{}]/g, "").toLowerCase();
     const preferido = Deno.env.get("SECULLUM_BANCO");
-    const banco = (preferido && bancos.find((b) => String(campo(b, "id")) === preferido || campo(b, "nome") === preferido)) || bancos[0];
-    const idBanco = String(campo(banco, "identificador")).replace(/-/g, "");
+    // ordem de tentativa: o preferido primeiro, depois os demais
+    const ordem = [...bancos].sort((a, b) =>
+      Number(!!preferido && (String(campo(b, "id")) === preferido || campo(b, "nome") === preferido)) -
+      Number(!!preferido && (String(campo(a, "id")) === preferido || campo(a, "nome") === preferido)));
+    // deno-lint-ignore no-explicit-any
+    let banco: any = ordem[0];
 
+    const chamar = async (rota: string, idBanco: string) =>
+      fetch(PONTOWEB + rota, { headers: { Authorization: "Bearer " + token, secullumidbancoselecionado: idBanco } });
     const pontoWeb = async (rota: string) => {
-      const r = await fetch(PONTOWEB + rota, { headers: { Authorization: "Bearer " + token, secullumidbancoselecionado: idBanco } });
-      const t = await r.text();
-      if (!r.ok) throw new Error(`Secullum respondeu ${r.status} em ${rota.split("?")[0]}: ${t.slice(0, 300)}`);
-      return t ? JSON.parse(t) : null;
+      const tentativas: string[] = [];
+      // o manual mostra o id numérico (12345); o exemplo oficial usa o identificador sem traços: tenta os dois
+      for (const b of ordem) {
+        for (const id of [String(campo(b, "id") ?? ""), idDe(b)].filter(Boolean)) {
+          const r = await chamar(rota, id);
+          const t = await r.text();
+          if (r.ok) { banco = b; return t ? JSON.parse(t) : null; }
+          tentativas.push(`${campo(b, "nome") || campo(b, "id")} [${id.length > 12 ? "identificador" : "id"}]: ${r.status}${t ? " " + t.slice(0, 120) : ""}`);
+          if (r.status !== 401 && r.status !== 403) break;
+        }
+      }
+      throw new Error(`Secullum negou o acesso a ${rota.split("?")[0]} (${tentativas.join(" · ")}). Peça à Tecnoponto para ativar Manutenção → Integração com Sistemas no banco certo e liberar o usuário.`);
     };
 
     // 4. ações
+    if (pedido.acao === "bancos") {
+      return json({ bancos: bancos.map((b) => ({ id: campo(b, "id"), nome: campo(b, "nome"), identificador_ok: idDe(b).length === 32 })) });
+    }
     if (pedido.acao === "funcionarios") {
       const lista = (await pontoWeb("Funcionarios")) || [];
       // deno-lint-ignore no-explicit-any
