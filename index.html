@@ -11,6 +11,7 @@
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#1a6b3c">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/perfil-questionario.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{--verde:#1a6b3c;--verde-escuro:#145530;--verde-claro:#e8f5ee;--cinza:#f4f4f4;--borda:#ddd;--texto:#222;--texto2:#666;--branco:#fff;--vermelho:#c0392b;--azul:#2980b9;--amarelo:#fff3cd;--laranja:#e67e22}
@@ -236,6 +237,38 @@ tr.doc-vencido td{background:#fff5f5}
 .legenda-perfis{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin-bottom:16px}
 .legenda-perfis div{background:#fff;border:1.5px solid var(--borda);border-radius:10px;padding:10px 14px;font-size:12px;color:var(--texto2)}
 .legenda-perfis strong{display:block;color:var(--texto);font-size:13px;margin-bottom:3px}
+/* RH E CURRÍCULOS (v14) */
+.subabas{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px;border-bottom:1.5px solid var(--borda);padding-bottom:10px}
+.subaba{background:#fff;border:1.5px solid var(--borda);color:var(--texto2);padding:7px 14px;border-radius:20px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap}
+.subaba:hover{border-color:var(--verde);color:var(--verde)}
+.subaba.ativo{background:var(--verde);border-color:var(--verde);color:#fff}
+.painel-rh{display:none}.painel-rh.ativo{display:block}
+.ficha-topo{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+.ficha-topo .dados{font-size:12px;color:var(--texto2);margin-top:2px}
+.linha-benef{display:grid;grid-template-columns:1.4fr auto 1fr 1fr;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid #eee;font-size:13px}
+.linha-benef:last-child{border-bottom:none}
+.linha-benef .radios{padding:0;gap:12px}
+.linha-benef input[type=text]{padding:7px 9px;border:1.5px solid var(--borda);border-radius:6px;font-size:13px;font-family:inherit;width:100%}
+.linha-benef input:disabled{background:#f4f4f4;color:#aaa}
+.tabela input[type=date],.tabela input.inp-moeda{padding:5px 7px;border:1.5px solid var(--borda);border-radius:6px;font-size:13px;font-family:inherit;background:#fff}
+.tabela input.inp-moeda{width:110px;text-align:right}
+.tabela input.inp-obs{width:100%;min-width:160px;padding:5px 7px;border:1.5px solid var(--borda);border-radius:6px;font-size:13px;font-family:inherit}
+.check-lista{display:grid;gap:8px;margin-bottom:16px}
+.check-lista .it{background:#fff;border:1.5px solid var(--borda);border-radius:10px;padding:10px 14px;font-size:13px;display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.check-lista .it.ok{border-color:#9fd3b0}.check-lista .it.alerta{border-color:#f3c34f;background:#fffbea}
+.paginas-split td{font-size:12px}
+.paginas-split .trecho{color:var(--texto2);max-width:420px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.estrelas{color:#e0a800;letter-spacing:1px;white-space:nowrap}
+.dim-linha{display:grid;grid-template-columns:180px 1fr 70px;gap:10px;align-items:center;font-size:13px;margin-bottom:8px}
+.dim-linha .trilho{background:#f0f0f0;border-radius:4px;height:14px;overflow:hidden}
+.dim-linha .cheio{height:100%;border-radius:4px}
+.niv-forte{background:#2e8b57}.niv-adequado{background:#e0a800}.niv-atencao{background:#c0392b}
+.resp-aberta{background:#f7f7f7;border-radius:8px;padding:10px 12px;margin-bottom:8px;font-size:13px}
+.resp-aberta strong{display:block;font-size:12px;color:var(--texto2);margin-bottom:3px}
+.link-perfil{display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:var(--verde-claro);border:1.5px solid var(--verde);border-radius:8px;padding:10px 12px;font-size:13px}
+.link-perfil input{flex:1;min-width:220px;padding:7px 9px;border:1.5px solid var(--borda);border-radius:6px;font-size:12px;font-family:Consolas,monospace;background:#fff}
+.oculto{display:none!important}
+@media(max-width:700px){.linha-benef{grid-template-columns:1fr 1fr}.dim-linha{grid-template-columns:120px 1fr 60px}}
 @media(max-width:700px){
   .form-grid{grid-template-columns:1fr}.conteudo{padding:12px}.modal{padding:18px}.topbar{padding:0 12px}
   .topbar-logo{font-size:15px}.empresa-selector label{display:none}#user-nome{display:none}.empresa-selector{padding:6px 8px;min-width:0}.empresa-selector select{max-width:150px;font-size:13px}.topbar{gap:8px}.btn-sair{padding:6px 10px}
@@ -276,6 +309,8 @@ tr.doc-vencido td{background:#fff5f5}
     <div class="tab ativo" data-tab="painel" data-comercial>Painel</div>
     <div class="tab" data-tab="documentos">Documentos <span id="tab-docs-badge"></span></div>
     <div class="tab" data-tab="beneficios" id="tab-btn-beneficios" style="display:none">Benefícios</div>
+    <div class="tab" data-tab="rh" id="tab-btn-rh" style="display:none">RH <span id="tab-rh-badge"></span></div>
+    <div class="tab" data-tab="curriculos" id="tab-btn-curriculos" style="display:none">Currículos</div>
     <div class="tab" data-tab="funil" data-comercial>Funil de Propostas</div>
     <div class="tab" data-tab="clientes" data-comercial>Clientes</div>
     <div class="tab" data-tab="projetos" data-comercial>Projetos</div>
@@ -455,6 +490,122 @@ tr.doc-vencido td{background:#fff5f5}
       <div class="tabela-wrap"><table class="tabela tabela-benef" id="tabela-benef"></table></div>
     </div>
 
+    <!-- RH (v14): ficha dos funcionários, vales, contracheques e envio à contabilidade -->
+    <div id="tab-rh" style="display:none">
+      <div class="barra-acoes">
+        <h2 id="titulo-rh">RH</h2>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          <label class="rot-filtro">Mês</label>
+          <input type="month" id="rh-mes" onchange="mudouMesRH()" style="padding:8px 10px;border:1.5px solid var(--borda);border-radius:8px;font-family:inherit">
+          <button class="btn-novo" id="btn-novo-func-rh" onclick="abrirFicha(null)">+ Novo funcionário</button>
+        </div>
+      </div>
+      <div id="rh-avisos"></div>
+      <div class="subabas" id="rh-subabas">
+        <div class="subaba ativo" data-rh="funcionarios">👷 Funcionários</div>
+        <div class="subaba" data-rh="vales">💸 Vales e adiantamentos</div>
+        <div class="subaba" data-rh="contracheques">📄 Contracheques</div>
+        <div class="subaba" data-rh="envio">📧 Envio à contabilidade</div>
+      </div>
+
+      <div class="painel-rh ativo" id="rh-p-funcionarios">
+        <div class="kpis" id="rh-kpis"></div>
+        <div class="filtros">
+          <input type="search" id="rh-busca" placeholder="Buscar por nome, CPF ou função" oninput="renderRHFuncionarios()">
+          <select id="rh-filtro" onchange="renderRHFuncionarios()">
+            <option value="ativos">Ativos</option>
+            <option value="sem_ficha">Ativos sem ficha de registro</option>
+            <option value="sem_contracheque">Ativos sem contracheque no mês</option>
+            <option value="inativos">Desligados</option>
+          </select>
+          <span class="dica" id="rh-contagem"></span>
+        </div>
+        <div class="tabela-wrap"><table class="tabela" id="tabela-rh"></table></div>
+      </div>
+
+      <div class="painel-rh" id="rh-p-vales">
+        <div class="barra-acoes" style="margin-bottom:8px">
+          <h2 style="font-size:16px" id="rh-adiant-titulo">Adiantamento</h2>
+          <div style="display:flex;gap:8px;flex-wrap:wrap" class="rh-edita">
+            <button class="btn-sec" onclick="gerarAdiantamentos()">⚙️ Gerar adiantamentos do mês</button>
+            <button class="btn-sec" onclick="adiantamentoAvulso()">+ Adiantamento avulso</button>
+          </div>
+        </div>
+        <div class="info-box" id="rh-adiant-info" style="display:block;line-height:1.5"></div>
+        <div class="tabela-wrap" style="margin-bottom:24px"><table class="tabela" id="tabela-adiant"></table></div>
+        <div class="barra-acoes" style="margin-bottom:8px">
+          <h2 style="font-size:16px">Vales e empréstimos</h2>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+            <span class="campo-check" style="padding:0"><input type="checkbox" id="rh-vales-quitados" onchange="renderRHVales()"><label for="rh-vales-quitados" style="font-weight:500;font-size:13px">mostrar quitados</label></span>
+            <button class="btn-novo rh-edita" onclick="abrirVale(null)">+ Novo vale / empréstimo</button>
+          </div>
+        </div>
+        <div class="info-box" style="display:block;line-height:1.5">Digite na coluna <strong>Descontar no mês</strong> quanto será descontado no contracheque do mês escolhido lá em cima (vazio = não desconta). O saldo é atualizado na hora e o desconto entra na planilha enviada à contabilidade. Quando o saldo zera, o vale fica como quitado.</div>
+        <div class="tabela-wrap"><table class="tabela" id="tabela-vales"></table></div>
+      </div>
+
+      <div class="painel-rh" id="rh-p-contracheques">
+        <div class="caixa-pdf caixa-drop rh-edita" id="rh-cc-drop" style="margin-bottom:16px">
+          <div class="dica-drop">📄 PDF dos contracheques do mês (o arquivo único que vem da contabilidade)</div>
+          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+            <input type="file" id="rh-cc-arquivo" accept="application/pdf,.pdf" onchange="lerPdfContracheques(this.files[0]);this.value=''">
+            <span class="dica">Arraste o arquivo aqui ou escolha. O CRM separa as páginas por funcionário, acrescenta nome, CPF, admissão e função no topo e guarda na ficha de cada um, no mês escolhido acima.</span>
+          </div>
+        </div>
+        <div class="kpis" id="rh-cc-kpis"></div>
+        <div class="tabela-wrap"><table class="tabela" id="tabela-cc"></table></div>
+      </div>
+
+      <div class="painel-rh" id="rh-p-envio">
+        <div class="check-lista" id="rh-envio-checks"></div>
+        <div class="secao">O que vai para a contabilidade</div>
+        <p class="dica" style="margin-bottom:8px">Faltas e observações do mês podem ser ajustadas aqui (enquanto os benefícios do mês estiverem abertos). Use a observação para atestados, afastamentos, horas extras combinadas etc.</p>
+        <div class="tabela-wrap" style="margin-bottom:20px"><table class="tabela tabela-benef" id="tabela-envio"></table></div>
+        <div class="secao">E-mail</div>
+        <div class="form-grid">
+          <div class="campo full"><label>Para</label><input type="text" id="env-para"><div class="dica">Separe os e-mails com ponto e vírgula. <button class="btn-link" id="env-salvar-padrao" onclick="salvarDestinatariosPadrao()">salvar como padrão</button></div></div>
+          <div class="campo full"><label>Cópia (opcional)</label><input type="text" id="env-cc"></div>
+          <div class="campo full"><label>Assunto</label><input type="text" id="env-assunto"></div>
+          <div class="campo full"><label>Mensagem</label><textarea id="env-corpo" rows="8"></textarea></div>
+          <div class="campo full"><label>Anexos</label>
+            <div class="caixa-pdf">
+              <div class="campo-check"><input type="checkbox" id="env-anexo-planilha" checked><label for="env-anexo-planilha">Planilha do fechamento do mês (gerada pelo CRM: faltas, benefícios, vales e adiantamentos)</label></div>
+              <div style="margin-top:6px"><input type="file" id="env-outros" multiple accept=".pdf,.jpg,.jpeg,.png,.xlsx,.docx,.doc,.csv" onchange="escolheuAnexosEnvio(this.files)"></div>
+              <div class="info" id="env-outros-info">Outros arquivos (atestados, declarações…), até 3 MB no total.</div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-btns" style="margin-top:8px">
+          <button class="btn-sec" onclick="baixarPlanilhaFechamento()">⬇️ Baixar planilha</button>
+          <button class="btn-salvar rh-edita" id="env-btn" onclick="enviarContabilidade()">📧 Enviar para a contabilidade</button>
+        </div>
+        <div class="secao">Envios deste mês</div>
+        <div id="rh-envios-lista"></div>
+      </div>
+    </div>
+
+    <!-- CURRÍCULOS (v14): banco de talentos, freelas e questionário de perfil -->
+    <div id="tab-curriculos" style="display:none">
+      <div class="barra-acoes">
+        <h2>Banco de currículos</h2>
+        <button class="btn-novo" onclick="abrirCurriculo(null)">+ Novo currículo</button>
+      </div>
+      <div class="kpis" id="cv-kpis"></div>
+      <div class="filtros">
+        <input type="search" id="cv-busca" placeholder="Buscar por nome, função, cidade ou telefone" oninput="renderCurriculos()">
+        <select id="cv-situacao" onchange="renderCurriculos()"></select>
+        <select id="cv-vinculo" onchange="renderCurriculos()"></select>
+        <select id="cv-chamar" onchange="renderCurriculos()">
+          <option value="">Chamar de novo: todos</option>
+          <option value="prioridade">Chamar de novo: prioridade</option>
+          <option value="sim_ou_prioridade">Chamar de novo: sim ou prioridade</option>
+          <option value="nao">Não chamar</option>
+        </select>
+        <span class="dica" id="cv-contagem"></span>
+      </div>
+      <div class="tabela-wrap"><table class="tabela" id="tabela-cv"></table></div>
+    </div>
+
     <!-- USUÁRIOS (só administrador) -->
     <div id="tab-usuarios" style="display:none">
       <div class="barra-acoes"><h2>Usuários e perfis de acesso</h2></div>
@@ -465,9 +616,9 @@ tr.doc-vencido td{background:#fff5f5}
       <div class="legenda-perfis">
         <div><strong>Administrador</strong>Tudo: usuários, empresas, exclusões e todas as abas.</div>
         <div><strong>Comercial</strong>Funil, propostas, clientes, contatos, projetos e atividades. Não exclui atendimentos nem clientes. Documentos só consulta.</div>
-        <div><strong>Administrativo</strong>Documentos e certidões, funcionários, projetos e atividades. Funil e clientes só consulta.</div>
-        <div><strong>Consulta</strong>Vê funil, clientes, projetos e documentos, não altera nada. Não vê benefícios.</div>
-        <div><strong>Contabilidade</strong>Só funcionários, benefícios e documentos/certidões, para consulta e exportação. Não vê funil, propostas nem clientes.</div>
+        <div><strong>Administrativo</strong>Documentos e certidões, funcionários, RH (ficha, uniformes, contracheques, vales, adiantamentos, envio à contabilidade), currículos, projetos e atividades. Funil e clientes só consulta.</div>
+        <div><strong>Consulta</strong>Vê funil, clientes, projetos e documentos, não altera nada. Não vê benefícios, RH nem currículos.</div>
+        <div><strong>Contabilidade</strong>Só funcionários, benefícios, RH (salários, contracheques, vales e adiantamentos) e documentos/certidões, para consulta e exportação. Não vê funil, propostas, clientes nem currículos.</div>
       </div>
       <div class="tabela-wrap"><table class="tabela" id="tabela-usuarios"></table></div>
     </div>
@@ -933,6 +1084,206 @@ tr.doc-vencido td{background:#fff5f5}
   </div>
 </div>
 
+<!-- MODAL FICHA DO FUNCIONÁRIO (v14) -->
+<div class="modal-overlay" id="modal-ficha">
+  <div class="modal modal-lg">
+    <div class="ficha-topo">
+      <div><h2 id="fi-titulo">Funcionário</h2><div class="dados" id="fi-resumo"></div></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap" id="fi-links"></div>
+    </div>
+    <div class="aviso-leitura">🔒 Seu perfil pode consultar a ficha, mas não alterar.</div>
+    <div class="subabas" id="fi-subabas">
+      <div class="subaba ativo" data-fi="dados">Dados</div>
+      <div class="subaba" data-fi="admissao">Admissão e benefícios</div>
+      <div class="subaba" data-fi="uniformes">Uniformes</div>
+      <div class="subaba" data-fi="contracheques">Contracheques</div>
+      <div class="subaba" data-fi="vales">Vales e adiantamentos</div>
+    </div>
+
+    <div class="painel-rh ativo" id="fi-p-dados">
+      <div class="form-grid">
+        <div class="campo full"><label>Nome completo *</label><input type="text" id="fi-nome"></div>
+        <div class="campo"><label>Função / cargo</label><input type="text" id="fi-cargo" list="dl-funcoes"></div>
+        <div class="campo"><label>Empresa</label><select id="fi-empresa"></select></div>
+        <div class="campo"><label>CPF</label><input type="text" id="fi-cpf" inputmode="numeric" maxlength="14" placeholder="000.000.000-00" oninput="this.value=fmtCPF(this.value)"></div>
+        <div class="campo"><label>PIS</label><input type="text" id="fi-pis" inputmode="numeric" maxlength="14" placeholder="000.00000.00-0" oninput="this.value=fmtPIS(this.value)"></div>
+        <div class="campo"><label>Data de admissão</label><input type="date" id="fi-admissao"></div>
+        <div class="campo"><label>Tipo de contrato</label><select id="fi-contrato"></select></div>
+        <div class="campo"><label>Salário (R$)</label><input type="text" inputmode="numeric" id="fi-salario" placeholder="0,00" oninput="mascaraMoeda(this)"></div>
+        <div class="campo" style="display:flex;align-items:flex-end"><div class="campo-check"><input type="checkbox" id="fi-adianta"><label for="fi-adianta" id="fi-adianta-rot">Recebe adiantamento todo mês</label></div></div>
+        <div class="campo full"><label>Link da pasta na rede (01.2.1.1_ATIVOS)</label><input type="url" id="fi-pasta" placeholder="https://andrelessaverdebrasiliscom.sharepoint.com/..."></div>
+        <div class="campo full"><label>Observações do RH</label><textarea id="fi-obs" rows="2"></textarea></div>
+      </div>
+      <div class="modal-btns so-edicao" style="margin-top:6px"><button class="btn-salvar" onclick="salvarFichaDados()">Salvar dados</button></div>
+    </div>
+
+    <div class="painel-rh" id="fi-p-admissao">
+      <div class="secao">Ficha de registro de empregado (kit admissional)</div>
+      <div class="caixa-pdf caixa-drop" id="fi-ficha-drop">
+        <div id="fi-ficha-atual" class="dica-drop"></div>
+        <div class="so-edicao" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:6px">
+          <input type="file" id="fi-ficha-arquivo" accept=".pdf,.jpg,.jpeg,.png" onchange="enviarFichaRegistro(this.files[0]);this.value=''">
+          <span class="dica">Escaneie ou fotografe a ficha assinada (PDF, JPG ou PNG). Pode arrastar para cá.</span>
+        </div>
+      </div>
+      <div class="form-grid" style="margin-top:12px">
+        <div class="campo"><label>Kit admissional devolvido assinado em</label><input type="date" id="fi-kit"></div>
+      </div>
+      <div class="secao">Benefícios escolhidos na admissão</div>
+      <p class="dica" style="margin-bottom:6px">Marque <strong>Sim</strong> ou <strong>Não</strong> para cada benefício. "Sim" já inclui o benefício no fechamento mensal com o valor informado (por dia para VA/VR/VT, por mês para os demais); "Não" registra a recusa (ex.: não optou pelo VT) e tira o benefício do fechamento.</p>
+      <div id="fi-benef-lista"></div>
+      <div class="modal-btns so-edicao" style="margin-top:12px"><button class="btn-salvar" onclick="salvarFichaAdmissao()">Salvar admissão e benefícios</button></div>
+    </div>
+
+    <div class="painel-rh" id="fi-p-uniformes">
+      <div class="secao">Tamanhos</div>
+      <div class="form-grid" style="grid-template-columns:repeat(3,1fr)">
+        <div class="campo"><label>Camisa</label><select id="fi-tam-camisa"></select></div>
+        <div class="campo"><label>Calça</label><select id="fi-tam-calca"></select></div>
+        <div class="campo"><label>Calçado / bota</label><select id="fi-tam-calcado"></select></div>
+      </div>
+      <div class="so-edicao" style="text-align:right"><button class="btn-sec" onclick="salvarTamanhos()">Salvar tamanhos</button></div>
+      <div class="secao">Entregas</div>
+      <div id="fi-uniformes-lista"></div>
+      <div class="so-edicao">
+        <div class="secao">Registrar entrega</div>
+        <div class="form-grid" style="background:#f7f7f7;border-radius:8px;padding:12px 12px 0">
+          <div class="campo"><label>Data *</label><input type="date" id="fu-data"></div>
+          <div class="campo"><label>Item *</label><select id="fu-item" onchange="sugerirTamanhoUniforme()"></select></div>
+          <div class="campo"><label>Tamanho</label><input type="text" id="fu-tamanho" list="dl-tamanhos"></div>
+          <div class="campo"><label>Quantidade *</label><input type="number" id="fu-qtd" min="1" value="1"></div>
+          <div class="campo"><label>Motivo</label><select id="fu-motivo"></select></div>
+          <div class="campo"><label>Recibo assinado (opcional)</label><input type="file" id="fu-arquivo" accept=".pdf,.jpg,.jpeg,.png"></div>
+          <div class="campo full"><label>Observações</label><input type="text" id="fu-obs"></div>
+          <div class="campo full" style="text-align:right"><button class="btn-salvar" onclick="salvarEntregaUniforme()">Registrar entrega</button></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="painel-rh" id="fi-p-contracheques">
+      <div id="fi-cc-lista"></div>
+      <div class="so-edicao">
+        <div class="secao">Enviar contracheque avulso</div>
+        <div class="form-grid" style="background:#f7f7f7;border-radius:8px;padding:12px 12px 0">
+          <div class="campo"><label>Mês *</label><input type="month" id="fc-mes"></div>
+          <div class="campo"><label>Arquivo (PDF) *</label><input type="file" id="fc-arquivo" accept="application/pdf,.pdf"></div>
+          <div class="campo full" style="text-align:right"><button class="btn-salvar" onclick="enviarContrachequeAvulso()">Guardar contracheque</button></div>
+        </div>
+        <p class="dica" style="margin-top:6px">O CRM acrescenta no topo o nome, CPF, admissão e função. Se já existir contracheque no mês, ele é substituído.</p>
+      </div>
+    </div>
+
+    <div class="painel-rh" id="fi-p-vales">
+      <div class="secao">Vales e empréstimos <button class="btn-link so-edicao" onclick="abrirVale(null,fichaId)">+ novo vale</button></div>
+      <div id="fi-vales-lista"></div>
+      <div class="secao">Adiantamentos</div>
+      <div id="fi-adiant-lista"></div>
+    </div>
+
+    <div class="modal-btns"><button class="btn-cancelar" onclick="fecharModal('modal-ficha')">Fechar</button></div>
+  </div>
+</div>
+
+<!-- MODAL VALE / EMPRÉSTIMO (v14) -->
+<div class="modal-overlay" id="modal-vale">
+  <div class="modal">
+    <h2 id="mv-titulo">Vale / empréstimo</h2>
+    <p class="modal-sub">Registre o valor emprestado. O desconto é lançado mês a mês (valor livre) em <em>RH → Vales e adiantamentos</em>, até zerar o saldo.</p>
+    <div class="aviso-leitura">🔒 Seu perfil pode consultar, mas não alterar.</div>
+    <div class="form-grid">
+      <div class="campo full"><label>Funcionário *</label><select id="mv-func"></select></div>
+      <div class="campo"><label>Data *</label><input type="date" id="mv-data"></div>
+      <div class="campo"><label>Valor emprestado (R$) *</label><input type="text" inputmode="numeric" id="mv-valor" placeholder="0,00" oninput="mascaraMoeda(this)"></div>
+      <div class="campo"><label>Motivo</label><input type="text" id="mv-motivo" placeholder="Ex.: conserto do carro"></div>
+      <div class="campo"><label>Autorizado por</label><input type="text" id="mv-autorizado" list="dl-responsaveis"></div>
+      <div class="campo full"><label>Observações</label><input type="text" id="mv-obs"></div>
+    </div>
+    <div id="mv-historico"></div>
+    <div class="modal-btns">
+      <button class="btn-excluir" id="mv-excluir" style="display:none" onclick="excluirVale()">Excluir</button>
+      <button class="btn-cancelar" onclick="fecharModal('modal-vale')">Fechar</button>
+      <button class="btn-salvar so-edicao" onclick="salvarVale()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL ADIANTAMENTO AVULSO (v14) -->
+<div class="modal-overlay" id="modal-adiant">
+  <div class="modal modal-sm">
+    <h2>Adiantamento avulso</h2>
+    <p class="modal-sub" id="ma-sub"></p>
+    <div class="campo"><label>Funcionário *</label><select id="ma-func" onchange="calcularAdiantAvulso()"></select><div class="dica" id="ma-sal"></div></div>
+    <div class="form-grid">
+      <div class="campo"><label>% do salário</label><input type="number" id="ma-pct" min="0" max="100" step="0.5" oninput="calcularAdiantAvulso()"></div>
+      <div class="campo"><label>Valor (R$) *</label><input type="text" inputmode="numeric" id="ma-valor" placeholder="0,00" oninput="mascaraMoeda(this)"></div>
+    </div>
+    <div class="campo"><label>Observação</label><input type="text" id="ma-obs" placeholder="Ex.: pedido em 12/10"></div>
+    <div class="modal-btns">
+      <button class="btn-cancelar" onclick="fecharModal('modal-adiant')">Cancelar</button>
+      <button class="btn-salvar" onclick="salvarAdiantAvulso()">Lançar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL REVISÃO DA SEPARAÇÃO DOS CONTRACHEQUES (v14) -->
+<div class="modal-overlay" id="modal-split">
+  <div class="modal modal-lg">
+    <h2>Separar contracheques</h2>
+    <p class="modal-sub" id="sp-sub"></p>
+    <div class="info-box" style="display:block;line-height:1.5">O CRM leu cada página e procurou o nome (ou CPF) dos funcionários. <strong>Confira a coluna Funcionário</strong>: páginas sem nome reconhecido ficam com o funcionário da página anterior (contracheque de 2 páginas) e aparecem em amarelo. Desmarque páginas que não são contracheque (capa, resumo da folha).</div>
+    <div class="tabela-wrap"><table class="tabela paginas-split" id="sp-tabela"></table></div>
+    <div class="modal-btns">
+      <button class="btn-cancelar" onclick="fecharModal('modal-split')">Cancelar</button>
+      <button class="btn-salvar" id="sp-btn" onclick="salvarSeparacao()">Separar e guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CURRÍCULO (v14) -->
+<div class="modal-overlay" id="modal-curriculo">
+  <div class="modal modal-lg">
+    <h2 id="cv-titulo">Currículo</h2>
+    <p class="modal-sub" id="cv-sub">Candidatos e freelas que já conhecemos, para não precisar avaliar de novo.</p>
+    <div class="form-grid">
+      <div class="campo full"><label>Nome *</label><input type="text" id="cv-nome"></div>
+      <div class="campo"><label>Telefone / WhatsApp</label><input type="tel" id="cv-tel" oninput="mascaraTel(this)" placeholder="(21) 99999-9999"></div>
+      <div class="campo"><label>E-mail</label><input type="email" id="cv-email"></div>
+      <div class="campo"><label>Função</label><input type="text" id="cv-funcao" list="dl-funcoes" placeholder="Ex.: pedreiro, eletricista, auxiliar de limpeza"></div>
+      <div class="campo"><label>Cidade / bairro</label><input type="text" id="cv-cidade"></div>
+      <div class="campo"><label>Tipo de vínculo</label><select id="cv-vinc"></select></div>
+      <div class="campo"><label>Empresa de interesse</label><select id="cv-empresa"></select></div>
+      <div class="campo"><label>Já trabalhou com a gente?</label><select id="cv-ja"></select></div>
+      <div class="campo"><label>Como chegou</label><select id="cv-origem"></select></div>
+      <div class="campo"><label>Disponibilidade</label><input type="text" id="cv-disp" placeholder="Ex.: imediata, só fins de semana"></div>
+      <div class="campo"><label>Pretensão</label><input type="text" id="cv-pret" placeholder="Ex.: R$ 180/dia ou R$ 2.500/mês"></div>
+      <div class="campo full"><label>Currículo (arquivo)</label>
+        <div class="caixa-pdf"><div id="cv-arquivo-atual" class="info" style="margin:0 0 6px"></div><input type="file" id="cv-arquivo" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"></div>
+      </div>
+    </div>
+    <div class="secao">Avaliação do RH</div>
+    <div class="form-grid">
+      <div class="campo"><label>Situação</label><select id="cv-sit"></select></div>
+      <div class="campo"><label>Chamar de novo?</label><select id="cv-chamar-sel"></select></div>
+      <div class="campo"><label>Nota técnica (serviço)</label><select id="cv-nota-tec"></select></div>
+      <div class="campo"><label>Nota comportamental</label><select id="cv-nota-comp"></select></div>
+      <div class="campo"><label>Pontos fortes</label><textarea id="cv-fortes" rows="2"></textarea></div>
+      <div class="campo"><label>Pontos de atenção</label><textarea id="cv-atencao" rows="2"></textarea></div>
+      <div class="campo full"><label>Parecer / histórico (serviços que fez, onde, como foi)</label><textarea id="cv-parecer" rows="3"></textarea><div class="dica" id="cv-avaliado"></div></div>
+    </div>
+    <div class="secao">Questionário de perfil comportamental</div>
+    <div id="cv-perfil"></div>
+    <div class="modal-btns">
+      <button class="btn-excluir" id="cv-excluir" style="display:none" onclick="excluirCurriculo()">Excluir</button>
+      <button class="btn-projeto" id="cv-contratar" style="display:none" onclick="contratarCurriculo()">👷 Virou funcionário</button>
+      <button class="btn-cancelar" onclick="fecharModal('modal-curriculo')">Fechar</button>
+      <button class="btn-salvar" id="cv-salvar" onclick="salvarCurriculo()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<datalist id="dl-funcoes"></datalist>
+<datalist id="dl-tamanhos"></datalist>
+
 <!-- POP-UP DE AVISOS (ao entrar no CRM) -->
 <div class="modal-overlay" id="modal-avisos">
   <div class="modal modal-avisos">
@@ -940,8 +1291,10 @@ tr.doc-vencido td{background:#fff5f5}
     <p class="modal-sub" id="av-sub"></p>
     <div id="av-docs" class="grupo-aviso"></div>
     <div id="av-cobr" class="grupo-aviso"></div>
+    <div id="av-rh" class="grupo-aviso"></div>
     <div class="modal-btns">
       <button class="btn-sec" id="av-btn-cobr" onclick="fecharAvisos(true);abrirTab('funil')">Ver funil</button>
+      <button class="btn-sec" id="av-btn-rh" onclick="fecharAvisos(true);abrirTab('rh')">Ver RH</button>
       <button class="btn-sec" onclick="fecharAvisos(true);$('doc-status').value='atencao';abrirTab('documentos')">Ver documentos</button>
       <button class="btn-salvar" onclick="fecharAvisos(true)">Ciente</button>
     </div>
@@ -1008,7 +1361,9 @@ function calcularPermissoes(p){
   // comercialVer: vê funil, clientes, projetos, atividades e empresas (a contabilidade não vê)
   // rh: vê benefícios · rhEditar: altera benefícios
   return{admin:adm,funil:adm||com,clientes:adm||com,projetos:adm||com||admv,ativ:adm||com||admv,docs:adm||admv,excluir:adm,
-    comercialVer:!cont,rh:adm||com||admv||cont,rhEditar:adm||admv};
+    comercialVer:!cont,rh:adm||com||admv||cont,rhEditar:adm||admv,
+    // v14: rhPessoal = salário, contracheques, vales, uniformes, envio à contabilidade · curriculos = banco de currículos
+    rhPessoal:adm||admv||cont,curriculos:adm||admv};
 }
 const BUCKET_DOCS='documentos';
 const ABERTAS=ETAPAS.filter(e=>!['fechada','perdida'].includes(e.id)).map(e=>e.id);
@@ -1140,6 +1495,7 @@ async function iniciarApp(){
   preencherSelect($('painel-ano'),[[String(anoAtual),String(anoAtual)],[String(anoAtual-1),String(anoAtual-1)],['todos','Todos os anos']]);
   document.querySelectorAll('#tabs .tab').forEach(t=>t.onclick=()=>abrirTab(t.dataset.tab));
   $('bn-mes').value=hojeISO().slice(0,7);
+  $('rh-mes').value=hojeISO().slice(0,7);
   if(!PERM.comercialVer)abrirTab('documentos');
   await carregarTudo();
   mostrarAvisosDoDia();
@@ -1156,6 +1512,8 @@ function aplicarPermissoes(){
   mostra('btn-tipos-doc',PERM.docs);
   mostra('tab-btn-usuarios',PERM.admin);
   mostra('tab-btn-beneficios',PERM.rh);
+  mostra('tab-btn-rh',PERM.rhPessoal);
+  mostra('tab-btn-curriculos',PERM.curriculos);
   mostra('btn-tipos-benef',PERM.rhEditar);
   document.querySelectorAll('#tabs [data-comercial]').forEach(t=>t.style.display=PERM.comercialVer?'':'none');
   mostra('pa-cobr',PERM.funil);
@@ -1174,7 +1532,8 @@ async function trocarSenha(){
 /* ================= CARGA DE DADOS ================= */
 async function carregarTudo(){
   await carregarEmpresas();
-  await Promise.all([carregarClientes(),carregarCards(),carregarAtividades(),carregarProjetos(),carregarPerfis(),carregarDocsTudo(),carregarBeneficiosTudo()]);
+  await Promise.all([carregarClientes(),carregarCards(),carregarAtividades(),carregarProjetos(),carregarPerfis(),carregarDocsTudo(),carregarBeneficiosTudo(),carregarRH(),carregarCurriculos()]);
+  atualizarBadgeRH();
   atualizarDatalists();
   renderTabAtual();
   verificarAlertas();
@@ -1258,14 +1617,16 @@ function inicioDoDia(){const d=new Date();d.setHours(0,0,0,0);return d;}
 function abrirTab(tab){
   if(tab==='usuarios'&&!PERM.admin)tab='painel';
   if(tab==='beneficios'&&!PERM.rh)tab='painel';
+  if(tab==='rh'&&!PERM.rhPessoal)tab='painel';
+  if(tab==='curriculos'&&!PERM.curriculos)tab='painel';
   if(!PERM.comercialVer&&['painel','funil','clientes','projetos','atividades','empresas'].includes(tab))tab='documentos';
   tabAtual=tab;
-  ['painel','documentos','beneficios','funil','clientes','projetos','atividades','empresas','usuarios'].forEach(t=>{$('tab-'+t).style.display=t===tab?'block':'none';});
+  ['painel','documentos','beneficios','rh','curriculos','funil','clientes','projetos','atividades','empresas','usuarios'].forEach(t=>{$('tab-'+t).style.display=t===tab?'block':'none';});
   document.querySelectorAll('#tabs .tab').forEach(el=>el.classList.toggle('ativo',el.dataset.tab===tab));
   renderTabAtual();
 }
 function renderTabAtual(){
-  ({painel:renderPainel,documentos:renderDocumentos,beneficios:renderBeneficios,funil:renderFunil,clientes:renderClientes,projetos:renderProjetos,atividades:renderAtividades,empresas:renderEmpresas,usuarios:renderUsuarios}[tabAtual]||(()=>{}))();
+  ({painel:renderPainel,documentos:renderDocumentos,beneficios:renderBeneficios,rh:renderRH,curriculos:renderCurriculos,funil:renderFunil,clientes:renderClientes,projetos:renderProjetos,atividades:renderAtividades,empresas:renderEmpresas,usuarios:renderUsuarios}[tabAtual]||(()=>{}))();
 }
 function trocarEmpresa(){
   empresaAtual=$('select-empresa').value;
@@ -2379,7 +2740,7 @@ function renderFuncionarios(){
   const l=todosFuncionarios.filter(f=>(f.ativo!==false)===ativos);
   const nDocs={};todosDocumentos.filter(d=>d.situacao==='vigente'&&d.funcionario_id).forEach(d=>{const s=statusDoc(d);const x=nDocs[d.funcionario_id]=nDocs[d.funcionario_id]||{t:0,a:0};x.t++;if(s.k==='vencido'||s.k==='aviso')x.a++;});
   $('mf-lista').innerHTML=l.length?'<div class="sub-lista">'+l.map(f=>{const e=empresaPorId(f.empresa_id),n=nDocs[f.id]||{t:0,a:0};return`<div class="sub-item"><div><strong>${esc(f.nome)}</strong>${f.cargo?` — ${esc(f.cargo)}`:''}${e?` <span class="card-empresa-tag tag-${esc(e.sigla)}">${esc(e.sigla)}</span>`:''}<div style="font-size:12px;color:var(--texto2)">${n.t} documento(s)${n.a?` · <span style="color:var(--vermelho);font-weight:600">${n.a} precisando de atenção</span>`:''}</div></div>
-    <div class="acoes">${f.pasta_url?`<a class="btn-link" href="${esc(f.pasta_url)}" target="_blank" rel="noopener">📁 abrir pasta</a>`:''}<button class="btn-link" onclick="verDocsFuncionario('${esc(f.id)}')">ver documentos</button>${PERM.docs?`<button class="btn-link" onclick="editarFuncionario('${esc(f.id)}')">editar</button><button class="btn-link" style="color:var(--texto2)" onclick="alternarFuncionario('${esc(f.id)}')">${f.ativo!==false?'desligar':'reativar'}</button>`:''}</div></div>`;}).join('')+'</div>':`<p class="vazio">${ativos?'Nenhum funcionário cadastrado.':'Nenhum funcionário desligado.'}</p>`;
+    <div class="acoes">${f.pasta_url?`<a class="btn-link" href="${esc(f.pasta_url)}" target="_blank" rel="noopener">📁 abrir pasta</a>`:''}${PERM.rhPessoal?`<button class="btn-link" onclick="fecharModal('modal-funcionarios');abrirFicha('${esc(f.id)}')">ficha RH</button>`:''}<button class="btn-link" onclick="verDocsFuncionario('${esc(f.id)}')">ver documentos</button>${PERM.docs?`<button class="btn-link" onclick="editarFuncionario('${esc(f.id)}')">editar</button><button class="btn-link" style="color:var(--texto2)" onclick="alternarFuncionario('${esc(f.id)}')">${f.ativo!==false?'desligar':'reativar'}</button>`:''}</div></div>`;}).join('')+'</div>':`<p class="vazio">${ativos?'Nenhum funcionário cadastrado.':'Nenhum funcionário desligado.'}</p>`;
 }
 function editarFuncionario(id){
   const f=funcPorId(id);if(!f)return;funcEditandoId=id;
@@ -2541,12 +2902,16 @@ function mostrarAvisosDoDia(){
   try{if(localStorage.getItem(chaveAvisos()))return;}catch(e){}
   const docs=filtraEmpresa(todosDocumentos.filter(d=>(d.situacao||'vigente')==='vigente')).map(d=>({d,s:statusDoc(d)})).filter(x=>x.s.k==='vencido'||x.s.k==='aviso').sort((a,b)=>a.s.n-b.s.n);
   const cobr=PERM.funil?cobrancasDoDia():[];
-  if(!docs.length&&!cobr.length)return;
+  const rhPend=pendenciasRH();
+  if(!docs.length&&!cobr.length&&!rhPend.length)return;
   const nV=docs.filter(x=>x.s.k==='vencido').length;
-  $('av-sub').textContent=[docs.length?`${docs.length} documento(s) ${nV?`(${nV} vencido${nV>1?'s':''}) `:''}precisando de renovação`:'',cobr.length?`${cobr.length} proposta(s) para cobrar retorno`:''].filter(Boolean).join(' · ');
+  $('av-sub').textContent=[docs.length?`${docs.length} documento(s) ${nV?`(${nV} vencido${nV>1?'s':''}) `:''}precisando de renovação`:'',cobr.length?`${cobr.length} proposta(s) para cobrar retorno`:'',rhPend.length?`${rhPend.length} pendência(s) do RH`:''].filter(Boolean).join(' · ');
   $('av-docs').innerHTML=docs.length?`<h4>📄 Documentos e certidões</h4><div class="lista-mini">${docs.map(itemDocMini).join('')}</div>`:'';
   $('av-cobr').innerHTML=cobr.length?`<h4>📞 Cobrar retorno de propostas</h4><div class="lista-mini">${cobr.map(itemCobrancaMini).join('')}</div>`:'';
   $('av-btn-cobr').style.display=cobr.length?'':'none';
+  $('av-rh').innerHTML=rhPend.length?`<h4>👷 RH</h4><div class="lista-mini">${rhPend.map(p=>`<div class="item" data-av-rh="${esc(p.ir)}"><span>${esc(p.txt)}</span>${p.atraso?'<span class="badge badge-atraso">hoje</span>':''}</div>`).join('')}</div>`:'';
+  $('av-btn-rh').style.display=rhPend.length?'':'none';
+  $('av-rh').querySelectorAll('[data-av-rh]').forEach(el=>el.onclick=()=>{fecharAvisos(true);irParaPendenciaRH(el.dataset.avRh);});
   ligarCliques($('modal-avisos'));
   // ao clicar num item, abre o documento/atendimento por cima e marca como visto
   $('modal-avisos').querySelectorAll('[data-doc],[data-card]').forEach(el=>el.addEventListener('click',()=>fecharAvisos(true)));
@@ -3115,8 +3480,1010 @@ async function gerarPDF(){
   toast('Ao salvar o PDF, o nome sugerido já segue o padrão da rede');
 }
 
+/* ================= RH (v14): ficha, uniformes, contracheques, vales, adiantamentos, envio ================= */
+let v14Ok=true,rhSub='funcionarios',fichaId=null,fichaSub='dados',valeEditandoId=null,envioPreenchidoPara=null;
+let todosRH=[],todosEmprestimos=[],todosDescontos=[],todosAdiant=[],todosContracheques=[],todasEntregas=[],todosEnvios=[],rhConfig={};
+let anexosEnvioExtra=[],splitPaginas=[],splitArquivo=null;
+const BUCKET_RH='rh';
+const CONTRATOS=[['clt','CLT'],['experiencia','CLT – contrato de experiência'],['estagio','Estágio'],['aprendiz','Jovem aprendiz'],['temporario','Temporário'],['pj','PJ / prestador'],['freela','Diarista / freela']];
+const TAM_CAMISA=['PP','P','M','G','GG','XG','XGG','EG'];
+const TAM_CALCA=['36','38','40','42','44','46','48','50','52','54','56','PP','P','M','G','GG','XG'];
+const TAM_CALCADO=Array.from({length:13},(_,i)=>String(34+i));
+// item de uniforme → qual tamanho da ficha sugerir
+const ITENS_UNIFORME=[['Camisa','camisa'],['Camisa manga longa','camisa'],['Camiseta polo','camisa'],['Calça','calca'],['Bermuda','calca'],['Jaleco','camisa'],['Jaqueta / agasalho','camisa'],['Colete refletivo','camisa'],['Capa de chuva','camisa'],['Boné',''],['Bota / botina de segurança','calcado'],['Capacete',''],['Luva',''],['Óculos de proteção',''],['Protetor auricular',''],['Outro','']];
+const MOTIVOS_UNIF=['Admissão','Troca por desgaste','Perda / dano','Peça extra','Outro'];
+
+function rhPorFunc(fid){return todosRH.find(r=>r.funcionario_id===fid)||null;}
+function mesRH(){return($('rh-mes').value||hojeISO().slice(0,7))+'-01';}
+function cfgNum(k,pad){const v=rhConfig[k];const n=Number(v);return v!=null&&v!==''&&isFinite(n)?n:pad;}
+function pctAdiant(){return cfgNum('percentual_adiantamento',40);}
+function diaAdiant(){return cfgNum('dia_adiantamento',15);}
+function diaEnvio(){return cfgNum('dia_envio_contabilidade',25);}
+function quemSou(){return(meuPerfil&&meuPerfil.nome)||(usuario&&usuario.email)||null;}
+function nomeArquivoSeguro(n){const p=String(n||'arquivo').split('.');const ext=p.length>1?'.'+p.pop().toLowerCase().replace(/[^a-z0-9]/g,''):'';return semAcento(p.join('.')).replace(/[^A-Za-z0-9._-]+/g,'_').replace(/^_+|_+$/g,'').slice(0,80)+ext;}
+const r2=v=>Math.round(Number(v||0)*100)/100;
+function siglaBenef(n){const m={'Vale-alimentação':'VA','Vale-refeição':'VR','Vale-transporte':'VT','Plano odontológico':'Odonto','Plano de saúde':'Saúde','Seguro de vida':'Seguro'};return m[n]||String(n||'').split(/[\s(/]/)[0];}
+function avisarMigracaoV14(){
+  if(!v14Ok)return;v14Ok=false;
+  if(!PERM.rhPessoal&&!PERM.curriculos)return;
+  const a=$('aviso-migracao');a.style.display='block';
+  a.innerHTML+=(a.innerHTML?'<br><br>':'')+'<strong>Falta atualizar o banco de dados (v14).</strong> As abas RH e Currículos precisam das tabelas novas. No Supabase, abra <em>SQL Editor → New query</em>, cole o conteúdo do arquivo <code>supabase/migracao_crm_v14_rh_curriculos.sql</code> e clique em <em>Run</em>. Depois recarregue esta página.';
+}
+async function carregarRH(){
+  if(!PERM.rhPessoal||!v11Ok)return;
+  const r=await Promise.all([
+    sb.from('funcionario_rh').select('*'),
+    sb.from('emprestimos').select('*').order('data',{ascending:false}),
+    sb.from('emprestimo_descontos').select('*'),
+    sb.from('adiantamentos').select('*'),
+    sb.from('contracheques').select('*'),
+    sb.from('uniforme_entregas').select('*').order('data',{ascending:false}),
+    sb.from('envios_contabilidade').select('*').order('enviado_em',{ascending:false}).limit(300),
+    sb.from('rh_config').select('*'),
+  ]);
+  const comErro=r.find(x=>x.error);
+  if(comErro){const m=comErro.error.message||'';if(/funcionario_rh|emprestimo|adiantamentos|contracheques|uniforme_entregas|envios_contabilidade|rh_config|does not exist|schema cache/i.test(m))avisarMigracaoV14();else console.error(comErro.error);return;}
+  [todosRH,todosEmprestimos,todosDescontos,todosAdiant,todosContracheques,todasEntregas,todosEnvios]=r.slice(0,7).map(x=>x.data||[]);
+  rhConfig=Object.fromEntries((r[7].data||[]).map(c=>[c.chave,c.valor]));
+  atualizarDatalistsRH();
+}
+async function recarregarFuncionariosRH(){
+  const[a,b]=await Promise.all([sb.from('funcionarios').select('*').order('nome'),sb.from('funcionario_rh').select('*')]);
+  if(!a.error)todosFuncionarios=a.data||[];if(!b.error)todosRH=b.data||[];
+  atualizarDatalistsRH();
+}
+function atualizarDatalistsRH(){
+  const f=new Set();todosFuncionarios.forEach(x=>{if(x.cargo)f.add(x.cargo.trim());});(todosCurriculos||[]).forEach(x=>{if(x.funcao)f.add(x.funcao.trim());});
+  $('dl-funcoes').innerHTML=[...f].sort((a,b)=>a.localeCompare(b,'pt-BR')).map(x=>`<option value="${esc(x)}">`).join('');
+  $('dl-tamanhos').innerHTML=[...new Set([...TAM_CAMISA,...TAM_CALCA,...TAM_CALCADO,'Único'])].map(x=>`<option value="${esc(x)}">`).join('');
+}
+// vales
+function descontosDoVale(id){return todosDescontos.filter(d=>d.emprestimo_id===id);}
+function saldoVale(v,ateIso){return r2(Number(v.valor)-descontosDoVale(v.id).filter(d=>!ateIso||d.competencia<=ateIso).reduce((s,d)=>s+Number(d.valor),0));}
+function saldoValesFunc(fid){return r2(todosEmprestimos.filter(v=>v.funcionario_id===fid).reduce((s,v)=>s+Math.max(0,saldoVale(v)),0));}
+function descontoValesNoMes(fid,iso){const ids=new Set(todosEmprestimos.filter(v=>v.funcionario_id===fid).map(v=>v.id));return r2(todosDescontos.filter(d=>ids.has(d.emprestimo_id)&&d.competencia===iso).reduce((s,d)=>s+Number(d.valor),0));}
+function adiantDoMes(fid,iso){return todosAdiant.find(a=>a.funcionario_id===fid&&a.competencia===iso)||null;}
+function contrachequeDoMes(fid,iso){return todosContracheques.find(c=>c.funcionario_id===fid&&c.competencia===iso)||null;}
+async function abrirArquivoRH(caminho){
+  const{data,error}=await sb.storage.from(BUCKET_RH).createSignedUrl(caminho,600);
+  if(erroSB(error,'Não foi possível abrir o arquivo'))return;
+  window.open(data.signedUrl,'_blank','noopener');
+}
+function erroDaFuncao(error){
+  return(async()=>{let msg=error.message||String(error);
+    try{const r=error.context&&await error.context.json();if(r&&r.erro)msg=r.erro;}catch(e){}
+    if(/Failed to send|NOT_FOUND|404/i.test(msg))msg='A função "email-contabilidade" ainda não foi publicada no Supabase.';
+    return msg;})();
+}
+function ligarDrop(zonaId,cb){
+  const z=$(zonaId);if(!z)return;
+  const temArq=ev=>[...(ev.dataTransfer&&ev.dataTransfer.types||[])].includes('Files');
+  z.addEventListener('dragover',ev=>{if(!temArq(ev)||!PERM.rhEditar)return;ev.preventDefault();ev.dataTransfer.dropEffect='copy';z.classList.add('drag-sobre');});
+  z.addEventListener('dragleave',()=>z.classList.remove('drag-sobre'));
+  z.addEventListener('drop',ev=>{if(!temArq(ev))return;ev.preventDefault();z.classList.remove('drag-sobre');if(!PERM.rhEditar)return;const f=ev.dataTransfer.files[0];if(f)cb(f);});
+}
+
+/* pendências do RH (pop-up do dia e aviso no alto da aba) */
+function pendenciasRH(){
+  const p=[];if(!PERM.rhEditar||!v14Ok)return p;
+  const dia=new Date().getDate(),iso=hojeISO().slice(0,8)+'01';
+  const enviado=todosEnvios.some(e=>e.competencia===iso&&e.situacao==='enviado');
+  if(!enviado&&dia>=diaEnvio()-3){
+    p.push({ir:'envio',atraso:dia>=diaEnvio(),txt:dia>=diaEnvio()
+      ?`📧 Enviar à contabilidade o fechamento de ${nomeMes(iso)} (dia ${diaEnvio()})${dia>diaEnvio()?' — atrasado':' — é hoje'}`
+      :`📧 Dia ${diaEnvio()}: enviar à contabilidade o fechamento de ${nomeMes(iso)} (faltam ${diaEnvio()-dia} dia${diaEnvio()-dia>1?'s':''})`});
+  }
+  if(dia>=diaAdiant()-2){
+    const pend=todosFuncionarios.filter(f=>f.ativo!==false&&(rhPorFunc(f.id)||{}).adianta_mensal).filter(f=>{const a=adiantDoMes(f.id,iso);return!a||!a.pago_em;});
+    if(pend.length)p.push({ir:'vales',atraso:dia>=diaAdiant(),txt:`💸 Adiantamento do dia ${diaAdiant()} (${nomeMes(iso)}): ${pend.length} funcionário${pend.length>1?'s':''} sem pagamento registrado`});
+  }
+  return p;
+}
+function irParaPendenciaRH(ir){$('rh-mes').value=hojeISO().slice(0,7);rhSub=ir;if(tabAtual!=='rh')abrirTab('rh');else mudouMesRH();}
+function renderAvisosRH(){
+  const p=pendenciasRH();
+  $('rh-avisos').innerHTML=p.length?`<div class="alertas-box"><h3>⚠️ Pendências do RH</h3>${p.map(x=>`<div class="alerta-item">${esc(x.txt)} <button class="btn-link" data-rh-ir="${esc(x.ir)}">resolver</button></div>`).join('')}</div>`:'';
+  $('rh-avisos').querySelectorAll('[data-rh-ir]').forEach(b=>b.onclick=()=>irParaPendenciaRH(b.dataset.rhIr));
+  atualizarBadgeRH();
+}
+
+/* aba RH */
+async function mudouMesRH(){
+  if($('bn-mes').value!==mesRH().slice(0,7)){$('bn-mes').value=mesRH().slice(0,7);await carregarCompetenciaAtual();}
+  renderRH();
+}
+function renderRH(){
+  if(!PERM.rhPessoal)return;
+  $('titulo-rh').textContent='RH — '+nomeEmpresaAtual();
+  document.querySelectorAll('#tab-rh .rh-edita').forEach(e=>e.classList.toggle('oculto',!PERM.rhEditar));
+  $('btn-novo-func-rh').classList.toggle('oculto',!PERM.rhEditar);
+  document.querySelectorAll('#rh-subabas .subaba').forEach(s=>s.classList.toggle('ativo',s.dataset.rh===rhSub));
+  ['funcionarios','vales','contracheques','envio'].forEach(p=>$('rh-p-'+p).classList.toggle('ativo',p===rhSub));
+  renderAvisosRH();
+  ({funcionarios:renderRHFuncionarios,vales:renderRHVales,contracheques:renderRHContracheques,envio:renderRHEnvio}[rhSub]||(()=>{}))();
+}
+function tagEmpresa(f){const e=empresaPorId(f.empresa_id);return e?` <span class="card-empresa-tag tag-${esc(e.sigla)}">${esc(e.sigla)}</span>`:'';}
+function renderRHFuncionarios(){
+  const iso=mesRH(),filtro=$('rh-filtro').value,busca=norm($('rh-busca').value);
+  const base=filtraEmpresa(todosFuncionarios),ativos=base.filter(f=>f.ativo!==false);
+  let l=filtro==='inativos'?base.filter(f=>f.ativo===false):ativos;
+  if(filtro==='sem_ficha')l=l.filter(f=>!(rhPorFunc(f.id)||{}).ficha_arquivo);
+  if(filtro==='sem_contracheque')l=l.filter(f=>!contrachequeDoMes(f.id,iso));
+  if(busca)l=l.filter(f=>norm([f.nome,f.cpf,f.cargo].join(' ')).includes(busca));
+  const semFicha=ativos.filter(f=>!(rhPorFunc(f.id)||{}).ficha_arquivo).length;
+  const comCC=ativos.filter(f=>contrachequeDoMes(f.id,iso)).length;
+  const saldo=ativos.reduce((s,f)=>s+saldoValesFunc(f.id),0);
+  $('rh-kpis').innerHTML=[
+    ['Funcionários ativos',String(ativos.length),nomeEmpresaAtual()],
+    ['Sem ficha de registro',String(semFicha),semFicha?'anexe o documento do kit admissional':'tudo anexado'],
+    ['Contracheques de '+nomeMes(iso),`${comCC} de ${ativos.length}`,ativos.length-comCC?`${ativos.length-comCC} faltando`:'completo'],
+    ['Saldo de vales em aberto',fmtCurto(saldo),'a descontar dos funcionários'],
+  ].map(([r,v,s])=>`<div class="kpi"><div class="rot">${esc(r)}</div><div class="val">${esc(v)}</div><div class="sub">${esc(s)}</div></div>`).join('');
+  $('rh-contagem').textContent=`${l.length} funcionário(s)`;
+  $('tabela-rh').innerHTML=`<thead><tr><th>Funcionário</th><th>Admissão</th><th>CPF</th><th class="num">Salário</th><th>Ficha</th><th>Benefícios</th><th>Contracheque ${esc(nomeMes(iso))}</th><th class="num">Saldo vales</th><th>Adiant.</th></tr></thead><tbody>`+
+    (l.length?l.map(f=>{
+      const r=rhPorFunc(f.id)||{},cc=contrachequeDoMes(f.id,iso),sv=saldoValesFunc(f.id);
+      const bens=todosBenefFunc.filter(b=>b.funcionario_id===f.id&&b.ativo!==false).map(b=>siglaBenef((tipoBenefPorId(b.tipo_id)||{}).nome));
+      return`<tr class="clicavel ${f.ativo===false?'inativo':''}" data-ficha="${esc(f.id)}"><td><strong>${esc(f.nome)}</strong>${tagEmpresa(f)}${f.cargo?`<div style="font-size:12px;color:var(--texto2)">${esc(f.cargo)}</div>`:''}</td>
+        <td>${esc(fmtData(f.data_admissao)||'—')}</td><td style="white-space:nowrap">${f.cpf?esc(f.cpf):'<span class="badge badge-atraso">sem CPF</span>'}</td>
+        <td class="num">${r.salario!=null?esc(fmtMoeda(r.salario)):'—'}</td>
+        <td>${r.ficha_arquivo?'<span class="badge badge-ok">✓ anexada</span>':'<span class="badge badge-hoje">falta</span>'}</td>
+        <td style="font-size:12px">${bens.length?esc(bens.join(' · ')):'—'}</td>
+        <td>${cc?'<span class="badge badge-ok">✓ no CRM</span>':'<span class="badge badge-cinza">—</span>'}</td>
+        <td class="num">${sv?`<strong style="color:var(--laranja)">${esc(fmtMoeda(sv))}</strong>`:'—'}</td>
+        <td>${r.adianta_mensal?`<span class="badge badge-ok">${esc(pctAdiant())}%</span>`:'—'}</td></tr>`;}).join('')
+    :`<tr><td colspan="9" class="vazio">Nenhum funcionário nesta lista.</td></tr>`)+'</tbody>';
+  $('tabela-rh').querySelectorAll('[data-ficha]').forEach(tr=>tr.onclick=()=>abrirFicha(tr.dataset.ficha));
+}
+
+/* ficha do funcionário */
+function abrirFicha(fid,sub){
+  if(!v14Ok){avisarMigracaoV14();return;}
+  if(!fid&&!PERM.rhEditar)return;
+  fichaId=fid||null;fichaSub=sub||'dados';
+  preencherSelect($('fi-empresa'),todasEmpresas.map(e=>[e.id,`${e.nome} (${e.sigla})`]),'—');
+  preencherSelect($('fi-contrato'),CONTRATOS,'—');
+  preencherSelect($('fi-tam-camisa'),TAM_CAMISA.map(t=>[t,t]),'—');
+  preencherSelect($('fi-tam-calca'),TAM_CALCA.map(t=>[t,t]),'—');
+  preencherSelect($('fi-tam-calcado'),TAM_CALCADO.map(t=>[t,t]),'—');
+  preencherSelect($('fu-item'),ITENS_UNIFORME.map(([n])=>[n,n]),'Selecione');
+  preencherSelect($('fu-motivo'),MOTIVOS_UNIF.map(m=>[m,m]));
+  preencherFichaDados();
+  modoLeitura('modal-ficha',!PERM.rhEditar);
+  renderFicha();
+  abrirModal('modal-ficha');
+  if(!fichaId)setTimeout(()=>$('fi-nome').focus(),50);
+}
+function preencherFichaDados(){
+  const f=fichaId?funcPorId(fichaId):null,r=(fichaId&&rhPorFunc(fichaId))||{};
+  $('fi-nome').value=f?f.nome:'';$('fi-cargo').value=f&&f.cargo||'';
+  $('fi-empresa').value=f?(f.empresa_id||''):(empresaAtual!=='todas'?empresaAtual:'');
+  $('fi-cpf').value=f&&f.cpf||'';$('fi-pis').value=f&&f.pis||'';$('fi-admissao').value=f&&f.data_admissao||'';$('fi-pasta').value=f&&f.pasta_url||'';
+  $('fi-contrato').value=r.tipo_contrato||'';$('fi-salario').value=r.salario!=null?fmtMoeda(r.salario):'';
+  $('fi-adianta').checked=!!r.adianta_mensal;$('fi-obs').value=r.observacoes||'';
+  $('fi-adianta-rot').textContent=`Recebe adiantamento de ${pctAdiant()}% do salário todo dia ${diaAdiant()}`;
+  $('fi-tam-camisa').value=r.tam_camisa||'';$('fi-tam-calca').value=r.tam_calca||'';$('fi-tam-calcado').value=r.tam_calcado||'';
+  $('fi-kit').value=r.kit_recebido_em||'';
+  $('fi-titulo').textContent=f?f.nome:'Novo funcionário';
+  const e=f&&empresaPorId(f.empresa_id);
+  $('fi-resumo').textContent=f?[f.cargo,e&&e.sigla,f.cpf&&'CPF '+f.cpf,f.data_admissao&&'admissão '+fmtData(f.data_admissao),f.ativo===false&&'DESLIGADO'].filter(Boolean).join(' · '):'Preencha os dados e salve; depois as outras abas da ficha ficam liberadas.';
+  $('fi-links').innerHTML=f?`${f.pasta_url?`<a class="btn-sec" style="text-decoration:none" href="${esc(f.pasta_url)}" target="_blank" rel="noopener">📁 Pasta na rede</a>`:''}<button class="btn-sec" onclick="fecharModal('modal-ficha');verDocsFuncionario('${esc(f.id)}')">📄 Documentos (ASO, NRs…)</button>`:'';
+}
+function renderFicha(){
+  document.querySelectorAll('#fi-subabas .subaba').forEach(s=>{s.classList.toggle('ativo',s.dataset.fi===fichaSub);s.style.opacity=!fichaId&&s.dataset.fi!=='dados'?'.45':'';});
+  ['dados','admissao','uniformes','contracheques','vales'].forEach(p=>$('fi-p-'+p).classList.toggle('ativo',p===fichaSub));
+  if(!fichaId)return;
+  renderFichaAdmissao();renderFichaUniformes();renderFichaCC();renderFichaVales();
+}
+async function salvarFichaDados(){
+  if(!PERM.rhEditar)return;
+  const nome=$('fi-nome').value.trim().toUpperCase().replace(/\s+/g,' ');if(!nome){alert('Informe o nome.');return;}
+  const pasta=$('fi-pasta').value.trim();
+  if(pasta&&!/^https?:\/\//i.test(pasta)){alert('O link da pasta deve começar com https://');return;}
+  const cpf=$('fi-cpf').value.trim(),pis=$('fi-pis').value.trim(),adm=$('fi-admissao').value;
+  if(cpf&&!cpfValido(cpf)){alert('CPF inválido. Confira os números.');return;}
+  if(pis&&pis.replace(/\D/g,'').length!==11){alert('O PIS precisa ter 11 números.');return;}
+  if(cpf&&todosFuncionarios.some(f=>f.id!==fichaId&&f.cpf&&f.cpf.replace(/\D/g,'')===cpf.replace(/\D/g,''))){alert('Já existe outro funcionário com este CPF.');return;}
+  if(!fichaId&&todosFuncionarios.some(f=>norm(f.nome)===norm(nome))&&!confirm(`Já existe um funcionário "${nome}". Cadastrar mesmo assim?`))return;
+  const salario=parseMoeda($('fi-salario').value);
+  if($('fi-adianta').checked&&!salario){alert('Para receber adiantamento, informe o salário.');return;}
+  const dados={nome,cargo:$('fi-cargo').value.trim()||null,empresa_id:$('fi-empresa').value||null,cpf:cpf||null,pis:pis||null,data_admissao:adm||null,pasta_url:pasta||null};
+  const r=fichaId?await sb.from('funcionarios').update(dados).eq('id',fichaId).select().single():await sb.from('funcionarios').insert(dados).select().single();
+  if(erroSB(r.error))return;
+  const fid=r.data.id;
+  const r2_=await sb.from('funcionario_rh').upsert({funcionario_id:fid,salario,tipo_contrato:$('fi-contrato').value||null,adianta_mensal:$('fi-adianta').checked,observacoes:$('fi-obs').value.trim()||null,atualizado_em:new Date().toISOString()},{onConflict:'funcionario_id'});
+  if(erroSB(r2_.error,'Os dados básicos foram salvos, mas não o salário/contrato'))return;
+  if(fichaId&&dados.empresa_id)await sb.from('documentos').update({empresa_id:dados.empresa_id}).eq('funcionario_id',fichaId);
+  const eraNovo=!fichaId;
+  fichaId=fid;
+  await recarregarFuncionariosRH();
+  preencherFichaDados();renderFicha();renderTabAtual();
+  toast(eraNovo?'Funcionário cadastrado — complete a admissão e os benefícios':'Ficha salva');
+  if(eraNovo){fichaSub='admissao';renderFicha();}
+}
+
+/* admissão: ficha de registro + benefícios escolhidos */
+function renderFichaAdmissao(){
+  const r=rhPorFunc(fichaId)||{};
+  $('fi-ficha-atual').innerHTML=r.ficha_arquivo?`📎 <button class="btn-link" onclick="abrirArquivoRH('${esc(r.ficha_arquivo)}')">${esc(r.ficha_arquivo_nome||'ficha de registro')}</button> <span class="badge badge-ok">anexada</span>`:'<span class="badge badge-atraso">Ficha de registro ainda não anexada</span>';
+  const op=r.opcoes_beneficios||{};
+  const tipos=todosTiposBenef.filter(t=>t.ativo!==false);
+  if(!tipos.length){$('fi-benef-lista').innerHTML='<p class="vazio">Nenhum tipo de benefício cadastrado (aba Benefícios → ⚙️ Tipos de benefício).</p>';return;}
+  const dis=PERM.rhEditar?'':'disabled';
+  $('fi-benef-lista').innerHTML='<div class="sub-lista" style="padding:0 14px"><div class="linha-benef" style="font-size:11px;font-weight:700;color:var(--verde);text-transform:uppercase"><span>Benefício</span><span>Contratou?</span><span>Valor (R$)</span><span>Desconto do funcionário/mês</span></div>'+tipos.map(t=>{
+    const fb=todosBenefFunc.find(b=>b.funcionario_id===fichaId&&b.tipo_id===t.id);
+    let sel=op[t.id]||'';if(!sel&&fb)sel=fb.ativo!==false?'sim':'nao';
+    const v=fb?fmtMoeda(fb.valor):(t.valor_padrao!=null?fmtMoeda(t.valor_padrao):'');
+    const d=fb&&Number(fb.desconto)?fmtMoeda(fb.desconto):'';
+    return`<div class="linha-benef" data-tipo="${esc(t.id)}"><span><strong>${esc(t.nome)}</strong><div class="dica" style="margin:0">${t.calculo==='por_dia'?'valor por dia trabalhado':'valor mensal'}</div></span>
+      <span class="radios"><label><input type="radio" name="fb-${esc(t.id)}" value="sim" ${sel==='sim'?'checked':''} ${dis}>Sim</label><label><input type="radio" name="fb-${esc(t.id)}" value="nao" ${sel==='nao'?'checked':''} ${dis}>Não</label></span>
+      <input type="text" inputmode="numeric" data-fb-valor value="${esc(v)}" placeholder="0,00" oninput="mascaraMoeda(this)">
+      <input type="text" inputmode="numeric" data-fb-desc value="${esc(d)}" placeholder="0,00" oninput="mascaraMoeda(this)"></div>`;}).join('')+'</div>';
+  $('fi-benef-lista').querySelectorAll('.linha-benef[data-tipo]').forEach(l=>{
+    const upd=()=>{const s=(l.querySelector('input[type=radio]:checked')||{}).value;l.querySelectorAll('input[type=text]').forEach(i=>i.disabled=!PERM.rhEditar||s!=='sim');};
+    l.querySelectorAll('input[type=radio]').forEach(x=>x.onchange=upd);upd();
+  });
+}
+async function salvarFichaAdmissao(){
+  if(!PERM.rhEditar||!fichaId)return;
+  const f=funcPorId(fichaId),op={},ops=[],agora=new Date().toISOString();
+  for(const l of $('fi-benef-lista').querySelectorAll('.linha-benef[data-tipo]')){
+    const tid=l.dataset.tipo,s=(l.querySelector('input[type=radio]:checked')||{}).value||'';
+    if(s)op[tid]=s;
+    const fb=todosBenefFunc.find(b=>b.funcionario_id===fichaId&&b.tipo_id===tid);
+    if(s==='sim'){
+      const t=tipoBenefPorId(tid),valor=parseMoeda(l.querySelector('[data-fb-valor]').value),desc=parseMoeda(l.querySelector('[data-fb-desc]').value)||0;
+      if(valor==null){alert(`Informe o valor de ${t?t.nome:'benefício'} (ou marque "Não").`);return;}
+      if(fb)ops.push(sb.from('funcionario_beneficios').update(Object.assign({valor,desconto:desc,ativo:true,atualizado_em:agora},fb.ativo===false?{fim:null}:{})).eq('id',fb.id));
+      else ops.push(sb.from('funcionario_beneficios').insert({funcionario_id:fichaId,tipo_id:tid,valor,desconto:desc,ativo:true,inicio:(f&&f.data_admissao)||null}));
+    }else if(s==='nao'&&fb&&fb.ativo!==false){
+      ops.push(sb.from('funcionario_beneficios').update({ativo:false,atualizado_em:agora}).eq('id',fb.id));
+    }
+  }
+  const res=await Promise.all(ops);const e=res.find(x=>x.error);
+  if(e&&erroSB(e.error,'Não foi possível gravar um dos benefícios'))return;
+  const r=await sb.from('funcionario_rh').upsert({funcionario_id:fichaId,opcoes_beneficios:op,kit_recebido_em:$('fi-kit').value||null,atualizado_em:agora},{onConflict:'funcionario_id'});
+  if(erroSB(r.error))return;
+  await Promise.all([carregarBeneficiosTudo(),recarregarFuncionariosRH()]);
+  renderFicha();renderTabAtual();toast('Admissão e benefícios salvos');
+}
+async function enviarFichaRegistro(f){
+  if(!f||!PERM.rhEditar||!fichaId)return;
+  if(!/\.(pdf|jpe?g|png)$/i.test(f.name)){alert('Envie um PDF, JPG ou PNG.');return;}
+  if(f.size>20*1024*1024){alert('Arquivo maior que 20 MB.');return;}
+  const caminho=`fichas/${fichaId}/ficha_registro_${Date.now()}.${f.name.split('.').pop().toLowerCase()}`;
+  toast('Enviando a ficha…');
+  const up=await sb.storage.from(BUCKET_RH).upload(caminho,f,{contentType:f.type||undefined});
+  if(erroSB(up.error,'Não foi possível enviar o arquivo'))return;
+  const r=await sb.from('funcionario_rh').upsert({funcionario_id:fichaId,ficha_arquivo:caminho,ficha_arquivo_nome:f.name,atualizado_em:new Date().toISOString()},{onConflict:'funcionario_id'});
+  if(erroSB(r.error))return;
+  await recarregarFuncionariosRH();renderFicha();renderTabAtual();toast('Ficha de registro guardada');
+}
+
+/* uniformes */
+function renderFichaUniformes(){
+  const l=todasEntregas.filter(e=>e.funcionario_id===fichaId);
+  if(!$('fu-data').value)$('fu-data').value=hojeISO();
+  $('fi-uniformes-lista').innerHTML=l.length?`<div class="tabela-wrap"><table class="tabela"><thead><tr><th>Data</th><th>Item</th><th>Tam.</th><th class="num">Qtd</th><th>Motivo</th><th>Recibo</th><th></th></tr></thead><tbody>${l.map(e=>`<tr><td>${esc(fmtData(e.data))}</td><td>${esc(e.item)}${e.observacoes?`<div class="dica" style="margin:0">${esc(e.observacoes)}</div>`:''}</td><td>${esc(e.tamanho||'—')}</td><td class="num">${esc(e.quantidade)}</td><td>${esc(e.motivo||'')}</td>
+    <td>${e.arquivo?`<button class="btn-link" onclick="abrirArquivoRH('${esc(e.arquivo)}')">abrir</button>`:'—'}</td><td>${PERM.rhEditar?`<button class="btn-link" style="color:var(--vermelho)" onclick="excluirEntrega('${esc(e.id)}')">excluir</button>`:''}</td></tr>`).join('')}</tbody></table></div>`:'<p class="vazio">Nenhuma entrega registrada.</p>';
+}
+function sugerirTamanhoUniforme(){const it=ITENS_UNIFORME.find(i=>i[0]===$('fu-item').value);const r=rhPorFunc(fichaId)||{};$('fu-tamanho').value=(it&&it[1]&&r['tam_'+it[1]])||'';}
+async function salvarTamanhos(){
+  if(!PERM.rhEditar||!fichaId)return;
+  const r=await sb.from('funcionario_rh').upsert({funcionario_id:fichaId,tam_camisa:$('fi-tam-camisa').value||null,tam_calca:$('fi-tam-calca').value||null,tam_calcado:$('fi-tam-calcado').value||null,atualizado_em:new Date().toISOString()},{onConflict:'funcionario_id'});
+  if(erroSB(r.error))return;await recarregarFuncionariosRH();toast('Tamanhos salvos');
+}
+async function salvarEntregaUniforme(){
+  if(!PERM.rhEditar||!fichaId)return;
+  const data=$('fu-data').value,item=$('fu-item').value,qtd=Math.round(Number($('fu-qtd').value));
+  if(!data||!item){alert('Informe a data e o item.');return;}
+  if(!(qtd>0)){alert('Quantidade inválida.');return;}
+  const arq=$('fu-arquivo').files[0];let caminho=null;
+  if(arq){
+    if(!/\.(pdf|jpe?g|png)$/i.test(arq.name)){alert('Recibo: envie PDF, JPG ou PNG.');return;}
+    caminho=`uniformes/${fichaId}/${Date.now()}_${nomeArquivoSeguro(arq.name)}`;
+    const up=await sb.storage.from(BUCKET_RH).upload(caminho,arq,{contentType:arq.type||undefined});
+    if(erroSB(up.error,'Não foi possível enviar o recibo'))return;
+  }
+  const{error}=await sb.from('uniforme_entregas').insert({funcionario_id:fichaId,data,item,tamanho:$('fu-tamanho').value.trim()||null,quantidade:qtd,motivo:$('fu-motivo').value||null,arquivo:caminho,arquivo_nome:arq?arq.name:null,observacoes:$('fu-obs').value.trim()||null,criado_por:quemSou()});
+  if(erroSB(error))return;
+  $('fu-item').value='';$('fu-tamanho').value='';$('fu-qtd').value=1;$('fu-obs').value='';$('fu-arquivo').value='';
+  const{data:l}=await sb.from('uniforme_entregas').select('*').order('data',{ascending:false});todasEntregas=l||todasEntregas;
+  renderFichaUniformes();toast('Entrega registrada');
+}
+async function excluirEntrega(id){
+  if(!PERM.rhEditar||!confirm('Excluir este registro de entrega?'))return;
+  const{error}=await sb.from('uniforme_entregas').delete().eq('id',id);if(erroSB(error))return;
+  todasEntregas=todasEntregas.filter(e=>e.id!==id);renderFichaUniformes();
+}
+
+/* contracheques: PDF com cabeçalho (nome, CPF, admissão, função) */
+let pdfLibPronto=null;
+function carregarPdfLib(){
+  if(window.PDFLib)return Promise.resolve(window.PDFLib);
+  if(pdfLibPronto)return pdfLibPronto;
+  pdfLibPronto=new Promise((ok,falha)=>{const sc=document.createElement('script');sc.src='https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js';
+    sc.onload=()=>ok(window.PDFLib);sc.onerror=()=>{pdfLibPronto=null;falha(new Error('Não foi possível carregar o editor de PDF.'));};document.head.appendChild(sc);});
+  return pdfLibPronto;
+}
+// a fonte padrão do PDF só tem os caracteres do português "ocidental"
+const winAnsi=t=>String(t??'').normalize('NFC').replace(/[–—]/g,'-').replace(/[^\x20-\x7E -ÿ]/g,'');
+async function montarContracheque(origem,paginas,f,iso){
+  const L=await carregarPdfLib();
+  const novo=await L.PDFDocument.create();
+  const fonte=await novo.embedFont(L.StandardFonts.Helvetica),negrito=await novo.embedFont(L.StandardFonts.HelveticaBold);
+  const e=empresaPorId(f.empresa_id);
+  const l1=winAnsi(`${f.nome}   ·   CPF: ${f.cpf||'não cadastrado'}`);
+  const l2=winAnsi(`Admissão: ${f.data_admissao?fmtData(f.data_admissao):'-'}    Função: ${f.cargo||'-'}    Empresa: ${e?e.nome:'-'}    Competência: ${nomeMes(iso)}`);
+  const caber=(txt,fnt,tam,larg)=>{while(tam>5&&fnt.widthOfTextAtSize(txt,tam)>larg)tam-=0.25;return tam;};
+  const H=34;
+  for(const pg of await novo.copyPages(origem,paginas)){
+    const mb=pg.getMediaBox();
+    pg.setMediaBox(mb.x,mb.y,mb.width,mb.height+H);pg.setCropBox(mb.x,mb.y,mb.width,mb.height+H);
+    const topo=mb.y+mb.height,larg=mb.width-36;
+    pg.drawRectangle({x:mb.x,y:topo,width:mb.width,height:H,color:L.rgb(0.91,0.96,0.93)});
+    pg.drawText(l1,{x:mb.x+18,y:topo+H-15,size:caber(l1,negrito,10,larg),font:negrito,color:L.rgb(0.1,0.42,0.24)});
+    pg.drawText(l2,{x:mb.x+18,y:topo+7,size:caber(l2,fonte,8,larg),font:fonte,color:L.rgb(0.2,0.2,0.2)});
+    novo.addPage(pg);
+  }
+  novo.setTitle(winAnsi(`Contracheque ${nomeMes(iso)} - ${f.nome}`));novo.setAuthor('Grupo BVEK');
+  return await novo.save();
+}
+async function guardarContracheque(fid,iso,bytes,origem,paginas){
+  const f=funcPorId(fid),caminho=`contracheques/${iso.slice(0,7)}/${fid}.pdf`;
+  const up=await sb.storage.from(BUCKET_RH).upload(caminho,new Blob([bytes],{type:'application/pdf'}),{upsert:true,contentType:'application/pdf'});
+  if(up.error)throw up.error;
+  const nome=`CONTRACHEQUE_${iso.slice(0,7)}_${semAcento(f.nome).toUpperCase().replace(/[^A-Z0-9]+/g,'_')}.pdf`;
+  const r=await sb.from('contracheques').upsert({funcionario_id:fid,competencia:iso,arquivo:caminho,arquivo_nome:nome,paginas,origem,criado_por:quemSou(),criado_em:new Date().toISOString()},{onConflict:'funcionario_id,competencia'});
+  if(r.error)throw r.error;
+}
+async function recarregarContracheques(){const{data}=await sb.from('contracheques').select('*');if(data)todosContracheques=data;}
+// procura o funcionário no texto da página: nome completo, CPF ou PIS; por último, primeiro + último nome próximos
+function acharFuncionariosNoTexto(texto,lista){
+  const t=' '+nomeCmp(texto)+' ';
+  const nums=(texto.match(/\d[\d.\-\/ ]{8,18}\d/g)||[]).map(x=>x.replace(/\D/g,''));
+  let achou=lista.filter(f=>{
+    const n=nomeCmp(f.nome);if(n.includes(' ')&&t.includes(' '+n+' '))return true;
+    const c=String(f.cpf||'').replace(/\D/g,''),p=String(f.pis||'').replace(/\D/g,'');
+    return(c.length===11&&nums.includes(c))||(p.length===11&&nums.includes(p));
+  });
+  if(!achou.length)achou=lista.filter(f=>{const p=nomeCmp(f.nome).split(' ');if(p.length<2)return false;
+    return new RegExp(' '+p[0]+' ([A-Z]+ ){0,4}'+p[p.length-1]+' ').test(t);});
+  // se achou um ativo e um desligado com o mesmo nome, fica o ativo
+  if(achou.length>1&&achou.filter(f=>f.ativo!==false).length===1)achou=achou.filter(f=>f.ativo!==false);
+  return achou;
+}
+async function lerPdfContracheques(arquivo){
+  if(!arquivo||!PERM.rhEditar)return;
+  if(!v14Ok){avisarMigracaoV14();return;}
+  if(!/\.pdf$/i.test(arquivo.name)){alert('Envie o PDF dos contracheques.');return;}
+  toast('Lendo o PDF…');
+  let pdf,bytes;
+  try{
+    const lib=await carregarPdfJs();
+    bytes=new Uint8Array(await arquivo.arrayBuffer());
+    pdf=await lib.getDocument({data:bytes.slice()}).promise;
+  }catch(e){console.error(e);alert('Não consegui abrir o PDF: '+(e.message||e));return;}
+  splitPaginas=[];let anterior=null;
+  for(let n=1;n<=pdf.numPages;n++){
+    const pg=await pdf.getPage(n),tc=await pg.getTextContent();
+    const texto=tc.items.map(i=>i.str).join(' ').replace(/\s+/g,' ').trim();
+    const achados=acharFuncionariosNoTexto(texto,todosFuncionarios);
+    let fid=null,herdado=false;
+    if(achados.length===1){fid=achados[0].id;anterior=fid;}
+    else if(!achados.length&&anterior){fid=anterior;herdado=true;}
+    else if(achados.length>1)anterior=null;
+    splitPaginas.push({n,texto,achados,fid,herdado,incluir:!!fid});
+  }
+  splitArquivo={bytes,nome:arquivo.name};
+  if(!splitPaginas.some(p=>p.texto)){alert('O PDF não tem texto (parece escaneado). Escolha o funcionário de cada página na lista.');}
+  renderSplit();abrirModal('modal-split');
+}
+function renderSplit(){
+  const iso=mesRH(),ativos=todosFuncionarios.filter(f=>f.ativo!==false);
+  const usados=new Set(splitPaginas.filter(p=>p.incluir&&p.fid).map(p=>p.fid));
+  const faltam=filtraEmpresa(ativos).filter(f=>!usados.has(f.id));
+  $('sp-sub').innerHTML=`${esc(splitArquivo.nome)} · ${splitPaginas.length} página(s) · ${usados.size} funcionário(s) · competência <strong>${esc(nomeMes(iso))}</strong>`+(faltam.length?`<br><span style="color:var(--laranja)">Sem página neste PDF: ${esc(faltam.map(f=>f.nome).join(', '))}</span>`:'');
+  const opts=[...ativos,...todosFuncionarios.filter(f=>f.ativo===false)];
+  $('sp-tabela').innerHTML='<thead><tr><th></th><th>Pág.</th><th>Funcionário</th><th>Leitura</th><th>Trecho da página</th></tr></thead><tbody>'+splitPaginas.map((p,i)=>{
+    const st=p.achados.length>1?`<span class="badge badge-atraso">vários nomes: ${esc(p.achados.map(f=>f.nome.split(' ')[0]).join(', '))}</span>`:p.herdado?'<span class="badge badge-hoje">continuação?</span>':p.achados.length===1?'<span class="badge badge-ok">nome encontrado</span>':'<span class="badge badge-cinza">não encontrado</span>';
+    return`<tr ${p.herdado||p.achados.length>1?'style="background:#fffbea"':''}><td><input type="checkbox" data-sp-inc="${i}" ${p.incluir?'checked':''} style="width:17px;height:17px;accent-color:var(--verde)"></td><td>${p.n}</td>
+      <td><select data-sp-func="${i}"><option value="">—</option>${opts.map(f=>`<option value="${esc(f.id)}" ${f.id===p.fid?'selected':''}>${esc(f.nome)}${f.ativo===false?' (desligado)':''}</option>`).join('')}</select></td>
+      <td>${st}</td><td class="trecho" title="${esc(p.texto.slice(0,600))}">${esc(p.texto.slice(0,140)||'(sem texto)')}</td></tr>`;}).join('')+'</tbody>';
+  $('sp-tabela').querySelectorAll('[data-sp-inc]').forEach(c=>c.onchange=()=>{splitPaginas[+c.dataset.spInc].incluir=c.checked;renderSplit();});
+  $('sp-tabela').querySelectorAll('[data-sp-func]').forEach(s=>s.onchange=()=>{const p=splitPaginas[+s.dataset.spFunc];p.fid=s.value||null;p.incluir=!!s.value;p.herdado=false;renderSplit();});
+}
+async function salvarSeparacao(){
+  const iso=mesRH(),grupos={};
+  splitPaginas.forEach(p=>{if(p.incluir&&p.fid)(grupos[p.fid]=grupos[p.fid]||[]).push(p.n-1);});
+  const fids=Object.keys(grupos);if(!fids.length){alert('Nenhuma página marcada com funcionário.');return;}
+  const ja=fids.filter(fid=>contrachequeDoMes(fid,iso));
+  if(!confirm(`Guardar ${fids.length} contracheque(s) em ${nomeMes(iso)}?${ja.length?`\n\n${ja.length} funcionário(s) já têm contracheque neste mês: o arquivo será substituído.`:''}`))return;
+  const btn=$('sp-btn');btn.disabled=true;btn.textContent='Separando…';
+  const erros=[];let ok=0;
+  try{
+    const L=await carregarPdfLib();
+    const origem=await L.PDFDocument.load(splitArquivo.bytes,{ignoreEncryption:true});
+    for(const fid of fids){
+      const f=funcPorId(fid);btn.textContent=`Separando… ${ok+erros.length+1}/${fids.length}`;
+      try{await guardarContracheque(fid,iso,await montarContracheque(origem,grupos[fid],f,iso),'separado',grupos[fid].length);ok++;}
+      catch(e){console.error(e);erros.push(`${f?f.nome:fid}: ${e.message||e}`);}
+    }
+  }catch(e){console.error(e);alert('Não foi possível processar o PDF: '+(e.message||e)+'\nSe o PDF tiver senha, peça à contabilidade a versão sem senha.');}
+  finally{btn.disabled=false;btn.textContent='Separar e guardar';}
+  await recarregarContracheques();
+  if(ok){fecharModal('modal-split');renderTabAtual();}
+  if(erros.length)alert(`${ok} contracheque(s) guardado(s). Não foi possível guardar:\n\n${erros.join('\n')}`);
+  else if(ok)toast(`${ok} contracheque(s) guardado(s) em ${nomeMes(iso)}`);
+}
+function renderRHContracheques(){
+  const iso=mesRH(),ativos=filtraEmpresa(todosFuncionarios.filter(f=>f.ativo!==false));
+  const com=ativos.filter(f=>contrachequeDoMes(f.id,iso));
+  $('rh-cc-kpis').innerHTML=[['Competência',nomeMes(iso),'escolha o mês no alto'],['Com contracheque',`${com.length} de ${ativos.length}`,'funcionários ativos'],['Faltando',String(ativos.length-com.length),ativos.length-com.length?'suba o PDF do mês':'completo']]
+    .map(([r,v,s])=>`<div class="kpi"><div class="rot">${esc(r)}</div><div class="val">${esc(v)}</div><div class="sub">${esc(s)}</div></div>`).join('');
+  $('tabela-cc').innerHTML='<thead><tr><th>Funcionário</th><th>CPF</th><th>Admissão</th><th>Contracheque</th><th>Guardado</th><th></th></tr></thead><tbody>'+(ativos.length?ativos.map(f=>{const c=contrachequeDoMes(f.id,iso);
+    return`<tr><td><strong>${esc(f.nome)}</strong>${tagEmpresa(f)}${f.cargo?`<div style="font-size:12px;color:var(--texto2)">${esc(f.cargo)}</div>`:''}</td><td style="white-space:nowrap">${esc(f.cpf||'—')}</td><td>${esc(fmtData(f.data_admissao)||'—')}</td>
+      <td>${c?`<button class="btn-link" onclick="abrirArquivoRH('${esc(c.arquivo)}')">📄 abrir</button>${c.paginas?` <span class="dica">${esc(c.paginas)} pág.</span>`:''}`:'<span class="badge badge-cinza">—</span>'}</td>
+      <td style="font-size:12px;color:var(--texto2)">${c?esc(fmtDataHora(c.criado_em))+(c.criado_por?' · '+esc(c.criado_por):''):''}</td>
+      <td>${PERM.rhEditar?`<button class="btn-link" onclick="abrirFicha('${esc(f.id)}','contracheques')">${c?'substituir':'enviar avulso'}</button>`:''}</td></tr>`;}).join(''):'<tr><td colspan="6" class="vazio">Nenhum funcionário ativo.</td></tr>')+'</tbody>';
+}
+function renderFichaCC(){
+  if(!$('fc-mes').value)$('fc-mes').value=mesRH().slice(0,7);
+  const l=todosContracheques.filter(c=>c.funcionario_id===fichaId).sort((a,b)=>b.competencia.localeCompare(a.competencia));
+  $('fi-cc-lista').innerHTML=l.length?'<div class="sub-lista">'+l.map(c=>`<div class="sub-item"><div><strong>${esc(nomeMes(c.competencia))}</strong><div class="dica" style="margin:0">${c.origem==='separado'?'separado do PDF da contabilidade':'enviado avulso'} · ${esc(fmtDataHora(c.criado_em))}</div></div><div class="acoes"><button class="btn-link" onclick="abrirArquivoRH('${esc(c.arquivo)}')">📄 abrir</button></div></div>`).join('')+'</div>':'<p class="vazio">Nenhum contracheque guardado ainda.</p>';
+}
+async function enviarContrachequeAvulso(){
+  if(!PERM.rhEditar||!fichaId)return;
+  const m=$('fc-mes').value,arq=$('fc-arquivo').files[0];
+  if(!m||!arq){alert('Escolha o mês e o PDF.');return;}
+  if(!/\.pdf$/i.test(arq.name)){alert('O contracheque precisa ser PDF.');return;}
+  const iso=m+'-01',f=funcPorId(fichaId);
+  if(contrachequeDoMes(fichaId,iso)&&!confirm(`Já existe contracheque de ${nomeMes(iso)}. Substituir?`))return;
+  try{
+    const L=await carregarPdfLib();
+    const origem=await L.PDFDocument.load(new Uint8Array(await arq.arrayBuffer()),{ignoreEncryption:true});
+    const pags=origem.getPageIndices();
+    await guardarContracheque(fichaId,iso,await montarContracheque(origem,pags,f,iso),'manual',pags.length);
+  }catch(e){console.error(e);alert('Não foi possível guardar: '+(e.message||e));return;}
+  $('fc-arquivo').value='';await recarregarContracheques();renderFichaCC();renderTabAtual();toast('Contracheque guardado');
+}
+
+/* vales / empréstimos e adiantamentos */
+function renderRHVales(){
+  const iso=mesRH(),pct=pctAdiant(),edita=PERM.rhEditar;
+  const funcsOk=new Set(filtraEmpresa(todosFuncionarios).map(f=>f.id));
+  // adiantamentos do mês
+  $('rh-adiant-titulo').textContent=`Adiantamento de ${nomeMes(iso)} (dia ${diaAdiant()})`;
+  const doMes=todosAdiant.filter(a=>a.competencia===iso&&funcsOk.has(a.funcionario_id));
+  const comFlag=filtraEmpresa(todosFuncionarios.filter(f=>f.ativo!==false&&(rhPorFunc(f.id)||{}).adianta_mensal));
+  const naoGerados=comFlag.filter(f=>!adiantDoMes(f.id,iso));
+  $('rh-adiant-info').innerHTML=`${comFlag.length} funcionário(s) recebem adiantamento mensal de <strong>${esc(pct)}% do salário</strong> (marque na ficha → Dados). `+
+    (naoGerados.length?`<strong>${naoGerados.length} ainda sem lançamento neste mês</strong>${edita?' — clique em ⚙️ Gerar adiantamentos do mês.':'.'}`:'Todos lançados.')+' Depois de pagar, informe a data do pagamento.';
+  const tot=doMes.reduce((s,a)=>s+Number(a.valor),0);
+  const linhaPend=naoGerados.map(f=>{const r=rhPorFunc(f.id)||{};return`<tr style="opacity:.7"><td><strong>${esc(f.nome)}</strong>${tagEmpresa(f)}</td><td class="num">${r.salario!=null?esc(fmtMoeda(r.salario)):'<span class="badge badge-atraso">sem salário</span>'}</td><td class="num">${esc(pct)}%</td><td class="num">${r.salario?esc(fmtMoeda(r2(r.salario*pct/100))):'—'}</td><td colspan="3"><span class="badge badge-hoje">não lançado</span></td></tr>`;}).join('');
+  $('tabela-adiant').innerHTML='<thead><tr><th>Funcionário</th><th class="num">Salário base</th><th class="num">%</th><th class="num">Valor</th><th>Pago em</th><th>Observação</th><th></th></tr></thead><tbody>'+
+    (doMes.length||naoGerados.length?doMes.map(a=>{const f=funcPorId(a.funcionario_id)||{nome:'?'};return`<tr><td><strong>${esc(f.nome)}</strong>${tagEmpresa(f)}</td><td class="num">${a.salario_base!=null?esc(fmtMoeda(a.salario_base)):'—'}</td><td class="num">${esc(Number(a.percentual))}%</td>
+      <td class="num">${edita?`<input type="text" class="inp-moeda" inputmode="numeric" value="${esc(fmtMoeda(a.valor))}" oninput="mascaraMoeda(this)" data-ad-valor="${esc(a.id)}">`:esc(fmtMoeda(a.valor))}</td>
+      <td>${edita?`<input type="date" value="${esc(a.pago_em||'')}" data-ad-pago="${esc(a.id)}">`:(a.pago_em?esc(fmtData(a.pago_em)):'<span class="badge badge-hoje">a pagar</span>')}</td>
+      <td>${edita?`<input type="text" class="inp-obs" value="${esc(a.observacoes||'')}" data-ad-obs="${esc(a.id)}">`:esc(a.observacoes||'')}</td>
+      <td>${edita?`<button class="btn-link" style="color:var(--vermelho)" data-ad-rm="${esc(a.id)}">remover</button>`:''}</td></tr>`;}).join('')+linhaPend
+    :'<tr><td colspan="7" class="vazio">Nenhum adiantamento neste mês.</td></tr>')+'</tbody>'+
+    (doMes.length?`<tfoot><tr><td>Total (${doMes.length})</td><td></td><td></td><td class="num">${esc(fmtMoeda(tot))}</td><td>${doMes.filter(a=>a.pago_em).length} pago(s)</td><td></td><td></td></tr></tfoot>`:'');
+  const t=$('tabela-adiant');
+  t.querySelectorAll('[data-ad-valor]').forEach(i=>i.onchange=()=>{const v=parseMoeda(i.value);if(v==null){alert('Valor inválido.');renderRHVales();return;}atualizarAdiant(i.dataset.adValor,{valor:v});});
+  t.querySelectorAll('[data-ad-pago]').forEach(i=>i.onchange=()=>atualizarAdiant(i.dataset.adPago,{pago_em:i.value||null}));
+  t.querySelectorAll('[data-ad-obs]').forEach(i=>i.onchange=()=>atualizarAdiant(i.dataset.adObs,{observacoes:i.value.trim()||null}));
+  t.querySelectorAll('[data-ad-rm]').forEach(b=>b.onclick=async()=>{if(!confirm('Remover este adiantamento do mês?'))return;const{error}=await sb.from('adiantamentos').delete().eq('id',b.dataset.adRm);if(erroSB(error))return;todosAdiant=todosAdiant.filter(a=>a.id!==b.dataset.adRm);renderRH();});
+  // vales
+  const quitados=$('rh-vales-quitados').checked;
+  const vales=todosEmprestimos.filter(v=>funcsOk.has(v.funcionario_id)&&(quitados||v.situacao!=='quitado'||descontosDoVale(v.id).some(d=>d.competencia===iso)))
+    .sort((a,b)=>String((funcPorId(a.funcionario_id)||{}).nome).localeCompare(String((funcPorId(b.funcionario_id)||{}).nome),'pt-BR')||String(a.data).localeCompare(String(b.data)));
+  let tSaldo=0,tMes=0;
+  $('tabela-vales').innerHTML=`<thead><tr><th>Funcionário</th><th>Data</th><th>Motivo</th><th class="num">Emprestado</th><th class="num">Já descontado</th><th class="num">Saldo</th><th class="num">Descontar em ${esc(nomeMes(iso))}</th><th></th></tr></thead><tbody>`+
+    (vales.length?vales.map(v=>{const f=funcPorId(v.funcionario_id)||{nome:'?'};const desc=descontosDoVale(v.id),noMes=desc.find(d=>d.competencia===iso),saldo=saldoVale(v);
+      tSaldo+=Math.max(0,saldo);tMes+=noMes?Number(noMes.valor):0;
+      return`<tr class="${v.situacao==='quitado'?'inativo':''}"><td><strong>${esc(f.nome)}</strong>${tagEmpresa(f)}</td><td>${esc(fmtData(v.data))}</td><td>${esc(v.motivo||'')}</td><td class="num">${esc(fmtMoeda(v.valor))}</td>
+        <td class="num">${esc(fmtMoeda(r2(Number(v.valor)-saldo)))}</td><td class="num"><strong>${saldo>0?esc(fmtMoeda(saldo)):'<span class="badge badge-ok">quitado</span>'}</strong></td>
+        <td class="num">${edita?`<input type="text" class="inp-moeda" inputmode="numeric" placeholder="0,00" value="${noMes?esc(fmtMoeda(noMes.valor)):''}" oninput="mascaraMoeda(this)" data-vl-desc="${esc(v.id)}">`:(noMes?esc(fmtMoeda(noMes.valor)):'—')}</td>
+        <td><button class="btn-link" data-vl-abrir="${esc(v.id)}">${edita?'editar':'ver'}</button></td></tr>`;}).join('')
+    :`<tr><td colspan="8" class="vazio">Nenhum vale ${quitados?'':'em aberto '}registrado.</td></tr>`)+'</tbody>'+
+    (vales.length?`<tfoot><tr><td colspan="5">Total</td><td class="num">${esc(fmtMoeda(tSaldo))}</td><td class="num">${esc(fmtMoeda(tMes))}</td><td></td></tr></tfoot>`:'');
+  $('tabela-vales').querySelectorAll('[data-vl-desc]').forEach(i=>i.onchange=()=>salvarDescontoVale(i.dataset.vlDesc,i.value));
+  $('tabela-vales').querySelectorAll('[data-vl-abrir]').forEach(b=>b.onclick=()=>abrirVale(b.dataset.vlAbrir));
+}
+async function atualizarAdiant(id,campos){
+  if(!PERM.rhEditar)return;
+  const{data,error}=await sb.from('adiantamentos').update(campos).eq('id',id).select().single();
+  if(erroSB(error))return;
+  todosAdiant=todosAdiant.map(a=>a.id===id?data:a);toast('Adiantamento atualizado');
+  if(tabAtual==='rh')renderAvisosRH();
+}
+async function gerarAdiantamentos(){
+  if(!PERM.rhEditar)return;
+  const iso=mesRH(),pct=pctAdiant();
+  const alvo=filtraEmpresa(todosFuncionarios.filter(f=>f.ativo!==false&&(rhPorFunc(f.id)||{}).adianta_mensal)).filter(f=>!adiantDoMes(f.id,iso));
+  if(!alvo.length){alert('Todos os funcionários com adiantamento mensal já estão lançados neste mês.\n(Para incluir alguém, marque "Recebe adiantamento" na ficha → Dados, ou use + Adiantamento avulso.)');return;}
+  const semSal=alvo.filter(f=>!(rhPorFunc(f.id)||{}).salario),ok=alvo.filter(f=>(rhPorFunc(f.id)||{}).salario);
+  if(!ok.length){alert('Nenhum deles tem salário cadastrado na ficha.');return;}
+  if(!confirm(`Lançar adiantamento de ${pct}% em ${nomeMes(iso)} para ${ok.length} funcionário(s)?${semSal.length?`\n\nSem salário cadastrado (ficam de fora): ${semSal.map(f=>f.nome).join(', ')}`:''}`))return;
+  const linhas=ok.map(f=>{const s=Number(rhPorFunc(f.id).salario);return{funcionario_id:f.id,competencia:iso,percentual:pct,salario_base:s,valor:r2(s*pct/100)};});
+  const{data,error}=await sb.from('adiantamentos').insert(linhas).select();
+  if(erroSB(error))return;
+  todosAdiant=todosAdiant.concat(data||[]);renderRH();toast(`${linhas.length} adiantamento(s) lançado(s)`);
+}
+async function adiantamentoAvulso(){
+  if(!PERM.rhEditar)return;
+  const iso=mesRH();
+  const disp=filtraEmpresa(todosFuncionarios.filter(f=>f.ativo!==false)).filter(f=>!adiantDoMes(f.id,iso));
+  preencherSelect($('ma-func'),disp.map(f=>[f.id,f.nome]),'Selecione');
+  $('ma-pct').value=pctAdiant();$('ma-valor').value='';$('ma-obs').value='';$('ma-sub').textContent=`Adiantamento só em ${nomeMes(iso)} (não marca o funcionário como mensal).`;
+  abrirModal('modal-adiant');
+}
+function calcularAdiantAvulso(){const r=rhPorFunc($('ma-func').value)||{},p=Number($('ma-pct').value);$('ma-valor').value=r.salario&&p>0?fmtMoeda(r2(r.salario*p/100)):'';$('ma-sal').textContent=r.salario?`Salário: R$ ${fmtMoeda(r.salario)}`:'Sem salário na ficha: digite o valor.';}
+async function salvarAdiantAvulso(){
+  const fid=$('ma-func').value,v=parseMoeda($('ma-valor').value),p=Number($('ma-pct').value)||0;
+  if(!fid||v==null){alert('Escolha o funcionário e informe o valor.');return;}
+  const r=rhPorFunc(fid)||{};
+  const{data,error}=await sb.from('adiantamentos').insert({funcionario_id:fid,competencia:mesRH(),percentual:Math.min(100,Math.max(0,p)),salario_base:r.salario??null,valor:v,observacoes:$('ma-obs').value.trim()||'avulso'}).select().single();
+  if(erroSB(error))return;
+  todosAdiant.push(data);fecharModal('modal-adiant');renderRH();toast('Adiantamento lançado');
+}
+async function salvarDescontoVale(valeId,texto){
+  if(!PERM.rhEditar)return;
+  const iso=mesRH(),v=todosEmprestimos.find(x=>x.id===valeId);if(!v)return;
+  const atual=descontosDoVale(valeId).find(d=>d.competencia===iso);
+  const valor=texto.trim()?parseMoeda(texto):null;
+  if(texto.trim()&&!(valor>0)){alert('Valor inválido.');renderRHVales();return;}
+  const disponivel=r2(saldoVale(v)+(atual?Number(atual.valor):0));
+  if(valor&&valor>disponivel){alert(`O desconto (R$ ${fmtMoeda(valor)}) é maior que o saldo do vale (R$ ${fmtMoeda(disponivel)}).`);renderRHVales();return;}
+  let res;
+  if(!valor){if(!atual)return;res=await sb.from('emprestimo_descontos').delete().eq('id',atual.id);}
+  else res=await sb.from('emprestimo_descontos').upsert({emprestimo_id:valeId,competencia:iso,valor},{onConflict:'emprestimo_id,competencia'});
+  if(erroSB(res.error))return;
+  await recarregarVales();
+  await acertarSituacaoVale(valeId);
+  renderTabAtual();toast(valor?'Desconto lançado':'Desconto removido');
+}
+async function recarregarVales(){
+  const[a,b]=await Promise.all([sb.from('emprestimos').select('*').order('data',{ascending:false}),sb.from('emprestimo_descontos').select('*')]);
+  if(!a.error)todosEmprestimos=a.data||[];if(!b.error)todosDescontos=b.data||[];
+}
+async function acertarSituacaoVale(id){
+  const v=todosEmprestimos.find(x=>x.id===id);if(!v)return;
+  const nova=saldoVale(v)<=0?'quitado':'aberto';
+  if(nova!==v.situacao){const{error}=await sb.from('emprestimos').update({situacao:nova}).eq('id',id);if(!error)v.situacao=nova;}
+}
+function abrirVale(id,fidPreset){
+  if(!v14Ok){avisarMigracaoV14();return;}
+  if(!id&&!PERM.rhEditar)return;
+  valeEditandoId=id||null;
+  const v=id?todosEmprestimos.find(x=>x.id===id):null;
+  const lista=todosFuncionarios.filter(f=>f.ativo!==false||(v&&f.id===v.funcionario_id));
+  preencherSelect($('mv-func'),lista.map(f=>[f.id,f.nome]),'Selecione');
+  $('mv-func').value=v?v.funcionario_id:(fidPreset||'');
+  $('mv-data').value=v?v.data:hojeISO();$('mv-valor').value=v?fmtMoeda(v.valor):'';
+  $('mv-motivo').value=v&&v.motivo||'';$('mv-autorizado').value=v&&v.autorizado_por||'';$('mv-obs').value=v&&v.observacoes||'';
+  $('mv-titulo').textContent=v?'Vale / empréstimo':'Novo vale / empréstimo';
+  $('mv-excluir').style.display=v&&PERM.excluir?'inline-block':'none';
+  const desc=v?descontosDoVale(v.id).sort((a,b)=>a.competencia.localeCompare(b.competencia)):[];
+  $('mv-historico').innerHTML=v?`<div class="secao">Descontos lançados</div>${desc.length?'<div class="sub-lista">'+desc.map(d=>`<div class="sub-item"><span>${esc(nomeMes(d.competencia))}</span><strong>R$ ${esc(fmtMoeda(d.valor))}</strong></div>`).join('')+'</div>':'<p class="vazio">Nenhum desconto lançado ainda.</p>'}<p style="margin-top:8px;font-size:14px">Saldo: <strong>R$ ${esc(fmtMoeda(saldoVale(v)))}</strong>${v.situacao==='quitado'?' <span class="badge badge-ok">quitado</span>':''}</p>${v.criado_por?`<p class="dica">Registrado por ${esc(v.criado_por)} em ${esc(fmtDataHora(v.criado_em))}</p>`:''}`:'';
+  modoLeitura('modal-vale',!PERM.rhEditar);
+  abrirModal('modal-vale');
+}
+async function salvarVale(){
+  if(!PERM.rhEditar)return;
+  const fid=$('mv-func').value,data=$('mv-data').value,valor=parseMoeda($('mv-valor').value);
+  if(!fid||!data||!(valor>0)){alert('Informe o funcionário, a data e o valor.');return;}
+  const v=valeEditandoId?todosEmprestimos.find(x=>x.id===valeEditandoId):null;
+  if(v){const ja=r2(Number(v.valor)-saldoVale(v));if(valor<ja){alert(`Já foram descontados R$ ${fmtMoeda(ja)}; o valor não pode ser menor que isso.`);return;}}
+  const dados={funcionario_id:fid,data,valor,motivo:$('mv-motivo').value.trim()||null,autorizado_por:$('mv-autorizado').value.trim()||null,observacoes:$('mv-obs').value.trim()||null};
+  const r=v?await sb.from('emprestimos').update(dados).eq('id',v.id).select().single():await sb.from('emprestimos').insert(Object.assign(dados,{criado_por:quemSou()})).select().single();
+  if(erroSB(r.error))return;
+  await recarregarVales();await acertarSituacaoVale(r.data.id);
+  fecharModal('modal-vale');renderTabAtual();if($('modal-ficha').classList.contains('aberto'))renderFicha();
+  toast('Vale salvo');
+}
+async function excluirVale(){
+  if(!PERM.excluir||!valeEditandoId)return;
+  if(!confirm('Excluir este vale e todos os descontos lançados nele? Isso não pode ser desfeito.'))return;
+  const{error}=await sb.from('emprestimos').delete().eq('id',valeEditandoId);if(erroSB(error))return;
+  await recarregarVales();fecharModal('modal-vale');renderTabAtual();if($('modal-ficha').classList.contains('aberto'))renderFicha();
+}
+function renderFichaVales(){
+  const vs=todosEmprestimos.filter(v=>v.funcionario_id===fichaId);
+  $('fi-vales-lista').innerHTML=vs.length?'<div class="sub-lista">'+vs.map(v=>{const s=saldoVale(v);return`<div class="sub-item clicavel" data-fv="${esc(v.id)}"><div><strong>R$ ${esc(fmtMoeda(v.valor))}</strong> em ${esc(fmtData(v.data))}${v.motivo?' — '+esc(v.motivo):''}<div class="dica" style="margin:0">${descontosDoVale(v.id).length} desconto(s) lançado(s)</div></div><div>${s>0?`saldo <strong>R$ ${esc(fmtMoeda(s))}</strong>`:'<span class="badge badge-ok">quitado</span>'}</div></div>`;}).join('')+'</div>':'<p class="vazio">Nenhum vale registrado.</p>';
+  $('fi-vales-lista').querySelectorAll('[data-fv]').forEach(el=>el.onclick=()=>abrirVale(el.dataset.fv));
+  const ad=todosAdiant.filter(a=>a.funcionario_id===fichaId).sort((a,b)=>b.competencia.localeCompare(a.competencia)).slice(0,12);
+  $('fi-adiant-lista').innerHTML=ad.length?'<div class="sub-lista">'+ad.map(a=>`<div class="sub-item"><span>${esc(nomeMes(a.competencia))} · ${esc(Number(a.percentual))}%</span><span><strong>R$ ${esc(fmtMoeda(a.valor))}</strong> ${a.pago_em?`<span class="badge badge-ok">pago ${esc(fmtData(a.pago_em))}</span>`:'<span class="badge badge-hoje">a pagar</span>'}</span></div>`).join('')+'</div>':'<p class="vazio">Nenhum adiantamento registrado.</p>';
+}
+
+/* envio mensal à contabilidade */
+function dadosFechamento(iso){
+  const b=linhasBeneficios(),cols=colunasBeneficios(b.linhas);
+  const porId=Object.fromEntries(b.linhas.map(l=>[l.f.id,l]));
+  const funcs=filtraEmpresa(todosFuncionarios.filter(f=>f.ativo!==false||porId[f.id]));
+  const linhas=funcs.map(f=>{
+    const l=porId[f.id],cf=compFuncs.find(x=>x.funcionario_id===f.id);
+    const dias=l?l.dias:(cf&&cf.dias_trabalhados!=null?cf.dias_trabalhados:b.diasUteis);
+    const itens=l?l.itens:[],a=adiantDoMes(f.id,iso);
+    return{f,dias,faltas:Math.max(0,b.diasUteis-dias),itens,totalBenef:r2(itens.reduce((s,i)=>s+i.valor_total,0)),descBenef:r2(itens.reduce((s,i)=>s+i.desconto,0)),
+      descVale:descontoValesNoMes(f.id,iso),adiant:a?Number(a.valor):0,adiantPago:a?a.pago_em:null,obs:(cf&&cf.observacoes)||''};
+  }).sort((a,b)=>a.f.nome.localeCompare(b.f.nome,'pt-BR'));
+  return Object.assign({},b,{cols,linhas});
+}
+function corpoPadraoEnvio(iso,d){
+  const faltas=d.linhas.reduce((s,l)=>s+l.faltas,0),vale=d.linhas.reduce((s,l)=>s+l.descVale,0),ad=d.linhas.reduce((s,l)=>s+l.adiant,0);
+  return`Olá, Thais e equipe do DP,
+
+Segue o fechamento do RH do Grupo BVEK referente a ${nomeMes(iso)}, com faltas, benefícios (vale-alimentação/refeição, vale-transporte, plano odontológico e demais), descontos de vales/empréstimos e adiantamentos do mês, na planilha em anexo.
+
+Resumo: ${d.linhas.length} funcionário(s) · ${faltas} falta(s) no mês · descontos de vales R$ ${fmtMoeda(vale)} · adiantamentos R$ ${fmtMoeda(ad)}.
+
+Qualquer dúvida, estamos à disposição.
+
+Atenciosamente,
+${quemSou()||''}
+Grupo BVEK`;
+}
+async function renderRHEnvio(){
+  const iso=mesRH();
+  if($('bn-mes').value!==iso.slice(0,7)){$('bn-mes').value=iso.slice(0,7);await carregarCompetenciaAtual();}
+  const d=dadosFechamento(iso),edita=PERM.rhEditar&&!d.fechada&&PERM.rhEditar;
+  const envios=todosEnvios.filter(e=>e.competencia===iso);
+  const enviado=envios.find(e=>e.situacao==='enviado');
+  const nFaltas=d.linhas.filter(l=>l.faltas>0).length,tVale=d.linhas.reduce((s,l)=>s+l.descVale,0);
+  const ads=d.linhas.filter(l=>l.adiant>0),adSemData=ads.filter(l=>!l.adiantPago).length;
+  const it=(ok,txt,acao)=>`<div class="it ${ok?'ok':'alerta'}"><span>${ok?'✅':'⚠️'} ${txt}</span>${acao||''}</div>`;
+  $('rh-envio-checks').innerHTML=[
+    it(d.fechada,d.fechada?`Benefícios de ${esc(nomeMes(iso))} fechados${d.c&&d.c.fechada_em?' em '+esc(fmtData(d.c.fechada_em)):''}`:`Benefícios de ${esc(nomeMes(iso))} ainda <strong>abertos</strong> — confira os dias trabalhados e feche a competência antes de enviar`,d.fechada?'':`<button class="btn-sec" onclick="abrirTab('beneficios')">Ir para Benefícios</button>`),
+    it(true,`Faltas: ${nFaltas?`<strong>${nFaltas}</strong> funcionário(s) com falta no mês`:'nenhuma falta lançada'} (dias úteis: ${esc(d.diasUteis)})`),
+    it(true,`Vales/empréstimos: <strong>R$ ${esc(fmtMoeda(tVale))}</strong> a descontar neste mês`,`<button class="btn-link" onclick="rhSub='vales';renderRH()">ver vales</button>`),
+    it(!adSemData,`Adiantamentos: ${ads.length} lançado(s)${adSemData?` · <strong>${adSemData} sem data de pagamento</strong>`:''}`,`<button class="btn-link" onclick="rhSub='vales';renderRH()">ver adiantamentos</button>`),
+    empresaAtual!=='todas'?it(false,`Você está vendo só <strong>${esc(nomeEmpresaAtual())}</strong>: a planilha terá só esta empresa. Para mandar o grupo todo, escolha "Todas as empresas" no alto.`):'',
+    it(!!enviado,enviado?`Enviado em ${esc(fmtDataHora(enviado.enviado_em))} por ${esc(enviado.enviado_por||'—')} para ${esc(enviado.para)}`:`Ainda não enviado (o combinado é todo dia ${esc(diaEnvio())})`),
+  ].join('');
+  const cols=d.cols;
+  $('tabela-envio').innerHTML=`<thead><tr><th>Funcionário</th><th class="num">Dias trab.</th><th class="num">Faltas</th>${cols.map(n=>`<th class="num">${esc(siglaBenef(n))}</th>`).join('')}<th class="num">Desc. benef.</th><th class="num">Desc. vale</th><th class="num">Adiant.</th><th>Observação do mês</th></tr></thead><tbody>`+
+    (d.linhas.length?d.linhas.map(l=>`<tr><td><strong>${esc(l.f.nome)}</strong>${tagEmpresa(l.f)}</td><td class="num">${esc(l.dias)}</td>
+      <td class="num">${edita?`<input type="number" min="0" max="31" value="${l.faltas||''}" placeholder="0" data-env-faltas="${esc(l.f.id)}">`:(l.faltas?`<span class="menos">${esc(l.faltas)}</span>`:'—')}</td>
+      ${cols.map(n=>{const i=l.itens.find(x=>x.tipo_nome===n);return`<td class="num">${i?esc(fmtMoeda(i.valor_total)):'<span style="color:#bbb">—</span>'}</td>`;}).join('')}
+      <td class="num">${l.descBenef?esc(fmtMoeda(l.descBenef)):'—'}</td><td class="num">${l.descVale?esc(fmtMoeda(l.descVale)):'—'}</td><td class="num">${l.adiant?esc(fmtMoeda(l.adiant)):'—'}</td>
+      <td>${PERM.rhEditar?`<input type="text" class="inp-obs" value="${esc(l.obs)}" placeholder="atestado, afastamento…" data-env-obs="${esc(l.f.id)}">`:esc(l.obs)}</td></tr>`).join('')
+    :`<tr><td colspan="${cols.length+7}" class="vazio">Nenhum funcionário.</td></tr>`)+'</tbody>';
+  $('tabela-envio').querySelectorAll('[data-env-faltas]').forEach(i=>i.onchange=()=>salvarFaltasMes(i.dataset.envFaltas,i.value,d.diasUteis));
+  $('tabela-envio').querySelectorAll('[data-env-obs]').forEach(i=>i.onchange=()=>salvarObsMes(i.dataset.envObs,i.value));
+  // e-mail: preenche ao trocar de mês (sem apagar o que a pessoa digitou no mesmo mês)
+  if(envioPreenchidoPara!==iso){
+    envioPreenchidoPara=iso;
+    $('env-para').value=rhConfig.contabilidade_emails||'thais.ribeiro@innovecontabil.com.br; dp@innovecontabil.com.br';
+    $('env-cc').value='';$('env-assunto').value=`Grupo BVEK — Fechamento do RH — ${nomeMes(iso)}`;$('env-corpo').value=corpoPadraoEnvio(iso,d);
+    anexosEnvioExtra=[];$('env-outros').value='';escolheuAnexosEnvio([]);
+  }
+  $('env-salvar-padrao').style.display=PERM.admin?'':'none';
+  ['env-para','env-cc','env-assunto','env-corpo','env-anexo-planilha','env-outros'].forEach(id=>$(id).disabled=!PERM.rhEditar);
+  $('rh-envios-lista').innerHTML=envios.length?'<div class="sub-lista">'+envios.map(e=>`<div class="sub-item"><div><strong>${esc(fmtDataHora(e.enviado_em))}</strong> · ${esc(e.enviado_por||'')} ${e.situacao==='enviado'?'<span class="badge badge-ok">enviado</span>':'<span class="badge badge-atraso">erro</span>'}<div class="dica" style="margin:0">Para: ${esc(e.para||'')}${e.remetente?' · de: '+esc(e.remetente):''} · ${(e.anexos||[]).length} anexo(s)${(e.anexos||[]).length?': '+esc((e.anexos||[]).map(a=>a.nome).join(', ')):''}</div>${e.erro?`<div class="dica" style="margin:0;color:var(--vermelho)">${esc(e.erro)}</div>`:''}</div><div class="acoes">${(e.anexos||[]).filter(a=>/\.xlsx$/i.test(a.nome||'')).map(a=>`<button class="btn-link" onclick="abrirArquivoRH('${esc(a.caminho)}')">planilha</button>`).join('')}</div></div>`).join('')+'</div>':'<p class="vazio">Nenhum envio neste mês.</p>';
+}
+async function salvarFaltasMes(fid,texto,diasUteis){
+  const f=texto===''?0:Math.round(Number(texto));
+  if(!(f>=0&&f<=diasUteis)){alert(`Faltas entre 0 e ${diasUteis}.`);renderRHEnvio();return;}
+  await salvarDiasFunc(fid,{value:f?String(diasUteis-f):''});
+  renderRHEnvio();
+}
+async function salvarObsMes(fid,texto){
+  if(!PERM.rhEditar)return;
+  const c=await garantirCompetencia();if(!c)return;
+  const existe=compFuncs.find(x=>x.funcionario_id===fid);
+  const r=existe?await sb.from('competencia_funcionarios').update({observacoes:texto.trim()||null,atualizado_em:new Date().toISOString()}).eq('id',existe.id)
+    :await sb.from('competencia_funcionarios').insert({competencia_id:c.id,funcionario_id:fid,dias_trabalhados:null,origem:'manual',observacoes:texto.trim()||null});
+  if(erroSB(r.error))return;
+  await carregarCompetenciaAtual();toast('Observação salva');
+}
+function escolheuAnexosEnvio(files){
+  anexosEnvioExtra=[...(files||[])];
+  const tot=anexosEnvioExtra.reduce((s,f)=>s+f.size,0);
+  $('env-outros-info').innerHTML=anexosEnvioExtra.length?`${anexosEnvioExtra.length} arquivo(s): ${esc(anexosEnvioExtra.map(f=>f.name).join(', '))} · ${(tot/1048576).toFixed(1)} MB${tot>2.9*1048576?' <strong style="color:var(--vermelho)">— passa do limite de 3 MB</strong>':''}`:'Outros arquivos (atestados, declarações…), até 3 MB no total.';
+}
+async function gerarPlanilhaFechamento(iso){
+  const d=dadosFechamento(iso),X=await carregarXLSX();
+  const sig=f=>(empresaPorId(f.empresa_id)||{}).sigla||'';
+  const resumo=[['Grupo BVEK — Fechamento do RH',nomeMes(iso)],['Dias úteis do mês',d.diasUteis,d.fechada?'Benefícios fechados':'Benefícios em aberto (valores podem mudar)'],['Gerado em',fmtDataHora(new Date().toISOString()),quemSou()||''],[],
+    ['Funcionário','CPF','Empresa','Função','Admissão','Dias trabalhados','Faltas',...d.cols,'Total benefícios','Desconto benefícios (funcionário)','Desconto vale/empréstimo','Adiantamento','Adiantamento pago em','Observações']];
+  const tot=new Array(d.cols.length+4).fill(0);
+  d.linhas.forEach(l=>{
+    const vals=d.cols.map(n=>{const i=l.itens.find(x=>x.tipo_nome===n);return i?r2(i.valor_total):0;});
+    const nums=[...vals,l.totalBenef,l.descBenef,l.descVale,r2(l.adiant)];nums.forEach((v,k)=>tot[k]+=v);
+    resumo.push([l.f.nome,l.f.cpf||'',sig(l.f),l.f.cargo||'',l.f.data_admissao?fmtData(l.f.data_admissao):'',l.dias,l.faltas,...nums,l.adiantPago?fmtData(l.adiantPago):'',l.obs]);
+  });
+  resumo.push(['TOTAL','','','','','',d.linhas.reduce((s,l)=>s+l.faltas,0),...tot.map(r2),'','']);
+  const detalhe=[['Funcionário','CPF','PIS','Empresa','Benefício','Cálculo','Valor unitário','Dias','Valor total','Desconto funcionário']];
+  d.linhas.forEach(l=>l.itens.forEach(i=>detalhe.push([l.f.nome,l.f.cpf||'',l.f.pis||'',sig(l.f),i.tipo_nome,CALCULO_LABEL[i.calculo]||i.calculo,r2(i.valor_unitario),i.dias??'',r2(i.valor_total),r2(i.desconto)])));
+  const ids=new Set(d.linhas.map(l=>l.f.id));
+  const vales=[['Funcionário','CPF','Data do vale','Motivo','Valor emprestado','Desconto neste mês','Saldo depois deste mês']];
+  todosEmprestimos.filter(v=>ids.has(v.funcionario_id)).forEach(v=>{const noMes=descontosDoVale(v.id).find(x=>x.competencia===iso);const saldo=saldoVale(v,iso);
+    if(!noMes&&(saldo<=0||v.data>fimDoMes(iso)))return;const f=funcPorId(v.funcionario_id)||{};
+    vales.push([f.nome||'',f.cpf||'',fmtData(v.data),v.motivo||'',r2(v.valor),noMes?r2(noMes.valor):0,saldo]);});
+  const adiant=[['Funcionário','CPF','Salário base','%','Valor','Pago em','Observação']];
+  todosAdiant.filter(a=>a.competencia===iso&&ids.has(a.funcionario_id)).forEach(a=>{const f=funcPorId(a.funcionario_id)||{};adiant.push([f.nome||'',f.cpf||'',a.salario_base!=null?r2(a.salario_base):'',Number(a.percentual),r2(a.valor),a.pago_em?fmtData(a.pago_em):'',a.observacoes||'']);});
+  const wb=X.utils.book_new();
+  const ws=(aoa,larg)=>{const w=X.utils.aoa_to_sheet(aoa);w['!cols']=larg.map(x=>({wch:x}));return w;};
+  X.utils.book_append_sheet(wb,ws(resumo,[32,15,8,20,11,10,7,...d.cols.map(()=>13),13,14,14,12,12,30]),'Resumo');
+  X.utils.book_append_sheet(wb,ws(detalhe,[32,15,15,8,28,18,12,6,12,12]),'Benefícios');
+  X.utils.book_append_sheet(wb,ws(vales,[32,15,11,24,14,14,16]),'Vales');
+  X.utils.book_append_sheet(wb,ws(adiant,[32,15,13,6,12,11,24]),'Adiantamentos');
+  const suf=empresaAtual==='todas'?'GRUPO':((empresaPorId(empresaAtual)||{}).sigla||'');
+  return{wb,X,nome:`BVK-RH-FECHAMENTO-${iso.slice(0,7)}-${suf}.xlsx`};
+}
+async function baixarPlanilhaFechamento(){
+  try{const{wb,X,nome}=await gerarPlanilhaFechamento(mesRH());X.writeFile(wb,nome);toast('Planilha gerada');}
+  catch(e){console.error(e);alert('Não foi possível gerar a planilha: '+(e.message||e));}
+}
+async function salvarDestinatariosPadrao(){
+  if(!PERM.admin)return;
+  const v=$('env-para').value.trim();if(!v){alert('Informe os e-mails.');return;}
+  const{error}=await sb.from('rh_config').upsert({chave:'contabilidade_emails',valor:v,atualizado_em:new Date().toISOString()},{onConflict:'chave'});
+  if(erroSB(error))return;rhConfig.contabilidade_emails=v;toast('Destinatários padrão salvos');
+}
+async function enviarContabilidade(){
+  if(!PERM.rhEditar)return;
+  const iso=mesRH(),EMAIL=/^[^\s@;,<>]+@[^\s@;,<>]+\.[^\s@;,<>]+$/;
+  const lista=t=>t.split(/[;,]/).map(x=>x.trim()).filter(Boolean);
+  const para=lista($('env-para').value),cc=lista($('env-cc').value);
+  if(!para.length){alert('Informe para quem enviar.');return;}
+  const ruim=[...para,...cc].find(e=>!EMAIL.test(e));if(ruim){alert('E-mail inválido: '+ruim);return;}
+  const assunto=$('env-assunto').value.trim(),corpo=$('env-corpo').value.trim();
+  if(!assunto||!corpo){alert('Preencha o assunto e a mensagem.');return;}
+  const comPlanilha=$('env-anexo-planilha').checked;
+  if(!comPlanilha&&!anexosEnvioExtra.length&&!confirm('Enviar sem nenhum anexo?'))return;
+  const tamExtra=anexosEnvioExtra.reduce((s,f)=>s+f.size,0);
+  if(tamExtra>2.9*1048576){alert('Os outros anexos passam de 3 MB. Tire algum arquivo (ou envie em outro e-mail pelo Outlook).');return;}
+  const d=dadosFechamento(iso),av=[];
+  if(!d.fechada)av.push('os benefícios do mês ainda estão ABERTOS');
+  if(empresaAtual!=='todas')av.push(`a planilha terá só ${nomeEmpresaAtual()}`);
+  const ja=todosEnvios.filter(e=>e.competencia===iso&&e.situacao==='enviado').length;
+  if(ja)av.push(`este mês já foi enviado ${ja} vez(es)`);
+  if(!confirm(`Enviar o fechamento de ${nomeMes(iso)} para:\n${para.join('\n')}${cc.length?`\n\nCópia: ${cc.join(', ')}`:''}\n\nAnexos: ${[comPlanilha?'planilha do fechamento':'',...anexosEnvioExtra.map(f=>f.name)].filter(Boolean).join(', ')||'nenhum'}${av.length?'\n\n⚠️ Atenção: '+av.join('; ')+'.':''}`))return;
+  const btn=$('env-btn');btn.disabled=true;btn.textContent='Enviando…';
+  try{
+    const anexos=[],pasta=`envios/${iso.slice(0,7)}/${Date.now()}`;
+    if(comPlanilha){
+      const{wb,X,nome}=await gerarPlanilhaFechamento(iso);
+      const caminho=`${pasta}/${nome}`,tipo='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+      const up=await sb.storage.from(BUCKET_RH).upload(caminho,new Blob([X.write(wb,{type:'array',bookType:'xlsx'})],{type:tipo}),{contentType:tipo});
+      if(up.error)throw up.error;anexos.push({caminho,nome});
+    }
+    for(const f of anexosEnvioExtra){
+      const caminho=`${pasta}/${nomeArquivoSeguro(f.name)}`;
+      const up=await sb.storage.from(BUCKET_RH).upload(caminho,f,{contentType:f.type||undefined});
+      if(up.error)throw new Error(`Não foi possível enviar ${f.name}: ${up.error.message}`);anexos.push({caminho,nome:f.name});
+    }
+    const{data,error}=await sb.functions.invoke('email-contabilidade',{body:{competencia:iso,para,cc,assunto,corpo,anexos}});
+    if(error)throw new Error(await erroDaFuncao(error));
+    if(data&&data.erro)throw new Error(data.erro);
+    anexosEnvioExtra=[];$('env-outros').value='';escolheuAnexosEnvio([]);
+    toast(`E-mail enviado para a contabilidade${data&&data.remetente?' (de '+data.remetente+')':''}`);
+  }catch(e){console.error(e);alert('Não foi possível enviar:\n'+(e.message||e));}
+  finally{
+    btn.disabled=false;btn.textContent='📧 Enviar para a contabilidade';
+    const{data:l}=await sb.from('envios_contabilidade').select('*').order('enviado_em',{ascending:false}).limit(300);if(l)todosEnvios=l;
+    renderRH();
+  }
+}
+
+/* ================= CURRÍCULOS (v14) ================= */
+let todosCurriculos=[],todasAvaliacoes=[],cvEditandoId=null;
+const CV_SITUACOES=[['novo','Novo'],['analise','Em análise'],['aprovado','Aprovado (banco de talentos)'],['contratado','Contratado'],['nao_recomendado','Não recomendado'],['arquivado','Arquivado']];
+const CV_SIT_LABEL=Object.fromEntries(CV_SITUACOES);
+const CV_SIT_CLS={novo:'badge-cinza',analise:'badge-hoje',aprovado:'badge-ok',contratado:'badge-ok',nao_recomendado:'badge-atraso',arquivado:'badge-cinza'};
+const CV_VINCULOS=[['freela','Freela / diária'],['clt','CLT'],['pj','PJ / empreiteiro'],['estagio','Estágio'],['qualquer','Qualquer']];
+const CV_VINC_LABEL=Object.fromEntries(CV_VINCULOS);
+const CV_ORIGENS=['Indicação de funcionário','Indicação de cliente / parceiro','Já trabalhou conosco','Veio ao escritório / obra','Site / redes sociais','LinkedIn','Agência / SINE','Outro'];
+const CV_JA=[['nao','Não'],['freela','Sim, como freela'],['clt','Sim, como funcionário']];
+const CV_CHAMAR=[['prioridade','Sim, prioridade'],['sim','Sim'],['talvez','Talvez'],['nao','Não']];
+const CV_CHAMAR_LABEL=Object.fromEntries(CV_CHAMAR);
+const REC_PERFIL=[['recomendado','Recomendado'],['com_ressalvas','Recomendado com ressalvas'],['nao_recomendado','Não recomendado']];
+const estrelas=n=>n?`<span class="estrelas" title="${n} de 5">${'★'.repeat(n)}${'☆'.repeat(5-n)}</span>`:'—';
+const QP=()=>window.BVEK_QUESTIONARIO;
+function linkPerfil(a){return`${location.origin}/perfil.html?t=${a.token}`;}
+function avaliacaoAtual(cvId){return todasAvaliacoes.filter(a=>a.curriculo_id===cvId).sort((a,b)=>String(b.criado_em).localeCompare(String(a.criado_em)))[0]||null;}
+const linkVencido=a=>a&&!a.respondido_em&&(Date.now()-new Date(a.criado_em).getTime())>30*86400000;
+async function carregarCurriculos(){
+  if(!PERM.curriculos||!v11Ok)return;
+  const[c,a]=await Promise.all([sb.from('curriculos').select('*').order('atualizado_em',{ascending:false}),sb.from('avaliacoes_perfil').select('*').order('criado_em',{ascending:false})]);
+  const e=c.error||a.error;
+  if(e){if(/curriculos|avaliacoes_perfil|does not exist|schema cache/i.test(e.message||''))avisarMigracaoV14();else console.error(e);return;}
+  todosCurriculos=c.data||[];todasAvaliacoes=a.data||[];
+  atualizarDatalistsRH();
+}
+function badgePerfil(cvId){
+  const a=avaliacaoAtual(cvId);if(!a)return'—';
+  if(!a.respondido_em)return linkVencido(a)?'<span class="badge badge-atraso">link vencido</span>':'<span class="badge badge-hoje">aguardando</span>';
+  const p=QP()?QP().pontuar(a.respostas):null;
+  const rec=a.recomendacao?` <span class="badge ${a.recomendacao==='recomendado'?'badge-ok':a.recomendacao==='nao_recomendado'?'badge-atraso':'badge-hoje'}">${esc((REC_PERFIL.find(r=>r[0]===a.recomendacao)||[])[1]||'')}</span>`:' <span class="badge badge-cinza">sem parecer</span>';
+  return(p&&p.media!=null?`<strong>${p.media}</strong>/100`:'respondido')+rec;
+}
+function renderCurriculos(){
+  if(!PERM.curriculos)return;
+  if(!$('cv-situacao').options.length){
+    preencherSelect($('cv-situacao'),[['ativos','Situação: todos menos arquivados'],...CV_SITUACOES.map(([v,t])=>[v,'Situação: '+t])],'Situação: todas');
+    $('cv-situacao').value='ativos';
+    preencherSelect($('cv-vinculo'),CV_VINCULOS.map(([v,t])=>[v,'Vínculo: '+t]),'Vínculo: todos');
+  }
+  const busca=norm($('cv-busca').value),sit=$('cv-situacao').value,vinc=$('cv-vinculo').value,ch=$('cv-chamar').value;
+  let l=todosCurriculos.filter(c=>empresaAtual==='todas'||!c.empresa_id||c.empresa_id===empresaAtual);
+  const base=l;
+  if(sit==='ativos')l=l.filter(c=>c.situacao!=='arquivado');else if(sit)l=l.filter(c=>c.situacao===sit);
+  if(vinc)l=l.filter(c=>c.vinculo===vinc||(c.vinculo==='qualquer'&&vinc!=='qualquer'));
+  if(ch==='prioridade')l=l.filter(c=>c.chamar_novamente==='prioridade');
+  else if(ch==='sim_ou_prioridade')l=l.filter(c=>['sim','prioridade'].includes(c.chamar_novamente));
+  else if(ch==='nao')l=l.filter(c=>c.chamar_novamente==='nao');
+  if(busca)l=l.filter(c=>norm([c.nome,c.funcao,c.cidade,c.telefone,c.email].join(' ')).includes(busca));
+  const aguard=base.filter(c=>{const a=avaliacaoAtual(c.id);return a&&!a.respondido_em&&!linkVencido(a);}).length;
+  const semParecer=base.filter(c=>{const a=avaliacaoAtual(c.id);return a&&a.respondido_em&&!a.parecer;}).length;
+  $('cv-kpis').innerHTML=[
+    ['No banco',String(base.filter(c=>c.situacao!=='arquivado').length),'currículos ativos'],
+    ['Aprovados',String(base.filter(c=>c.situacao==='aprovado').length),'banco de talentos'],
+    ['Freelas para chamar',String(base.filter(c=>['freela','qualquer'].includes(c.vinculo)&&['sim','prioridade'].includes(c.chamar_novamente)).length),'sem reavaliar'],
+    ['Questionários',`${aguard} aguardando`,semParecer?`${semParecer} respondido(s) sem parecer`:'nenhum parecer pendente'],
+  ].map(([r,v,s])=>`<div class="kpi"><div class="rot">${esc(r)}</div><div class="val">${esc(v)}</div><div class="sub">${esc(s)}</div></div>`).join('');
+  $('cv-contagem').textContent=`${l.length} currículo(s)`;
+  const zap=t=>{const d=String(t||'').replace(/\D/g,'');return d.length>=10?`<a href="https://wa.me/55${esc(d)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="Abrir no WhatsApp">${esc(fmtTel(t))}</a>`:esc(t||'');};
+  $('tabela-cv').innerHTML='<thead><tr><th>Nome</th><th>Vínculo</th><th>Cidade</th><th>Contato</th><th>Situação</th><th>Técnica</th><th>Comport.</th><th>Chamar de novo</th><th>Perfil</th></tr></thead><tbody>'+
+    (l.length?l.map(c=>`<tr class="clicavel" data-cv="${esc(c.id)}"><td><strong>${esc(c.nome)}</strong>${c.funcao?`<div style="font-size:12px;color:var(--texto2)">${esc(c.funcao)}</div>`:''}</td>
+      <td>${esc(CV_VINC_LABEL[c.vinculo]||'—')}</td><td>${esc(c.cidade||'')}</td><td style="white-space:nowrap">${zap(c.telefone)}</td>
+      <td><span class="badge ${CV_SIT_CLS[c.situacao]||'badge-cinza'}">${esc(CV_SIT_LABEL[c.situacao]||c.situacao)}</span></td>
+      <td>${estrelas(c.nota_tecnica)}</td><td>${estrelas(c.nota_comportamental)}</td>
+      <td>${c.chamar_novamente?`<span class="badge ${c.chamar_novamente==='nao'?'badge-atraso':c.chamar_novamente==='talvez'?'badge-cinza':'badge-ok'}">${esc(CV_CHAMAR_LABEL[c.chamar_novamente]||'')}</span>`:'—'}</td>
+      <td>${badgePerfil(c.id)}</td></tr>`).join('')
+    :'<tr><td colspan="9" class="vazio">Nenhum currículo nesta lista.</td></tr>')+'</tbody>';
+  $('tabela-cv').querySelectorAll('[data-cv]').forEach(tr=>tr.onclick=()=>abrirCurriculo(tr.dataset.cv));
+}
+function abrirCurriculo(id){
+  if(!v14Ok){avisarMigracaoV14();return;}
+  cvEditandoId=id||null;const c=id?todosCurriculos.find(x=>x.id===id):null;
+  preencherSelect($('cv-vinc'),CV_VINCULOS,'—');
+  preencherSelect($('cv-empresa'),todasEmpresas.map(e=>[e.id,`${e.nome} (${e.sigla})`]),'Qualquer empresa do grupo');
+  preencherSelect($('cv-ja'),CV_JA);preencherSelect($('cv-origem'),CV_ORIGENS.map(o=>[o,o]),'—');
+  preencherSelect($('cv-sit'),CV_SITUACOES);preencherSelect($('cv-chamar-sel'),CV_CHAMAR,'—');
+  const notas=[1,2,3,4,5].map(n=>[String(n),'★'.repeat(n)+'☆'.repeat(5-n)+` (${n})`]);
+  preencherSelect($('cv-nota-tec'),notas,'—');preencherSelect($('cv-nota-comp'),notas,'—');
+  const v=(k,pad='')=>c&&c[k]!=null?c[k]:pad;
+  $('cv-nome').value=v('nome');$('cv-tel').value=fmtTel(v('telefone'));$('cv-email').value=v('email');$('cv-funcao').value=v('funcao');$('cv-cidade').value=v('cidade');
+  $('cv-vinc').value=v('vinculo');$('cv-empresa').value=v('empresa_id',empresaAtual!=='todas'?empresaAtual:'');$('cv-ja').value=v('ja_trabalhou','nao');$('cv-origem').value=v('origem');
+  $('cv-disp').value=v('disponibilidade');$('cv-pret').value=v('pretensao');$('cv-sit').value=v('situacao','novo');$('cv-chamar-sel').value=v('chamar_novamente');
+  $('cv-nota-tec').value=c&&c.nota_tecnica?String(c.nota_tecnica):'';$('cv-nota-comp').value=c&&c.nota_comportamental?String(c.nota_comportamental):'';
+  $('cv-fortes').value=v('pontos_fortes');$('cv-atencao').value=v('pontos_atencao');$('cv-parecer').value=v('parecer');
+  $('cv-avaliado').textContent=c&&c.avaliado_por?`Avaliado por ${c.avaliado_por}${c.avaliado_em?' em '+fmtDataHora(c.avaliado_em):''}`:'';
+  $('cv-arquivo').value='';
+  $('cv-arquivo-atual').innerHTML=c&&c.arquivo?`📎 <button class="btn-link" onclick="abrirArquivoRH('${esc(c.arquivo)}')">${esc(c.arquivo_nome||'currículo')}</button> (escolha outro arquivo para substituir)`:'Nenhum arquivo anexado.';
+  $('cv-titulo').textContent=c?c.nome:'Novo currículo';
+  $('cv-sub').textContent=c?[c.funcao,CV_VINC_LABEL[c.vinculo],c.criado_em&&'cadastrado em '+fmtData(c.criado_em)].filter(Boolean).join(' · '):'Candidatos e freelas que já conhecemos, para não precisar avaliar de novo.';
+  $('cv-excluir').style.display=c&&PERM.excluir?'inline-block':'none';
+  $('cv-contratar').style.display=c&&c.situacao!=='contratado'&&!c.funcionario_id?'inline-block':'none';
+  renderPerfilCV();
+  abrirModal('modal-curriculo');
+  if(!c)setTimeout(()=>$('cv-nome').focus(),50);
+}
+function renderPerfilCV(){
+  const box=$('cv-perfil'),Q=QP();
+  const aviso='<p class="dica" style="margin-top:8px">Questionário de autoavaliação para apoiar a entrevista — não é teste psicológico (esses só podem ser aplicados por psicólogo). O candidato responde pelo celular, sem login; o link vale 30 dias e só pode ser respondido uma vez.</p>';
+  if(!Q){box.innerHTML='<p class="vazio">Não foi possível carregar o questionário (arquivo perfil-questionario.js).</p>';return;}
+  if(!cvEditandoId){box.innerHTML='<p class="vazio">Salve o currículo para gerar o link do questionário.</p>'+aviso;return;}
+  const c=todosCurriculos.find(x=>x.id===cvEditandoId),a=avaliacaoAtual(cvEditandoId);
+  const anteriores=todasAvaliacoes.filter(x=>x.curriculo_id===cvEditandoId&&x!==a&&x.respondido_em).length;
+  if(!a||linkVencido(a)){
+    box.innerHTML=`${a?'<p class="vazio">O último link venceu sem resposta.</p>':''}<button class="btn-sec" onclick="gerarLinkPerfil()">🔗 Gerar link do questionário</button>${aviso}`;return;
+  }
+  if(!a.respondido_em){
+    const url=linkPerfil(a),tel=String(c.telefone||'').replace(/\D/g,'');
+    const msg=`Olá, ${c.nome.split(' ')[0].charAt(0)+c.nome.split(' ')[0].slice(1).toLowerCase()}! Aqui é do RH do Grupo BVEK. Para seguirmos com o seu cadastro, responda este questionário rápido (uns 10 minutos, pelo celular): ${url}`;
+    box.innerHTML=`<div class="link-perfil"><span>⏳ Aguardando resposta · link criado em ${esc(fmtData(a.criado_em))}, vale até ${esc(fmtData(somarDias(String(a.criado_em).slice(0,10),30)))}</span>
+      <input type="text" readonly value="${esc(url)}" id="cv-link" onclick="this.select()">
+      <button class="btn-sec" onclick="copiarLinkPerfil()">Copiar</button>
+      ${tel.length>=10?`<a class="btn-sec" style="text-decoration:none" target="_blank" rel="noopener" href="https://wa.me/55${esc(tel)}?text=${encodeURIComponent(msg)}">WhatsApp</a>`:''}
+      ${c.email?`<a class="btn-sec" style="text-decoration:none" href="mailto:${esc(c.email)}?subject=${encodeURIComponent('Grupo BVEK — questionário de perfil')}&body=${encodeURIComponent(msg)}">E-mail</a>`:''}</div>${aviso}`;
+    return;
+  }
+  const p=Q.pontuar(a.respostas),ab=(a.respostas&&a.respostas.abertas)||{};
+  box.innerHTML=`<p style="font-size:13px;margin-bottom:10px">Respondido em <strong>${esc(fmtDataHora(a.respondido_em))}</strong> · média <strong>${p.media}/100</strong>${anteriores?` · ${anteriores} questionário(s) anterior(es)`:''}</p>
+    ${p.dims.map(d=>`<div class="dim-linha"><span title="${esc(d.desc)}">${esc(d.nome)}</span><div class="trilho"><div class="cheio niv-${esc(d.nivel.k)}" style="width:${Math.max(2,d.nota||0)}%"></div></div><span class="num"><strong>${d.nota??'—'}</strong> <span class="dica" style="display:inline">${esc(d.nivel.txt)}</span></span></div>`).join('')}
+    ${p.concordaComTudo?'<div class="aviso" style="padding:8px 12px;font-size:12px;margin:8px 0">Concordou também com várias frases negativas: as respostas podem ter sido pouco cuidadosas ou tendendo a agradar. Confirme na entrevista.</div>':''}
+    <div style="margin-top:12px">${Q.ABERTAS.map(q=>`<div class="resp-aberta"><strong>${esc(q.txt)}</strong>${ab[q.id]?esc(ab[q.id]).replace(/\n/g,'<br>'):'<em style="color:#999">sem resposta</em>'}</div>`).join('')}</div>
+    <div class="form-grid" style="margin-top:8px">
+      <div class="campo"><label>Recomendação do RH</label><select id="cvp-rec"><option value="">—</option>${REC_PERFIL.map(([v,t])=>`<option value="${v}" ${a.recomendacao===v?'selected':''}>${t}</option>`).join('')}</select></div>
+      <div class="campo" style="display:flex;align-items:flex-end;gap:8px"><button class="btn-link" onclick="sugerirParecerPerfil()">sugerir texto a partir das notas</button></div>
+      <div class="campo full"><label>Parecer sobre o perfil</label><textarea id="cvp-parecer" rows="3">${esc(a.parecer||'')}</textarea>${a.parecer_por?`<div class="dica">Parecer de ${esc(a.parecer_por)} em ${esc(fmtDataHora(a.parecer_em))}</div>`:''}</div>
+      <div class="campo full" style="display:flex;gap:8px;justify-content:space-between;flex-wrap:wrap"><button class="btn-link" onclick="gerarLinkPerfil()">enviar um novo questionário</button><button class="btn-sec" onclick="salvarParecerPerfil()">Salvar parecer</button></div>
+    </div>${aviso}`;
+}
+function sugerirParecerPerfil(){
+  const a=avaliacaoAtual(cvEditandoId),c=todosCurriculos.find(x=>x.id===cvEditandoId);if(!a||!c)return;
+  const p=c.nome.split(' ')[0];const t=QP().resumo(a.respostas,p.charAt(0)+p.slice(1).toLowerCase());
+  const el=$('cvp-parecer');el.value=el.value.trim()?el.value.trim()+'\n\n'+t:t;
+}
+function copiarLinkPerfil(){const i=$('cv-link');i.select();(navigator.clipboard?navigator.clipboard.writeText(i.value):Promise.reject()).then(()=>toast('Link copiado'),()=>{document.execCommand('copy');toast('Link copiado');});}
+async function gerarLinkPerfil(){
+  if(!cvEditandoId)return;
+  const a=avaliacaoAtual(cvEditandoId);
+  if(a&&a.respondido_em&&!confirm('Este candidato já respondeu. Gerar um novo questionário? (as respostas anteriores continuam guardadas)'))return;
+  const{data,error}=await sb.from('avaliacoes_perfil').insert({curriculo_id:cvEditandoId,versao:QP().versao,criado_por:quemSou()}).select().single();
+  if(erroSB(error))return;
+  todasAvaliacoes.unshift(data);
+  const c=todosCurriculos.find(x=>x.id===cvEditandoId);
+  if(c&&c.situacao==='novo'){const r=await sb.from('curriculos').update({situacao:'analise',atualizado_em:new Date().toISOString()}).eq('id',c.id);if(!r.error){c.situacao='analise';$('cv-sit').value='analise';}}
+  renderPerfilCV();renderCurriculos();toast('Link criado — envie ao candidato');
+}
+async function salvarParecerPerfil(){
+  const a=avaliacaoAtual(cvEditandoId);if(!a)return;
+  const dados={recomendacao:$('cvp-rec').value||null,parecer:$('cvp-parecer').value.trim()||null,parecer_por:quemSou(),parecer_em:new Date().toISOString()};
+  const{data,error}=await sb.from('avaliacoes_perfil').update(dados).eq('id',a.id).select().single();
+  if(erroSB(error))return;
+  todasAvaliacoes=todasAvaliacoes.map(x=>x.id===a.id?data:x);renderPerfilCV();renderCurriculos();toast('Parecer salvo');
+}
+async function salvarCurriculo(){
+  const nome=$('cv-nome').value.trim().toUpperCase().replace(/\s+/g,' ');if(!nome){alert('Informe o nome.');return;}
+  const tel=$('cv-tel').value.trim(),email=$('cv-email').value.trim();
+  if(!telValido(tel)){alert('Telefone incompleto.');return;}
+  if(email&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){alert('E-mail inválido.');return;}
+  const antes=cvEditandoId?todosCurriculos.find(x=>x.id===cvEditandoId):null;
+  if(!antes){const dup=todosCurriculos.find(c=>norm(c.nome)===norm(nome)||(tel&&c.telefone&&c.telefone.replace(/\D/g,'')===tel.replace(/\D/g,'')));
+    if(dup&&!confirm(`Já existe "${dup.nome}" no banco${dup.telefone?' ('+fmtTel(dup.telefone)+')':''}. Cadastrar mesmo assim?`))return;}
+  const arq=$('cv-arquivo').files[0];
+  if(arq&&!/\.(pdf|jpe?g|png|docx?)$/i.test(arq.name)){alert('Currículo: envie PDF, foto (JPG/PNG) ou Word.');return;}
+  if(arq&&arq.size>20*1024*1024){alert('Arquivo maior que 20 MB.');return;}
+  const nt=$('cv-nota-tec').value?Number($('cv-nota-tec').value):null,nc=$('cv-nota-comp').value?Number($('cv-nota-comp').value):null;
+  const dados={nome,telefone:tel.replace(/\D/g,'')||null,email:email||null,funcao:$('cv-funcao').value.trim()||null,cidade:$('cv-cidade').value.trim()||null,
+    vinculo:$('cv-vinc').value||null,empresa_id:$('cv-empresa').value||null,ja_trabalhou:$('cv-ja').value||null,origem:$('cv-origem').value||null,
+    disponibilidade:$('cv-disp').value.trim()||null,pretensao:$('cv-pret').value.trim()||null,situacao:$('cv-sit').value||'novo',chamar_novamente:$('cv-chamar-sel').value||null,
+    nota_tecnica:nt,nota_comportamental:nc,pontos_fortes:$('cv-fortes').value.trim()||null,pontos_atencao:$('cv-atencao').value.trim()||null,parecer:$('cv-parecer').value.trim()||null,
+    atualizado_em:new Date().toISOString()};
+  const avaliou=['nota_tecnica','nota_comportamental','pontos_fortes','pontos_atencao','parecer','chamar_novamente'].some(k=>(antes?antes[k]:null)!==dados[k]&&dados[k]!=null);
+  if(avaliou){dados.avaliado_por=quemSou();dados.avaliado_em=new Date().toISOString();}
+  const btn=$('cv-salvar');btn.disabled=true;
+  try{
+    const r=antes?await sb.from('curriculos').update(dados).eq('id',antes.id).select().single():await sb.from('curriculos').insert(Object.assign(dados,{criado_por:quemSou()})).select().single();
+    if(erroSB(r.error))return;
+    let salvo=r.data;
+    if(arq){
+      const caminho=`curriculos/${salvo.id}/${Date.now()}_${nomeArquivoSeguro(arq.name)}`;
+      const up=await sb.storage.from(BUCKET_RH).upload(caminho,arq,{contentType:arq.type||undefined});
+      if(erroSB(up.error,'Dados salvos, mas o arquivo do currículo não foi enviado'))return;
+      const r2_=await sb.from('curriculos').update({arquivo:caminho,arquivo_nome:arq.name}).eq('id',salvo.id).select().single();
+      if(!r2_.error)salvo=r2_.data;
+    }
+    todosCurriculos=[salvo,...todosCurriculos.filter(x=>x.id!==salvo.id)];
+    atualizarDatalistsRH();renderCurriculos();toast('Currículo salvo');
+    if(!antes)abrirCurriculo(salvo.id);else fecharModal('modal-curriculo');
+  }finally{btn.disabled=false;}
+}
+async function excluirCurriculo(){
+  if(!PERM.excluir||!cvEditandoId)return;
+  const c=todosCurriculos.find(x=>x.id===cvEditandoId);
+  if(!confirm(`Excluir o currículo de ${c?c.nome:''} e os questionários dele? Isso não pode ser desfeito.\n(Para só tirar da lista, use a situação "Arquivado".)`))return;
+  const{error}=await sb.from('curriculos').delete().eq('id',cvEditandoId);if(erroSB(error))return;
+  todosCurriculos=todosCurriculos.filter(x=>x.id!==cvEditandoId);todasAvaliacoes=todasAvaliacoes.filter(a=>a.curriculo_id!==cvEditandoId);
+  fecharModal('modal-curriculo');renderCurriculos();toast('Currículo excluído');
+}
+async function contratarCurriculo(){
+  const c=todosCurriculos.find(x=>x.id===cvEditandoId);if(!c)return;
+  if(!confirm(`${c.nome} foi contratado(a)?\n\nO CRM cadastra a pessoa em Funcionários (função: ${c.funcao||'—'}) e marca o currículo como Contratado.`))return;
+  const ja=todosFuncionarios.find(f=>norm(f.nome)===norm(c.nome));
+  let fid=ja&&confirm(`Já existe o funcionário ${ja.nome}. Ligar o currículo a ele em vez de cadastrar de novo?`)?ja.id:null;
+  if(!fid){const r=await sb.from('funcionarios').insert({nome:c.nome,cargo:c.funcao||null,empresa_id:c.empresa_id||null,ativo:true}).select().single();if(erroSB(r.error))return;fid=r.data.id;}
+  const{data,error}=await sb.from('curriculos').update({situacao:'contratado',funcionario_id:fid,atualizado_em:new Date().toISOString()}).eq('id',c.id).select().single();
+  if(erroSB(error))return;
+  todosCurriculos=todosCurriculos.map(x=>x.id===c.id?data:x);
+  await recarregarFuncionariosRH();fecharModal('modal-curriculo');renderCurriculos();toast('Cadastrado em Funcionários');
+  if(PERM.rhPessoal&&confirm('Abrir a ficha do novo funcionário para completar CPF, admissão, salário e benefícios?'))abrirFicha(fid);
+}
+
+function atualizarBadgeRH(){const n=pendenciasRH().length;const b=$('tab-rh-badge');if(b)b.innerHTML=n?`<span class="badge badge-atraso">${n}</span>`:'';}
+
 /* ================= INÍCIO ================= */
 ligarArrastarDoc();
+document.querySelectorAll('#rh-subabas .subaba').forEach(s=>s.onclick=()=>{rhSub=s.dataset.rh;renderRH();});
+document.querySelectorAll('#fi-subabas .subaba').forEach(s=>s.onclick=()=>{if(!fichaId&&s.dataset.fi!=='dados'){toast('Salve os dados do funcionário primeiro');return;}fichaSub=s.dataset.fi;renderFicha();});
+ligarDrop('rh-cc-drop',f=>lerPdfContracheques(f));
+ligarDrop('fi-ficha-drop',f=>enviarFichaRegistro(f));
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){const abertos=[...document.querySelectorAll('.modal-overlay.aberto')];if(abertos.length)abertos[abertos.length-1].classList.remove('aberto');}});
 sb.auth.getSession().then(({data:{session}})=>{if(session)iniciarApp();});
 </script>

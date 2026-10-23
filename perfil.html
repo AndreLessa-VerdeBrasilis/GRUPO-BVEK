@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Grupo BVEK | Questionário de perfil</title>
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="/img/icone-32.png">
+<meta name="theme-color" content="#1a6b3c">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/perfil-questionario.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--verde:#1a6b3c;--verde-escuro:#145530;--verde-claro:#e8f5ee;--cinza:#f4f4f4;--borda:#ddd;--texto:#222;--texto2:#666;--vermelho:#c0392b}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--cinza);color:var(--texto);line-height:1.5}
+.topo{background:linear-gradient(135deg,#1a6b3c,#0d3d22);color:#fff;padding:28px 16px 34px;text-align:center}
+.topo h1{font-size:22px;font-weight:700;letter-spacing:.5px}
+.topo p{font-size:14px;opacity:.85;margin-top:4px}
+.pagina{max-width:720px;margin:-18px auto 40px;padding:0 16px}
+.caixa{background:#fff;border-radius:14px;padding:22px 20px;box-shadow:0 6px 24px rgba(0,0,0,.08);margin-bottom:16px}
+.caixa h2{font-size:18px;color:var(--verde);margin-bottom:8px}
+.caixa p{font-size:14px;color:var(--texto2)}
+.progresso{position:sticky;top:0;z-index:5;background:var(--cinza);padding:10px 0}
+.trilho{height:8px;background:#e2e2e2;border-radius:6px;overflow:hidden}
+.cheio{height:100%;background:var(--verde);width:0;transition:width .25s}
+.progresso small{display:block;font-size:12px;color:var(--texto2);margin-top:4px;text-align:right}
+.pergunta{padding:16px 0;border-bottom:1px solid #eee}
+.pergunta:last-child{border-bottom:none}
+.pergunta .txt{font-size:15px;font-weight:600;margin-bottom:10px}
+.pergunta .num{color:var(--verde);margin-right:4px}
+.pergunta.falta .txt{color:var(--vermelho)}
+.opcoes{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.opcoes label{display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center;font-size:11px;color:var(--texto2);border:1.5px solid var(--borda);border-radius:10px;padding:8px 4px;cursor:pointer;transition:all .15s;min-height:62px;justify-content:center}
+.opcoes input{position:absolute;opacity:0;pointer-events:none}
+.opcoes .n{font-size:17px;font-weight:700;color:var(--texto)}
+.opcoes label:has(input:checked){border-color:var(--verde);background:var(--verde-claro);color:var(--verde)}
+.opcoes label:has(input:checked) .n{color:var(--verde)}
+.opcoes label:has(input:focus-visible){outline:2px solid var(--verde);outline-offset:2px}
+textarea{width:100%;min-height:90px;padding:10px 12px;border:1.5px solid var(--borda);border-radius:10px;font-size:15px;font-family:inherit;resize:vertical;outline:none}
+textarea:focus{border-color:var(--verde)}
+.btn{width:100%;padding:14px;background:var(--verde);color:#fff;border:none;border-radius:10px;font-size:16px;font-weight:600;cursor:pointer;font-family:inherit}
+.btn:hover{background:var(--verde-escuro)}
+.btn:disabled{opacity:.6;cursor:wait}
+.erro{color:var(--vermelho);font-size:14px;margin-top:10px;text-align:center}
+.centro{text-align:center}
+.icone{font-size:44px;margin-bottom:8px}
+@media(max-width:480px){.opcoes label{font-size:10px;padding:6px 2px}.opcoes .n{font-size:15px}}
+</style>
+</head>
+<body>
+<div class="topo"><h1>GRUPO BVEK</h1><p>Engekat · Verde Brasilis · BrasiLimp</p></div>
+<div class="pagina" id="pagina">
+  <div class="caixa centro"><p>Carregando…</p></div>
+</div>
+<script>
+const SUPABASE_URL='https://smusenaszgkqkjjwblyi.supabase.co';
+const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNtdXNlbmFzemdrcWtqandibHlpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0MTIwNTMsImV4cCI6MjA5Nzk4ODA1M30.IU1Z9ddIUpktjHvWqrSZaEWuo4gbmZfrfmYJ_NoXbWs';
+const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:false}});
+const Q=window.BVEK_QUESTIONARIO;
+const $=id=>document.getElementById(id);
+const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const token=new URLSearchParams(location.search).get('t')||'';
+const chave='bvek_perfil_'+token;
+function mensagem(icone,titulo,texto){$('pagina').innerHTML=`<div class="caixa centro"><div class="icone">${icone}</div><h2>${esc(titulo)}</h2><p>${texto}</p></div>`;}
+
+async function iniciar(){
+  if(!/^[0-9a-f-]{36}$/i.test(token)){mensagem('🔗','Link incompleto','Abra o link exatamente como recebeu. Se o problema continuar, peça um novo link ao RH do Grupo BVEK.');return;}
+  const{data,error}=await sb.rpc('bvek_perfil_form',{p_token:token});
+  if(error){console.error(error);mensagem('⚠️','Não foi possível abrir o questionário','Tente de novo em alguns minutos.');return;}
+  if(!data){mensagem('🔗','Link inválido','Este link não existe mais. Peça um novo link ao RH do Grupo BVEK.');return;}
+  if(data.respondido){mensagem('✅','Questionário já respondido','Obrigado! Suas respostas já estão com o RH do Grupo BVEK.');return;}
+  if(data.expirado){mensagem('⏰','Link vencido','Este link valia por 30 dias. Peça um novo link ao RH do Grupo BVEK.');return;}
+  montar(data.nome);
+}
+
+function montar(nome){
+  let salvo={};try{salvo=JSON.parse(localStorage.getItem(chave)||'{}');}catch(e){}
+  const q=salvo.q||{},ab=salvo.abertas||{};
+  $('pagina').innerHTML=`
+  <div class="caixa">
+    <h2>Olá${nome?', '+esc(nome):''}!</h2>
+    <p>Este questionário ajuda a gente a conhecer o seu jeito de trabalhar. <strong>Não existe resposta certa ou errada</strong> — responda com sinceridade, pensando em como você é no dia a dia, não em como gostaria de ser. Leva uns 10 minutos.</p>
+    <p style="margin-top:8px">Para cada frase, escolha de <strong>1 (discordo totalmente)</strong> a <strong>5 (concordo totalmente)</strong>.</p>
+  </div>
+  <div class="progresso"><div class="trilho"><div class="cheio" id="barra"></div></div><small id="contagem"></small></div>
+  <div class="caixa" id="lista">${Q.PERGUNTAS.map((p,i)=>`
+    <div class="pergunta" id="box-${p.id}"><div class="txt"><span class="num">${i+1}.</span>${esc(p.txt)}</div>
+      <div class="opcoes" role="radiogroup" aria-label="${esc(p.txt)}">${Q.ESCALA.map(([v,t])=>`<label><input type="radio" name="${p.id}" value="${v}" ${Number(q[p.id])===v?'checked':''}><span class="n">${v}</span>${esc(t)}</label>`).join('')}</div></div>`).join('')}
+  </div>
+  <div class="caixa">
+    <h2>Para terminar, conte um pouco</h2>
+    <p style="margin-bottom:6px">Responda com suas palavras. Pode ser curto.</p>
+    ${Q.ABERTAS.map((a,i)=>`<div class="pergunta"><div class="txt"><span class="num">${Q.PERGUNTAS.length+i+1}.</span>${esc(a.txt)}</div><textarea id="ab-${a.id}" maxlength="2000">${esc(ab[a.id]||'')}</textarea></div>`).join('')}
+  </div>
+  <div class="caixa">
+    <button class="btn" id="btn-enviar">Enviar respostas</button>
+    <div class="erro" id="erro"></div>
+    <p style="margin-top:10px;font-size:12px;text-align:center">Suas respostas ficam só com o RH do Grupo BVEK e são usadas apenas neste processo de seleção.</p>
+  </div>`;
+  document.querySelectorAll('#lista input').forEach(i=>i.addEventListener('change',()=>{$('box-'+i.name).classList.remove('falta');guardar();}));
+  document.querySelectorAll('textarea').forEach(t=>t.addEventListener('input',guardar));
+  $('btn-enviar').onclick=enviar;
+  atualizarProgresso();
+}
+function ler(){
+  const q={};Q.PERGUNTAS.forEach(p=>{const m=document.querySelector(`input[name=${p.id}]:checked`);if(m)q[p.id]=Number(m.value);});
+  const abertas={};Q.ABERTAS.forEach(a=>{const v=$('ab-'+a.id).value.trim();if(v)abertas[a.id]=v;});
+  return{versao:Q.versao,q,abertas};
+}
+function guardar(){try{localStorage.setItem(chave,JSON.stringify(ler()));}catch(e){}atualizarProgresso();}
+function atualizarProgresso(){
+  const n=Object.keys(ler().q).length,t=Q.PERGUNTAS.length;
+  $('barra').style.width=(n/t*100)+'%';$('contagem').textContent=`${n} de ${t} frases respondidas`;
+}
+async function enviar(){
+  const r=ler();$('erro').textContent='';
+  const faltam=Q.PERGUNTAS.filter(p=>!r.q[p.id]);
+  if(faltam.length){
+    faltam.forEach(p=>$('box-'+p.id).classList.add('falta'));
+    $('box-'+faltam[0].id).scrollIntoView({behavior:'smooth',block:'center'});
+    $('erro').textContent=`Faltam ${faltam.length} frase(s) — elas estão marcadas em vermelho.`;return;
+  }
+  const btn=$('btn-enviar');btn.disabled=true;btn.textContent='Enviando…';
+  r.enviado_em=new Date().toISOString();
+  const{data,error}=await sb.rpc('bvek_perfil_responder',{p_token:token,p_respostas:r});
+  if(error||!data){
+    console.error(error);btn.disabled=false;btn.textContent='Enviar respostas';
+    $('erro').textContent=error?'Não foi possível enviar agora. Suas respostas estão guardadas neste aparelho; tente de novo em alguns minutos.':'Este link já foi usado ou venceu. Peça um novo ao RH.';
+    return;
+  }
+  try{localStorage.removeItem(chave);}catch(e){}
+  window.scrollTo(0,0);
+  mensagem('✅','Respostas enviadas!','Obrigado pelo seu tempo. O RH do Grupo BVEK vai analisar e entrar em contato.');
+}
+iniciar();
+</script>
+</body>
+</html>
