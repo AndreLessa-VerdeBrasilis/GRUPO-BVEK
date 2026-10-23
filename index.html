@@ -227,6 +227,12 @@ tr.doc-vencido td{background:#fff5f5}
 .radios input{accent-color:var(--verde);width:auto!important;padding:0!important;margin:0}
 .radios label{margin:0!important;font-size:14px!important}
 .tabela select,.tabela input[type=text]{padding:6px 8px;border:1.5px solid var(--borda);border-radius:6px;font-size:13px;font-family:inherit;background:#fff}
+.rot-filtro{font-size:12px;font-weight:600;color:var(--texto2)}
+.tabela-benef td,.tabela-benef th{white-space:nowrap}
+.tabela-benef input[type=number]{width:64px;padding:5px 6px;border:1.5px solid var(--borda);border-radius:6px;font-size:13px;font-family:inherit;text-align:right}
+.tabela-benef input[type=number]:focus{border-color:var(--verde);outline:none}
+.tabela-benef tfoot td{font-weight:700;background:var(--verde-claro);border-top:2px solid var(--verde)}
+.tabela-benef .menos{color:var(--vermelho)}
 .legenda-perfis{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin-bottom:16px}
 .legenda-perfis div{background:#fff;border:1.5px solid var(--borda);border-radius:10px;padding:10px 14px;font-size:12px;color:var(--texto2)}
 .legenda-perfis strong{display:block;color:var(--texto);font-size:13px;margin-bottom:3px}
@@ -267,13 +273,14 @@ tr.doc-vencido td{background:#fff5f5}
     </div>
   </div>
   <div class="tabs" id="tabs">
-    <div class="tab ativo" data-tab="painel">Painel</div>
+    <div class="tab ativo" data-tab="painel" data-comercial>Painel</div>
     <div class="tab" data-tab="documentos">Documentos <span id="tab-docs-badge"></span></div>
-    <div class="tab" data-tab="funil">Funil de Propostas</div>
-    <div class="tab" data-tab="clientes">Clientes</div>
-    <div class="tab" data-tab="projetos">Projetos</div>
-    <div class="tab" data-tab="atividades">Atividades <span id="tab-ativ-badge"></span></div>
-    <div class="tab" data-tab="empresas">Empresas</div>
+    <div class="tab" data-tab="beneficios" id="tab-btn-beneficios" style="display:none">Benefícios</div>
+    <div class="tab" data-tab="funil" data-comercial>Funil de Propostas</div>
+    <div class="tab" data-tab="clientes" data-comercial>Clientes</div>
+    <div class="tab" data-tab="projetos" data-comercial>Projetos</div>
+    <div class="tab" data-tab="atividades" data-comercial>Atividades <span id="tab-ativ-badge"></span></div>
+    <div class="tab" data-tab="empresas" data-comercial>Empresas</div>
     <div class="tab" data-tab="usuarios" id="tab-btn-usuarios" style="display:none">Usuários</div>
   </div>
   <div class="conteudo">
@@ -424,6 +431,30 @@ tr.doc-vencido td{background:#fff5f5}
       <div class="tabela-wrap"><table class="tabela" id="tabela-docs"></table></div>
     </div>
 
+    <!-- BENEFÍCIOS -->
+    <div id="tab-beneficios" style="display:none">
+      <div class="barra-acoes">
+        <h2 id="titulo-benef">Benefícios</h2>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn-sec" onclick="abrirModalFuncionarios()">👷 Funcionários</button>
+          <button class="btn-sec" id="btn-tipos-benef" onclick="abrirModalTiposBenef()">⚙️ Tipos de benefício</button>
+          <button class="btn-novo" onclick="exportarBeneficios()">⬇️ Exportar para Excel</button>
+        </div>
+      </div>
+      <div class="filtros">
+        <label class="rot-filtro">Competência</label>
+        <input type="month" id="bn-mes" onchange="mudouCompetencia()">
+        <label class="rot-filtro">Dias úteis do mês</label>
+        <input type="number" id="bn-dias-uteis" min="0" max="31" style="width:80px" onchange="salvarDiasUteis()">
+        <span id="bn-situacao"></span>
+        <button class="btn-salvar" id="bn-btn-fechar" style="display:none" onclick="fecharCompetencia()">🔒 Fechar competência</button>
+        <button class="btn-sec" id="bn-btn-reabrir" style="display:none" onclick="reabrirCompetencia()">Reabrir</button>
+      </div>
+      <div class="info-box" id="bn-info" style="display:block;line-height:1.5"></div>
+      <div class="kpis" id="bn-kpis"></div>
+      <div class="tabela-wrap"><table class="tabela tabela-benef" id="tabela-benef"></table></div>
+    </div>
+
     <!-- USUÁRIOS (só administrador) -->
     <div id="tab-usuarios" style="display:none">
       <div class="barra-acoes"><h2>Usuários e perfis de acesso</h2></div>
@@ -435,7 +466,8 @@ tr.doc-vencido td{background:#fff5f5}
         <div><strong>Administrador</strong>Tudo: usuários, empresas, exclusões e todas as abas.</div>
         <div><strong>Comercial</strong>Funil, propostas, clientes, contatos, projetos e atividades. Não exclui atendimentos nem clientes. Documentos só consulta.</div>
         <div><strong>Administrativo</strong>Documentos e certidões, funcionários, projetos e atividades. Funil e clientes só consulta.</div>
-        <div><strong>Consulta</strong>Vê tudo, não altera nada.</div>
+        <div><strong>Consulta</strong>Vê funil, clientes, projetos e documentos, não altera nada. Não vê benefícios.</div>
+        <div><strong>Contabilidade</strong>Só funcionários, benefícios e documentos/certidões, para consulta e exportação. Não vê funil, propostas nem clientes.</div>
       </div>
       <div class="tabela-wrap"><table class="tabela" id="tabela-usuarios"></table></div>
     </div>
@@ -798,6 +830,9 @@ tr.doc-vencido td{background:#fff5f5}
       <div class="campo"><label id="mf-rotulo">Nome do funcionário *</label><input type="text" id="mf-nome"></div>
       <div class="campo"><label>Cargo / função</label><input type="text" id="mf-cargo"></div>
       <div class="campo"><label>Empresa</label><select id="mf-empresa"></select></div>
+      <div class="campo"><label>CPF</label><input type="text" id="mf-cpf" inputmode="numeric" maxlength="14" placeholder="000.000.000-00" oninput="this.value=fmtCPF(this.value)"></div>
+      <div class="campo"><label>PIS</label><input type="text" id="mf-pis" inputmode="numeric" maxlength="14" placeholder="000.00000.00-0" oninput="this.value=fmtPIS(this.value)"></div>
+      <div class="campo"><label>Data de admissão</label><input type="date" id="mf-admissao"></div>
       <div class="campo" style="grid-column:1/-1"><label>Link da pasta na rede (01.2.1.1_ATIVOS)</label><input type="url" id="mf-pasta" placeholder="https://andrelessaverdebrasiliscom.sharepoint.com/..."></div>
       <div class="campo" style="display:flex;align-items:flex-end;gap:8px">
         <button class="btn-salvar" onclick="salvarFuncionario()">Salvar funcionário</button>
@@ -829,6 +864,51 @@ tr.doc-vencido td{background:#fff5f5}
     </div>
     <div class="tabela-wrap"><table class="tabela" id="mt-tabela"></table></div>
     <div class="modal-btns"><button class="btn-cancelar" onclick="fecharModal('modal-tipos')">Fechar</button></div>
+  </div>
+</div>
+
+<!-- MODAL BENEFÍCIOS DO FUNCIONÁRIO -->
+<div class="modal-overlay" id="modal-benef-func">
+  <div class="modal">
+    <h2 id="mbf-titulo">Benefícios</h2>
+    <p class="modal-sub" id="mbf-sub"></p>
+    <div class="aviso-leitura">🔒 Seu perfil pode consultar os benefícios, mas não alterar.</div>
+    <div id="mbf-lista"></div>
+    <div class="so-edicao">
+      <div class="secao" id="mbf-form-titulo">Adicionar benefício</div>
+      <div class="form-grid" style="background:#f7f7f7;border-radius:8px;padding:12px 12px 0">
+        <div class="campo"><label>Benefício *</label><select id="mbf-tipo" onchange="mudouTipoBenefFunc()"></select></div>
+        <div class="campo"><label id="mbf-rot-valor">Valor (R$) *</label><input type="text" inputmode="numeric" id="mbf-valor" placeholder="0,00" oninput="mascaraMoeda(this)"></div>
+        <div class="campo"><label>Desconto do funcionário por mês (R$)</label><input type="text" inputmode="numeric" id="mbf-desconto" placeholder="0,00" oninput="mascaraMoeda(this)"><div class="dica">Ex.: parte do VT (até 6% do salário) ou coparticipação do plano.</div></div>
+        <div class="campo"><label>Observações</label><input type="text" id="mbf-obs"></div>
+        <div class="campo"><label>Início</label><input type="date" id="mbf-inicio"></div>
+        <div class="campo"><label>Fim <small style="font-weight:400;color:var(--texto2)">(vazio = sem fim)</small></label><input type="date" id="mbf-fim"></div>
+        <div class="campo full" style="display:flex;gap:8px;justify-content:flex-end">
+          <button class="btn-cancelar" id="mbf-limpar" style="display:none" onclick="limparFormBenefFunc()">Limpar</button>
+          <button class="btn-salvar" onclick="salvarBenefFunc()">Salvar benefício</button>
+        </div>
+      </div>
+    </div>
+    <div class="modal-btns"><button class="btn-cancelar" onclick="fecharModal('modal-benef-func')">Fechar</button></div>
+  </div>
+</div>
+
+<!-- MODAL TIPOS DE BENEFÍCIO -->
+<div class="modal-overlay" id="modal-tipos-benef">
+  <div class="modal">
+    <h2>Tipos de benefício</h2>
+    <p class="modal-sub"><strong>Por dia trabalhado</strong>: valor do dia × dias trabalhados no mês (VA, VR, VT). <strong>Mensal</strong>: valor fixo por mês (academia, odonto, plano de saúde).</p>
+    <div class="form-grid" style="background:#f7f7f7;border-radius:8px;padding:12px 12px 0;margin-bottom:12px">
+      <div class="campo full"><label>Nome *</label><input type="text" id="mtb-nome" placeholder="Ex.: Auxílio home office"></div>
+      <div class="campo"><label>Cálculo</label><select id="mtb-calculo"><option value="por_dia">Por dia trabalhado</option><option value="mensal">Mensal (valor fixo)</option></select></div>
+      <div class="campo"><label>Valor padrão (R$)</label><input type="text" inputmode="numeric" id="mtb-valor" placeholder="opcional" oninput="mascaraMoeda(this)"><div class="dica">Sugerido ao incluir o benefício num funcionário.</div></div>
+      <div class="campo full" style="display:flex;gap:8px;justify-content:flex-end">
+        <button class="btn-cancelar" id="mtb-limpar" style="display:none" onclick="limparFormTipoBenef()">Limpar</button>
+        <button class="btn-salvar" onclick="salvarTipoBenef()">Salvar tipo</button>
+      </div>
+    </div>
+    <div class="tabela-wrap"><table class="tabela" id="mtb-tabela"></table></div>
+    <div class="modal-btns"><button class="btn-cancelar" onclick="fecharModal('modal-tipos-benef')">Fechar</button></div>
   </div>
 </div>
 
@@ -900,11 +980,14 @@ const CADENCIA_COBRANCA={enviada:3,cobranca1:4,cobranca2:7,negociacao:7};
 const ETAPAS_COBRANCA=Object.keys(CADENCIA_COBRANCA);
 const PROXIMA_ETAPA_COBRANCA={enviada:'cobranca1',cobranca1:'cobranca2'};
 // Perfis de acesso (as regras valem no banco; aqui só ajustam a tela)
-const PERFIS=[['administrador','Administrador'],['comercial','Comercial'],['administrativo','Administrativo'],['consulta','Consulta'],['pendente','Aguardando liberação']];
+const PERFIS=[['administrador','Administrador'],['comercial','Comercial'],['administrativo','Administrativo'],['contabilidade','Contabilidade'],['consulta','Consulta'],['pendente','Aguardando liberação']];
 const PERFIL_LABEL=Object.fromEntries(PERFIS);
 function calcularPermissoes(p){
-  const adm=p==='administrador',com=p==='comercial',admv=p==='administrativo';
-  return{admin:adm,funil:adm||com,clientes:adm||com,projetos:adm||com||admv,ativ:adm||com||admv,docs:adm||admv,excluir:adm};
+  const adm=p==='administrador',com=p==='comercial',admv=p==='administrativo',cont=p==='contabilidade';
+  // comercialVer: vê funil, clientes, projetos, atividades e empresas (a contabilidade não vê)
+  // rh: vê benefícios · rhEditar: altera benefícios
+  return{admin:adm,funil:adm||com,clientes:adm||com,projetos:adm||com||admv,ativ:adm||com||admv,docs:adm||admv,excluir:adm,
+    comercialVer:!cont,rh:adm||com||admv||cont,rhEditar:adm||admv};
 }
 const BUCKET_DOCS='documentos';
 const ABERTAS=ETAPAS.filter(e=>!['fechada','perdida'].includes(e.id)).map(e=>e.id);
@@ -1035,6 +1118,8 @@ async function iniciarApp(){
   const anoAtual=new Date().getFullYear();
   preencherSelect($('painel-ano'),[[String(anoAtual),String(anoAtual)],[String(anoAtual-1),String(anoAtual-1)],['todos','Todos os anos']]);
   document.querySelectorAll('#tabs .tab').forEach(t=>t.onclick=()=>abrirTab(t.dataset.tab));
+  $('bn-mes').value=hojeISO().slice(0,7);
+  if(!PERM.comercialVer)abrirTab('documentos');
   await carregarTudo();
   mostrarAvisosDoDia();
 }
@@ -1049,6 +1134,9 @@ function aplicarPermissoes(){
   mostra('btn-novo-doc',PERM.docs);
   mostra('btn-tipos-doc',PERM.docs);
   mostra('tab-btn-usuarios',PERM.admin);
+  mostra('tab-btn-beneficios',PERM.rh);
+  mostra('btn-tipos-benef',PERM.rhEditar);
+  document.querySelectorAll('#tabs [data-comercial]').forEach(t=>t.style.display=PERM.comercialVer?'':'none');
   mostra('pa-cobr',PERM.funil);
   $('funil-dica').textContent=PERM.funil?'Arraste os cards entre as colunas para mudar a etapa.':'🔒 Seu perfil só consulta o funil.';
 }
@@ -1065,7 +1153,7 @@ async function trocarSenha(){
 /* ================= CARGA DE DADOS ================= */
 async function carregarTudo(){
   await carregarEmpresas();
-  await Promise.all([carregarClientes(),carregarCards(),carregarAtividades(),carregarProjetos(),carregarPerfis(),carregarDocsTudo()]);
+  await Promise.all([carregarClientes(),carregarCards(),carregarAtividades(),carregarProjetos(),carregarPerfis(),carregarDocsTudo(),carregarBeneficiosTudo()]);
   atualizarDatalists();
   renderTabAtual();
   verificarAlertas();
@@ -1148,13 +1236,15 @@ function inicioDoDia(){const d=new Date();d.setHours(0,0,0,0);return d;}
 /* ================= NAVEGAÇÃO ================= */
 function abrirTab(tab){
   if(tab==='usuarios'&&!PERM.admin)tab='painel';
+  if(tab==='beneficios'&&!PERM.rh)tab='painel';
+  if(!PERM.comercialVer&&['painel','funil','clientes','projetos','atividades','empresas'].includes(tab))tab='documentos';
   tabAtual=tab;
-  ['painel','documentos','funil','clientes','projetos','atividades','empresas','usuarios'].forEach(t=>{$('tab-'+t).style.display=t===tab?'block':'none';});
+  ['painel','documentos','beneficios','funil','clientes','projetos','atividades','empresas','usuarios'].forEach(t=>{$('tab-'+t).style.display=t===tab?'block':'none';});
   document.querySelectorAll('#tabs .tab').forEach(el=>el.classList.toggle('ativo',el.dataset.tab===tab));
   renderTabAtual();
 }
 function renderTabAtual(){
-  ({painel:renderPainel,documentos:renderDocumentos,funil:renderFunil,clientes:renderClientes,projetos:renderProjetos,atividades:renderAtividades,empresas:renderEmpresas,usuarios:renderUsuarios}[tabAtual]||(()=>{}))();
+  ({painel:renderPainel,documentos:renderDocumentos,beneficios:renderBeneficios,funil:renderFunil,clientes:renderClientes,projetos:renderProjetos,atividades:renderAtividades,empresas:renderEmpresas,usuarios:renderUsuarios}[tabAtual]||(()=>{}))();
 }
 function trocarEmpresa(){
   empresaAtual=$('select-empresa').value;
@@ -2257,7 +2347,7 @@ function abrirModalFuncionarios(voltarParaDoc=false){
   if(PERM.docs)setTimeout(()=>$('mf-nome').focus(),50);
 }
 function limparFormFuncionario(){
-  funcEditandoId=null;['mf-nome','mf-cargo','mf-pasta'].forEach(i=>$(i).value='');
+  funcEditandoId=null;['mf-nome','mf-cargo','mf-pasta','mf-cpf','mf-pis','mf-admissao'].forEach(i=>$(i).value='');
   $('mf-empresa').value=empresaAtual!=='todas'?empresaAtual:'';
   $('mf-rotulo').textContent='Nome do funcionário *';$('mf-cancelar').style.display='none';
 }
@@ -2271,6 +2361,7 @@ function renderFuncionarios(){
 function editarFuncionario(id){
   const f=funcPorId(id);if(!f)return;funcEditandoId=id;
   $('mf-nome').value=f.nome;$('mf-cargo').value=f.cargo||'';$('mf-pasta').value=f.pasta_url||'';$('mf-empresa').value=f.empresa_id||'';
+  $('mf-cpf').value=f.cpf||'';$('mf-pis').value=f.pis||'';$('mf-admissao').value=f.data_admissao||'';
   $('mf-rotulo').textContent='Editando: nome do funcionário *';$('mf-cancelar').style.display='inline-block';$('mf-nome').focus();
 }
 async function salvarFuncionario(){
@@ -2279,13 +2370,20 @@ async function salvarFuncionario(){
   if(pasta&&!/^https?:\/\//i.test(pasta)){alert('O link da pasta deve começar com https://');return;}
   const dados={nome,cargo:$('mf-cargo').value.trim()||null,empresa_id:$('mf-empresa').value||null};
   if(pasta||todosFuncionarios.some(f=>'pasta_url' in f))dados.pasta_url=pasta||null;
+  const cpf=$('mf-cpf').value.trim(),pis=$('mf-pis').value.trim(),adm=$('mf-admissao').value;
+  if(cpf&&!cpfValido(cpf)){alert('CPF inválido. Confira os números.');return;}
+  if(pis&&pis.replace(/\D/g,'').length!==11){alert('O PIS precisa ter 11 números.');return;}
+  if(cpf||pis||adm||todosFuncionarios.some(f=>'cpf' in f))Object.assign(dados,{cpf:cpf||null,pis:pis||null,data_admissao:adm||null});
+  if(cpf&&todosFuncionarios.some(f=>f.id!==funcEditandoId&&f.cpf&&f.cpf.replace(/\D/g,'')===cpf.replace(/\D/g,''))){alert('Já existe outro funcionário com este CPF.');return;}
   if(!funcEditandoId&&todosFuncionarios.some(f=>norm(f.nome)===norm(nome))&&!confirm(`Já existe um funcionário "${nome}". Cadastrar mesmo assim?`))return;
   const r=funcEditandoId?await sb.from('funcionarios').update(dados).eq('id',funcEditandoId).select().single():await sb.from('funcionarios').insert(dados).select().single();
   if(r.error&&/pasta_url/.test(r.error.message||'')){alert('Para guardar o link da pasta, rode antes a migração v12 (migracao_crm_v12_funcionarios_ativos.sql) no Supabase.');return;}
+  if(r.error&&/\b(cpf|pis|data_admissao)\b/.test(r.error.message||'')){alert('Para guardar CPF, PIS e admissão, rode antes a migração v13 (migracao_crm_v13_contabilidade_beneficios.sql) no Supabase.');return;}
   if(erroSB(r.error))return;
   if(funcEditandoId&&dados.empresa_id)await sb.from('documentos').update({empresa_id:dados.empresa_id}).eq('funcionario_id',funcEditandoId);
   const{data}=await sb.from('funcionarios').select('*').order('nome');todosFuncionarios=data||[];
   if(funcEditandoId)await carregarDocumentos();
+  if(tabAtual==='beneficios')renderBeneficios();
   toast('Funcionário salvo');
   if(funcVoltarParaDoc&&r.data){fecharModal('modal-funcionarios');funcVoltarParaDoc=false;preencherSelectFuncionarios('md-func',r.data.id);return;}
   limparFormFuncionario();renderFuncionarios();
@@ -2355,6 +2453,318 @@ function mostrarAvisosDoDia(){
 function fecharAvisos(ciente){
   if(ciente){try{localStorage.setItem(chaveAvisos(),'1');}catch(e){}}
   fecharModal('modal-avisos');
+}
+
+/* ================= BENEFÍCIOS (VA, VT, academia, odonto...) ================= */
+let todosTiposBenef=[],todosBenefFunc=[],todasCompetencias=[],compFuncs=[],compItens=[],v13Ok=true;
+let benefFuncId=null,benefEditandoId=null,tipoBenefEditandoId=null;
+function fmtCPF(v){const d=String(v||'').replace(/\D/g,'').slice(0,11);return d.replace(/^(\d{3})(\d)/,'$1.$2').replace(/^(\d{3})\.(\d{3})(\d)/,'$1.$2.$3').replace(/\.(\d{3})(\d{1,2})$/,'.$1-$2');}
+function fmtPIS(v){const d=String(v||'').replace(/\D/g,'').slice(0,11);return d.replace(/^(\d{3})(\d)/,'$1.$2').replace(/^(\d{3})\.(\d{5})(\d)/,'$1.$2.$3').replace(/\.(\d{2})(\d)$/,'.$1-$2');}
+function cpfValido(c){
+  const d=String(c||'').replace(/\D/g,'');if(d.length!==11||/^(\d)\1+$/.test(d))return false;
+  const dv=n=>{let s=0;for(let i=0;i<n;i++)s+=Number(d[i])*(n+1-i);const r=(s*10)%11;return r===10?0:r;};
+  return dv(9)===Number(d[9])&&dv(10)===Number(d[10]);
+}
+const CALCULO_LABEL={por_dia:'por dia trabalhado',mensal:'mensal'};
+function tipoBenefPorId(id){return todosTiposBenef.find(t=>t.id===id);}
+function avisarMigracaoV13(){
+  if(!v13Ok)return;v13Ok=false;
+  if(!PERM.rh)return;
+  const a=$('aviso-migracao');a.style.display='block';
+  a.innerHTML='<strong>Falta atualizar o banco de dados (v13).</strong> O perfil Contabilidade e os benefícios precisam das tabelas novas. No Supabase, abra <em>SQL Editor → New query</em>, cole o conteúdo do arquivo <code>supabase/migracao_crm_v13_contabilidade_beneficios.sql</code> e clique em <em>Run</em>. Depois recarregue esta página.';
+}
+async function carregarBeneficiosTudo(){
+  if(!PERM.rh||!v11Ok)return;
+  const[t,b,c]=await Promise.all([
+    sb.from('tipos_beneficio').select('*').order('ordem').order('nome'),
+    sb.from('funcionario_beneficios').select('*'),
+    sb.from('competencias_beneficios').select('*').order('competencia',{ascending:false}),
+  ]);
+  const erro=t.error||b.error||c.error;
+  if(erro){if(/tipos_beneficio|funcionario_beneficios|competencias_beneficios/.test(erro.message||''))avisarMigracaoV13();else console.error(erro);return;}
+  todosTiposBenef=t.data||[];todosBenefFunc=b.data||[];todasCompetencias=c.data||[];
+  await carregarCompetenciaAtual();
+}
+// mês escolhido → "2026-10-01"
+function compISO(){const m=$('bn-mes').value||hojeISO().slice(0,7);return m+'-01';}
+function nomeMes(iso){const n=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];return n[Number(iso.slice(5,7))-1]+'/'+iso.slice(0,4);}
+function fimDoMes(iso){const d=new Date(iso+'T00:00:00');d.setMonth(d.getMonth()+1);d.setDate(0);return isoLocal(d);}
+// dias úteis: segunda a sexta (feriados o RH ajusta no campo)
+function diasUteisPadrao(iso){const d=new Date(iso+'T00:00:00'),m=d.getMonth();let n=0;while(d.getMonth()===m){const w=d.getDay();if(w>0&&w<6)n++;d.setDate(d.getDate()+1);}return n;}
+function competenciaAtual(){return todasCompetencias.find(c=>c.competencia===compISO())||null;}
+async function carregarCompetenciaAtual(){
+  const c=competenciaAtual();compFuncs=[];compItens=[];
+  if(!c)return;
+  const[a,b]=await Promise.all([
+    sb.from('competencia_funcionarios').select('*').eq('competencia_id',c.id),
+    sb.from('competencia_itens').select('*').eq('competencia_id',c.id),
+  ]);
+  compFuncs=a.data||[];compItens=b.data||[];
+}
+async function mudouCompetencia(){await carregarCompetenciaAtual();renderBeneficios();}
+// garante a linha da competência (criada na primeira alteração do mês)
+async function garantirCompetencia(){
+  let c=competenciaAtual();if(c)return c;
+  const dias=$('bn-dias-uteis').value===''?diasUteisPadrao(compISO()):Math.round(Number($('bn-dias-uteis').value));
+  const{data,error}=await sb.from('competencias_beneficios').insert({competencia:compISO(),dias_uteis:dias}).select().single();
+  if(erroSB(error,'Não foi possível abrir a competência'))return null;
+  todasCompetencias.unshift(data);return data;
+}
+function beneficioVigente(fb,iso){const fim=fimDoMes(iso);return fb.ativo!==false&&(!fb.inicio||fb.inicio<=fim)&&(!fb.fim||fb.fim>=iso);}
+// monta as linhas do mês: aberta = calcula agora; fechada = valores gravados no fechamento
+function linhasBeneficios(){
+  const c=competenciaAtual(),iso=compISO();
+  const fechada=c&&c.situacao==='fechada';
+  const diasUteis=c?c.dias_uteis:diasUteisPadrao(iso);
+  const linhas=[];
+  if(fechada){
+    const porFunc={};
+    compItens.forEach(i=>{(porFunc[i.funcionario_id]=porFunc[i.funcionario_id]||[]).push(i);});
+    Object.entries(porFunc).forEach(([fid,itens])=>{
+      const f=funcPorId(fid)||{id:fid,nome:'(funcionário removido)'};
+      if(empresaAtual!=='todas'&&f.empresa_id!==empresaAtual)return;
+      const cf=compFuncs.find(x=>x.funcionario_id===fid);
+      linhas.push({f,dias:cf&&cf.dias_trabalhados!=null?cf.dias_trabalhados:diasUteis,diasManual:!!(cf&&cf.dias_trabalhados!=null),
+        itens:itens.map(i=>({tipo_nome:i.tipo_nome,tipo_id:i.tipo_id,calculo:i.calculo,valor_unitario:Number(i.valor_unitario),dias:i.dias,valor_total:Number(i.valor_total),desconto:Number(i.desconto)}))});
+    });
+  }else{
+    filtraEmpresa(todosFuncionarios.filter(f=>f.ativo!==false)).forEach(f=>{
+      const cf=compFuncs.find(x=>x.funcionario_id===f.id);
+      const dias=cf&&cf.dias_trabalhados!=null?cf.dias_trabalhados:diasUteis;
+      const itens=todosBenefFunc.filter(b=>b.funcionario_id===f.id&&beneficioVigente(b,iso)).map(b=>{
+        const t=tipoBenefPorId(b.tipo_id)||{nome:'?',calculo:'mensal'};
+        const porDia=t.calculo==='por_dia';
+        return{tipo_nome:t.nome,tipo_id:b.tipo_id,calculo:t.calculo,valor_unitario:Number(b.valor||0),dias:porDia?dias:null,
+          valor_total:Math.round(Number(b.valor||0)*(porDia?dias:1)*100)/100,desconto:Number(b.desconto||0)};
+      });
+      linhas.push({f,dias,diasManual:!!(cf&&cf.dias_trabalhados!=null),itens});
+    });
+  }
+  linhas.sort((a,b)=>String(a.f.nome).localeCompare(String(b.f.nome),'pt-BR'));
+  return{linhas,c,fechada,diasUteis};
+}
+function colunasBeneficios(linhas){
+  const nomes=new Set();linhas.forEach(l=>l.itens.forEach(i=>nomes.add(i.tipo_nome)));
+  const ordem=n=>{const t=todosTiposBenef.find(x=>x.nome===n);return t?t.ordem:999;};
+  return[...nomes].sort((a,b)=>ordem(a)-ordem(b)||a.localeCompare(b,'pt-BR'));
+}
+function renderBeneficios(){
+  if(!PERM.rh)return;
+  $('titulo-benef').textContent='Benefícios — '+nomeEmpresaAtual();
+  const{linhas,c,fechada,diasUteis}=linhasBeneficios();
+  const iso=compISO(),edita=PERM.rhEditar&&!fechada;
+  $('bn-dias-uteis').value=diasUteis;$('bn-dias-uteis').disabled=!edita;
+  $('bn-situacao').innerHTML=fechada?`<span class="badge badge-ok">🔒 Fechada${c.fechada_em?' em '+esc(fmtData(c.fechada_em)):''}${c.fechada_por?' · '+esc(c.fechada_por):''}</span>`:`<span class="badge badge-hoje">Aberta</span>`;
+  $('bn-btn-fechar').style.display=PERM.rhEditar&&!fechada?'':'none';
+  $('bn-btn-reabrir').style.display=PERM.rhEditar&&fechada?'':'none';
+  $('bn-info').innerHTML=!v13Ok?'Rode a migração v13 no Supabase para ativar os benefícios.':fechada?
+    `Competência <strong>${esc(nomeMes(iso))}</strong> fechada: os valores abaixo ficaram gravados e não mudam se um benefício for alterado depois. Para corrigir, clique em <em>Reabrir</em>.`:
+    `<strong>${esc(nomeMes(iso))}</strong> · VA, VR e VT = valor do dia × dias trabalhados; os demais são valor mensal. `+
+    (PERM.rhEditar?'Digite os dias trabalhados de quem teve faltas ou afastamento (vazio = dias úteis do mês). Quando a integração com o ponto do Secullum for ligada, os dias virão de lá. No fim do mês, clique em <em>🔒 Fechar competência</em> para a contabilidade.':'Valores ainda em aberto; podem mudar até o RH fechar a competência.');
+  const cols=colunasBeneficios(linhas);
+  const tot={geral:0,desc:0,por:{}};
+  const comBenef=linhas.filter(l=>l.itens.length).length;
+  const corpo=linhas.map(l=>{
+    const tl=l.itens.reduce((s,i)=>s+i.valor_total,0),dl=l.itens.reduce((s,i)=>s+i.desconto,0);
+    tot.geral+=tl;tot.desc+=dl;
+    const e=empresaPorId(l.f.empresa_id);
+    const celulas=cols.map(n=>{const i=l.itens.find(x=>x.tipo_nome===n);if(!i)return'<td class="num" style="color:#bbb">—</td>';tot.por[n]=(tot.por[n]||0)+i.valor_total;
+      return`<td class="num" title="${esc(i.calculo==='por_dia'?`R$ ${fmtMoeda(i.valor_unitario)} × ${i.dias} dias`:'valor mensal')}">${esc(fmtMoeda(i.valor_total))}</td>`;}).join('');
+    const diasCel=edita?`<input type="number" min="0" max="31" value="${l.diasManual?esc(l.dias):''}" placeholder="${esc(diasUteis)}" data-dias="${esc(l.f.id)}">`:`${esc(l.dias)}${l.diasManual&&l.dias<diasUteis?` <span class="menos">(-${diasUteis-l.dias})</span>`:''}`;
+    return`<tr><td><strong>${esc(l.f.nome)}</strong>${e?` <span class="card-empresa-tag tag-${esc(e.sigla)}">${esc(e.sigla)}</span>`:''}${l.f.cargo?`<div style="font-size:12px;color:var(--texto2)">${esc(l.f.cargo)}</div>`:''}</td>
+      <td class="num">${diasCel}</td>${celulas}
+      <td class="num"><strong>${esc(fmtMoeda(tl))}</strong></td><td class="num ${dl?'menos':''}">${dl?'- '+esc(fmtMoeda(dl)):'—'}</td><td class="num">${esc(fmtMoeda(tl-dl))}</td>
+      <td>${fechada?'':`<button class="btn-link" data-benef-func="${esc(l.f.id)}">${PERM.rhEditar?(l.itens.length?'editar':'+ incluir'):'ver'}</button>`}</td></tr>`;
+  }).join('');
+  $('tabela-benef').innerHTML=`<thead><tr><th>Funcionário</th><th class="num">Dias trab.</th>${cols.map(n=>`<th class="num">${esc(n)}</th>`).join('')}<th class="num">Total</th><th class="num">Desconto func.</th><th class="num">Custo empresa</th><th></th></tr></thead>
+    <tbody>${linhas.length?corpo:`<tr><td colspan="${cols.length+6}" class="vazio">${fechada?'Nenhum benefício gravado nesta competência.':'Nenhum funcionário ativo'+(empresaAtual!=='todas'?' nesta empresa':'')+'. Cadastre em 👷 Funcionários.'}</td></tr>`}</tbody>
+    ${linhas.length?`<tfoot><tr><td>Total (${linhas.length} funcionário${linhas.length>1?'s':''})</td><td></td>${cols.map(n=>`<td class="num">${esc(fmtMoeda(tot.por[n]||0))}</td>`).join('')}<td class="num">${esc(fmtMoeda(tot.geral))}</td><td class="num">${tot.desc?'- '+esc(fmtMoeda(tot.desc)):'—'}</td><td class="num">${esc(fmtMoeda(tot.geral-tot.desc))}</td><td></td></tr></tfoot>`:''}`;
+  $('bn-kpis').innerHTML=[
+    ['Funcionários com benefício',String(comBenef),`de ${linhas.length} na lista`],
+    ['Total de benefícios',fmtCurto(tot.geral),nomeMes(iso)],
+    ['Descontos dos funcionários',fmtCurto(tot.desc),'descontado em folha'],
+    ['Custo da empresa',fmtCurto(tot.geral-tot.desc),'total − descontos'],
+  ].map(([r,v,s])=>`<div class="kpi"><div class="rot">${esc(r)}</div><div class="val">${esc(v)}</div><div class="sub">${esc(s)}</div></div>`).join('');
+  $('tabela-benef').querySelectorAll('[data-benef-func]').forEach(b=>b.onclick=()=>abrirBenefFunc(b.dataset.benefFunc));
+  $('tabela-benef').querySelectorAll('[data-dias]').forEach(inp=>inp.onchange=()=>salvarDiasFunc(inp.dataset.dias,inp));
+}
+async function salvarDiasUteis(){
+  if(!PERM.rhEditar)return;
+  const n=$('bn-dias-uteis').value===''?diasUteisPadrao(compISO()):Math.round(Number($('bn-dias-uteis').value));
+  if(!(n>=0&&n<=31)){alert('Dias úteis entre 0 e 31.');renderBeneficios();return;}
+  const c=await garantirCompetencia();if(!c)return;
+  const{error}=await sb.from('competencias_beneficios').update({dias_uteis:n}).eq('id',c.id);
+  if(erroSB(error))return;
+  c.dias_uteis=n;renderBeneficios();toast('Dias úteis atualizados');
+}
+async function salvarDiasFunc(fid,inp){
+  if(!PERM.rhEditar)return;
+  const v=inp.value===''?null:Math.round(Number(inp.value));
+  if(v!=null&&!(v>=0&&v<=31)){alert('Dias trabalhados entre 0 e 31.');inp.value='';return;}
+  const c=await garantirCompetencia();if(!c)return;
+  const existe=compFuncs.find(x=>x.funcionario_id===fid);
+  const r=existe?await sb.from('competencia_funcionarios').update({dias_trabalhados:v,origem:'manual',atualizado_em:new Date().toISOString()}).eq('id',existe.id)
+    :await sb.from('competencia_funcionarios').insert({competencia_id:c.id,funcionario_id:fid,dias_trabalhados:v,origem:'manual'});
+  if(erroSB(r.error))return;
+  await carregarCompetenciaAtual();renderBeneficios();
+}
+async function fecharCompetencia(){
+  if(!PERM.rhEditar)return;
+  const{linhas}=linhasBeneficios();
+  const iso=compISO();
+  if(empresaAtual!=='todas'){alert('Para fechar a competência, escolha "Todas as empresas" no alto da tela: o fechamento vale para o grupo inteiro.');return;}
+  const total=linhas.reduce((s,l)=>s+l.itens.reduce((a,i)=>a+i.valor_total,0),0);
+  if(!confirm(`Fechar ${nomeMes(iso)}?\n\n${linhas.filter(l=>l.itens.length).length} funcionário(s) com benefício · total R$ ${fmtMoeda(total)}.\n\nOs valores ficam gravados para a contabilidade. Mudanças nos benefícios depois disso só valem para os próximos meses.`))return;
+  const c=await garantirCompetencia();if(!c)return;
+  const{error:e1}=await sb.from('competencia_itens').delete().eq('competencia_id',c.id);
+  if(erroSB(e1))return;
+  const itens=[];linhas.forEach(l=>l.itens.forEach(i=>itens.push({competencia_id:c.id,funcionario_id:l.f.id,tipo_id:i.tipo_id||null,tipo_nome:i.tipo_nome,calculo:i.calculo,valor_unitario:i.valor_unitario,dias:i.dias,valor_total:i.valor_total,desconto:i.desconto})));
+  if(itens.length){const{error:e2}=await sb.from('competencia_itens').insert(itens);if(erroSB(e2,'Não foi possível gravar os valores'))return;}
+  const{error:e3}=await sb.from('competencias_beneficios').update({situacao:'fechada',fechada_em:new Date().toISOString(),fechada_por:(meuPerfil&&meuPerfil.nome)||(usuario&&usuario.email)||null}).eq('id',c.id);
+  if(erroSB(e3))return;
+  await carregarBeneficiosTudo();renderBeneficios();toast(`Competência ${nomeMes(iso)} fechada`);
+}
+async function reabrirCompetencia(){
+  const c=competenciaAtual();if(!c||!PERM.rhEditar)return;
+  if(!confirm(`Reabrir ${nomeMes(c.competencia)}?\nOs valores voltam a ser calculados com os benefícios atuais. Avise a contabilidade se ela já tiver usado o fechamento.`))return;
+  const{error:e1}=await sb.from('competencia_itens').delete().eq('competencia_id',c.id);if(erroSB(e1))return;
+  const{error}=await sb.from('competencias_beneficios').update({situacao:'aberta',fechada_em:null,fechada_por:null}).eq('id',c.id);
+  if(erroSB(error))return;
+  await carregarBeneficiosTudo();renderBeneficios();toast('Competência reaberta');
+}
+
+/* benefícios de um funcionário */
+function abrirBenefFunc(fid){
+  if(!v13Ok){avisarMigracaoV13();return;}
+  const f=funcPorId(fid);if(!f)return;benefFuncId=fid;
+  $('mbf-titulo').textContent='Benefícios — '+f.nome;
+  const e=empresaPorId(f.empresa_id);
+  $('mbf-sub').textContent=[f.cargo,e&&e.nome,f.data_admissao&&'admissão '+fmtData(f.data_admissao)].filter(Boolean).join(' · ')||'Funcionário';
+  preencherSelect($('mbf-tipo'),todosTiposBenef.filter(t=>t.ativo!==false).map(t=>[t.id,`${t.nome} (${CALCULO_LABEL[t.calculo]})`]),'Selecione');
+  limparFormBenefFunc();renderBenefFunc();
+  modoLeitura('modal-benef-func',!PERM.rhEditar);
+  abrirModal('modal-benef-func');
+}
+function renderBenefFunc(){
+  const l=todosBenefFunc.filter(b=>b.funcionario_id===benefFuncId).sort((a,b)=>((tipoBenefPorId(a.tipo_id)||{}).ordem||0)-((tipoBenefPorId(b.tipo_id)||{}).ordem||0));
+  const hoje=hojeISO();
+  $('mbf-lista').innerHTML=l.length?'<div class="sub-lista">'+l.map(b=>{const t=tipoBenefPorId(b.tipo_id)||{nome:'?',calculo:'mensal'};
+    const encerrado=b.ativo===false||(b.fim&&b.fim<hoje);
+    return`<div class="sub-item ${encerrado?'ativ-feita':''}"><div><span class="ativ-desc"><strong>${esc(t.nome)}</strong></span> — R$ ${esc(fmtMoeda(b.valor))} ${t.calculo==='por_dia'?'por dia':'por mês'}${Number(b.desconto)?` · desconto R$ ${esc(fmtMoeda(b.desconto))}/mês`:''}
+      <div style="font-size:12px;color:var(--texto2)">${b.inicio?'desde '+esc(fmtData(b.inicio)):''}${b.fim?' até '+esc(fmtData(b.fim)):''}${encerrado?' · encerrado':''}${b.observacoes?' · '+esc(b.observacoes):''}</div></div>
+      ${PERM.rhEditar?`<div class="acoes"><button class="btn-link" data-ed-bf="${esc(b.id)}">editar</button><button class="btn-link" style="color:var(--vermelho)" data-rm-bf="${esc(b.id)}">remover</button></div>`:''}</div>`;}).join('')+'</div>':'<p class="vazio">Nenhum benefício cadastrado para este funcionário.</p>';
+  $('mbf-lista').querySelectorAll('[data-ed-bf]').forEach(x=>x.onclick=()=>editarBenefFunc(x.dataset.edBf));
+  $('mbf-lista').querySelectorAll('[data-rm-bf]').forEach(x=>x.onclick=()=>removerBenefFunc(x.dataset.rmBf));
+}
+function limparFormBenefFunc(){
+  benefEditandoId=null;['mbf-valor','mbf-desconto','mbf-obs','mbf-inicio','mbf-fim'].forEach(i=>$(i).value='');
+  $('mbf-tipo').value='';$('mbf-tipo').disabled=!PERM.rhEditar;$('mbf-limpar').style.display='none';
+  $('mbf-form-titulo').textContent='Adicionar benefício';$('mbf-rot-valor').textContent='Valor (R$) *';
+}
+function mudouTipoBenefFunc(){
+  const t=tipoBenefPorId($('mbf-tipo').value);
+  $('mbf-rot-valor').textContent=t?(t.calculo==='por_dia'?'Valor por dia (R$) *':'Valor por mês (R$) *'):'Valor (R$) *';
+  // se o funcionário já tem esse benefício, carrega para editar (um de cada tipo por funcionário)
+  const ja=t&&todosBenefFunc.find(b=>b.funcionario_id===benefFuncId&&b.tipo_id===t.id);
+  if(ja&&ja.id!==benefEditandoId){editarBenefFunc(ja.id);return;}
+  if(t&&!$('mbf-valor').value&&t.valor_padrao!=null)$('mbf-valor').value=fmtMoeda(t.valor_padrao);
+}
+function editarBenefFunc(id){
+  const b=todosBenefFunc.find(x=>x.id===id);if(!b)return;benefEditandoId=id;
+  $('mbf-tipo').value=b.tipo_id;$('mbf-tipo').disabled=true;
+  $('mbf-valor').value=fmtMoeda(b.valor);$('mbf-desconto').value=Number(b.desconto)?fmtMoeda(b.desconto):'';
+  $('mbf-inicio').value=b.inicio||'';$('mbf-fim').value=b.fim||'';$('mbf-obs').value=b.observacoes||'';
+  const t=tipoBenefPorId(b.tipo_id);
+  $('mbf-rot-valor').textContent=t&&t.calculo==='por_dia'?'Valor por dia (R$) *':'Valor por mês (R$) *';
+  $('mbf-form-titulo').textContent='Editando: '+(t?t.nome:'benefício');$('mbf-limpar').style.display='inline-block';
+}
+async function salvarBenefFunc(){
+  if(!PERM.rhEditar)return;
+  const tipo=$('mbf-tipo').value;if(!tipo){alert('Escolha o benefício.');return;}
+  const valor=parseMoeda($('mbf-valor').value);if(valor==null||valor<0){alert('Informe o valor.');return;}
+  const desc=parseMoeda($('mbf-desconto').value)||0;
+  const ini=$('mbf-inicio').value||null,fim=$('mbf-fim').value||null;
+  if(ini&&fim&&fim<ini){alert('A data de fim está antes do início.');return;}
+  const dados={funcionario_id:benefFuncId,tipo_id:tipo,valor,desconto:desc,inicio:ini,fim,observacoes:$('mbf-obs').value.trim()||null,ativo:true,atualizado_em:new Date().toISOString()};
+  const r=benefEditandoId?await sb.from('funcionario_beneficios').update(dados).eq('id',benefEditandoId):await sb.from('funcionario_beneficios').insert(dados);
+  if(erroSB(r.error))return;
+  const{data}=await sb.from('funcionario_beneficios').select('*');todosBenefFunc=data||[];
+  limparFormBenefFunc();renderBenefFunc();renderTabAtual();toast('Benefício salvo');
+}
+async function removerBenefFunc(id){
+  const b=todosBenefFunc.find(x=>x.id===id);if(!b)return;
+  const t=tipoBenefPorId(b.tipo_id);
+  if(!confirm(`Remover ${t?t.nome:'o benefício'} deste funcionário?\nMeses já fechados não mudam. Se ele só deixou de receber a partir de uma data, prefira "editar" e preencher o Fim.`))return;
+  const{error}=await sb.from('funcionario_beneficios').delete().eq('id',id);if(erroSB(error))return;
+  const{data}=await sb.from('funcionario_beneficios').select('*');todosBenefFunc=data||[];
+  limparFormBenefFunc();renderBenefFunc();renderTabAtual();
+}
+
+/* tipos de benefício */
+function abrirModalTiposBenef(){if(!PERM.rhEditar)return;if(!v13Ok){avisarMigracaoV13();return;}limparFormTipoBenef();renderTiposBenef();abrirModal('modal-tipos-benef');}
+function limparFormTipoBenef(){tipoBenefEditandoId=null;$('mtb-nome').value='';$('mtb-valor').value='';$('mtb-calculo').value='mensal';$('mtb-limpar').style.display='none';}
+function renderTiposBenef(){
+  const uso={};todosBenefFunc.forEach(b=>{uso[b.tipo_id]=(uso[b.tipo_id]||0)+1;});
+  $('mtb-tabela').innerHTML='<thead><tr><th>Benefício</th><th>Cálculo</th><th class="num">Valor padrão</th><th class="num">Funcionários</th><th></th></tr></thead><tbody>'+
+    todosTiposBenef.map(t=>`<tr class="${t.ativo===false?'inativo':''}"><td><strong>${esc(t.nome)}</strong></td><td>${esc(CALCULO_LABEL[t.calculo])}</td><td class="num">${t.valor_padrao!=null?'R$ '+esc(fmtMoeda(t.valor_padrao)):'—'}</td><td class="num">${uso[t.id]||0}</td>
+      <td style="white-space:nowrap"><button class="btn-link" data-ed-tb="${esc(t.id)}">editar</button> <button class="btn-link" style="color:var(--texto2)" data-alt-tb="${esc(t.id)}">${t.ativo===false?'reativar':'ocultar'}</button></td></tr>`).join('')+'</tbody>';
+  $('mtb-tabela').querySelectorAll('[data-ed-tb]').forEach(b=>b.onclick=()=>{const t=tipoBenefPorId(b.dataset.edTb);tipoBenefEditandoId=t.id;$('mtb-nome').value=t.nome;$('mtb-calculo').value=t.calculo;$('mtb-valor').value=t.valor_padrao!=null?fmtMoeda(t.valor_padrao):'';$('mtb-limpar').style.display='inline-block';$('mtb-nome').focus();});
+  $('mtb-tabela').querySelectorAll('[data-alt-tb]').forEach(b=>b.onclick=async()=>{const t=tipoBenefPorId(b.dataset.altTb);const{error}=await sb.from('tipos_beneficio').update({ativo:t.ativo===false}).eq('id',t.id);if(erroSB(error))return;await recarregarTiposBenef();});
+}
+async function recarregarTiposBenef(){const{data}=await sb.from('tipos_beneficio').select('*').order('ordem').order('nome');todosTiposBenef=data||[];renderTiposBenef();renderTabAtual();}
+async function salvarTipoBenef(){
+  const nome=$('mtb-nome').value.trim();if(!nome){alert('Informe o nome.');return;}
+  if(todosTiposBenef.some(t=>t.id!==tipoBenefEditandoId&&norm(t.nome)===norm(nome))){alert('Já existe um benefício com este nome.');return;}
+  const dados={nome,calculo:$('mtb-calculo').value,valor_padrao:parseMoeda($('mtb-valor').value)};
+  const{error}=tipoBenefEditandoId?await sb.from('tipos_beneficio').update(dados).eq('id',tipoBenefEditandoId):await sb.from('tipos_beneficio').insert({...dados,ordem:500});
+  if(erroSB(error))return;
+  limparFormTipoBenef();await recarregarTiposBenef();toast('Tipo salvo');
+}
+
+/* exportar para Excel (planilha com "Resumo" e "Detalhe") */
+let xlsxPronto=null;
+function carregarXLSX(){
+  if(window.XLSX)return Promise.resolve(window.XLSX);
+  if(xlsxPronto)return xlsxPronto;
+  xlsxPronto=new Promise((ok,falha)=>{const sc=document.createElement('script');sc.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+    sc.onload=()=>ok(window.XLSX);sc.onerror=()=>{xlsxPronto=null;falha(new Error('sem xlsx'));};document.head.appendChild(sc);});
+  return xlsxPronto;
+}
+function baixarArquivo(nome,conteudo,tipo){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([conteudo],{type:tipo}));a.download=nome;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},500);}
+async function exportarBeneficios(){
+  if(!PERM.rh)return;
+  const{linhas,fechada}=linhasBeneficios(),iso=compISO(),cols=colunasBeneficios(linhas);
+  if(!linhas.length){alert('Nada para exportar nesta competência.');return;}
+  const emp=l=>{const e=empresaPorId(l.f.empresa_id);return e?e.sigla:'';};
+  const r2=v=>Math.round(v*100)/100;
+  const resumo=[['Competência',nomeMes(iso),fechada?'Fechada':'Aberta (valores podem mudar)'],[],
+    ['Funcionário','CPF','Empresa','Cargo','Dias trabalhados',...cols,'Total','Desconto funcionário','Custo empresa']];
+  const tot=new Array(cols.length+3).fill(0);
+  linhas.forEach(l=>{
+    const vals=cols.map(n=>{const i=l.itens.find(x=>x.tipo_nome===n);return i?r2(i.valor_total):0;});
+    const t=r2(l.itens.reduce((s,i)=>s+i.valor_total,0)),d=r2(l.itens.reduce((s,i)=>s+i.desconto,0));
+    [...vals,t,d,r2(t-d)].forEach((v,k)=>tot[k]+=v);
+    resumo.push([l.f.nome,l.f.cpf||'',emp(l),l.f.cargo||'',l.dias,...vals,t,d,r2(t-d)]);
+  });
+  resumo.push(['TOTAL','','','','',...tot.map(r2)]);
+  const detalhe=[['Funcionário','CPF','PIS','Empresa','Benefício','Cálculo','Valor unitário','Dias','Valor total','Desconto funcionário']];
+  linhas.forEach(l=>l.itens.forEach(i=>detalhe.push([l.f.nome,l.f.cpf||'',l.f.pis||'',emp(l),i.tipo_nome,CALCULO_LABEL[i.calculo]||i.calculo,r2(i.valor_unitario),i.dias??'',r2(i.valor_total),r2(i.desconto)])));
+  const sufixo=empresaAtual==='todas'?'GRUPO':((empresaPorId(empresaAtual)||{}).sigla||'');
+  const base=`BVK-RH-BENEFICIOS-${iso.slice(0,7)}-${sufixo}`;
+  try{
+    const X=await carregarXLSX();
+    const wb=X.utils.book_new();
+    const ws1=X.utils.aoa_to_sheet(resumo),ws2=X.utils.aoa_to_sheet(detalhe);
+    ws1['!cols']=[{wch:32},{wch:15},{wch:8},{wch:18},{wch:10},...cols.map(()=>({wch:14})),{wch:12},{wch:12},{wch:12}];
+    ws2['!cols']=[{wch:32},{wch:15},{wch:15},{wch:8},{wch:28},{wch:18},{wch:12},{wch:6},{wch:12},{wch:12}];
+    X.utils.book_append_sheet(wb,ws1,'Resumo');X.utils.book_append_sheet(wb,ws2,'Detalhe');
+    X.writeFile(wb,base+'.xlsx');
+  }catch(e){
+    // sem a biblioteca: CSV que o Excel abre direto
+    const csv=v=>{const t=typeof v==='number'?String(v).replace('.',','):String(v??'');return/[;"\n]/.test(t)?'"'+t.replace(/"/g,'""')+'"':t;};
+    baixarArquivo(base+'.csv','﻿'+resumo.map(r=>r.map(csv).join(';')).join('\r\n'),'text/csv;charset=utf-8');
+  }
+  toast('Planilha gerada');
 }
 
 /* ================= USUÁRIOS (administrador) ================= */
