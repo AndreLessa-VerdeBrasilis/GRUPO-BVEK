@@ -275,6 +275,8 @@ tr.doc-vencido td{background:#fff5f5}
 .link-perfil{display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:var(--verde-claro);border:1.5px solid var(--verde);border-radius:8px;padding:10px 12px;font-size:13px}
 .link-perfil input{flex:1;min-width:220px;padding:7px 9px;border:1.5px solid var(--borda);border-radius:6px;font-size:12px;font-family:Consolas,monospace;background:#fff}
 .oculto{display:none!important}
+.link-nome{background:none;border:none;padding:0;font:inherit;font-weight:700;color:var(--texto);cursor:pointer;text-align:left;text-decoration:underline dotted #9aa;text-underline-offset:3px}
+.link-nome:hover{color:var(--verde);text-decoration-color:var(--verde)}
 @media(max-width:700px){.linha-benef{grid-template-columns:1fr 1fr}.dim-linha{grid-template-columns:120px 1fr 60px}}
 @media(max-width:700px){
   .form-grid{grid-template-columns:1fr}.conteudo{padding:12px}.modal{padding:18px}.modal-cab{margin:-18px -18px 10px;padding:16px 56px 10px 18px}.modal-x{top:10px;right:10px}.topbar{padding:0 12px}
@@ -489,6 +491,7 @@ tr.doc-vencido td{background:#fff5f5}
         <label class="rot-filtro">Dias úteis do mês</label>
         <input type="number" id="bn-dias-uteis" min="0" max="31" style="width:80px" onchange="salvarDiasUteis()">
         <span id="bn-situacao"></span>
+        <button class="btn-sec" onclick="abrirFolha()">👥 Folha do mês</button>
         <button class="btn-salvar" id="bn-btn-fechar" style="display:none" onclick="fecharCompetencia()">🔒 Fechar competência</button>
         <button class="btn-sec" id="bn-btn-reabrir" style="display:none" onclick="reabrirCompetencia()">Reabrir</button>
         <button class="btn-sec rh-edita-bn" data-btn-ponto onclick="puxarFaltasPonto()">🔄 Faltas do ponto (Secullum)</button>
@@ -1307,6 +1310,20 @@ tr.doc-vencido td{background:#fff5f5}
     <div class="modal-btns">
       <button class="btn-cancelar" onclick="fecharModal('modal-ponto')">Cancelar</button>
       <button class="btn-salvar" id="mp-aplicar" onclick="aplicarPonto()">Lançar faltas marcadas</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL FOLHA DO MÊS (v16) -->
+<div class="modal-overlay" id="modal-folha">
+  <div class="modal modal-lg">
+    <h2 id="mfo-titulo">Folha do mês</h2>
+    <p class="modal-sub" id="mfo-sub"></p>
+    <div class="filtros"><input type="search" id="mfo-busca" placeholder="Buscar funcionário" oninput="renderFolha()"></div>
+    <div class="tabela-wrap"><table class="tabela" id="mfo-tabela"></table></div>
+    <div class="modal-btns">
+      <button class="btn-cancelar" onclick="fecharModal('modal-folha')">Fechar</button>
+      <button class="btn-salvar" id="mfo-salvar" onclick="salvarFolha()">Salvar folha</button>
     </div>
   </div>
 </div>
@@ -3022,7 +3039,7 @@ function linhasBeneficios(){
         itens:itens.map(i=>({tipo_nome:i.tipo_nome,tipo_id:i.tipo_id,calculo:i.calculo,valor_unitario:Number(i.valor_unitario),dias:i.dias,valor_total:Number(i.valor_total),desconto:Number(i.desconto)}))});
     });
   }else{
-    filtraEmpresa(todosFuncionarios.filter(f=>f.ativo!==false)).forEach(f=>{
+    filtraEmpresa(todosFuncionarios.filter(f=>f.ativo!==false&&naFolha(f))).forEach(f=>{
       const cf=compFuncs.find(x=>x.funcionario_id===f.id);
       const dias=cf&&cf.dias_trabalhados!=null?cf.dias_trabalhados:diasUteis,fx=faltasCF(cf);
       const itens=todosBenefFunc.filter(b=>b.funcionario_id===f.id&&beneficioVigente(b,iso)).map(b=>{
@@ -3067,13 +3084,13 @@ function renderBeneficios(){
     const celulas=cols.map(n=>{const i=l.itens.find(x=>x.tipo_nome===n);if(!i)return'<td class="num" style="color:#bbb">—</td>';tot.por[n]=(tot.por[n]||0)+i.valor_total;
       return`<td class="num" title="${esc(i.calculo==='por_dia'?`R$ ${fmtMoeda(i.valor_unitario)} × ${i.dias} dias`:'valor mensal')}">${esc(fmtMoeda(i.valor_total))}</td>`;}).join('');
     const diasCel=(edita?`<input type="number" min="0" max="31" value="${l.diasManual?esc(l.dias):''}" placeholder="${esc(diasUteis)}" data-dias="${esc(l.f.id)}">`:`${esc(l.dias)}`)+fxTexto(l.fx||faltasCF());
-    return`<tr><td><strong>${esc(l.f.nome)}</strong>${e?` <span class="card-empresa-tag tag-${esc(e.sigla)}">${esc(e.sigla)}</span>`:''}${l.f.cargo?`<div style="font-size:12px;color:var(--texto2)">${esc(l.f.cargo)}</div>`:''}</td>
+    return`<tr><td>${linkNome(l.f)}${e?` <span class="card-empresa-tag tag-${esc(e.sigla)}">${esc(e.sigla)}</span>`:''}${ehIntermitente(l.f)?' <span class="badge badge-cinza">intermitente</span>':''}${l.f.cargo?`<div style="font-size:12px;color:var(--texto2)">${esc(l.f.cargo)}</div>`:''}</td>
       <td class="num">${diasCel}</td>${celulas}
       <td class="num"><strong>${esc(fmtMoeda(tl))}</strong></td><td class="num ${dl?'menos':''}">${dl?'- '+esc(fmtMoeda(dl)):'—'}</td><td class="num">${esc(fmtMoeda(tl-dl))}</td>
       <td>${fechada?'':`<button class="btn-link" data-benef-func="${esc(l.f.id)}">${PERM.rhEditar?(l.itens.length?'editar':'+ incluir'):'ver'}</button>`}</td></tr>`;
   }).join('');
   $('tabela-benef').innerHTML=`<thead><tr><th>Funcionário</th><th class="num">Dias base · faltas</th>${cols.map(n=>`<th class="num">${esc(n)}</th>`).join('')}<th class="num">Total</th><th class="num">Desconto func.</th><th class="num">Custo empresa</th><th></th></tr></thead>
-    <tbody>${linhas.length?corpo:`<tr><td colspan="${cols.length+6}" class="vazio">${fechada?'Nenhum benefício gravado nesta competência.':'Nenhum funcionário ativo'+(empresaAtual!=='todas'?' nesta empresa':'')+'. Cadastre em 👷 Funcionários.'}</td></tr>`}</tbody>
+    <tbody>${linhas.length?corpo:`<tr><td colspan="${cols.length+6}" class="vazio">${fechada?'Nenhum benefício gravado nesta competência.':'Nenhum funcionário na folha deste mês'+(empresaAtual!=='todas'?' nesta empresa':'')+'. Use 👥 Folha do mês para incluir.'}</td></tr>`}</tbody>
     ${linhas.length?`<tfoot><tr><td>Total (${linhas.length} funcionário${linhas.length>1?'s':''})</td><td></td>${cols.map(n=>`<td class="num">${esc(fmtMoeda(tot.por[n]||0))}</td>`).join('')}<td class="num">${esc(fmtMoeda(tot.geral))}</td><td class="num">${tot.desc?'- '+esc(fmtMoeda(tot.desc)):'—'}</td><td class="num">${esc(fmtMoeda(tot.geral-tot.desc))}</td><td></td></tr></tfoot>`:''}`;
   $('bn-kpis').innerHTML=[
     ['Funcionários com benefício',String(comBenef),`de ${linhas.length} na lista`],
@@ -3082,6 +3099,7 @@ function renderBeneficios(){
     ['Custo da empresa',fmtCurto(tot.geral-tot.desc),'total − descontos'],
   ].map(([r,v,s])=>`<div class="kpi"><div class="rot">${esc(r)}</div><div class="val">${esc(v)}</div><div class="sub">${esc(s)}</div></div>`).join('');
   $('tabela-benef').querySelectorAll('[data-benef-func]').forEach(b=>b.onclick=()=>abrirBenefFunc(b.dataset.benefFunc));
+  ligarLinksNome($('tabela-benef'));
   $('tabela-benef').querySelectorAll('[data-dias]').forEach(inp=>inp.onchange=()=>salvarDiasFunc(inp.dataset.dias,inp));
 }
 async function salvarDiasUteis(){
@@ -3514,7 +3532,7 @@ let v14Ok=true,rhSub='funcionarios',fichaId=null,fichaSub='dados',valeEditandoId
 let todosRH=[],todosEmprestimos=[],todosDescontos=[],todosAdiant=[],todosContracheques=[],todasEntregas=[],todosEnvios=[],rhConfig={};
 let anexosEnvioExtra=[],splitPaginas=[],splitArquivo=null;
 const BUCKET_RH='rh';
-const CONTRATOS=[['clt','CLT'],['experiencia','CLT – contrato de experiência'],['estagio','Estágio'],['aprendiz','Jovem aprendiz'],['temporario','Temporário'],['pj','PJ / prestador'],['freela','Diarista / freela']];
+const CONTRATOS=[['clt','CLT'],['intermitente','CLT – contrato intermitente'],['socio','Sócio (pró-labore)'],['experiencia','CLT – contrato de experiência'],['estagio','Estágio'],['aprendiz','Jovem aprendiz'],['temporario','Temporário'],['pj','PJ / prestador'],['freela','Diarista / freela']];
 const TAM_CAMISA=['PP','P','M','G','GG','XG','XGG','EG'];
 const TAM_CALCA=['36','38','40','42','44','46','48','50','52','54','56','PP','P','M','G','GG','XG'];
 const TAM_CALCADO=Array.from({length:13},(_,i)=>String(34+i));
@@ -4201,7 +4219,7 @@ function renderFichaVales(){
 function dadosFechamento(iso){
   const b=linhasBeneficios(),cols=colunasBeneficios(b.linhas);
   const porId=Object.fromEntries(b.linhas.map(l=>[l.f.id,l]));
-  const funcs=filtraEmpresa(todosFuncionarios.filter(f=>f.ativo!==false||porId[f.id]));
+  const funcs=filtraEmpresa(todosFuncionarios.filter(f=>(f.ativo!==false&&naFolha(f))||porId[f.id]));
   const linhas=funcs.map(f=>{
     const l=porId[f.id],cf=compFuncs.find(x=>x.funcionario_id===f.id);
     const dias=l?l.dias:(cf&&cf.dias_trabalhados!=null?cf.dias_trabalhados:b.diasUteis),fx=faltasCF(cf);
@@ -4240,6 +4258,7 @@ async function renderRHEnvio(){
     (()=>{const per=periodoPonto(iso),sinc=d.linhas.map(l=>l.fx.sinc).filter(Boolean).sort().pop(),incompl=d.linhas.reduce((s,l)=>s+l.fx.incompl,0);
       return it(!!sinc&&!incompl,`Faltas de ${esc(fmtData(per.inicio))} a ${esc(fmtData(per.fim))}: ${nFaltas?`<strong>${nFaltas}</strong> funcionário(s) com falta/férias`:'nenhuma falta lançada'}${sinc?` · ponto lido em ${esc(fmtDataHora(sinc))}`:' · <strong>ponto ainda não lido</strong>'}${incompl?` · <strong>${incompl} marcação(ões) incompleta(s)</strong> para conferir`:''}`,
         edita?`<button class="btn-sec" data-btn-ponto onclick="puxarFaltasPonto()">🔄 Faltas do ponto (Secullum)</button>`:'');})(),
+    (()=>{const f=resumoFolha();return it(true,`Folha de ${esc(nomeMes(iso))}: <strong>${f.total}</strong> funcionário(s)${f.inter?` · ${f.interDentro} de ${f.inter} intermitente(s) incluído(s)`:''}`,`<button class="btn-sec" onclick="abrirFolha()">👥 Folha do mês</button>`);})(),
     it(true,`Vales/empréstimos: <strong>R$ ${esc(fmtMoeda(tVale))}</strong> a descontar neste mês`,`<button class="btn-link" onclick="rhSub='vales';renderRH()">ver vales</button>`),
     it(!adSemData,`Adiantamentos: ${ads.length} lançado(s)${adSemData?` · <strong>${adSemData} sem data de pagamento</strong>`:''}`,`<button class="btn-link" onclick="rhSub='vales';renderRH()">ver adiantamentos</button>`),
     empresaAtual!=='todas'?it(false,`Você está vendo só <strong>${esc(nomeEmpresaAtual())}</strong>: a planilha terá só esta empresa. Para mandar o grupo todo, escolha "Todas as empresas" no alto.`):'',
@@ -4247,7 +4266,7 @@ async function renderRHEnvio(){
   ].join('');
   const cols=d.cols;
   $('tabela-envio').innerHTML=`<thead><tr><th>Funcionário</th><th class="num">Dias base</th><th class="num" title="Desconta o dia, VR/VA e VT">Injust.</th><th class="num" title="Atestado, licença: desconta VR/VA e VT">Just.</th><th class="num" title="Perdoada pela empresa: desconta só VT">Abon.</th><th class="num">Férias</th><th class="num" title="Atrasos e saídas antecipadas (ponto)">Atrasos</th>${cols.map(n=>`<th class="num">${esc(siglaBenef(n))}</th>`).join('')}<th class="num">Desc. benef.</th><th class="num">Desc. vale</th><th class="num">Adiant.</th><th>Observação do mês</th></tr></thead><tbody>`+
-    (d.linhas.length?d.linhas.map(l=>`<tr><td><strong>${esc(l.f.nome)}</strong>${tagEmpresa(l.f)}</td><td class="num">${esc(l.dias)}</td>
+    (d.linhas.length?d.linhas.map(l=>`<tr><td>${linkNome(l.f)}${tagEmpresa(l.f)}${ehIntermitente(l.f)?' <span class="badge badge-cinza">intermitente</span>':''}</td><td class="num">${esc(l.dias)}</td>
       ${['inj','just','abon','fer'].map(k=>`<td class="num">${edita?`<input type="number" min="0" max="31" value="${l.fx[k]||''}" placeholder="0" data-env-fx="${esc(l.f.id)}" data-campo="${k}">`:(l.fx[k]?`<span class="menos">${esc(l.fx[k])}</span>`:'—')}</td>`).join('')}
       <td class="num">${esc(fmtMin(l.fx.parcMin))}${l.fx.incompl?` <span class="badge badge-hoje" title="Dias com marcação incompleta no ponto (não contados como falta)">${l.fx.incompl} inc.</span>`:''}${l.fx.origem==='secullum'?' <span class="badge badge-cinza" title="Lido do ponto (Secullum)">ponto</span>':''}</td>
       ${cols.map(n=>{const i=l.itens.find(x=>x.tipo_nome===n);return`<td class="num">${i?esc(fmtMoeda(i.valor_total)):'<span style="color:#bbb">—</span>'}</td>`;}).join('')}
@@ -4256,6 +4275,7 @@ async function renderRHEnvio(){
     :`<tr><td colspan="${cols.length+11}" class="vazio">Nenhum funcionário.</td></tr>`)+'</tbody>';
   $('tabela-envio').querySelectorAll('[data-env-fx]').forEach(i=>i.onchange=()=>salvarFaltaTipo(i.dataset.envFx,i.dataset.campo,i.value));
   $('tabela-envio').querySelectorAll('[data-env-obs]').forEach(i=>i.onchange=()=>salvarObsMes(i.dataset.envObs,i.value));
+  ligarLinksNome($('tabela-envio'));
   // e-mail: preenche ao trocar de mês (sem apagar o que a pessoa digitou no mesmo mês)
   if(envioPreenchidoPara!==iso){
     envioPreenchidoPara=iso;
@@ -4740,6 +4760,79 @@ async function salvarFaltaTipo(fid,campo,texto){
   if(r.error&&/faltas_|dias_ferias/.test(r.error.message||'')){alert('Rode antes a migração v15 (supabase/migracao_crm_v15_faltas_ponto.sql) no Supabase.');return;}
   if(erroSB(r.error))return;
   await carregarCompetenciaAtual();renderTabAtual();toast('Faltas atualizadas');
+}
+
+/* ================= FOLHA DO MÊS (v16) ================= */
+// CLT e sócios entram sozinhos na folha do mês; intermitentes só quando incluídos (com os dias de convocação)
+let folhaEdit=null;
+function ehIntermitente(f){return((rhPorFunc(f.id)||{}).tipo_contrato)==='intermitente';}
+function naFolha(f){const cf=compFuncs.find(x=>x.funcionario_id===f.id);if(cf&&cf.na_folha!=null)return!!cf.na_folha;return!ehIntermitente(f);}
+function resumoFolha(){
+  const at=filtraEmpresa(todosFuncionarios.filter(f=>f.ativo!==false)),inter=at.filter(ehIntermitente);
+  return{total:at.filter(naFolha).length,inter:inter.length,interDentro:inter.filter(naFolha).length};
+}
+function linkNome(f){return`<button class="link-nome" data-link-func="${esc(f.id)}" title="Abrir a ficha do funcionário">${esc(f.nome)}</button>`;}
+function ligarLinksNome(raiz){raiz.querySelectorAll('[data-link-func]').forEach(b=>b.onclick=()=>{const id=b.dataset.linkFunc;if(PERM.rhPessoal)abrirFicha(id);else abrirBenefFunc(id);});}
+function abrirFolha(){
+  if(!v14Ok){avisarMigracaoV14();return;}
+  const c=competenciaAtual(),fechada=c&&c.situacao==='fechada',iso=compISO();
+  folhaEdit={iso,fechada,linhas:filtraEmpresa(todosFuncionarios.filter(f=>f.ativo!==false)).map(f=>{
+    const cf=compFuncs.find(x=>x.funcionario_id===f.id),inter=ehIntermitente(f);
+    return{f,inter,inter0:inter,na:naFolha(f),na0:naFolha(f),dias:cf&&cf.dias_trabalhados!=null?cf.dias_trabalhados:'',dias0:cf&&cf.dias_trabalhados!=null?cf.dias_trabalhados:''};
+  }).sort((a,b)=>(a.inter-b.inter)||a.f.nome.localeCompare(b.f.nome,'pt-BR'))};
+  $('mfo-titulo').textContent='Folha de '+nomeMes(iso);
+  $('mfo-busca').value='';
+  $('mfo-salvar').style.display=PERM.rhEditar&&!fechada?'':'none';
+  renderFolha();abrirModal('modal-folha');
+}
+function renderFolha(){
+  const F=folhaEdit;if(!F)return;
+  const edita=PERM.rhEditar&&!F.fechada,busca=norm($('mfo-busca').value);
+  const l=F.linhas.filter(x=>!busca||norm(x.f.nome).includes(busca));
+  const dentro=F.linhas.filter(x=>x.na).length,inter=F.linhas.filter(x=>x.inter);
+  $('mfo-sub').innerHTML=F.fechada?`🔒 ${esc(nomeMes(F.iso))} está fechada: a folha só pode ser consultada (reabra em Benefícios para mudar).`
+    :`<strong>${dentro}</strong> de ${F.linhas.length} funcionários ativos na folha · ${inter.filter(x=>x.na).length} de ${inter.length} intermitente(s) incluído(s). CLT e sócios entram sozinhos todo mês; <strong>intermitentes</strong> só quando você marcar aqui, informando os dias convocados (é sobre eles que VR/VA e VT são calculados).`;
+  const d=edita?'':'disabled';
+  $('mfo-tabela').innerHTML='<thead><tr><th>Funcionário</th><th>Intermitente?</th><th>Na folha deste mês</th><th class="num">Dias convocados</th></tr></thead><tbody>'+
+    (l.length?l.map(x=>{const i=F.linhas.indexOf(x);return`<tr ${x.na?'':'class="inativo"'}><td><strong>${esc(x.f.nome)}</strong>${tagEmpresa(x.f)}${x.f.cargo?`<div style="font-size:12px;color:var(--texto2)">${esc(x.f.cargo)}</div>`:''}</td>
+      <td><input type="checkbox" data-fo-inter="${i}" ${x.inter?'checked':''} ${d} style="width:17px;height:17px;accent-color:var(--verde)"></td>
+      <td><input type="checkbox" data-fo-na="${i}" ${x.na?'checked':''} ${d} style="width:17px;height:17px;accent-color:var(--verde)"></td>
+      <td class="num">${x.inter&&x.na?`<input type="number" min="0" max="31" value="${esc(x.dias)}" placeholder="dias" data-fo-dias="${i}" ${d} style="width:70px">${x.dias===''?' <span class="badge badge-hoje">informe</span>':''}`:'<span class="dica">—</span>'}</td></tr>`;}).join('')
+    :'<tr><td colspan="4" class="vazio">Nenhum funcionário encontrado.</td></tr>')+'</tbody>';
+  const t=$('mfo-tabela');
+  t.querySelectorAll('[data-fo-inter]').forEach(c=>c.onchange=()=>{const x=F.linhas[+c.dataset.foInter];x.inter=c.checked;
+    // ao virar intermitente, sai da folha até ser incluído; ao deixar de ser, volta
+    if(x.inter&&!x.inter0)x.na=false;if(!x.inter&&x.inter0)x.na=true;renderFolha();});
+  t.querySelectorAll('[data-fo-na]').forEach(c=>c.onchange=()=>{F.linhas[+c.dataset.foNa].na=c.checked;renderFolha();});
+  t.querySelectorAll('[data-fo-dias]').forEach(inp=>inp.onchange=()=>{const v=inp.value===''?'':Math.round(Number(inp.value));F.linhas[+inp.dataset.foDias].dias=v===''||(v>=0&&v<=31)?v:'';renderFolha();});
+}
+async function salvarFolha(){
+  const F=folhaEdit;if(!F||!PERM.rhEditar||F.fechada)return;
+  const mud=F.linhas.filter(x=>x.inter!==x.inter0||x.na!==x.na0||(x.inter&&x.na&&String(x.dias)!==String(x.dias0)));
+  if(!mud.length){fecharModal('modal-folha');return;}
+  const semDias=mud.filter(x=>x.inter&&x.na&&x.dias==='');
+  if(semDias.length&&!confirm(`Sem dias convocados: ${semDias.map(x=>x.f.nome).join(', ')}.\nSem esse número, VR/VA e VT deles serão calculados pelos dias úteis do mês. Salvar mesmo assim?`))return;
+  const btn=$('mfo-salvar');btn.disabled=true;let erros=0;
+  try{
+    const c=await garantirCompetencia();if(!c)return;
+    const agora=new Date().toISOString();
+    for(const x of mud){
+      if(x.inter!==x.inter0){
+        const r=rhPorFunc(x.f.id)||{},tipo=x.inter?'intermitente':(r.tipo_contrato==='intermitente'?'clt':r.tipo_contrato||null);
+        const{error}=await sb.from('funcionario_rh').upsert({funcionario_id:x.f.id,tipo_contrato:tipo,atualizado_em:agora},{onConflict:'funcionario_id'});
+        if(error){console.error(error);erros++;continue;}
+      }
+      const padrao=!x.inter,dados={na_folha:x.na===padrao?null:x.na,atualizado_em:agora};
+      if(x.inter&&x.na)dados.dias_trabalhados=x.dias===''?null:x.dias;
+      const existe=compFuncs.find(y=>y.funcionario_id===x.f.id);
+      const r=existe?await sb.from('competencia_funcionarios').update(dados).eq('id',existe.id)
+        :await sb.from('competencia_funcionarios').insert(Object.assign({competencia_id:c.id,funcionario_id:x.f.id,origem:'manual'},dados));
+      if(r.error){console.error(r.error);erros++;if(/na_folha/.test(r.error.message||'')){alert('Rode antes a migração v16 (supabase/migracao_crm_v16_folha_do_mes.sql) no Supabase.');return;}}
+    }
+    await Promise.all([carregarCompetenciaAtual(),recarregarFuncionariosRH()]);
+    fecharModal('modal-folha');renderTabAtual();
+    if(erros)alert(`${erros} alteração(ões) não foram gravadas.`);else toast(`Folha de ${nomeMes(F.iso)} salva`);
+  }finally{btn.disabled=false;}
 }
 
 /* ================= INÍCIO ================= */
