@@ -11,6 +11,10 @@
 // Ações (POST com JSON):
 //   { "acao": "funcionarios" }  → lista nome, CPF, PIS, admissão, demissão
 //   { "acao": "bancos" }        → nomes dos bancos do Ponto Web da conta
+//   { "acao": "ponto", "dataInicio": "2026-09-26", "dataFim": "2026-10-25" }
+//                               → cartão-ponto calculado de cada funcionário ativo:
+//                                 dias com falta, justificativa, férias ou abono
+//   { "acao": "explorar", ... } → diagnóstico das respostas (só Administrador)
 //
 // Só Administrador e Administrativo do CRM podem chamar.
 // =====================================================================
@@ -143,6 +147,78 @@ Deno.serve(async (req) => {
         saida.push(await testar(`FuncionariosAfastamentos?dataInicio=${di}&dataFim=${df}`));
       }
       return json({ banco: campo(banco, "nome"), funcionario_teste: campo(f0, "Nome"), resultados: saida });
+    }
+    // ponto: cartão-ponto calculado de cada funcionário no período (faltas, justificativas, férias, atrasos)
+    if (pedido.acao === "ponto") {
+      const di = String(pedido.dataInicio || ""), df = String(pedido.dataFim || "");
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(di) || !/^\d{4}-\d{2}-\d{2}$/.test(df) || di > df) return json({ erro: "Período inválido." }, 400);
+      if ((Date.parse(df) - Date.parse(di)) / 86400000 > 62) return json({ erro: "Período maior que 62 dias." }, 400);
+      // deno-lint-ignore no-explicit-any
+      const funcs = ((await pontoWeb("Funcionarios")) || []) as any[];
+      // deno-lint-ignore no-explicit-any
+      const justs = ((await pontoWeb("Justificativas").catch(() => [])) || []) as any[];
+      const idBanco = String(campo(banco, "id") ?? "");
+      const post = async (rota: string, corpo: unknown) => {
+        for (let tentativa = 0; tentativa < 3; tentativa++) {
+          const r = await fetch(PONTOWEB + rota, {
+            method: "POST",
+            headers: { Authorization: "Bearer " + token, secullumidbancoselecionado: idBanco, "Content-Type": "application/json" },
+            body: JSON.stringify(corpo),
+          });
+          const t = await r.text();
+          if (r.status === 429) { await new Promise((ok) => setTimeout(ok, 1500 * (tentativa + 1))); continue; }
+          if (!r.ok) throw new Error(`${rota}: ${r.status} ${t.slice(0, 200)}`);
+          return t ? JSON.parse(t) : null;
+        }
+        throw new Error(`${rota}: o Secullum pediu para esperar (muitas requisições). Tente de novo em 1 minuto.`);
+      };
+      const minutos = (v: unknown) => {
+        const m = String(v ?? "").trim().match(/^(-)?(\d{1,3}):(\d{2})$/);
+        return m ? (m[1] ? -1 : 1) * (Number(m[2]) * 60 + Number(m[3])) : 0;
+      };
+      const ehHora = (v: unknown) => /^\d{1,2}:\d{2}$/.test(String(v ?? "").trim());
+      const sem = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toUpperCase().replace(/[^A-Z0-9%+.-]/g, "");
+      const ativos = funcs.filter((f) => campo(f, "Cpf") && (!campo(f, "Demissao") || String(soData(campo(f, "Demissao"))) >= di));
+      const saida = [];
+      for (const f of ativos) {
+        const cpf = String(campo(f, "Cpf")).replace(/\D/g, "");
+        const item: Record<string, unknown> = { nome: campo(f, "Nome"), cpf, admissao: soData(campo(f, "Admissao")), demissao: soData(campo(f, "Demissao")) };
+        try {
+          const c = await post("Calcular", { FuncionarioCpf: cpf, DataInicial: di, DataFinal: df });
+          const cols: string[] = (campo(c, "Colunas") || []).map((x: unknown) => String(x));
+          const ix = (...nomes: string[]) => cols.findIndex((x) => nomes.some((n) => sem(x) === sem(n)));
+          const iNormais = ix("Normais"), iFaltas = ix("Faltas"), iCarga = ix("Carga"), iAtras = ix("Atras.", "Atrasos");
+          const iAbonos = ["Ajuste", "Abono2", "Abono3", "Abono4"].map((n) => ix(n)).filter((i) => i >= 0);
+          const fimBatidas = iNormais > 0 ? iNormais : 7;
+          const dias = [];
+          let atrasos = 0;
+          // deno-lint-ignore no-explicit-any
+          for (const l of (campo(c, "Linhas") || []) as any[]) {
+            const v: unknown[] = campo(l, "Value") || [];
+            const data = String(campo(l, "Key") || "").slice(0, 10);
+            const cel = v.slice(1, fimBatidas);
+            const batidas = cel.filter(ehHora).length;
+            const textos = [...new Set(cel.filter((x) => x != null && String(x).trim() && !ehHora(x)).map((x) => String(x).trim()))];
+            const faltas = iFaltas >= 0 ? minutos(v[iFaltas]) : 0, carga = iCarga >= 0 ? minutos(v[iCarga]) : 0;
+            const abonos = iAbonos.reduce((s, i) => s + minutos(v[i]), 0);
+            const at = iAtras >= 0 ? minutos(v[iAtras]) : 0;
+            atrasos += at;
+            if (faltas > 0 || abonos > 0 || textos.length) {
+              dias.push({ data, textos, batidas, faltas_min: faltas, carga_min: carga, abonos_min: abonos, normais_min: iNormais >= 0 ? minutos(v[iNormais]) : 0 });
+            }
+          }
+          Object.assign(item, { dias, atrasos_min: atrasos });
+        } catch (e) {
+          item.erro = String((e as Error)?.message || e);
+        }
+        saida.push(item);
+      }
+      return json({
+        banco: campo(banco, "nome"),
+        periodo: { inicio: di, fim: df },
+        justificativas: justs.map((j) => ({ abreviado: String(campo(j, "NomeAbreviado") || "").trim(), completo: String(campo(j, "NomeCompleto") || "").trim() })),
+        funcionarios: saida,
+      });
     }
     if (pedido.acao === "bancos") {
       return json({ bancos: bancos.map((b) => ({ id: campo(b, "id"), nome: campo(b, "nome"), identificador_ok: idDe(b).length === 32 })) });
