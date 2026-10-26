@@ -32,6 +32,20 @@ button{font-family:inherit}
 .btn-verde:hover{background:var(--verde-escuro)}
 .erro{color:var(--vermelho);font-size:13px;margin-top:8px;text-align:center}
 #app{display:none}
+/* v17: tela do perfil Funcionário (só contracheque) */
+#tela-cc{display:none;min-height:100vh;background:var(--cinza)}
+.cc-wrap{max-width:640px;margin:0 auto;padding:20px 16px 40px}
+.cc-ola{background:#fff;border-radius:12px;padding:18px 20px;margin-bottom:16px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.cc-ola h2{font-size:18px;color:var(--verde)}
+.cc-ola p{font-size:13px;color:var(--texto2);margin-top:4px}
+.cc-lista{display:flex;flex-direction:column;gap:10px}
+.cc-item{background:#fff;border-radius:12px;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;box-shadow:0 1px 4px rgba(0,0,0,.06);border-left:4px solid var(--verde)}
+.cc-item strong{font-size:15px;text-transform:capitalize}
+.cc-item .cc-sub{font-size:12px;color:var(--texto2);margin-top:2px}
+.cc-btns{display:flex;gap:8px}
+.cc-btns button{padding:9px 14px;border-radius:8px;border:1.5px solid var(--verde);background:#fff;color:var(--verde);font-weight:600;font-size:13px;cursor:pointer}
+.cc-btns button.cc-prim{background:var(--verde);color:#fff}
+.cc-vazio{background:#fff;border-radius:12px;padding:28px 20px;text-align:center;color:var(--texto2);font-size:14px;line-height:1.6}
 .topbar{background:var(--verde);color:#fff;padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:56px;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.15);gap:12px}
 .topbar-logo{font-weight:700;font-size:18px;letter-spacing:1px;white-space:nowrap}
 .topbar-right{display:flex;align-items:center;gap:16px}
@@ -294,10 +308,25 @@ tr.doc-vencido td{background:#fff5f5}
       <h1>GRUPO-BVEK</h1>
       <p>CRM · Funil de vendas e propostas</p>
     </div>
-    <div class="campo"><label>E-mail</label><input type="email" id="login-email" placeholder="seu@email.com"></div>
+    <div class="campo"><label>E-mail ou CPF</label><input type="text" id="login-email" placeholder="seu@email.com ou CPF" autocomplete="username" autocapitalize="off" spellcheck="false" onkeydown="if(event.key==='Enter')$('login-senha').focus()"></div>
     <div class="campo"><label>Senha</label><input type="password" id="login-senha" placeholder="••••••••" onkeydown="if(event.key==='Enter')fazerLogin()"></div>
     <button class="btn-verde" onclick="fazerLogin()">Entrar</button>
     <div class="erro" id="login-erro"></div>
+  </div>
+</div>
+
+<!-- v17: perfil Funcionário — só os próprios contracheques -->
+<div id="tela-cc">
+  <div class="topbar">
+    <div class="topbar-logo">GRUPO-BVEK</div>
+    <div class="topbar-right">
+      <button class="btn-topo" onclick="abrirModalSenha()" title="Trocar minha senha">🔑 Senha</button>
+      <button class="btn-sair" onclick="sair()">Sair</button>
+    </div>
+  </div>
+  <div class="cc-wrap">
+    <div class="cc-ola"><h2 id="cc-nome">Meus contracheques</h2><p>Toque em <strong>Abrir</strong> para ver o contracheque do mês ou em <strong>Baixar</strong> para salvar o PDF.</p></div>
+    <div class="cc-lista" id="cc-lista"><div class="cc-vazio">Carregando…</div></div>
   </div>
 </div>
 
@@ -623,6 +652,8 @@ tr.doc-vencido td{background:#fff5f5}
       <div class="barra-acoes"><h2>Usuários e perfis de acesso</h2></div>
       <div class="info-box" style="display:block;line-height:1.6">
         <strong>Para dar acesso a um funcionário:</strong> no Supabase, abra <em>Authentication → Users → Add user → Create new user</em>, informe o e-mail e uma senha provisória e marque <em>Auto Confirm User</em>. Ele aparece aqui como <em>Aguardando liberação</em>: escolha o perfil e clique em Salvar. Depois do primeiro acesso, ele troca a senha no botão 🔑 Senha.<br>
+        <strong>Intermitente (só contracheque):</strong> crie o usuário no Supabase com o e-mail <code>CPF@funcionario.bvek.com.br</code> (CPF só com números) e escolha aqui o perfil <em>Funcionário (só contracheque)</em>. Ele entra digitando só o CPF e a senha e vê todos os contracheques guardados para aquele CPF — o CPF precisa estar na ficha do funcionário.
+        <span style="display:inline-flex;gap:6px;align-items:center;margin-left:4px">CPF: <input type="text" id="u-cpf" placeholder="000.000.000-00" style="width:140px;padding:4px 8px;border:1.5px solid var(--borda);border-radius:6px" oninput="mostrarEmailCPF()"> <code id="u-cpf-email"></code></span><br>
         <strong>Funcionário saiu?</strong> Desmarque "Ativo" — o login para de funcionar no CRM e o histórico continua guardado.
       </div>
       <div class="legenda-perfis">
@@ -631,6 +662,7 @@ tr.doc-vencido td{background:#fff5f5}
         <div><strong>Administrativo</strong>Documentos e certidões, funcionários, RH (ficha, uniformes, contracheques, vales, adiantamentos, envio à contabilidade), currículos, projetos e atividades. Funil e clientes só consulta.</div>
         <div><strong>Consulta</strong>Vê funil, clientes, projetos e documentos, não altera nada. Não vê benefícios, RH nem currículos.</div>
         <div><strong>Contabilidade</strong>Só funcionários, benefícios, RH (salários, contracheques, vales e adiantamentos) e documentos/certidões, para consulta e exportação. Não vê funil, propostas, clientes nem currículos.</div>
+        <div><strong>Funcionário (só contracheque)</strong>Entra com CPF e senha e vê somente os próprios contracheques (todos os meses guardados para o CPF). Não vê nada mais do CRM.</div>
       </div>
       <div class="tabela-wrap"><table class="tabela" id="tabela-usuarios"></table></div>
     </div>
@@ -1398,7 +1430,9 @@ const CADENCIA_COBRANCA={enviada:3,cobranca1:4,cobranca2:7,negociacao:7};
 const ETAPAS_COBRANCA=Object.keys(CADENCIA_COBRANCA);
 const PROXIMA_ETAPA_COBRANCA={enviada:'cobranca1',cobranca1:'cobranca2'};
 // Perfis de acesso (as regras valem no banco; aqui só ajustam a tela)
-const PERFIS=[['administrador','Administrador'],['comercial','Comercial'],['administrativo','Administrativo'],['contabilidade','Contabilidade'],['consulta','Consulta'],['pendente','Aguardando liberação']];
+const PERFIS=[['administrador','Administrador'],['comercial','Comercial'],['administrativo','Administrativo'],['contabilidade','Contabilidade'],['consulta','Consulta'],['funcionario','Funcionário (só contracheque)'],['pendente','Aguardando liberação']];
+// v17: login por CPF do perfil Funcionário → e-mail interno CPF@funcionario.bvek.com.br
+const DOMINIO_FUNC='funcionario.bvek.com.br';
 const PERFIL_LABEL=Object.fromEntries(PERFIS);
 function calcularPermissoes(p){
   const adm=p==='administrador',com=p==='comercial',admv=p==='administrativo',cont=p==='contabilidade';
@@ -1502,13 +1536,19 @@ function modoLeitura(modalId,leitura){
 
 /* ================= LOGIN ================= */
 async function fazerLogin(){
-  const email=$('login-email').value.trim(),senha=$('login-senha').value;
+  let email=$('login-email').value.trim();const senha=$('login-senha').value;
   $('login-erro').textContent='';
+  // Sem "@": é CPF (perfil Funcionário)
+  if(email&&!email.includes('@')){
+    const cpf=email.replace(/\D/g,'');
+    if(cpf.length!==11){$('login-erro').textContent='Digite o e-mail ou o CPF completo (11 números).';return;}
+    email=cpf+'@'+DOMINIO_FUNC;
+  }
   const{error}=await sb.auth.signInWithPassword({email,password:senha});
   if(error){$('login-erro').textContent='E-mail ou senha incorretos.';return;}
   iniciarApp();
 }
-async function sair(){await sb.auth.signOut();$('app').style.display='none';$('tela-login').style.display='flex';}
+async function sair(){await sb.auth.signOut();$('app').style.display='none';$('tela-cc').style.display='none';$('tela-login').style.display='flex';}
 // Lê o perfil de quem entrou. null = a migração v11 ainda não rodou (mantém o acesso de antes)
 async function carregarMeuPerfil(user){
   const{data,error}=await sb.from('perfis').select('*').eq('id',user.id).maybeSingle();
@@ -1526,6 +1566,7 @@ async function iniciarApp(){
     $('login-erro').textContent=meuPerfil&&meuPerfil.ativo===false?'Este login foi desativado. Fale com o administrador.':'Seu acesso ainda não foi liberado. Peça ao administrador para definir o seu perfil no CRM.';
     return;
   }
+  if(meuPerfil.perfil==='funcionario'){iniciarContracheques();return;}
   PERM=calcularPermissoes(meuPerfil.perfil);
   $('tela-login').style.display='none';$('app').style.display='block';
   $('user-nome').innerHTML=`${esc(meuPerfil.nome||user.email)}<span class="perfil-tag">${esc(PERFIL_LABEL[meuPerfil.perfil]||meuPerfil.perfil)}</span>`;
@@ -1543,6 +1584,39 @@ async function iniciarApp(){
   if(!PERM.comercialVer)abrirTab('documentos');
   await carregarTudo();
   mostrarAvisosDoDia();
+}
+/* ================= v17: PERFIL FUNCIONÁRIO — só os próprios contracheques ================= */
+let meusCC=[];
+async function iniciarContracheques(){
+  $('tela-login').style.display='none';$('app').style.display='none';$('tela-cc').style.display='block';
+  const[n,l]=await Promise.all([sb.rpc('bvek_meu_nome_funcionario'),sb.rpc('bvek_meus_contracheques')]);
+  const nome=(n&&n.data)||meuPerfil.nome||'';
+  $('cc-nome').textContent=nome?`Olá, ${String(nome).split(' ')[0].charAt(0)+String(nome).split(' ')[0].slice(1).toLowerCase()}`:'Meus contracheques';
+  if(l.error){console.error(l.error);
+    $('cc-lista').innerHTML=/bvek_meus_contracheques|function|schema cache/i.test(l.error.message||'')
+      ?'<div class="cc-vazio">O sistema ainda está sendo atualizado. Tente de novo mais tarde.</div>'
+      :'<div class="cc-vazio">Não foi possível carregar os contracheques. Tente de novo mais tarde.</div>';return;}
+  meusCC=l.data||[];
+  if(!n.data){$('cc-lista').innerHTML='<div class="cc-vazio">Seu CPF ainda não está ligado a um cadastro de funcionário.<br>Fale com o RH.</div>';return;}
+  if(!meusCC.length){$('cc-lista').innerHTML='<div class="cc-vazio">Ainda não há contracheques disponíveis para você.<br>Assim que o RH guardar o do mês, ele aparece aqui.</div>';return;}
+  $('cc-lista').innerHTML=meusCC.map((c,i)=>`<div class="cc-item"><div><strong>${esc(nomeMes(c.competencia))}</strong>
+    <div class="cc-sub">${esc([c.empresa,c.cargo].filter(Boolean).join(' · '))}</div></div>
+    <div class="cc-btns"><button class="cc-prim" onclick="abrirMeuCC(${i},false)">Abrir</button><button onclick="abrirMeuCC(${i},true)">Baixar</button></div></div>`).join('');
+}
+async function abrirMeuCC(i,baixar){
+  const c=meusCC[i];if(!c)return;
+  const nomeArq=`Contracheque ${String(c.competencia).slice(0,7)}.pdf`;
+  // abre a aba antes (celular bloqueia janela aberta depois de esperar a resposta)
+  const w=baixar?null:window.open('','_blank');
+  const{data,error}=await sb.storage.from(BUCKET_RH).createSignedUrl(c.arquivo,600,baixar?{download:nomeArq}:undefined);
+  if(error||!data){if(w)w.close();alert('Não foi possível abrir o contracheque. Tente de novo ou fale com o RH.');console.error(error);return;}
+  if(w)w.location.href=data.signedUrl;else if(baixar)location.href=data.signedUrl;else window.open(data.signedUrl,'_blank','noopener');
+}
+function mostrarEmailCPF(){const d=$('u-cpf').value.replace(/\D/g,'');$('u-cpf-email').textContent=d.length===11?d+'@'+DOMINIO_FUNC:'';}
+// Para a aba Usuários: a quem o login por CPF está ligado
+function funcionarioDoLogin(email){
+  const m=String(email||'').toLowerCase().match(/^(\d{11})@funcionario\.bvek\.com\.br$/);if(!m)return null;
+  return todosFuncionarios.filter(f=>String(f.cpf||'').replace(/\D/g,'')===m[1]);
 }
 // Esconde o que o perfil não pode usar (o banco bloqueia de qualquer forma)
 function aplicarPermissoes(){
@@ -1649,7 +1723,7 @@ function avisarMigracao(){
 }
 function atualizarDatalists(){
   $('dl-clientes').innerHTML=todosClientes.filter(c=>c.ativo!==false).map(c=>`<option value="${esc(rotuloCliente(c))}">`).join('');
-  const nomesUsuarios=todosPerfis.filter(p=>p.ativo&&p.perfil!=='pendente').map(p=>p.nome);
+  const nomesUsuarios=todosPerfis.filter(p=>p.ativo&&p.perfil!=='pendente'&&p.perfil!=='funcionario').map(p=>p.nome);
   const resps=[...new Set([...todosCards.map(c=>c.responsavel),...todasAtividades.map(a=>a.responsavel),...todosDocumentos.map(d=>d.responsavel),...nomesUsuarios].filter(Boolean).map(s=>s.trim()))].sort((a,b)=>a.localeCompare(b,'pt-BR'));
   $('dl-responsaveis').innerHTML=resps.map(r=>`<option value="${esc(r)}">`).join('');
   ['funil-resp','ativ-resp'].forEach(id=>{const s=$(id),v=s.value;preencherSelect(s,resps.map(r=>[r,r]),'Todos os responsáveis');s.value=v;});
@@ -3288,7 +3362,7 @@ function renderUsuarios(){
   $('tabela-usuarios').innerHTML='<thead><tr><th>Nome</th><th>E-mail</th><th>Perfil</th><th>Ativo</th><th></th></tr></thead><tbody>'+
     (l.length?l.map(p=>`<tr class="${p.ativo?'':'inativo'}" data-u="${esc(p.id)}">
       <td><input type="text" value="${esc(p.nome||'')}" data-campo="nome" style="min-width:160px"></td>
-      <td>${esc(p.email||'')}${p.id===usuario.id?' <span class="badge badge-ok">você</span>':''}</td>
+      <td>${esc(p.email||'')}${p.id===usuario.id?' <span class="badge badge-ok">você</span>':''}${p.perfil==='funcionario'?(()=>{const fs=funcionarioDoLogin(p.email);return fs===null?'<div class="dica" style="color:var(--vermelho)">⚠ Para este perfil o e-mail precisa ser CPF@funcionario.bvek.com.br</div>':fs.length?`<div class="dica">Contracheques de: ${esc(fs.map(f=>f.nome).join(', '))}</div>`:'<div class="dica" style="color:var(--vermelho)">⚠ Nenhum funcionário com este CPF — cadastre o CPF na ficha</div>';})():''}</td>
       <td><select data-campo="perfil">${PERFIS.map(([v,t])=>`<option value="${v}" ${p.perfil===v?'selected':''}>${t}</option>`).join('')}</select>${p.perfil==='pendente'?' <span class="badge badge-hoje">novo</span>':''}</td>
       <td><input type="checkbox" data-campo="ativo" ${p.ativo?'checked':''} style="width:17px;height:17px;accent-color:var(--verde)"></td>
       <td><button class="btn-sec" data-salvar-u>Salvar</button></td></tr>`).join(''):'<tr><td colspan="5" class="vazio">Nenhum usuário encontrado. Rode a migração v11.</td></tr>')+'</tbody>';
