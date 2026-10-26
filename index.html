@@ -137,7 +137,8 @@ table.tabela td.num{text-align:right;font-variant-numeric:tabular-nums;white-spa
 .modal-cab{position:sticky;top:-20px;z-index:20;background:#fff;margin:-30px -30px 12px;padding:24px 64px 12px 30px;border-radius:16px 16px 0 0;border-bottom:1px solid var(--borda)}
 .modal-cab h2{margin-bottom:0}
 .modal-cab .ficha-topo{margin-bottom:0}
-.modal-x{position:absolute;top:16px;right:16px;width:36px;height:36px;border-radius:50%;border:none;background:#f1f1f1;color:var(--texto2);font-size:24px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.modal-x{position:absolute;top:16px;right:16px;width:36px;height:36px;border-radius:50%;border:none;background:#f1f1f1;color:var(--texto2);padding:0;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.modal-x svg{display:block}
 .modal-x:hover{background:#e3e3e3;color:var(--texto)}
 .secao{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--verde);margin:20px 0 12px;padding-bottom:6px;border-bottom:1.5px solid var(--verde-claro);display:flex;justify-content:space-between;align-items:center}
 .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 14px}
@@ -4752,7 +4753,7 @@ document.querySelectorAll('.modal-overlay').forEach(ov=>{
   const m=ov.querySelector(':scope>.modal');if(!m||m.querySelector(':scope>.modal-cab'))return;
   const cab=document.createElement('div');cab.className='modal-cab';
   if(m.firstElementChild)cab.appendChild(m.firstElementChild);
-  const x=document.createElement('button');x.type='button';x.className='modal-x';x.title='Fechar (Esc)';x.setAttribute('aria-label','Fechar');x.innerHTML='&times;';
+  const x=document.createElement('button');x.type='button';x.className='modal-x';x.title='Fechar (Esc)';x.setAttribute('aria-label','Fechar');x.innerHTML='<svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M2 2L12 12M12 2L2 12" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>';
   x.onclick=()=>fecharModal(ov.id);cab.appendChild(x);m.prepend(cab);
 });
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){const abertos=[...document.querySelectorAll('.modal-overlay.aberto')];if(abertos.length)abertos[abertos.length-1].classList.remove('aberto');}});
