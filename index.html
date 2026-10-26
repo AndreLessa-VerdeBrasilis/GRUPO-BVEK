@@ -3864,21 +3864,51 @@ async function lerPdfContracheques(arquivo){
     bytes=new Uint8Array(await arquivo.arrayBuffer());
     pdf=await lib.getDocument({data:bytes.slice()}).promise;
   }catch(e){console.error(e);alert('Não consegui abrir o PDF: '+(e.message||e));return;}
-  splitPaginas=[];let anterior=null;
-  for(let n=1;n<=pdf.numPages;n++){
-    const pg=await pdf.getPage(n),tc=await pg.getTextContent();
-    const texto=tc.items.map(i=>i.str).join(' ').replace(/\s+/g,' ').trim();
-    const achados=acharFuncionariosNoTexto(texto,todosFuncionarios);
-    let fid=null,herdado=false;
-    if(achados.length===1){fid=achados[0].id;anterior=fid;}
-    else if(!achados.length&&anterior){fid=anterior;herdado=true;}
-    else if(achados.length>1)anterior=null;
-    splitPaginas.push({n,texto,achados,fid,herdado,incluir:!!fid});
-  }
+  splitPaginas=[];let anterior=null,ocrFalhou=false;
+  try{
+    for(let n=1;n<=pdf.numPages;n++){
+      const pg=await pdf.getPage(n),tc=await pg.getTextContent();
+      let texto=tc.items.map(i=>i.str).join(' ').replace(/\s+/g,' ').trim(),ocr=false;
+      // PDF "impresso" (Microsoft Print to PDF, scanner): o texto vira desenho; lê pela imagem
+      if(letrasDoTexto(texto)<40&&!ocrFalhou){
+        toast(`Lendo a página ${n} de ${pdf.numPages} pela imagem…`);
+        try{const t=await ocrPaginaPdf(pg);texto=(texto+' '+t).replace(/\s+/g,' ').trim();ocr=true;}
+        catch(e){console.error(e);ocrFalhou=true;}
+      }
+      const achados=acharFuncionariosNoTexto(texto,todosFuncionarios);
+      let fid=null,herdado=false;
+      if(achados.length===1){fid=achados[0].id;anterior=fid;}
+      else if(!achados.length&&anterior){fid=anterior;herdado=true;}
+      else if(achados.length>1)anterior=null;
+      splitPaginas.push({n,texto,achados,fid,herdado,ocr,incluir:!!fid});
+    }
+  }finally{await encerrarOcr();}
   splitArquivo={bytes,nome:arquivo.name};
-  if(!splitPaginas.some(p=>p.texto)){alert('O PDF não tem texto (parece escaneado). Escolha o funcionário de cada página na lista.');}
+  if(ocrFalhou)alert('Não consegui ler algumas páginas pela imagem (sem internet ou PDF muito grande). Escolha o funcionário dessas páginas na lista.');
+  else if(!splitPaginas.some(p=>p.texto))alert('Não encontrei texto no PDF. Escolha o funcionário de cada página na lista.');
   renderSplit();abrirModal('modal-split');
 }
+// leitura por imagem (OCR) com Tesseract.js, em português
+const letrasDoTexto=t=>(String(t).replace(/CPF[:\s\d.\-]*/gi,'').match(/[A-Za-zÀ-ú]/g)||[]).length;
+let tesseractPronto=null,ocrWorker=null;
+function carregarTesseract(){
+  if(window.Tesseract)return Promise.resolve(window.Tesseract);
+  if(tesseractPronto)return tesseractPronto;
+  tesseractPronto=new Promise((ok,falha)=>{const sc=document.createElement('script');sc.src='https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js';
+    sc.onload=()=>ok(window.Tesseract);sc.onerror=()=>{tesseractPronto=null;falha(new Error('Não foi possível carregar o leitor de imagem (OCR).'));};document.head.appendChild(sc);});
+  return tesseractPronto;
+}
+async function ocrPaginaPdf(pg){
+  const T=await carregarTesseract();
+  if(!ocrWorker)ocrWorker=await T.createWorker('por');
+  const vp=pg.getViewport({scale:2.2});
+  const cv=document.createElement('canvas');cv.width=Math.round(vp.width);cv.height=Math.round(vp.height);
+  const ctx=cv.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,cv.width,cv.height);
+  await pg.render({canvasContext:ctx,viewport:vp}).promise;
+  const{data}=await ocrWorker.recognize(cv);
+  return data&&data.text||'';
+}
+async function encerrarOcr(){if(ocrWorker){try{await ocrWorker.terminate();}catch(e){}ocrWorker=null;}}
 function renderSplit(){
   const iso=mesRH(),ativos=todosFuncionarios.filter(f=>f.ativo!==false);
   const usados=new Set(splitPaginas.filter(p=>p.incluir&&p.fid).map(p=>p.fid));
@@ -3887,9 +3917,10 @@ function renderSplit(){
   const opts=[...ativos,...todosFuncionarios.filter(f=>f.ativo===false)];
   $('sp-tabela').innerHTML='<thead><tr><th></th><th>Pág.</th><th>Funcionário</th><th>Leitura</th><th>Trecho da página</th></tr></thead><tbody>'+splitPaginas.map((p,i)=>{
     const st=p.achados.length>1?`<span class="badge badge-atraso">vários nomes: ${esc(p.achados.map(f=>f.nome.split(' ')[0]).join(', '))}</span>`:p.herdado?'<span class="badge badge-hoje">continuação?</span>':p.achados.length===1?'<span class="badge badge-ok">nome encontrado</span>':'<span class="badge badge-cinza">não encontrado</span>';
+    const stOcr=p.ocr?' <span class="badge badge-cinza" title="Página sem texto: lida pela imagem (OCR). Confira o funcionário.">lida pela imagem</span>':'';
     return`<tr ${p.herdado||p.achados.length>1?'style="background:#fffbea"':''}><td><input type="checkbox" data-sp-inc="${i}" ${p.incluir?'checked':''} style="width:17px;height:17px;accent-color:var(--verde)"></td><td>${p.n}</td>
       <td><select data-sp-func="${i}"><option value="">—</option>${opts.map(f=>`<option value="${esc(f.id)}" ${f.id===p.fid?'selected':''}>${esc(f.nome)}${f.ativo===false?' (desligado)':''}</option>`).join('')}</select></td>
-      <td>${st}</td><td class="trecho" title="${esc(p.texto.slice(0,600))}">${esc(p.texto.slice(0,140)||'(sem texto)')}</td></tr>`;}).join('')+'</tbody>';
+      <td>${st}${stOcr}</td><td class="trecho" title="${esc(p.texto.slice(0,600))}">${esc(p.texto.slice(0,140)||'(sem texto)')}</td></tr>`;}).join('')+'</tbody>';
   $('sp-tabela').querySelectorAll('[data-sp-inc]').forEach(c=>c.onchange=()=>{splitPaginas[+c.dataset.spInc].incluir=c.checked;renderSplit();});
   $('sp-tabela').querySelectorAll('[data-sp-func]').forEach(s=>s.onchange=()=>{const p=splitPaginas[+s.dataset.spFunc];p.fid=s.value||null;p.incluir=!!s.value;p.herdado=false;renderSplit();});
 }
