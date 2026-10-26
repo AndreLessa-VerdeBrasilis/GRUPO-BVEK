@@ -4614,6 +4614,8 @@ function classificarPonto(dias,mapa){
       if(!mapa[k]&&!/^FERIAD|^FOLGA|^FERIA/.test(k))r.novas.add(txt);
       if(tipo==='nao_falta'){if(d.batidas&&d.faltas_min>0&&d.carga_min>0)r.parcMin+=d.faltas_min;return;}
       if(d.batidas>0&&tipo!=='ferias'){if(d.faltas_min>0)r.parcMin+=d.faltas_min;r.detalhe.push({d:d.data,t:'parcial',x:txt,m:d.faltas_min});return;}
+      // justificativa/férias em fim de semana ou feriado não desconta dia útil
+      if(!diaUtil(d.data)&&!(d.carga_min>0))return;
       if(tipo==='injustificada')r.inj++;else if(tipo==='justificada')r.just++;else if(tipo==='abonada')r.abon++;else if(tipo==='ferias')r.fer++;
       r.detalhe.push({d:d.data,t:tipo,x:txt});return;
     }
