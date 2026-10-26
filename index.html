@@ -664,6 +664,10 @@ tr.doc-vencido td{background:#fff5f5}
         <div><strong>Contabilidade</strong>Só funcionários, benefícios, RH (salários, contracheques, vales e adiantamentos) e documentos/certidões, para consulta e exportação. Não vê funil, propostas, clientes nem currículos.</div>
         <div><strong>Funcionário (só contracheque)</strong>Entra com CPF e senha e vê somente os próprios contracheques (todos os meses guardados para o CPF). Não vê nada mais do CRM.</div>
       </div>
+      <div class="barra-acoes" style="margin-top:18px"><h2>Acesso dos intermitentes ao contracheque</h2>
+        <label class="dica" style="display:flex;gap:6px;align-items:center;font-size:12px"><input type="checkbox" id="u-todos-func" onchange="renderAcessosFunc()"> mostrar todos os funcionários ativos</label></div>
+      <div class="tabela-wrap"><table class="tabela" id="tabela-acessos-func"></table></div>
+      <div class="barra-acoes" style="margin-top:18px"><h2>Todos os logins</h2></div>
       <div class="tabela-wrap"><table class="tabela" id="tabela-usuarios"></table></div>
     </div>
   </div>
@@ -1373,6 +1377,20 @@ tr.doc-vencido td{background:#fff5f5}
       <button class="btn-sec" id="av-btn-rh" onclick="fecharAvisos(true);abrirTab('rh')">Ver RH</button>
       <button class="btn-sec" onclick="fecharAvisos(true);$('doc-status').value='atencao';abrirTab('documentos')">Ver documentos</button>
       <button class="btn-salvar" onclick="fecharAvisos(true)">Ciente</button>
+    </div>
+  </div>
+</div>
+
+<!-- v18: MODAL CRIAR ACESSO / NOVA SENHA DO FUNCIONÁRIO -->
+<div class="modal-overlay" id="modal-acesso-func">
+  <div class="modal modal-sm">
+    <h2 id="maf-titulo">Criar acesso ao contracheque</h2>
+    <p class="modal-sub" id="maf-sub"></p>
+    <div class="campo"><label>Senha provisória</label><input type="text" id="maf-senha" autocomplete="off" spellcheck="false" placeholder="mínimo 8 caracteres" onkeydown="if(event.key==='Enter')salvarAcessoFunc()"></div>
+    <p class="dica">Passe ao funcionário o CPF e esta senha. No primeiro acesso, ele troca a senha no botão 🔑 Senha.</p>
+    <div class="modal-btns">
+      <button class="btn-cancelar" onclick="fecharModal('modal-acesso-func')">Cancelar</button>
+      <button class="btn-salvar" id="maf-btn" onclick="salvarAcessoFunc()">Criar acesso</button>
     </div>
   </div>
 </div>
@@ -3356,8 +3374,54 @@ async function exportarBeneficios(){
 }
 
 /* ================= USUÁRIOS (administrador) ================= */
+/* v18: criar acesso e nova senha dos funcionários (login por CPF) */
+let acessoFunc=null;
+function loginDoFuncionario(f){
+  const cpf=String(f.cpf||'').replace(/\D/g,'');if(cpf.length!==11)return{cpf:null,perfil:null};
+  const email=cpf+'@'+DOMINIO_FUNC;return{cpf,email,perfil:todosPerfis.find(p=>String(p.email||'').toLowerCase()===email)||null};
+}
+function renderAcessosFunc(){
+  if(!PERM.admin)return;
+  const todos=$('u-todos-func').checked;
+  const l=todosFuncionarios.filter(f=>f.ativo!==false&&(todos||ehIntermitente(f))).sort((a,b)=>String(a.nome).localeCompare(String(b.nome),'pt-BR'));
+  $('tabela-acessos-func').innerHTML='<thead><tr><th>Funcionário</th><th>CPF (login)</th><th>Situação</th><th></th></tr></thead><tbody>'+
+    (l.length?l.map(f=>{const g=loginDoFuncionario(f),p=g.perfil;
+      let sit,btn='';
+      if(!g.cpf){sit='<span class="badge badge-atraso">falta CPF na ficha</span>';btn=`<button class="btn-sec" onclick="abrirFicha('${f.id}')">Abrir ficha</button>`;}
+      else if(!p){sit='<span class="badge badge-cinza">sem acesso</span>';btn=`<button class="btn-salvar" onclick="abrirAcessoFunc('${f.id}',false)">Criar acesso</button>`;}
+      else if(p.perfil!=='funcionario'){sit=`<span class="badge badge-hoje">login com perfil ${esc(PERFIL_LABEL[p.perfil]||p.perfil)}</span>`;btn=`<button class="btn-sec" onclick="abrirAcessoFunc('${f.id}',false)">Liberar contracheque</button>`;}
+      else if(!p.ativo){sit='<span class="badge badge-cinza">acesso desativado</span>';btn=`<button class="btn-sec" onclick="abrirAcessoFunc('${f.id}',false)">Reativar</button>`;}
+      else{sit='<span class="badge badge-ok">acesso ativo</span>';btn=`<button class="btn-sec" onclick="abrirAcessoFunc('${f.id}',true)">Nova senha</button>`;}
+      return`<tr><td>${esc(f.nome)}${ehIntermitente(f)?' <span class="badge badge-cinza">intermitente</span>':''}</td><td>${g.cpf?esc(fmtCPFLogin(g.cpf)):'—'}</td><td>${sit}</td><td style="text-align:right">${btn}</td></tr>`;}).join('')
+      :`<tr><td colspan="4" class="vazio">${todos?'Nenhum funcionário ativo.':'Nenhum intermitente ativo. Marque o contrato "CLT – contrato intermitente" na ficha do funcionário (RH) ou marque "mostrar todos" acima.'}</td></tr>`)+'</tbody>';
+}
+function fmtCPFLogin(d){return`${d.slice(0,3)}.${d.slice(3,6)}.${d.slice(6,9)}-${d.slice(9)}`;}
+function abrirAcessoFunc(fid,novaSenha){
+  const f=funcPorId(fid);if(!f)return;const g=loginDoFuncionario(f),existe=!!g.perfil;
+  acessoFunc={fid,novaSenha,existe};
+  $('maf-titulo').textContent=novaSenha?'Nova senha do contracheque':existe?'Liberar acesso ao contracheque':'Criar acesso ao contracheque';
+  $('maf-sub').textContent=`${f.nome} · login: CPF ${fmtCPFLogin(g.cpf)}`;
+  $('maf-btn').textContent=novaSenha?'Salvar senha':existe?'Liberar acesso':'Criar acesso';
+  // login que já existe mantém a senha atual (só muda o perfil)
+  $('maf-senha').closest('.campo').style.display=(existe&&!novaSenha)?'none':'';
+  $('maf-senha').value='';abrirModal('modal-acesso-func');setTimeout(()=>$('maf-senha').focus(),50);
+}
+async function salvarAcessoFunc(){
+  if(!acessoFunc)return;const{fid,novaSenha,existe}=acessoFunc,senha=$('maf-senha').value;
+  if(!(existe&&!novaSenha)&&senha.length<8){alert('A senha provisória precisa ter pelo menos 8 caracteres.');return;}
+  $('maf-btn').disabled=true;
+  const{error}=await sb.rpc(novaSenha?'bvek_nova_senha_funcionario':'bvek_criar_acesso_funcionario',{p_funcionario:fid,p_senha:senha||null});
+  $('maf-btn').disabled=false;
+  if(error){console.error(error);alert(/function|schema cache/i.test(error.message||'')
+    ?'Falta rodar no Supabase a migração supabase/migracao_crm_v18_criar_acesso_funcionario.sql.'
+    :'Não foi possível: '+(error.message||error));return;}
+  fecharModal('modal-acesso-func');
+  await carregarPerfis();renderUsuarios();
+  toast(novaSenha?'Senha alterada — passe a nova senha ao funcionário':'Acesso liberado — o funcionário entra com o CPF e a senha');
+}
 function renderUsuarios(){
   if(!PERM.admin)return;
+  renderAcessosFunc();
   const l=[...todosPerfis].sort((a,b)=>(a.perfil==='pendente'?0:1)-(b.perfil==='pendente'?0:1)||String(a.nome||a.email).localeCompare(String(b.nome||b.email),'pt-BR'));
   $('tabela-usuarios').innerHTML='<thead><tr><th>Nome</th><th>E-mail</th><th>Perfil</th><th>Ativo</th><th></th></tr></thead><tbody>'+
     (l.length?l.map(p=>`<tr class="${p.ativo?'':'inativo'}" data-u="${esc(p.id)}">
