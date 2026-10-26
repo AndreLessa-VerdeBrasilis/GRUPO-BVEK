@@ -133,6 +133,12 @@ table.tabela td.num{text-align:right;font-variant-numeric:tabular-nums;white-spa
 .modal-sm{max-width:480px}
 .modal h2{font-size:20px;margin-bottom:6px;color:var(--verde)}
 .modal-sub{font-size:13px;color:var(--texto2);margin-bottom:18px}
+/* Cabeçalho fixo dos pop-ups com botão × (v15.3) */
+.modal-cab{position:sticky;top:-20px;z-index:20;background:#fff;margin:-30px -30px 12px;padding:24px 64px 12px 30px;border-radius:16px 16px 0 0;border-bottom:1px solid var(--borda)}
+.modal-cab h2{margin-bottom:0}
+.modal-cab .ficha-topo{margin-bottom:0}
+.modal-x{position:absolute;top:16px;right:16px;width:36px;height:36px;border-radius:50%;border:none;background:#f1f1f1;color:var(--texto2);font-size:24px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.modal-x:hover{background:#e3e3e3;color:var(--texto)}
 .secao{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--verde);margin:20px 0 12px;padding-bottom:6px;border-bottom:1.5px solid var(--verde-claro);display:flex;justify-content:space-between;align-items:center}
 .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 14px}
 .linha-flex{display:flex;gap:8px}.linha-flex>*{flex:1;min-width:0}
@@ -270,7 +276,7 @@ tr.doc-vencido td{background:#fff5f5}
 .oculto{display:none!important}
 @media(max-width:700px){.linha-benef{grid-template-columns:1fr 1fr}.dim-linha{grid-template-columns:120px 1fr 60px}}
 @media(max-width:700px){
-  .form-grid{grid-template-columns:1fr}.conteudo{padding:12px}.modal{padding:18px}.topbar{padding:0 12px}
+  .form-grid{grid-template-columns:1fr}.conteudo{padding:12px}.modal{padding:18px}.modal-cab{margin:-18px -18px 10px;padding:16px 56px 10px 18px}.modal-x{top:10px;right:10px}.topbar{padding:0 12px}
   .topbar-logo{font-size:15px}.empresa-selector label{display:none}#user-nome{display:none}.empresa-selector{padding:6px 8px;min-width:0}.empresa-selector select{max-width:150px;font-size:13px}.topbar{gap:8px}.btn-sair{padding:6px 10px}
   .ativ-form{grid-template-columns:1fr}.barra-linha{grid-template-columns:90px 1fr 90px}
   .filtros input[type=search]{min-width:0;width:100%}
@@ -4741,6 +4747,14 @@ document.querySelectorAll('#rh-subabas .subaba').forEach(s=>s.onclick=()=>{rhSub
 document.querySelectorAll('#fi-subabas .subaba').forEach(s=>s.onclick=()=>{if(!fichaId&&s.dataset.fi!=='dados'){toast('Salve os dados do funcionário primeiro');return;}fichaSub=s.dataset.fi;renderFicha();});
 ligarDrop('rh-cc-drop',f=>lerPdfContracheques(f));
 ligarDrop('fi-ficha-drop',f=>enviarFichaRegistro(f));
+/* Pop-ups: cabeçalho fixo no topo + botão × (fecha igual ao Fechar/Cancelar e ao Esc) */
+document.querySelectorAll('.modal-overlay').forEach(ov=>{
+  const m=ov.querySelector(':scope>.modal');if(!m||m.querySelector(':scope>.modal-cab'))return;
+  const cab=document.createElement('div');cab.className='modal-cab';
+  if(m.firstElementChild)cab.appendChild(m.firstElementChild);
+  const x=document.createElement('button');x.type='button';x.className='modal-x';x.title='Fechar (Esc)';x.setAttribute('aria-label','Fechar');x.innerHTML='&times;';
+  x.onclick=()=>fecharModal(ov.id);cab.appendChild(x);m.prepend(cab);
+});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){const abertos=[...document.querySelectorAll('.modal-overlay.aberto')];if(abertos.length)abertos[abertos.length-1].classList.remove('aberto');}});
 sb.auth.getSession().then(({data:{session}})=>{if(session)iniciarApp();});
 </script>
