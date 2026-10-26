@@ -4634,6 +4634,7 @@ async function puxarFaltasPonto(){
   const iso=compISO(),c=competenciaAtual();
   if(c&&c.situacao==='fechada'){alert(`${nomeMes(iso)} está fechada. Reabra a competência em Benefícios para atualizar as faltas.`);return;}
   const per=periodoPonto(iso);
+  await carregarCompetenciaAtual();
   const btns=[...document.querySelectorAll('[data-btn-ponto]')];btns.forEach(b=>{b.disabled=true;b.dataset.txt=b.textContent;b.textContent='Lendo o ponto…';});
   let r;
   try{r=await chamarSecullum('ponto',{dataInicio:per.inicio,dataFim:per.fim});}
@@ -4645,7 +4646,10 @@ async function puxarFaltasPonto(){
     const cpf=String(s.cpf||'').replace(/\D/g,'');
     let f=ativos.find(x=>x.cpf&&x.cpf.replace(/\D/g,'')===cpf)||ativos.find(x=>acharNoSecullum(x,[{nome:s.nome}]));
     if(f&&usados.has(f.id))f=null;if(f)usados.add(f.id);
-    return{s,f,incluir:!!f&&!s.erro};
+    // já lançado à mão neste mês: vem desmarcado para não sobrescrever
+    const cf=f&&compFuncs.find(x=>x.funcionario_id===f.id),fxm=faltasCF(cf);
+    const manual=!!cf&&fxm.origem==='manual'&&(totalFaltas(fxm)+fxm.fer>0);
+    return{s,f,manual,fxm,incluir:!!f&&!s.erro&&!manual};
   });
   pontoPrevia={iso,per,banco:r.banco,justificativas:r.justificativas||[],linhas,mapa:mapaJustificativas()};
   renderPrevia();abrirModal('modal-ponto');
@@ -4670,8 +4674,9 @@ function renderPrevia(){
       const v=l.edit||{inj:l.cl.inj,just:l.cl.just,abon:l.cl.abon,fer:l.cl.fer};
       const det=l.cl.detalhe.filter(x=>x.t!=='parcial').map(x=>`<span class="badge ${x.t==='injustificada'?'badge-atraso':x.t==='incompleta'?'badge-hoje':'badge-cinza'}" title="${esc(x.x||'')}">${esc(dataCurta(x.d))} ${esc(TIPO_DIA_CURTO[x.t]||x.t)}</span>`).join(' ');
       const aviso=l.s.erro?`<div class="dica" style="color:var(--vermelho)">${esc(l.s.erro)}</div>`:!l.f?'<div class="dica" style="color:var(--vermelho)">não encontrado no CRM — confira nome/CPF em 👷 Funcionários</div>'
+        :l.manual?`<div class="dica" style="color:var(--azul)">✋ já lançado à mão neste mês (${l.fxm.inj} inj. · ${l.fxm.just} just. · ${l.fxm.abon} abon. · ${l.fxm.fer} férias): marque só se quiser substituir pelo ponto</div>`
         :l.semPonto?`<div class="dica" style="color:var(--laranja)">⚠️ ${l.cl.semBatida} dias sem nenhuma batida: confira se ele(a) bate ponto antes de lançar</div>`:'';
-      return`<tr ${l.semPonto||!l.f?'style="background:#fffbea"':''}><td><input type="checkbox" data-mp-inc="${i}" ${l.incluir?'checked':''} ${l.f&&!l.s.erro?'':'disabled'} style="width:17px;height:17px;accent-color:var(--verde)"></td>
+      return`<tr ${l.semPonto||!l.f||l.manual?'style="background:#fffbea"':''}><td><input type="checkbox" data-mp-inc="${i}" ${l.incluir?'checked':''} ${l.f&&!l.s.erro?'':'disabled'} style="width:17px;height:17px;accent-color:var(--verde)"></td>
         <td><strong>${esc(l.s.nome||'')}</strong>${l.f?`<div class="dica" style="margin:0">→ ${esc(l.f.nome)}</div>`:''}${aviso}</td>
         <td class="num">${n(i,'inj',v.inj)}</td><td class="num">${n(i,'just',v.just)}</td><td class="num">${n(i,'abon',v.abon)}</td><td class="num">${n(i,'fer',v.fer)}</td>
         <td class="num">${esc(fmtMin(l.cl.parcMin))}</td><td class="num">${l.cl.incompl?`<span class="badge badge-hoje">${l.cl.incompl}</span>`:'—'}</td>
