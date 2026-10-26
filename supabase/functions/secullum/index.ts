@@ -109,6 +109,41 @@ Deno.serve(async (req) => {
     };
 
     // 4. ações
+    // explorar: só Administrador — mostra a forma das respostas do Ponto Web (para ajustar a leitura de faltas)
+    if (pedido.acao === "explorar") {
+      if (perfil.perfil !== "administrador") return json({ erro: "Só o Administrador pode usar esta ação." }, 403);
+      const di = String(pedido.dataInicio || ""), df = String(pedido.dataFim || "");
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(di) || !/^\d{4}-\d{2}-\d{2}$/.test(df)) return json({ erro: "Datas inválidas." }, 400);
+      let idBanco = "";
+      const testar = async (rota: string, corpo?: unknown) => {
+        const r = await fetch(PONTOWEB + rota, {
+          method: corpo ? "POST" : "GET",
+          headers: { Authorization: "Bearer " + token, secullumidbancoselecionado: idBanco, "Content-Type": "application/json" },
+          body: corpo ? JSON.stringify(corpo) : undefined,
+        });
+        const t = await r.text();
+        return { rota, metodo: corpo ? "POST" : "GET", corpo: corpo ?? null, status: r.status, tamanho: t.length, amostra: t.slice(0, Number(pedido.limite) || 2500) };
+      };
+      // deno-lint-ignore no-explicit-any
+      const funcs = ((await pontoWeb("Funcionarios")) || []) as any[];
+      idBanco = String(campo(banco, "id") ?? "");
+      const f0 = funcs.find((f) => !campo(f, "Demissao") && campo(f, "Cpf")) || funcs[0];
+      const cpf = String(campo(f0, "Cpf") || "").replace(/\D/g, ""), pis = String(campo(f0, "NumeroPis", "Pis") || "").replace(/\D/g, "");
+      const rotas = Array.isArray(pedido.rotas) && pedido.rotas.length ? pedido.rotas : null;
+      const saida = [];
+      if (rotas) {
+        // deno-lint-ignore no-explicit-any
+        for (const x of rotas as any[]) saida.push(await testar(String(x.rota), x.corpo));
+      } else {
+        saida.push(await testar("Justificativas"));
+        saida.push(await testar(`Batidas?dataInicio=${di}&dataFim=${df}`));
+        saida.push(await testar(`Batidas?dataInicio=${di}&dataFim=${df}&funcionarioCpf=${cpf}`));
+        saida.push(await testar("Calcular", { FuncionarioCpf: cpf, DataInicial: di, DataFinal: df }));
+        saida.push(await testar("Calcular", { FuncionarioPis: pis, DataInicial: di, DataFinal: df }));
+        saida.push(await testar(`FuncionariosAfastamentos?dataInicio=${di}&dataFim=${df}`));
+      }
+      return json({ banco: campo(banco, "nome"), funcionario_teste: campo(f0, "Nome"), resultados: saida });
+    }
     if (pedido.acao === "bancos") {
       return json({ bancos: bancos.map((b) => ({ id: campo(b, "id"), nome: campo(b, "nome"), identificador_ok: idDe(b).length === 32 })) });
     }
