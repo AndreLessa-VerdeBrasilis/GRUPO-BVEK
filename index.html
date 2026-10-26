@@ -3499,6 +3499,14 @@ function cfgNum(k,pad){const v=rhConfig[k];const n=Number(v);return v!=null&&v!=
 function pctAdiant(){return cfgNum('percentual_adiantamento',40);}
 function diaAdiant(){return cfgNum('dia_adiantamento',15);}
 function diaEnvio(){return cfgNum('dia_envio_contabilidade',25);}
+// regra: se o dia do envio (25) cair no sábado, envia na sexta antes; se cair no domingo, na segunda depois
+function dataEnvioMes(iso){
+  const d=new Date(iso.slice(0,8)+String(diaEnvio()).padStart(2,'0')+'T00:00:00'),w=d.getDay();
+  if(w===6)d.setDate(d.getDate()-1);else if(w===0)d.setDate(d.getDate()+1);
+  return isoLocal(d);
+}
+const DIAS_SEMANA=['domingo','segunda-feira','terça-feira','quarta-feira','quinta-feira','sexta-feira','sábado'];
+function textoDataEnvio(iso){const e=dataEnvioMes(iso),d=new Date(e+'T00:00:00');return`${DIAS_SEMANA[d.getDay()]}, ${fmtData(e)}${Number(e.slice(8))!==diaEnvio()?` (dia ${diaEnvio()} cai no fim de semana)`:''}`;}
 function quemSou(){return(meuPerfil&&meuPerfil.nome)||(usuario&&usuario.email)||null;}
 function nomeArquivoSeguro(n){const p=String(n||'arquivo').split('.');const ext=p.length>1?'.'+p.pop().toLowerCase().replace(/[^a-z0-9]/g,''):'';return semAcento(p.join('.')).replace(/[^A-Za-z0-9._-]+/g,'_').replace(/^_+|_+$/g,'').slice(0,80)+ext;}
 const r2=v=>Math.round(Number(v||0)*100)/100;
@@ -3568,10 +3576,11 @@ function pendenciasRH(){
   const p=[];if(!PERM.rhEditar||!v14Ok)return p;
   const dia=new Date().getDate(),iso=hojeISO().slice(0,8)+'01';
   const enviado=todosEnvios.some(e=>e.competencia===iso&&e.situacao==='enviado');
-  if(!enviado&&dia>=diaEnvio()-3){
-    p.push({ir:'envio',atraso:dia>=diaEnvio(),txt:dia>=diaEnvio()
-      ?`📧 Enviar à contabilidade o fechamento de ${nomeMes(iso)} (dia ${diaEnvio()})${dia>diaEnvio()?' — atrasado':' — é hoje'}`
-      :`📧 Dia ${diaEnvio()}: enviar à contabilidade o fechamento de ${nomeMes(iso)} (faltam ${diaEnvio()-dia} dia${diaEnvio()-dia>1?'s':''})`});
+  const falta=diasAte(dataEnvioMes(iso));
+  if(!enviado&&falta<=3){
+    p.push({ir:'envio',atraso:falta<=0,txt:falta<=0
+      ?`📧 Enviar à contabilidade o fechamento de ${nomeMes(iso)} (prazo: ${textoDataEnvio(iso)})${falta<0?' — atrasado':' — é hoje'}`
+      :`📧 ${textoDataEnvio(iso)}: enviar à contabilidade o fechamento de ${nomeMes(iso)} (faltam ${falta} dia${falta>1?'s':''})`});
   }
   if(dia>=diaAdiant()-2){
     const pend=todosFuncionarios.filter(f=>f.ativo!==false&&(rhPorFunc(f.id)||{}).adianta_mensal).filter(f=>{const a=adiantDoMes(f.id,iso);return!a||!a.pago_em;});
@@ -4171,7 +4180,7 @@ async function renderRHEnvio(){
     it(true,`Vales/empréstimos: <strong>R$ ${esc(fmtMoeda(tVale))}</strong> a descontar neste mês`,`<button class="btn-link" onclick="rhSub='vales';renderRH()">ver vales</button>`),
     it(!adSemData,`Adiantamentos: ${ads.length} lançado(s)${adSemData?` · <strong>${adSemData} sem data de pagamento</strong>`:''}`,`<button class="btn-link" onclick="rhSub='vales';renderRH()">ver adiantamentos</button>`),
     empresaAtual!=='todas'?it(false,`Você está vendo só <strong>${esc(nomeEmpresaAtual())}</strong>: a planilha terá só esta empresa. Para mandar o grupo todo, escolha "Todas as empresas" no alto.`):'',
-    it(!!enviado,enviado?`Enviado em ${esc(fmtDataHora(enviado.enviado_em))} por ${esc(enviado.enviado_por||'—')} para ${esc(enviado.para)}`:`Ainda não enviado (o combinado é todo dia ${esc(diaEnvio())})`),
+    it(!!enviado,enviado?`Enviado em ${esc(fmtDataHora(enviado.enviado_em))} por ${esc(enviado.enviado_por||'—')} para ${esc(enviado.para)}`:`Ainda não enviado (prazo deste mês: ${esc(textoDataEnvio(iso))})`),
   ].join('');
   const cols=d.cols;
   $('tabela-envio').innerHTML=`<thead><tr><th>Funcionário</th><th class="num">Dias trab.</th><th class="num">Faltas</th>${cols.map(n=>`<th class="num">${esc(siglaBenef(n))}</th>`).join('')}<th class="num">Desc. benef.</th><th class="num">Desc. vale</th><th class="num">Adiant.</th><th>Observação do mês</th></tr></thead><tbody>`+
