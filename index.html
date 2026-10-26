@@ -497,6 +497,7 @@ tr.doc-vencido td{background:#fff5f5}
         <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
           <label class="rot-filtro">Mês</label>
           <input type="month" id="rh-mes" onchange="mudouMesRH()" style="padding:8px 10px;border:1.5px solid var(--borda);border-radius:8px;font-family:inherit">
+          <button class="btn-sec" id="btn-secullum-rh" onclick="buscarFuncionariosSecullum(this)">🔄 Buscar CPF, PIS e admissão no Secullum</button>
           <button class="btn-novo" id="btn-novo-func-rh" onclick="abrirFicha(null)">+ Novo funcionário</button>
         </div>
       </div>
@@ -2812,9 +2813,9 @@ function acharNoSecullum(f,lista){
   if(pal.length>=2){l=lista.filter(s=>{const p=new Set(nomeCmp(s.nome).split(' '));return pal.every(x=>p.has(x));});if(l.length===1)return l[0];}
   return null;
 }
-async function buscarFuncionariosSecullum(){
+async function buscarFuncionariosSecullum(botao){
   if(!PERM.docs)return;
-  const btn=$('mf-btn-secullum'),txt=btn.textContent;btn.disabled=true;btn.textContent='Buscando no Secullum…';
+  const btn=botao||$('mf-btn-secullum'),txt=btn.textContent;btn.disabled=true;btn.textContent='Buscando no Secullum…';
   let r;
   try{r=await chamarSecullum('funcionarios');}
   catch(e){alert('Não foi possível buscar no Secullum:\n'+e.message);return;}
@@ -3499,14 +3500,43 @@ function cfgNum(k,pad){const v=rhConfig[k];const n=Number(v);return v!=null&&v!=
 function pctAdiant(){return cfgNum('percentual_adiantamento',40);}
 function diaAdiant(){return cfgNum('dia_adiantamento',15);}
 function diaEnvio(){return cfgNum('dia_envio_contabilidade',25);}
-// regra: se o dia do envio (25) cair no sábado, envia na sexta antes; se cair no domingo, na segunda depois
-function dataEnvioMes(iso){
-  const d=new Date(iso.slice(0,8)+String(diaEnvio()).padStart(2,'0')+'T00:00:00'),w=d.getDay();
+// Prazos do RH (envio à contabilidade dia 25, adiantamento dia 15):
+//  sábado → sexta anterior; domingo → segunda seguinte;
+//  se a data cair num feriado, vai para o dia útil anterior.
+// Feriados: nacionais (inclui Carnaval, Sexta-feira Santa e Corpus Christi)
+// e os do Rio de Janeiro (São Sebastião 20/01 e São Jorge 23/04).
+function pascoa(ano){const a=ano%19,b=Math.floor(ano/100),c=ano%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),
+  hh=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-hh-k)%7,m=Math.floor((a+11*hh+22*l)/451),mes=Math.floor((hh+l-7*m+114)/31),dia=((hh+l-7*m+114)%31)+1;
+  return new Date(ano,mes-1,dia);}
+const FERIADOS_FIXOS={'01-01':'Confraternização Universal','01-20':'São Sebastião (Rio)','04-21':'Tiradentes','04-23':'São Jorge (RJ)','05-01':'Dia do Trabalho',
+  '09-07':'Independência','10-12':'Nossa Senhora Aparecida','11-02':'Finados','11-15':'Proclamação da República','11-20':'Consciência Negra','12-25':'Natal'};
+const cacheFeriados={};
+function feriadosDoAno(ano){
+  if(cacheFeriados[ano])return cacheFeriados[ano];
+  const m={};Object.entries(FERIADOS_FIXOS).forEach(([k,v])=>m[ano+'-'+k]=v);
+  const p=pascoa(ano),rel=(n,nome)=>{const d=new Date(p);d.setDate(d.getDate()+n);m[isoLocal(d)]=nome;};
+  rel(-48,'Carnaval');rel(-47,'Carnaval');rel(-2,'Sexta-feira Santa');rel(60,'Corpus Christi');
+  return cacheFeriados[ano]=m;
+}
+function feriado(iso){return feriadosDoAno(Number(iso.slice(0,4)))[iso]||null;}
+function diaUtil(iso){const w=new Date(iso+'T00:00:00').getDay();return w!==0&&w!==6&&!feriado(iso);}
+function prazoRH(iso,dia){
+  const d=new Date(iso.slice(0,8)+String(dia).padStart(2,'0')+'T00:00:00'),w=d.getDay();
   if(w===6)d.setDate(d.getDate()-1);else if(w===0)d.setDate(d.getDate()+1);
+  while(!diaUtil(isoLocal(d)))d.setDate(d.getDate()-1);
   return isoLocal(d);
 }
+function dataEnvioMes(iso){return prazoRH(iso,diaEnvio());}
+function dataAdiantMes(iso){return prazoRH(iso,diaAdiant());}
+function motivoMudanca(iso,dia,prazo){
+  const orig=iso.slice(0,8)+String(dia).padStart(2,'0');if(prazo===orig)return'';
+  const f=feriado(orig),w=new Date(orig+'T00:00:00').getDay();
+  return` (dia ${dia} ${w===6?'cai no sábado':w===0?'cai no domingo':f?'é feriado: '+f:'cai em feriado'})`;
+}
 const DIAS_SEMANA=['domingo','segunda-feira','terça-feira','quarta-feira','quinta-feira','sexta-feira','sábado'];
-function textoDataEnvio(iso){const e=dataEnvioMes(iso),d=new Date(e+'T00:00:00');return`${DIAS_SEMANA[d.getDay()]}, ${fmtData(e)}${Number(e.slice(8))!==diaEnvio()?` (dia ${diaEnvio()} cai no fim de semana)`:''}`;}
+function textoPrazo(iso,dia,prazo){const d=new Date(prazo+'T00:00:00');return`${DIAS_SEMANA[d.getDay()]}, ${fmtData(prazo)}${motivoMudanca(iso,dia,prazo)}`;}
+function textoDataEnvio(iso){return textoPrazo(iso,diaEnvio(),dataEnvioMes(iso));}
+function textoDataAdiant(iso){return textoPrazo(iso,diaAdiant(),dataAdiantMes(iso));}
 function quemSou(){return(meuPerfil&&meuPerfil.nome)||(usuario&&usuario.email)||null;}
 function nomeArquivoSeguro(n){const p=String(n||'arquivo').split('.');const ext=p.length>1?'.'+p.pop().toLowerCase().replace(/[^a-z0-9]/g,''):'';return semAcento(p.join('.')).replace(/[^A-Za-z0-9._-]+/g,'_').replace(/^_+|_+$/g,'').slice(0,80)+ext;}
 const r2=v=>Math.round(Number(v||0)*100)/100;
@@ -3582,9 +3612,10 @@ function pendenciasRH(){
       ?`📧 Enviar à contabilidade o fechamento de ${nomeMes(iso)} (prazo: ${textoDataEnvio(iso)})${falta<0?' — atrasado':' — é hoje'}`
       :`📧 ${textoDataEnvio(iso)}: enviar à contabilidade o fechamento de ${nomeMes(iso)} (faltam ${falta} dia${falta>1?'s':''})`});
   }
-  if(dia>=diaAdiant()-2){
+  const faltaAd=diasAte(dataAdiantMes(iso));
+  if(faltaAd<=2){
     const pend=todosFuncionarios.filter(f=>f.ativo!==false&&(rhPorFunc(f.id)||{}).adianta_mensal).filter(f=>{const a=adiantDoMes(f.id,iso);return!a||!a.pago_em;});
-    if(pend.length)p.push({ir:'vales',atraso:dia>=diaAdiant(),txt:`💸 Adiantamento do dia ${diaAdiant()} (${nomeMes(iso)}): ${pend.length} funcionário${pend.length>1?'s':''} sem pagamento registrado`});
+    if(pend.length)p.push({ir:'vales',atraso:faltaAd<=0,txt:`💸 Adiantamento de ${nomeMes(iso)} — ${textoDataAdiant(iso)}: ${pend.length} funcionário${pend.length>1?'s':''} sem pagamento registrado`});
   }
   return p;
 }
@@ -3606,6 +3637,7 @@ function renderRH(){
   $('titulo-rh').textContent='RH — '+nomeEmpresaAtual();
   document.querySelectorAll('#tab-rh .rh-edita').forEach(e=>e.classList.toggle('oculto',!PERM.rhEditar));
   $('btn-novo-func-rh').classList.toggle('oculto',!PERM.rhEditar);
+  $('btn-secullum-rh').classList.toggle('oculto',!PERM.docs);
   document.querySelectorAll('#rh-subabas .subaba').forEach(s=>s.classList.toggle('ativo',s.dataset.rh===rhSub));
   ['funcionarios','vales','contracheques','envio'].forEach(p=>$('rh-p-'+p).classList.toggle('ativo',p===rhSub));
   renderAvisosRH();
@@ -3670,7 +3702,7 @@ function preencherFichaDados(){
   $('fi-cpf').value=f&&f.cpf||'';$('fi-pis').value=f&&f.pis||'';$('fi-admissao').value=f&&f.data_admissao||'';$('fi-pasta').value=f&&f.pasta_url||'';
   $('fi-contrato').value=r.tipo_contrato||'';$('fi-salario').value=r.salario!=null?fmtMoeda(r.salario):'';
   $('fi-adianta').checked=!!r.adianta_mensal;$('fi-obs').value=r.observacoes||'';
-  $('fi-adianta-rot').textContent=`Recebe adiantamento de ${pctAdiant()}% do salário todo dia ${diaAdiant()}`;
+  $('fi-adianta-rot').textContent=`Recebe adiantamento de ${pctAdiant()}% do salário todo dia ${diaAdiant()} (ou dia útil próximo)`;
   $('fi-tam-camisa').value=r.tam_camisa||'';$('fi-tam-calca').value=r.tam_calca||'';$('fi-tam-calcado').value=r.tam_calcado||'';
   $('fi-kit').value=r.kit_recebido_em||'';
   $('fi-titulo').textContent=f?f.nome:'Novo funcionário';
@@ -3993,7 +4025,7 @@ function renderRHVales(){
   const iso=mesRH(),pct=pctAdiant(),edita=PERM.rhEditar;
   const funcsOk=new Set(filtraEmpresa(todosFuncionarios).map(f=>f.id));
   // adiantamentos do mês
-  $('rh-adiant-titulo').textContent=`Adiantamento de ${nomeMes(iso)} (dia ${diaAdiant()})`;
+  $('rh-adiant-titulo').textContent=`Adiantamento de ${nomeMes(iso)} — ${textoDataAdiant(iso)}`;
   const doMes=todosAdiant.filter(a=>a.competencia===iso&&funcsOk.has(a.funcionario_id));
   const comFlag=filtraEmpresa(todosFuncionarios.filter(f=>f.ativo!==false&&(rhPorFunc(f.id)||{}).adianta_mensal));
   const naoGerados=comFlag.filter(f=>!adiantDoMes(f.id,iso));
