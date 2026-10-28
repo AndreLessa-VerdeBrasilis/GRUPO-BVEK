@@ -289,6 +289,24 @@ tr.doc-vencido td{background:#fff5f5}
 .link-perfil{display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:var(--verde-claro);border:1.5px solid var(--verde);border-radius:8px;padding:10px 12px;font-size:13px}
 .link-perfil input{flex:1;min-width:220px;padding:7px 9px;border:1.5px solid var(--borda);border-radius:6px;font-size:12px;font-family:Consolas,monospace;background:#fff}
 .oculto{display:none!important}
+/* v24: quadro de tarefas */
+.coluna-tarefa{width:280px;min-width:280px}
+.tarefa{background:#fff;border:1.5px solid var(--borda);border-left:4px solid #90a4ae;border-radius:10px;padding:9px 10px;margin-bottom:8px;cursor:pointer;transition:box-shadow .2s}
+.tarefa:hover{box-shadow:0 4px 14px rgba(0,0,0,.1)}
+.tarefa.arrastando{opacity:.4}
+.tarefa.prio-urgente{border-left-color:#c0392b}.tarefa.prio-alta{border-left-color:#e67e22}.tarefa.prio-normal{border-left-color:#2980b9}.tarefa.prio-baixa{border-left-color:#bdc3c7}
+.tarefa-tags{display:flex;flex-wrap:wrap;gap:3px;margin-bottom:5px}
+.tarefa-titulo{font-size:13px;font-weight:600;line-height:1.3;margin-bottom:3px}
+.tarefa-rodape{display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-top:6px;font-size:11px}
+.avatar{width:24px;height:24px;border-radius:50%;background:var(--verde);color:#fff;font-size:10px;font-weight:700;display:inline-flex;align-items:center;justify-content:center}
+.tf-avancar{border:1.5px solid var(--borda);background:#fff;border-radius:6px;padding:0 7px;font-size:13px;cursor:pointer;color:var(--texto2);line-height:20px}
+.tf-avancar:hover{border-color:var(--verde);color:var(--verde)}
+.tf-rapida{width:100%;padding:7px 9px;border:1.5px dashed var(--borda);border-radius:8px;font-size:12px;font-family:inherit;margin-bottom:8px;background:transparent}
+.tf-rapida:focus{border-style:solid;border-color:var(--verde);outline:none;background:#fff}
+.ck-item{display:flex;gap:8px;align-items:center;padding:3px 0}
+.ck-item input[type=checkbox]{width:16px;height:16px;accent-color:var(--verde);flex:0 0 auto}
+.ck-item input[type=text]{flex:1;padding:6px 8px;border:1px solid #e3e3e3;border-radius:6px;font-size:13px;font-family:inherit}
+.ck-item .ck-feito{text-decoration:line-through;color:#999}
 /* v23: composição de preço */
 .cp-grade{display:grid;grid-template-columns:1fr 300px;gap:20px;align-items:start}
 .cp-grade>div:last-child{align-self:stretch}
@@ -365,7 +383,7 @@ tr.doc-vencido td{background:#fff5f5}
     <div class="tab" data-tab="clientes" data-comercial>Clientes</div>
     <div class="tab" data-tab="projetos" data-comercial>Projetos</div>
     <div class="tab" data-tab="fornecedores" data-comercial>Fornecedores</div>
-    <div class="tab" data-tab="atividades" data-comercial>Atividades <span id="tab-ativ-badge"></span></div>
+    <div class="tab" data-tab="atividades" data-comercial>Tarefas <span id="tab-ativ-badge"></span></div>
     <div class="tab" data-tab="empresas" data-comercial>Empresas</div>
     <div class="tab" data-tab="usuarios" id="tab-btn-usuarios" style="display:none">Usuários</div>
   </div>
@@ -544,17 +562,32 @@ tr.doc-vencido td{background:#fff5f5}
     <!-- ATIVIDADES -->
     <div id="tab-atividades" style="display:none">
       <div class="barra-acoes">
-        <h2>Atividades e tarefas</h2>
-        <button class="btn-novo" id="btn-nova-ativ" onclick="abrirModalAtividade()">+ Nova Atividade</button>
+        <h2>Tarefas e atividades</h2>
+        <button class="btn-novo" id="btn-nova-ativ" onclick="abrirModalAtividade()">+ Nova tarefa</button>
       </div>
       <div class="filtros">
+        <select id="ativ-visao" onchange="mudouVisaoTarefas()" title="Como ver as tarefas">
+          <option value="quadro">▦ Quadro</option>
+          <option value="lista">☰ Lista</option>
+        </select>
         <select id="ativ-filtro" onchange="renderAtividades()">
           <option value="pendentes">Pendentes</option>
           <option value="concluidas">Concluídas</option>
           <option value="todas">Todas</option>
         </select>
         <select id="ativ-resp" onchange="renderAtividades()"><option value="">Todos os responsáveis</option></select>
+        <label class="rot-filtro" style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="tf-minhas" onchange="renderAtividades()"> só as minhas</label>
+        <input type="search" id="tf-busca" placeholder="Buscar tarefa, cliente, proposta" oninput="renderAtividades()">
+        <select id="tf-etiqueta" onchange="renderAtividades()"><option value="">Todas as etiquetas</option></select>
+        <select id="tf-vis" onchange="renderAtividades()" title="Tarefas da equipe ou só dos administradores">
+          <option value="">Equipe + administradores</option>
+          <option value="equipe">Só as da equipe</option>
+          <option value="administradores">🔒 Só administradores</option>
+        </select>
+        <label class="rot-filtro tf-so-quadro" style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="tf-feitas" onchange="renderAtividades()"> todas as concluídas</label>
       </div>
+      <div class="info-box" id="tf-aviso" style="display:none;line-height:1.5"></div>
+      <div class="funil-container" id="quadro-tarefas"></div>
       <div id="lista-atividades"></div>
     </div>
 
@@ -908,6 +941,7 @@ tr.doc-vencido td{background:#fff5f5}
         <input type="datetime-local" id="ca-data">
         <button class="btn-sec" onclick="addAtividadeCard()">Adicionar</button>
       </div>
+      <button class="btn-link so-edicao" style="margin-top:6px" onclick="abrirTarefa(null,{cardId:cardEditandoId})">+ tarefa completa no quadro (checklist, prioridade, etiquetas)</button>
       <div class="secao">Histórico de etapas</div>
       <div class="timeline" id="card-historico"></div>
       <div id="card-versoes-box" style="display:none">
@@ -1110,6 +1144,37 @@ tr.doc-vencido td{background:#fff5f5}
     <div class="modal-btns">
       <button class="btn-cancelar" onclick="fecharModal('modal-atividade')">Cancelar</button>
       <button class="btn-salvar" onclick="salvarAtividadeAvulsa()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL TAREFA (v24) -->
+<div class="modal-overlay" id="modal-tarefa">
+  <div class="modal">
+    <h2 id="tf-m-titulo-modal">Tarefa</h2>
+    <div class="aviso-leitura">🔒 Seu perfil só consulta as tarefas.</div>
+    <div class="form-grid">
+      <div class="campo full"><label>O que precisa ser feito? *</label><input type="text" id="tf-m-desc" placeholder="Ex.: Enviar revisão R01 da proposta para a Vibra"></div>
+      <div class="campo"><label>Coluna</label><select id="tf-m-status"></select></div>
+      <div class="campo"><label>Prioridade</label><select id="tf-m-prio"></select></div>
+      <div class="campo"><label>Responsável</label><input type="text" id="tf-m-resp" list="dl-responsaveis" onchange="mudouRespTarefa()"></div>
+      <div class="campo"><label>Prazo</label><input type="datetime-local" id="tf-m-prazo"></div>
+      <div class="campo"><label>Tipo</label><select id="tf-m-tipo"></select></div>
+      <div class="campo"><label>Cliente</label><input type="text" id="tf-m-cliente" list="dl-clientes" placeholder="Opcional" onchange="mudouClienteTarefa()"></div>
+      <div class="campo"><label>Proposta (funil) <button class="btn-link" onclick="abrirPropostaDaTarefa()">abrir</button></label><select id="tf-m-card" onchange="mudouCardTarefa()"></select></div>
+      <div class="campo"><label>Projeto</label><select id="tf-m-projeto"></select></div>
+      <div class="campo full"><label>Etiquetas</label><div id="tf-m-etiquetas" class="chips-cat"></div>
+        <div class="linha-flex so-edicao" style="margin-top:6px;max-width:420px"><input type="text" id="tf-m-et-nova" placeholder="Nova etiqueta…" onkeydown="if(event.key==='Enter')addEtiquetaTarefa()"><button class="btn-sec" style="flex:0 0 auto" onclick="addEtiquetaTarefa()">+</button></div></div>
+      <div class="campo full"><label>Detalhes</label><textarea id="tf-m-detalhes" rows="3" placeholder="Contexto, links, o que o cliente pediu…"></textarea></div>
+      <div class="campo full"><label>Checklist <span id="tf-m-ck-prog" class="badge badge-cinza"></span></label><div id="tf-m-checklist"></div>
+        <div class="linha-flex so-edicao" style="margin-top:6px"><input type="text" id="tf-m-ck-novo" placeholder="+ item (Enter)" onkeydown="if(event.key==='Enter')addItemChecklist()"><button class="btn-sec" style="flex:0 0 auto" onclick="addItemChecklist()">+</button></div></div>
+      <div class="campo full campo-check" id="tf-m-vis-linha"><input type="checkbox" id="tf-m-vis"><label for="tf-m-vis">🔒 Só administradores (o comercial e os demais perfis não veem esta tarefa)</label></div>
+    </div>
+    <div class="dica" id="tf-m-info"></div>
+    <div class="modal-btns">
+      <button class="btn-excluir so-edicao" id="tf-m-excluir" onclick="excluirTarefa()">Excluir</button>
+      <button class="btn-cancelar" onclick="fecharModal('modal-tarefa')">Cancelar</button>
+      <button class="btn-salvar so-edicao" onclick="salvarTarefa()">Salvar</button>
     </div>
   </div>
 </div>
@@ -1971,6 +2036,7 @@ async function iniciarApp(){
   document.querySelectorAll('#tabs .tab').forEach(t=>t.onclick=()=>abrirTab(t.dataset.tab));
   $('bn-mes').value=hojeISO().slice(0,7);
   $('rh-mes').value=hojeISO().slice(0,7);
+  try{const v=localStorage.getItem('bvek_tarefas_visao');if(v)$('ativ-visao').value=v;}catch(e){}
   if(!PERM.comercialVer)abrirTab('documentos');
   // link do lembrete do WhatsApp: …/#financeiro abre direto a aba
   if(/^#(financeiro|pagamentos)/.test(location.hash)&&PERM.financeiro)abrirTab('financeiro');
@@ -2047,6 +2113,7 @@ async function carregarTudo(){
   await carregarEmpresas();
   await Promise.all([carregarClientes(),carregarCards(),carregarAtividades(),carregarProjetos(),carregarPerfis(),carregarDocsTudo(),carregarBeneficiosTudo(),carregarRH(),carregarCurriculos(),carregarFinanceiro(),carregarSaidas(),carregarFornecedores(),carregarPrecoCfg()]);
   atualizarBadgeRH();
+  await verificarV24();
   atualizarDatalists();
   renderTabAtual();
   verificarAlertas();
@@ -2566,7 +2633,7 @@ function htmlAtividade(a,mostrarContexto){
       <input type="checkbox" ${a.concluida?'checked':''} ${PERM.ativ?'':'disabled'} data-concluir="${esc(a.id)}" style="width:17px;height:17px;margin-top:2px;accent-color:var(--verde)" title="Marcar como feita">
       <div><span class="ativ-desc">${esc(TIPO_LABEL[a.tipo]||a.tipo)} ${esc(a.descricao)}</span>${ctx}</div>
     </div>
-    <div class="acoes">${a.data_prevista?`<span class="badge ${atras?'badge-atraso':hoje?'badge-hoje':a.concluida?'badge-ok':'badge-cinza'}">${esc(fmtDataHora(a.data_prevista))}</span>`:''}${a.responsavel?`<span style="font-size:12px;color:var(--texto2)">👤 ${esc(a.responsavel)}</span>`:''}${PERM.ativ?`<button class="btn-link" data-excluir-ativ="${esc(a.id)}" style="color:var(--vermelho)">excluir</button>`:''}</div>
+    <div class="acoes">${a.data_prevista?`<span class="badge ${atras?'badge-atraso':hoje?'badge-hoje':a.concluida?'badge-ok':'badge-cinza'}">${esc(fmtDataHora(a.data_prevista))}</span>`:''}${a.responsavel?`<span style="font-size:12px;color:var(--texto2)">👤 ${esc(a.responsavel)}</span>`:''}${v24Ok&&a.tipo!=='nota'?`<button class="btn-link" data-editar-ativ="${esc(a.id)}" title="Abrir a tarefa">abrir</button>`:''}${a.status&&!a.concluida&&a.status!=='a_fazer'?`<span class="badge badge-cinza">${esc(STATUS_TAREFA_LABEL[a.status]||a.status)}</span>`:''}${a.visibilidade==='administradores'?'<span class="badge badge-atraso">🔒 adm</span>':''}${PERM.ativ?`<button class="btn-link" data-excluir-ativ="${esc(a.id)}" style="color:var(--vermelho)">excluir</button>`:''}</div>
   </div>`;
 }
 function ligarAtividades(raiz,depois){
@@ -2574,6 +2641,7 @@ function ligarAtividades(raiz,depois){
     const{error}=await sb.from('atividades').update({concluida:cb.checked,concluida_em:cb.checked?new Date().toISOString():null}).eq('id',cb.dataset.concluir);
     if(erroSB(error))return;await carregarAtividades();depois();
   });
+  raiz.querySelectorAll('[data-editar-ativ]').forEach(b=>b.onclick=ev=>{ev.stopPropagation();abrirTarefa(b.dataset.editarAtiv);});
   raiz.querySelectorAll('[data-excluir-ativ]').forEach(b=>b.onclick=async ev=>{
     ev.stopPropagation();if(!confirm('Excluir esta atividade?'))return;
     await sb.from('atividades').delete().eq('id',b.dataset.excluirAtiv);await carregarAtividades();depois();
@@ -2595,9 +2663,23 @@ async function addAtividadeCard(){
   await carregarAtividades();renderAtividadesCard();
 }
 function renderAtividades(){
+  // v24: quadro (padrão) ou lista
+  const quadro=v24Ok&&$('ativ-visao').value==='quadro';
+  $('ativ-visao').style.display=v24Ok?'':'none';
+  $('ativ-filtro').style.display=quadro?'none':'';
+  ['tf-busca','tf-etiqueta'].forEach(i=>$(i).style.display=v24Ok?'':'none');
+  $('tf-minhas').parentElement.style.display=v24Ok?'':'none';
+  $('tf-vis').style.display=v24Ok&&PERM.admin?'':'none';
+  document.querySelectorAll('.tf-so-quadro').forEach(e=>e.style.display=quadro?'':'none');
+  $('tf-aviso').style.display=v24Ok?'none':'block';
+  if(!v24Ok)$('tf-aviso').innerHTML='Para usar o <strong>quadro de tarefas</strong>, rode a migração <code>supabase/migracao_crm_v24_quadro_tarefas.sql</code> no Supabase (SQL Editor → New query → colar → Run).';
+  if(v24Ok){const sel=$('tf-etiqueta'),v=sel.value;preencherSelect(sel,[...new Set([...ETIQUETAS_TAREFA,...todasAtividades.flatMap(a=>a.etiquetas||[])])].map(e=>[e,e]),'Todas as etiquetas');sel.value=v;}
+  $('quadro-tarefas').style.display=quadro?'':'none';$('lista-atividades').style.display=quadro?'none':'';
+  if(quadro){renderQuadroTarefas();return;}
   const f=$('ativ-filtro').value,resp=$('ativ-resp').value;
   const idsCards=new Set(filtraEmpresa(todosCards).map(c=>c.id));
-  let l=todasAtividades.filter(a=>(f==='todas'||(f==='pendentes'?!a.concluida:a.concluida))&&(!resp||(a.responsavel||'').trim()===resp)&&(empresaAtual==='todas'||!a.card_id||idsCards.has(a.card_id)));
+  const filtroV24=v24Ok?new Set(tarefasFiltradas().map(a=>a.id)):null;
+  let l=todasAtividades.filter(a=>(f==='todas'||(f==='pendentes'?!a.concluida:a.concluida))&&(!resp||(a.responsavel||'').trim()===resp)&&(empresaAtual==='todas'||!a.card_id||idsCards.has(a.card_id))&&(!filtroV24||a.tipo==='nota'||filtroV24.has(a.id)));
   l.sort(ordemAtiv);
   const box=$('lista-atividades');
   if(!l.length){box.innerHTML='<p class="vazio">Nenhuma atividade.</p>';return;}
@@ -2611,6 +2693,7 @@ function renderAtividades(){
   ligarAtividades(box,renderAtividades);ligarCliques(box);
 }
 function abrirModalAtividade(){
+  if(v24Ok){abrirTarefa(null);return;}
   ['ma-desc','ma-cliente','ma-data'].forEach(i=>$(i).value='');
   $('ma-tipo').value='tarefa';$('ma-resp').value='';
   abrirModal('modal-atividade');
@@ -6343,6 +6426,187 @@ function resumoComposicaoNoCard(){
   el.style.display='block';
   el.innerHTML=`🧮 Composição${c.tipo_cliente?' · '+esc(c.tipo_cliente):''}: custo direto <strong>R$ ${esc(fmtMoeda(c.resultado.custo_direto))}</strong> · BDI ${esc(fmtPct(c.resultado.bdi))} · preço sugerido <strong>R$ ${esc(fmtMoeda(c.resultado.preco))}</strong>${c.atualizado_em?` <span class="dica" style="margin:0">(${esc(fmtDataHora(c.atualizado_em))}${c.atualizado_por?' · '+esc(c.atualizado_por):''})</span>`:''}`;
 }
+
+/* ================= QUADRO DE TAREFAS (v24) ================= */
+// A fazer → Fazendo → Aguardando → Feito. Tarefas "só administradores" o banco esconde dos demais perfis.
+let v24Ok=true,tarefaEditandoId=null,tarefaChecklist=[],tarefaEtiquetas=[],tarefaArrastada=null;
+const STATUS_TAREFA=[['a_fazer','A fazer','#eef2f7','#34495e'],['fazendo','Fazendo','#e3f2fd','#1565c0'],['aguardando','Aguardando cliente / terceiros','#fff3e0','#bf360c'],['feito','Feito ✅','#e8f5e9','#1b5e20']];
+const STATUS_TAREFA_LABEL=Object.fromEntries(STATUS_TAREFA.map(s=>[s[0],s[1]]));
+const PRIORIDADES=[['urgente','🔴 Urgente'],['alta','🟠 Alta'],['normal','🔵 Normal'],['baixa','⚪ Baixa']];
+const PESO_PRIO={urgente:0,alta:1,normal:2,baixa:3};
+const ETIQUETAS_TAREFA=['Proposta','Orçamento / cotação','Resposta ao cliente','Visita técnica','Cobrança','Documentação','Compra','Execução / obra','Financeiro','Interno'];
+async function verificarV24(){
+  if(todasAtividades.length){v24Ok='status' in todasAtividades[0];return;}
+  const{error}=await sb.from('atividades').select('status').limit(1);v24Ok=!error;
+}
+function ehAdminNome(nome){const k=norm(nome);return!!k&&todosPerfis.some(p=>p.perfil==='administrador'&&p.ativo&&norm(p.nome)===k);}
+function tarefasFiltradas(){
+  const resp=$('ativ-resp').value,q=norm($('tf-busca').value),et=$('tf-etiqueta').value,vis=$('tf-vis').value,minhas=$('tf-minhas').checked;
+  const eu=norm(meuPerfil&&meuPerfil.nome);
+  const idsCards=new Set(filtraEmpresa(todosCards).map(c=>c.id));
+  return todasAtividades.filter(a=>{
+    if(a.tipo==='nota')return false;
+    if(empresaAtual!=='todas'&&a.card_id&&!idsCards.has(a.card_id))return false;
+    if(resp&&(a.responsavel||'').trim()!==resp)return false;
+    if(minhas&&norm(a.responsavel)!==eu)return false;
+    if(et&&!(a.etiquetas||[]).includes(et))return false;
+    if(vis&&(a.visibilidade||'equipe')!==vis)return false;
+    if(q){const card=a.card_id?todosCards.find(c=>c.id===a.card_id):null,cli=a.cliente_id?clientePorId(a.cliente_id):(card&&card.clientes);
+      if(!norm([a.descricao,a.detalhes,a.responsavel,(a.etiquetas||[]).join(' '),cli&&rotuloCliente(cli),card&&card.titulo,card&&card.numero_proposta].join(' ')).includes(q))return false;}
+    return true;
+  });
+}
+function ordemTarefa(a,b){
+  const oa=a.ordem??1e12,ob=b.ordem??1e12;if(oa!==ob)return oa-ob;
+  const pa=PESO_PRIO[a.prioridade||'normal'],pb=PESO_PRIO[b.prioridade||'normal'];if(pa!==pb)return pa-pb;
+  return String(a.data_prevista||'9999').localeCompare(String(b.data_prevista||'9999'));
+}
+function iniciais(n){const p=String(n||'').trim().split(/\s+/).filter(Boolean);return((p[0]||'')[0]||'').toUpperCase()+((p.length>1?p[p.length-1][0]:'')||'').toUpperCase();}
+function htmlTarefa(a){
+  const card=a.card_id?todosCards.find(c=>c.id===a.card_id):null,cli=a.cliente_id?clientePorId(a.cliente_id):(card&&card.clientes);
+  const atras=a.status!=='feito'&&a.data_prevista&&new Date(a.data_prevista)<inicioDoDia();
+  const hoje=a.status!=='feito'&&!atras&&a.data_prevista&&new Date(a.data_prevista)<=fimDoDia();
+  const ck=Array.isArray(a.checklist)?a.checklist:[],ckF=ck.filter(x=>x.feito).length;
+  const prox=STATUS_TAREFA.findIndex(s=>s[0]===a.status)+1;
+  const pode=PERM.ativ;
+  return`<div class="tarefa prio-${esc(a.prioridade||'normal')}" ${pode?'draggable="true"':''} data-tarefa="${esc(a.id)}">
+    ${(a.etiquetas||[]).length||a.visibilidade==='administradores'?`<div class="tarefa-tags">${a.visibilidade==='administradores'?'<span class="badge badge-atraso" title="Só os administradores veem">🔒 adm</span>':''}${(a.etiquetas||[]).map(e=>`<span class="badge badge-cinza">${esc(e)}</span>`).join('')}</div>`:''}
+    <div class="tarefa-titulo">${a.tipo&&a.tipo!=='tarefa'?esc((TIPO_LABEL[a.tipo]||'').split(' ')[0])+' ':''}${esc(a.descricao)}</div>
+    ${cli||card?`<div class="card-cliente">${cli?`<span class="cod">${esc(cli.codigo||'')}</span> ${esc(cli.nome)}`:''}${card?`<div style="font-size:11px">📄 ${esc(card.numero_proposta||'')} ${esc(card.titulo||'')}</div>`:''}</div>`:''}
+    <div class="tarefa-rodape">
+      ${a.data_prevista?`<span class="badge ${atras?'badge-atraso':hoje?'badge-hoje':'badge-cinza'}">${atras?'⏰ ':''}${esc(fmtDataHora(a.data_prevista).replace(/ 00:00$/,''))}</span>`:''}
+      ${ck.length?`<span class="badge ${ckF===ck.length?'badge-ok':'badge-cinza'}" title="Checklist">☑ ${ckF}/${ck.length}</span>`:''}
+      ${a.detalhes?'<span title="Tem detalhes">📝</span>':''}
+      <span style="flex:1"></span>
+      ${a.responsavel?`<span class="avatar" title="${esc(a.responsavel)}">${esc(iniciais(a.responsavel))}</span>`:''}
+      ${pode&&prox<STATUS_TAREFA.length?`<button class="tf-avancar" data-avancar="${esc(a.id)}" title="Mover para: ${esc(STATUS_TAREFA[prox][1])}">→</button>`:''}
+    </div></div>`;
+}
+function renderQuadroTarefas(){
+  const todas=tarefasFiltradas(),verTudo=$('tf-feitas').checked,corte=somarDias(hojeISO(),-14);
+  $('quadro-tarefas').innerHTML=`<div class="funil">${STATUS_TAREFA.map(([st,rot,bg,cor])=>{
+    let l=todas.filter(a=>(a.status||(a.concluida?'feito':'a_fazer'))===st).sort(ordemTarefa);
+    let escondidas=0;if(st==='feito'&&!verTudo){const v=l.filter(a=>!a.concluida_em||String(a.concluida_em).slice(0,10)>=corte);escondidas=l.length-v.length;l=v.sort((a,b)=>String(b.concluida_em||'').localeCompare(String(a.concluida_em||'')));}
+    const atras=l.filter(a=>st!=='feito'&&a.data_prevista&&new Date(a.data_prevista)<inicioDoDia()).length;
+    return`<div class="coluna coluna-tarefa"><div class="coluna-header" style="background:${bg};color:${cor}"><div class="linha1"><span>${esc(rot)}</span><span class="contador">${l.length}</span></div>${atras?`<div class="soma">⏰ ${atras} atrasada(s)</div>`:''}</div>
+      <div class="coluna-body" data-status="${st}">
+        ${PERM.ativ&&st!=='feito'?`<input class="tf-rapida" data-rapida="${st}" placeholder="+ tarefa rápida (Enter)">`:''}
+        ${l.map(htmlTarefa).join('')||'<div class="coluna-vazia">—</div>'}
+        ${escondidas?`<div class="coluna-vazia">+ ${escondidas} concluída(s) há mais de 14 dias</div>`:''}
+      </div></div>`;}).join('')}</div>`;
+  const q=$('quadro-tarefas');
+  q.querySelectorAll('[data-tarefa]').forEach(el=>{
+    el.onclick=ev=>{if(ev.target.closest('[data-avancar]'))return;abrirTarefa(el.dataset.tarefa);};
+    el.addEventListener('dragstart',ev=>{tarefaArrastada=el.dataset.tarefa;ev.dataTransfer.setData('text/plain',el.dataset.tarefa);ev.dataTransfer.effectAllowed='move';el.classList.add('arrastando');});
+    el.addEventListener('dragend',()=>{el.classList.remove('arrastando');tarefaArrastada=null;});
+  });
+  q.querySelectorAll('[data-avancar]').forEach(b=>b.onclick=ev=>{ev.stopPropagation();const a=todasAtividades.find(x=>x.id===b.dataset.avancar);if(!a)return;const i=STATUS_TAREFA.findIndex(s=>s[0]===a.status);moverTarefa(a.id,STATUS_TAREFA[Math.min(i+1,STATUS_TAREFA.length-1)][0],null);});
+  q.querySelectorAll('.coluna-body').forEach(body=>{
+    body.addEventListener('dragover',ev=>{ev.preventDefault();body.classList.add('drag-sobre');});
+    body.addEventListener('dragleave',ev=>{if(!body.contains(ev.relatedTarget))body.classList.remove('drag-sobre');});
+    body.addEventListener('drop',ev=>{ev.preventDefault();body.classList.remove('drag-sobre');const id=ev.dataTransfer.getData('text/plain')||tarefaArrastada;if(!id)return;
+      const alvo=ev.target.closest('[data-tarefa]');moverTarefa(id,body.dataset.status,alvo&&alvo.dataset.tarefa!==id?alvo.dataset.tarefa:null);});
+  });
+  q.querySelectorAll('[data-rapida]').forEach(inp=>inp.onkeydown=ev=>{if(ev.key==='Enter'&&inp.value.trim())criarTarefaRapida(inp.dataset.rapida,inp.value.trim());});
+}
+// move para a coluna; se soltou em cima de outra tarefa, entra antes dela
+async function moverTarefa(id,status,antesDe){
+  const a=todasAtividades.find(x=>x.id===id);if(!a||!PERM.ativ)return;
+  const col=todasAtividades.filter(x=>x.status===status&&x.id!==id).sort(ordemTarefa);
+  let ordem;
+  if(antesDe){const i=col.findIndex(x=>x.id===antesDe);const depois=col[i],antes=col[i-1];
+    const od=depois&&depois.ordem!=null?depois.ordem:(i+1)*1000,oa=antes&&antes.ordem!=null?antes.ordem:od-1000;ordem=(oa+od)/2;}
+  else{const mx=Math.max(0,...col.map(x=>x.ordem||0));ordem=mx+1000;}
+  if(a.status===status&&!antesDe)return;
+  const ant={status:a.status,ordem:a.ordem,concluida:a.concluida};
+  Object.assign(a,{status,ordem,concluida:status==='feito',concluida_em:status==='feito'?(a.concluida_em||new Date().toISOString()):null});renderQuadroTarefas();
+  const{error}=await sb.from('atividades').update({status,ordem}).eq('id',id);
+  if(error){Object.assign(a,ant);renderQuadroTarefas();erroSB(error,'Não foi possível mover a tarefa');return;}
+  if(status==='feito')toast('Tarefa concluída ✅');
+  await carregarAtividades();if(tabAtual==='atividades')renderAtividades();
+}
+async function criarTarefaRapida(status,texto){
+  const vis=PERM.admin&&$('tf-vis').value==='administradores'?'administradores':'equipe';
+  const{error}=await sb.from('atividades').insert({tipo:'tarefa',descricao:texto,status,responsavel:(meuPerfil&&meuPerfil.nome)||null,visibilidade:vis,criado_por:usuario?usuario.email:null,ordem:Date.now()/1000});
+  if(erroSB(error))return;await carregarAtividades();atualizarDatalists();renderAtividades();
+  const inp=document.querySelector(`[data-rapida="${status}"]`);if(inp)inp.focus();
+}
+/* modal da tarefa */
+function abrirTarefa(id,opcoes){
+  if(!v24Ok){alert('Rode antes a migração v24 (supabase/migracao_crm_v24_quadro_tarefas.sql) no Supabase para usar o quadro de tarefas.');return;}
+  const a=id?todasAtividades.find(x=>x.id===id):null;tarefaEditandoId=a?a.id:null;opcoes=opcoes||{};
+  preencherSelect($('tf-m-tipo'),TIPOS_ATIV.filter(t=>t[0]!=='nota'));preencherSelect($('tf-m-status'),STATUS_TAREFA.map(s=>[s[0],s[1]]));preencherSelect($('tf-m-prio'),PRIORIDADES);
+  $('tf-m-titulo-modal').textContent=a?'Tarefa':'Nova tarefa';
+  $('tf-m-desc').value=a?a.descricao:'';$('tf-m-tipo').value=a?(a.tipo==='nota'?'tarefa':a.tipo):'tarefa';$('tf-m-status').value=a?(a.status||'a_fazer'):(opcoes.status||'a_fazer');
+  $('tf-m-prio').value=a?(a.prioridade||'normal'):'normal';$('tf-m-resp').value=a?(a.responsavel||''):((meuPerfil&&meuPerfil.nome)||'');
+  $('tf-m-prazo').value=a&&a.data_prevista?String(new Date(new Date(a.data_prevista).getTime()-new Date().getTimezoneOffset()*60000).toISOString()).slice(0,16):'';
+  const card=a&&a.card_id?todosCards.find(c=>c.id===a.card_id):(opcoes.cardId?todosCards.find(c=>c.id===opcoes.cardId):null);
+  const cli=a&&a.cliente_id?clientePorId(a.cliente_id):(card&&card.cliente_id?clientePorId(card.cliente_id):null);
+  $('tf-m-cliente').value=cli?rotuloCliente(cli):'';mudouClienteTarefa();
+  $('tf-m-card').value=card?card.id:'';$('tf-m-projeto').value=a&&a.projeto_id?a.projeto_id:'';
+  $('tf-m-detalhes').value=a?(a.detalhes||''):'';
+  tarefaChecklist=a&&Array.isArray(a.checklist)?JSON.parse(JSON.stringify(a.checklist)):[];
+  tarefaEtiquetas=a?[...(a.etiquetas||[])]:[];
+  $('tf-m-vis-linha').style.display=PERM.admin?'':'none';
+  $('tf-m-vis').checked=a?a.visibilidade==='administradores':(PERM.admin&&$('tf-vis').value==='administradores');
+  $('tf-m-info').textContent=a?`Criada ${a.criado_por?'por '+a.criado_por+' ':''}em ${fmtDataHora(a.criado_em)}${a.concluida_em?' · concluída em '+fmtDataHora(a.concluida_em):''}`:'';
+  $('tf-m-excluir').style.display=a&&PERM.ativ?'':'none';
+  renderEtiquetasTarefa();renderChecklistTarefa();
+  modoLeitura('modal-tarefa',!PERM.ativ);
+  abrirModal('modal-tarefa');if(!a)setTimeout(()=>$('tf-m-desc').focus(),50);
+}
+function mudouClienteTarefa(){
+  const cli=acharClientePorRotulo($('tf-m-cliente').value);
+  const cards=todosCards.filter(c=>!cli||c.cliente_id===cli.id).sort((a,b)=>(ABERTAS.includes(b.etapa)-ABERTAS.includes(a.etapa))||String(b.criado_em).localeCompare(String(a.criado_em)));
+  const v=$('tf-m-card').value;preencherSelect($('tf-m-card'),(cli?cards:cards.filter(c=>ABERTAS.includes(c.etapa))).slice(0,200).map(c=>[c.id,`${c.numero_proposta||''} · ${c.titulo||''}${ABERTAS.includes(c.etapa)?'':' ('+(ETAPA_LABEL[c.etapa]||c.etapa)+')'}`]),'—');
+  if([...$('tf-m-card').options].some(o=>o.value===v))$('tf-m-card').value=v;
+  const pv=$('tf-m-projeto').value;preencherSelect($('tf-m-projeto'),todosProjetos.filter(p=>!cli||p.cliente_id===cli.id).map(p=>[p.id,`${p.codigo} · ${p.nome}`]),'—');
+  if([...$('tf-m-projeto').options].some(o=>o.value===pv))$('tf-m-projeto').value=pv;
+}
+function mudouCardTarefa(){const c=todosCards.find(x=>x.id===$('tf-m-card').value);if(c&&c.cliente_id&&!$('tf-m-cliente').value){const cli=clientePorId(c.cliente_id);if(cli){$('tf-m-cliente').value=rotuloCliente(cli);mudouClienteTarefa();$('tf-m-card').value=c.id;}}}
+// administrador: tarefa de outro administrador já nasce "só administradores"
+function mudouRespTarefa(){if(!tarefaEditandoId&&PERM.admin)$('tf-m-vis').checked=ehAdminNome($('tf-m-resp').value);}
+function renderEtiquetasTarefa(){
+  const todas=[...new Set([...ETIQUETAS_TAREFA,...todasAtividades.flatMap(a=>a.etiquetas||[]),...tarefaEtiquetas])];
+  $('tf-m-etiquetas').innerHTML=todas.map(e=>`<label class="chip-cat ${tarefaEtiquetas.includes(e)?'marcado':''}"><input type="checkbox" value="${esc(e)}" ${tarefaEtiquetas.includes(e)?'checked':''}> ${esc(e)}</label>`).join('');
+  $('tf-m-etiquetas').querySelectorAll('input').forEach(i=>i.onchange=()=>{tarefaEtiquetas=i.checked?[...tarefaEtiquetas,i.value]:tarefaEtiquetas.filter(x=>x!==i.value);i.parentElement.classList.toggle('marcado',i.checked);});
+}
+function renderChecklistTarefa(){
+  const f=tarefaChecklist.filter(x=>x.feito).length;
+  $('tf-m-ck-prog').textContent=tarefaChecklist.length?`${f}/${tarefaChecklist.length}`:'';
+  $('tf-m-checklist').innerHTML=tarefaChecklist.map((x,i)=>`<div class="ck-item"><input type="checkbox" data-ck="${i}" ${x.feito?'checked':''}><input type="text" data-ck-t="${i}" value="${esc(x.texto)}" class="${x.feito?'ck-feito':''}"><button class="btn-rm-item so-edicao" data-ck-rm="${i}" title="Remover">×</button></div>`).join('');
+  const el=$('tf-m-checklist');
+  el.querySelectorAll('[data-ck]').forEach(c=>c.onchange=()=>{tarefaChecklist[+c.dataset.ck].feito=c.checked;renderChecklistTarefa();});
+  el.querySelectorAll('[data-ck-t]').forEach(t=>t.oninput=()=>{tarefaChecklist[+t.dataset.ckT].texto=t.value;});
+  el.querySelectorAll('[data-ck-rm]').forEach(b=>b.onclick=()=>{tarefaChecklist.splice(+b.dataset.ckRm,1);renderChecklistTarefa();});
+}
+function addItemChecklist(){const t=$('tf-m-ck-novo').value.trim();if(!t)return;tarefaChecklist.push({texto:t,feito:false});$('tf-m-ck-novo').value='';renderChecklistTarefa();$('tf-m-ck-novo').focus();}
+function addEtiquetaTarefa(){const t=$('tf-m-et-nova').value.trim();if(!t)return;if(!tarefaEtiquetas.includes(t))tarefaEtiquetas.push(t);$('tf-m-et-nova').value='';renderEtiquetasTarefa();}
+async function salvarTarefa(){
+  if(!PERM.ativ)return;
+  const desc=$('tf-m-desc').value.trim();if(!desc){alert('Escreva o que precisa ser feito.');return;}
+  const cliTxt=$('tf-m-cliente').value.trim(),cli=acharClientePorRotulo(cliTxt);if(cliTxt&&!cli){alert('Cliente não encontrado. Escolha da lista.');return;}
+  const card=todosCards.find(c=>c.id===$('tf-m-card').value);
+  const dados={descricao:desc,tipo:$('tf-m-tipo').value,status:$('tf-m-status').value,prioridade:$('tf-m-prio').value,responsavel:$('tf-m-resp').value.trim()||null,
+    data_prevista:localParaISO($('tf-m-prazo').value),cliente_id:cli?cli.id:(card?card.cliente_id:null),card_id:card?card.id:null,projeto_id:$('tf-m-projeto').value||null,
+    detalhes:$('tf-m-detalhes').value.trim()||null,checklist:tarefaChecklist.filter(x=>String(x.texto||'').trim()),etiquetas:tarefaEtiquetas,
+    visibilidade:PERM.admin&&$('tf-m-vis').checked?'administradores':'equipe'};
+  const a=tarefaEditandoId?todasAtividades.find(x=>x.id===tarefaEditandoId):null;
+  if(!PERM.admin&&a)delete dados.visibilidade;
+  if(!a||a.status!==dados.status)dados.ordem=Date.now()/1000;
+  const r=a?await sb.from('atividades').update(dados).eq('id',a.id):await sb.from('atividades').insert({...dados,criado_por:usuario?usuario.email:null});
+  if(erroSB(r.error))return;
+  fecharModal('modal-tarefa');await carregarAtividades();atualizarDatalists();
+  if($('modal-card').classList.contains('aberto')&&cardEditandoId)renderAtividadesCard();
+  renderTabAtual();toast('Tarefa salva');
+}
+async function excluirTarefa(){
+  if(!tarefaEditandoId||!confirm('Excluir esta tarefa?'))return;
+  const{error}=await sb.from('atividades').delete().eq('id',tarefaEditandoId);if(erroSB(error))return;
+  fecharModal('modal-tarefa');await carregarAtividades();if($('modal-card').classList.contains('aberto')&&cardEditandoId)renderAtividadesCard();renderTabAtual();toast('Tarefa excluída');
+}
+function abrirPropostaDaTarefa(){const id=$('tf-m-card').value;if(!id)return;fecharModal('modal-tarefa');abrirModalCard(id);}
+function mudouVisaoTarefas(){try{localStorage.setItem('bvek_tarefas_visao',$('ativ-visao').value);}catch(e){}renderAtividades();}
 
 /* ================= INÍCIO ================= */
 ligarArrastarDoc();
