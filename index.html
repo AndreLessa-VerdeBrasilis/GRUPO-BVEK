@@ -554,7 +554,9 @@ tr.doc-vencido td{background:#fff5f5}
         <div class="filtros">
           <input type="search" id="mt-busca" placeholder="Buscar material ou serviço" oninput="renderListaMateriais()">
           <select id="mt-cat" onchange="renderListaMateriais()"></select>
+          <button class="btn-sec" onclick="exportarBasePrecos()">⬇️ Exportar base de preços</button>
         </div>
+        <div class="dica" style="margin:-6px 0 10px">Base própria do grupo: cada cotação e cada compra lançada em Financeiro → Saídas alimentam o preço de referência. O selo mostra o quanto dá para confiar no número.</div>
         <div class="tabela-wrap"><table class="tabela" id="tabela-materiais"></table></div>
       </div>
     </div>
@@ -1011,7 +1013,7 @@ tr.doc-vencido td{background:#fff5f5}
     <div class="secao">Custo por dia de cada função</div><div id="pp-funcoes"></div>
     <div class="secao">Margem de lucro por tipo de cliente</div><div id="pp-tipos"></div>
     <div class="secao">Adicionais e BDI</div><div id="pp-adic"></div>
-    <div class="secao">Impostos sobre o preço, por empresa</div><div class="dica" style="margin:-6px 0 8px">Soma de ISS, PIS, COFINS, IRPJ e CSLL (ou a alíquota do Simples) de cada empresa — confirme com a contabilidade.</div><div id="pp-trib"></div>
+    <div class="secao">Impostos sobre o preço, por empresa</div><div class="dica" style="margin:-6px 0 8px">Hoje o grupo está no Simples Nacional, Anexo III. Informe o faturamento dos últimos 12 meses de cada empresa para o CRM achar a faixa e a alíquota efetiva — confirme com a contabilidade (Innove).</div><div id="pp-trib"></div>
     <div class="secao">Documentação (custos padrão)</div><div id="pp-docs"></div>
     <div class="modal-btns">
       <button class="btn-cancelar" onclick="fecharModal('modal-param-preco')">Fechar</button>
@@ -1677,6 +1679,15 @@ tr.doc-vencido td{background:#fff5f5}
       <div class="campo"><label>Quem comprou</label><input type="text" id="sd-m-comprador" list="dl-responsaveis"></div>
       <div class="campo full"><label>Foto ou PDF da nota</label><input type="file" id="sd-m-arquivo" accept="image/*,application/pdf"><div class="dica" id="sd-m-nota-atual"></div></div>
       <div class="campo full"><label>Observações</label><textarea id="sd-m-obs" rows="2"></textarea></div>
+      <div class="campo full" id="sd-m-base-box" style="display:none"><div class="caixa-pdf">
+        <label style="font-size:13px;font-weight:600">📦 Levar para a base de preços <span class="dica" style="font-weight:400">(opcional — quando a compra é de um material só)</span></label>
+        <div class="linha-flex" style="margin-top:6px;flex-wrap:wrap">
+          <input type="text" id="sd-m-base-mat" list="dl-materiais" placeholder="Material (ex.: Cimento CP-II 50 kg)" style="min-width:220px" oninput="previaBaseSaida()">
+          <input type="text" inputmode="decimal" id="sd-m-base-qtd" placeholder="Quantidade" style="max-width:120px" oninput="previaBaseSaida()">
+          <input type="text" id="sd-m-base-un" list="dl-unidades" placeholder="Unidade" style="max-width:110px">
+        </div>
+        <div class="info" id="sd-m-base-info"></div>
+      </div></div>
     </div>
     <div class="modal-btns">
       <button class="btn-excluir so-edicao" id="sd-m-excluir" onclick="excluirSaida()">Excluir</button>
@@ -5773,6 +5784,11 @@ function abrirSaida(id){
   $('sd-m-empresa').value=s?(s.empresa_id||''):(empresaAtual!=='todas'?empresaAtual:'');
   $('sd-m-comprador').value=s?(s.comprador||''):(quemSou()||'');$('sd-m-obs').value=s?(s.observacoes||''):'';
   $('sd-m-arquivo').value='';
+  // v25: compra → base de preços (quem pode registrar preço: administrador e comercial)
+  const pBase=s?todosPrecos.find(x=>x.saida_id===s.id):null,mBase=pBase&&materialPorId(pBase.material_id);
+  $('sd-m-base-box').style.display=PERM.fornEditar&&v22Ok?'':'none';
+  $('sd-m-base-mat').value=mBase?rotuloMaterial(mBase):'';$('sd-m-base-qtd').value=pBase&&pBase.quantidade!=null?String(pBase.quantidade).replace('.',','):'';$('sd-m-base-un').value=pBase?(pBase.unidade||''):'';
+  previaBaseSaida();
   $('sd-m-nota-atual').innerHTML=s&&s.nota_path?`📎 Nota anexada · <button class="btn-link" onclick="abrirNotaSaida('${esc(s.id)}')">abrir</button> (escolha outro arquivo para trocar)`:'';
   // o que veio do extrato só o financeiro altera
   const travaExtrato=doExtrato&&!PERM.saidasTodas;
@@ -5792,6 +5808,7 @@ async function salvarSaida(conferir){
   const forma=$('sd-m-forma').value,cartao=forma==='cartao'?$('sd-m-cartao').value:null;
   if(forma==='cartao'&&!cartao){alert('Escolha o cartão.');return;}
   const valor=parseMoeda($('sd-m-valor').value);if(valor==null||!$('sd-m-data').value){alert('Informe a data e o valor.');return;}
+  if($('sd-m-base-mat').value.trim()&&!(qtdBR($('sd-m-base-qtd').value)>0)){alert('Para levar à base de preços, informe a quantidade comprada (ou apague o material).');return;}
   const cliTxt=$('sd-m-cliente').value.trim(),cli=acharClientePorRotulo(cliTxt);
   if(cliTxt&&!cli){alert('Cliente não encontrado. Escolha da lista (ou deixe em branco).');return;}
   const atual=saidaEditandoId?todasSaidas.find(x=>x.id===saidaEditandoId):null;
@@ -5814,9 +5831,34 @@ async function salvarSaida(conferir){
       if(eu){console.error(eu);alert('A saída foi salva, mas a nota não subiu: '+(eu.message||eu));}
       else{const{error:e2}=await sb.from('saidas').update({nota_path:caminho}).eq('id',id);if(e2)console.error(e2);}
     }
+    const okBase=await registrarSaidaNaBase(id,dados);
     fecharModal('modal-saida');await carregarSaidas();renderSaidas();
-    toast(dados.situacao==='conferida'?'Conferida':dados.situacao==='justificada'?'Compra justificada':'Salvo · falta a categoria e para que foi');
+    if(okBase)toast('Salvo e preço levado para a base');else toast(dados.situacao==='conferida'?'Conferida':dados.situacao==='justificada'?'Compra justificada':'Salvo · falta a categoria e para que foi');
   }finally{btn.disabled=false;}
+}
+function qtdBR(t){const x=String(t||'').trim();if(!x)return null;const n=Number(x.includes(',')?x.replace(/\./g,'').replace(',','.'):x);return isNaN(n)?null:n;}
+function previaBaseSaida(){
+  const el=$('sd-m-base-info');if(!el)return;
+  const q=qtdBR($('sd-m-base-qtd').value),v=parseMoeda($('sd-m-valor').value),m=materialPorRotulo($('sd-m-base-mat').value);
+  if(m&&!$('sd-m-base-un').value&&m.unidade)$('sd-m-base-un').value=m.unidade;
+  el.innerHTML=$('sd-m-base-mat').value.trim()&&q>0&&v>0?`Preço pago: <strong>${esc(fmtPreco(v/q))}</strong> por ${esc($('sd-m-base-un').value||'unidade')}${m?'':' · material novo (será cadastrado)'}`:'Informe o material e a quantidade: o CRM divide o valor pela quantidade e guarda como preço de compra real.';
+}
+// grava (ou atualiza) o preço desta compra na base própria
+async function registrarSaidaNaBase(saidaId,dados){
+  if(!PERM.fornEditar||!v22Ok)return false;
+  const nome=$('sd-m-base-mat').value.trim(),q=qtdBR($('sd-m-base-qtd').value),un=$('sd-m-base-un').value.trim()||null;
+  const atual=todosPrecos.find(x=>x.saida_id===saidaId);
+  if(!nome||!(q>0)){if(atual&&!nome){await sb.from('precos_fornecedor').delete().eq('id',atual.id);await carregarFornecedores();}return false;}
+  const s=todasSaidas.find(x=>x.id===saidaId)||{},valor=dados.valor!=null?dados.valor:Number(s.valor),data=dados.data||s.data;
+  if(!(valor>0))return false;
+  let m=materialPorRotulo(nome);
+  if(!m){const{data:nm,error}=await sb.from('materiais').insert({nome:nome.replace(/\s*\([^)]*\)\s*$/,''),unidade:un,categoria:dados.categoria||s.categoria||null}).select().single();if(error){console.error(error);alert('A saída foi salva, mas o material não foi cadastrado na base: '+error.message);return false;}m=nm;}
+  const fNome=dados.fornecedor||s.fornecedor;let f=fNome?fornecedorPorNome(fNome):null;
+  if(fNome&&!f){const{data:nf,error}=await sb.from('fornecedores').insert({nome:fNome,categorias:[],criado_por:quemSou()}).select().single();if(!error)f=nf;}
+  const reg={material_id:m.id,fornecedor_id:f?f.id:null,preco:Math.round(valor/q*10000)/10000,unidade:un||m.unidade||null,quantidade:q,data,origem:'compra',saida_id:saidaId,observacoes:'compra lançada em Financeiro → Saídas',criado_por:quemSou()};
+  const r=atual?await sb.from('precos_fornecedor').update(reg).eq('id',atual.id):await sb.from('precos_fornecedor').insert(reg);
+  if(r.error){console.error(r.error);alert(/saida_id/.test(r.error.message||'')?'Rode antes a migração v25 (supabase/migracao_crm_v25_base_precos_simples.sql) no Supabase.':'A saída foi salva, mas o preço não foi para a base: '+r.error.message);return false;}
+  await carregarFornecedores();return true;
 }
 async function excluirSaida(){
   const s=todasSaidas.find(x=>x.id===saidaEditandoId);if(!s)return;
@@ -6073,14 +6115,29 @@ function materialPorId(id){return todosMateriais.find(m=>m.id===id);}
 function rotuloMaterial(m){return m?`${m.nome}${m.unidade?' ('+m.unidade+')':''}`:'';}
 function materialPorRotulo(t){const k=norm(t);return k?todosMateriais.find(m=>norm(rotuloMaterial(m))===k)||todosMateriais.find(m=>norm(m.nome)===k):null;}
 // média dos últimos 12 meses (se não houver, de todos), menor e último preço de um material
+// v25: base própria — preço de REFERÊNCIA = mediana dos últimos 12 meses (um preço fora da curva não puxa o valor),
+// com faixa, variação, nº de fontes e um selo de confiabilidade
 function estatPreco(mid){
   const ps=todosPrecos.filter(p=>p.material_id===mid);if(!ps.length)return null;
   const corte=somarDias(hojeISO(),-365),rec=ps.filter(p=>p.data>=corte),base=rec.length?rec:ps;
-  const media=base.reduce((s,p)=>s+Number(p.preco),0)/base.length;
+  const vals=base.map(p=>Number(p.preco)).sort((a,b)=>a-b),nb=vals.length;
+  const media=vals.reduce((s,v)=>s+v,0)/nb;
+  const mediana=nb%2?vals[(nb-1)/2]:(vals[nb/2-1]+vals[nb/2])/2;
+  const desvio=nb>1?Math.sqrt(vals.reduce((s,v)=>s+(v-media)**2,0)/(nb-1)):0;
+  const variacao=media>0?desvio/media*100:0;
   const menor=base.reduce((a,p)=>Number(p.preco)<Number(a.preco)?p:a,base[0]);
+  const maior=base.reduce((a,p)=>Number(p.preco)>Number(a.preco)?p:a,base[0]);
   const ultimo=ps.slice().sort((a,b)=>String(b.data).localeCompare(String(a.data))||String(b.criado_em).localeCompare(String(a.criado_em)))[0];
-  return{n:ps.length,nBase:base.length,media,menor,ultimo,doze:!!rec.length};
+  const fontes=new Set(base.map(p=>p.fornecedor_id||'?')).size,compras=base.filter(p=>p.origem==='compra').length;
+  const idade=Math.max(0,-diasAte(ultimo.data));
+  // confiabilidade: quantos preços, de quantos fornecedores, quão parecidos e quão recentes
+  let conf='baixa';
+  if(rec.length>=5&&fontes>=2&&variacao<=25&&idade<=180)conf='alta';
+  else if(rec.length>=3||(rec.length>=2&&fontes>=2))conf='media';
+  return{n:ps.length,nBase:nb,media,mediana,ref:mediana,desvio,variacao,menor,maior,ultimo,doze:!!rec.length,fontes,compras,idade,conf};
 }
+const CONF_LABEL={alta:['badge-ok','confiável','5+ preços recentes de 2+ fornecedores, valores parecidos'],media:['badge-hoje','razoável','poucos preços: confirme com uma cotação'],baixa:['badge-atraso','pouca base','1 ou 2 preços (ou antigos): faça cotação antes de usar']};
+function seloConf(e){const c=CONF_LABEL[e.conf];return`<span class="badge ${c[0]}" title="${esc(c[2])}">${esc(c[1])}</span>`;}
 function fmtPreco(v){const n=Number(v||0);return'R$ '+n.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:n<10&&n%1?4:2});}
 function linkWhats(t){const d=String(t||'').replace(/\D/g,'');if(d.length<10)return'';return`https://wa.me/${d.length<=11?'55'+d:d}`;}
 function renderFornecedoresTab(){
@@ -6110,14 +6167,30 @@ function renderListaFornecedores(){
 function renderListaMateriais(){
   const q=norm($('mt-busca').value),cat=$('mt-cat').value;
   const lista=todosMateriais.filter(m=>m.ativo!==false&&(!cat||m.categoria===cat)&&(!q||norm([m.nome,m.categoria,m.observacoes].join(' ')).includes(q)));
-  $('tabela-materiais').innerHTML=`<thead><tr><th>Material / serviço</th><th>Categoria</th><th>Un.</th><th class="num" title="Média dos últimos 12 meses">Preço médio</th><th class="num">Menor preço</th><th class="num">Último preço</th><th class="num">Cotações</th></tr></thead><tbody>${lista.length?lista.map(m=>{
+  $('tabela-materiais').innerHTML=`<thead><tr><th>Material / serviço</th><th>Categoria</th><th>Un.</th><th class="num" title="Mediana dos últimos 12 meses: é o valor usado na composição de preço">Preço de referência</th><th class="num" title="Menor e maior preço dos últimos 12 meses">Faixa</th><th class="num">Média</th><th class="num">Último preço</th><th class="num" title="Preços na base · fornecedores diferentes · compras reais">Base</th><th>Confiabilidade</th></tr></thead><tbody>${lista.length?lista.map(m=>{
     const e=estatPreco(m.id),fm=e&&fornecedorPorId(e.menor.fornecedor_id),fu=e&&fornecedorPorId(e.ultimo.fornecedor_id);
     return`<tr data-mt="${esc(m.id)}" style="cursor:pointer"><td><strong>${esc(m.nome)}</strong></td><td style="font-size:12px">${esc(m.categoria||'—')}</td><td>${esc(m.unidade||'')}</td>
-      <td class="num"><strong>${e?esc(fmtPreco(e.media)):'—'}</strong>${e&&!e.doze?'<div class="dica" style="margin:0">mais de 12 meses</div>':''}</td>
-      <td class="num">${e?`${esc(fmtPreco(e.menor.preco))}<div class="dica" style="margin:0">${esc(fm?fm.nome:'')}</div>`:'—'}</td>
-      <td class="num">${e?`${esc(fmtPreco(e.ultimo.preco))}<div class="dica" style="margin:0">${esc(fmtData(e.ultimo.data))}${fu?' · '+esc(fu.nome):''}</div>`:'—'}</td><td class="num">${e?e.n:0}</td></tr>`;}).join('')
-    :`<tr><td colspan="7" class="vazio">Nenhum material${q||cat?' com esses filtros':' cadastrado ainda'}. Clique em <em>+ Registrar preço</em> para começar.</td></tr>`}</tbody>`;
+      <td class="num"><strong>${e?esc(fmtPreco(e.ref)):'—'}</strong>${e&&!e.doze?'<div class="dica" style="margin:0">mais de 12 meses</div>':''}</td>
+      <td class="num" style="font-size:12px">${e?`${esc(fmtPreco(e.menor.preco))} – ${esc(fmtPreco(e.maior.preco))}<div class="dica" style="margin:0">menor: ${esc(fm?fm.nome:'—')}${e.nBase>1?` · variação ${esc(Math.round(e.variacao))}%`:''}</div>`:'—'}</td>
+      <td class="num">${e?esc(fmtPreco(e.media)):'—'}</td>
+      <td class="num">${e?`${esc(fmtPreco(e.ultimo.preco))}<div class="dica" style="margin:0">${esc(fmtData(e.ultimo.data))}${fu?' · '+esc(fu.nome):''}</div>`:'—'}</td>
+      <td class="num" style="font-size:12px">${e?`${e.n} preço(s)<div class="dica" style="margin:0">${e.fontes} fornec.${e.compras?' · '+e.compras+' compra(s)':''}</div>`:'0'}</td>
+      <td>${e?seloConf(e):'<span class="badge badge-cinza">sem preço</span>'}</td></tr>`;}).join('')
+    :`<tr><td colspan="9" class="vazio">Nenhum material${q||cat?' com esses filtros':' cadastrado ainda'}. Clique em <em>+ Registrar preço</em> para começar.</td></tr>`}</tbody>`;
   $('tabela-materiais').querySelectorAll('[data-mt]').forEach(tr=>tr.onclick=()=>abrirMaterial(tr.dataset.mt));
+}
+async function exportarBasePrecos(){
+  const res=[['Material / serviço','Categoria','Unidade','Preço de referência (mediana 12m)','Média','Menor','Maior','Variação (%)','Último preço','Data do último','Nº de preços','Fornecedores','Compras reais','Confiabilidade']];
+  todosMateriais.filter(m=>m.ativo!==false).forEach(m=>{const e=estatPreco(m.id);
+    res.push([m.nome,m.categoria||'',m.unidade||'',e?Math.round(e.ref*100)/100:'',e?Math.round(e.media*100)/100:'',e?Number(e.menor.preco):'',e?Number(e.maior.preco):'',e?Math.round(e.variacao):'',e?Number(e.ultimo.preco):'',e?fmtData(e.ultimo.data):'',e?e.n:0,e?e.fontes:0,e?e.compras:0,e?CONF_LABEL[e.conf][1]:'sem preço']);});
+  const hist=[['Data','Material','Unidade','Fornecedor','Preço','Quantidade','Origem','Frete incluso','Observação']];
+  todosPrecos.slice().sort((a,b)=>String(b.data).localeCompare(String(a.data))).forEach(p=>{const m=materialPorId(p.material_id)||{},f=fornecedorPorId(p.fornecedor_id)||{};
+    hist.push([fmtData(p.data),m.nome||'',p.unidade||m.unidade||'',f.nome||'',Number(p.preco),p.quantidade!=null?Number(p.quantidade):'',{cotacao:'cotação',compra:'compra',manual:'referência'}[p.origem]||p.origem,p.frete_incluso?'sim':'',p.observacoes||'']);});
+  try{const X=await carregarXLSX();const wb=X.utils.book_new();
+    const a=X.utils.aoa_to_sheet(res);a['!cols']=[34,26,8,14,12,12,12,10,12,12,8,10,10,14].map(w=>({wch:w}));X.utils.book_append_sheet(wb,a,'Base de preços');
+    const b=X.utils.aoa_to_sheet(hist);b['!cols']=[11,34,8,26,12,10,11,8,30].map(w=>({wch:w}));X.utils.book_append_sheet(wb,b,'Histórico');
+    X.writeFile(wb,`BVK-BASE-PRECOS-${hojeISO()}.xlsx`);toast('Base exportada');}
+  catch(e){alert('Não foi possível gerar a planilha: '+(e.message||e));}
 }
 /* fornecedor */
 function renderChecksCategorias(sel){
@@ -6177,7 +6250,8 @@ function abrirMaterial(id){
 function renderPrecosMaterial(){
   const ps=matEditandoId?todosPrecos.filter(p=>p.material_id===matEditandoId).sort((a,b)=>String(b.data).localeCompare(String(a.data))):[];
   const e=matEditandoId?estatPreco(matEditandoId):null;
-  $('mt-m-resumo').innerHTML=e?`<div class="kpis" style="margin-bottom:10px"><div class="kpi"><div class="rot">Preço médio</div><div class="val">${esc(fmtPreco(e.media))}</div><div class="sub">${e.doze?'últimos 12 meses':'todas as cotações'} · ${e.nBase} preço(s)</div></div>
+  $('mt-m-resumo').innerHTML=e?`<div class="kpis" style="margin-bottom:10px"><div class="kpi"><div class="rot">Preço de referência</div><div class="val">${esc(fmtPreco(e.ref))}</div><div class="sub">mediana ${e.doze?'dos últimos 12 meses':'de todos os preços'} · ${e.nBase} preço(s) · ${seloConf(e)}</div></div>
+    <div class="kpi"><div class="rot">Média · variação</div><div class="val">${esc(fmtPreco(e.media))}</div><div class="sub">${e.nBase>1?`os preços variam ±${esc(Math.round(e.variacao))}%`:'só 1 preço'} · ${e.fontes} fornecedor(es)</div></div>
     <div class="kpi"><div class="rot">Menor</div><div class="val">${esc(fmtPreco(e.menor.preco))}</div><div class="sub">${esc((fornecedorPorId(e.menor.fornecedor_id)||{}).nome||'—')}</div></div>
     <div class="kpi"><div class="rot">Último</div><div class="val">${esc(fmtPreco(e.ultimo.preco))}</div><div class="sub">${esc(fmtData(e.ultimo.data))}</div></div></div>`:'';
   $('mt-m-precos').innerHTML=ps.length?`<div class="tabela-wrap"><table class="tabela"><thead><tr><th>Data</th><th>Fornecedor</th><th class="num">Preço</th><th class="num">Qtd.</th><th>Origem</th><th>Obs.</th><th></th></tr></thead><tbody>${ps.map(p=>`<tr><td>${esc(fmtData(p.data))}</td><td>${esc((fornecedorPorId(p.fornecedor_id)||{}).nome||'—')}</td><td class="num"><strong>${esc(fmtPreco(p.preco))}</strong>${p.unidade?' / '+esc(p.unidade):''}</td><td class="num">${p.quantidade!=null?esc(Number(p.quantidade).toLocaleString('pt-BR')):''}</td><td>${esc({cotacao:'cotação',compra:'compra',manual:'referência'}[p.origem]||p.origem)}${p.frete_incluso?' · com frete':''}</td><td style="font-size:12px">${esc(p.observacoes||'')}</td><td>${PERM.fornEditar?`<button class="btn-rm-item" title="Apagar este preço" data-rm-preco="${esc(p.id)}">×</button>`:''}</td></tr>`).join('')}</tbody></table></div>`
@@ -6219,7 +6293,20 @@ function mudouNomeMaterial(){if(matEditandoId)return;const m=materialPorRotulo($
 // Custo direto (equipe, materiais, equipamentos, terceiros, mobilização, documentação) × BDI
 // Preço = CD × (1 + adm. central + seguros + risco) × (1 + desp. financeiras) × (1 + lucro) ÷ (1 − tributos)
 let precoCfg=null,v23Ok=true,composicaoLocal=null,comp=null;
-const PRECO_CFG_PADRAO={funcoes:[],adicionais:{sabado:50,domingo_feriado:100,noturno:20},bdi:{adm_central:4,seguros_garantia:0.8,risco:1.27,despesas_financeiras:1.23},tributos_empresa:{},tributos_padrao:0,tipos_cliente:[{nome:'Indústria / fábrica',lucro:10},{nome:'Condomínio',lucro:10}],documentos:[]};
+const PRECO_CFG_PADRAO={funcoes:[],adicionais:{sabado:50,domingo_feriado:100,noturno:20},bdi:{adm_central:4,seguros_garantia:0.8,risco:1.27,despesas_financeiras:1.23},tributos_empresa:{},tributos_padrao:0,regime_padrao:{anexo:'III'},regime_empresa:{},tipos_cliente:[{nome:'Indústria / fábrica',lucro:30},{nome:'Condomínio',lucro:30}],documentos:[]};
+// v25: Simples Nacional (LC 123/2006, tabelas desde 2018): [receita bruta 12 meses até, alíquota nominal %, parcela a deduzir]
+const SIMPLES={III:[[180000,6,0],[360000,11.2,9360],[720000,13.5,17640],[1800000,16,35640],[3600000,21,125640],[4800000,33,648000]],
+  IV:[[180000,4.5,0],[360000,9,8100],[720000,10.2,12420],[1800000,14,39780],[3600000,22,183780],[4800000,33,828000]]};
+// alíquota efetiva = (RBT12 × nominal − dedução) ÷ RBT12; sem o faturamento, usa a 1ª faixa
+function aliquotaSimples(anexo,rbt12){
+  const t=SIMPLES[anexo];if(!t)return null;const r=n0(rbt12);
+  if(!(r>0))return{aliq:t[0][1],faixa:1,estimada:true};
+  let i=t.findIndex(f=>r<=f[0]);if(i<0)i=t.length-1;
+  return{aliq:Math.max(0,(r*t[i][1]/100-t[i][2])/r*100),faixa:i+1,estimada:false};
+}
+function regimeEmpresa(emp){const r=((precoCfg&&precoCfg.regime_empresa)||{})[emp];return r&&r.anexo?r:((precoCfg&&precoCfg.regime_padrao)||null);}
+function textoRegime(emp){const r=regimeEmpresa(emp);if(!r||!SIMPLES[r.anexo])return'';const a=aliquotaSimples(r.anexo,r.rbt12);
+  return`Simples Nacional, Anexo ${r.anexo}: alíquota efetiva ${fmtPct(Math.round(a.aliq*100)/100)}${a.estimada?' (1ª faixa — informe o faturamento dos últimos 12 meses em ⚙️ Parâmetros)':` (${a.faixa}ª faixa)`}`;}
 async function carregarPrecoCfg(){
   if(!PERM.comercialVer)return;
   const{data,error}=await sb.from('precificacao_config').select('*').eq('id',1).maybeSingle();
@@ -6233,7 +6320,12 @@ function compNova(){
   return{tipo_cliente:'',empresa_id:emp,turno:'diurno',dias_uteis:1,sabados:0,domingos:0,equipe:[],materiais:[],equipamentos:[],terceiros:[],mobilizacao:[],documentos:[],
     bdi:Object.assign({},precoCfg.bdi,{tributos:tributosDaEmpresa(emp),lucro:0}),obs:''};
 }
-function tributosDaEmpresa(emp){const t=(precoCfg.tributos_empresa||{})[emp];return t!=null&&t!==''?n0(t):n0(precoCfg.tributos_padrao);}
+function tributosDaEmpresa(emp){
+  const r=regimeEmpresa(emp);
+  if(r&&SIMPLES[r.anexo])return Math.round(aliquotaSimples(r.anexo,r.rbt12).aliq*100)/100;
+  if(r&&r.anexo==='manual'&&r.pct!=null&&r.pct!=='')return n0(r.pct);
+  const t=(precoCfg.tributos_empresa||{})[emp];return t!=null&&t!==''?n0(t):n0(precoCfg.tributos_padrao);
+}
 function abrirComposicao(){
   if(!precoCfg){alert('Carregando parâmetros, tente de novo em instantes.');return;}
   if(!v23Ok){alert('Rode antes a migração v23 (supabase/migracao_crm_v23_composicao_preco.sql) no Supabase.');return;}
@@ -6255,6 +6347,7 @@ function avisosCfgPreco(){
   const a=[];
   if(!(precoCfg.funcoes||[]).some(f=>n0(f.custo_dia)>0))a.push('o <strong>custo por dia</strong> das funções');
   const emp=comp&&comp.empresa_id;if(emp&&!tributosDaEmpresa(emp))a.push('os <strong>impostos</strong> desta empresa');
+  const rg=emp&&regimeEmpresa(emp);if(rg&&SIMPLES[rg.anexo]&&!(n0(rg.rbt12)>0))a.push('o <strong>faturamento dos últimos 12 meses</strong> desta empresa (sem ele, o imposto fica na 1ª faixa do Simples)');
   if((precoCfg.documentos||[]).length&&!(precoCfg.documentos||[]).some(d=>n0(d.custo)>0))a.push('o custo dos <strong>documentos</strong>');
   return a.length?`⚠️ Ainda faltam nos parâmetros: ${a.join(', ')}. ${PERM.admin?'Clique em <em>⚙️ Parâmetros</em> para preencher (vale para todas as propostas).':'Peça ao administrador para preencher em ⚙️ Parâmetros.'} Enquanto isso, digite os valores direto aqui.`:'';
 }
@@ -6299,7 +6392,7 @@ function renderBlocoComp(nome){
     if(nome==='equipe'&&inp.dataset.k==='funcao')inp.onchange=()=>{const f=(precoCfg.funcoes||[]).find(x=>norm(x.nome)===norm(inp.value));const r=comp.equipe[+inp.dataset.i];if(f&&n0(f.custo_dia)>0&&!n0(r.custo_dia)){r.custo_dia=n0(f.custo_dia);renderBlocoComp('equipe');renderResumoComp();}};
     if(nome==='materiais'&&inp.dataset.k==='descricao')inp.onchange=()=>{const m=materialPorRotulo(inp.value),r=comp.materiais[+inp.dataset.i];if(!m)return;
       r.descricao=m.nome;r.material_id=m.id;if(m.unidade)r.unidade=m.unidade;const e=estatPreco(m.id);
-      if(e){r.custo_unit=Math.round(e.media*100)/100;r.dica=`Preço médio de ${e.nBase} cotação(ões)${e.doze?' nos últimos 12 meses':''} · menor ${fmtPreco(e.menor.preco)} · último ${fmtPreco(e.ultimo.preco)} (${fmtData(e.ultimo.data)})`;}
+      if(e){r.custo_unit=Math.round(e.ref*100)/100;r.dica=`Preço de referência da base própria (mediana de ${e.nBase} preço(s)${e.doze?' dos últimos 12 meses':''}, ${e.fontes} fornecedor(es)) · faixa ${fmtPreco(e.menor.preco)} a ${fmtPreco(e.maior.preco)} · último ${fmtPreco(e.ultimo.preco)} (${fmtData(e.ultimo.data)}) · confiabilidade: ${CONF_LABEL[e.conf][1]}`;}
       else r.dica='Sem preço registrado em Fornecedores para este material.';
       renderBlocoComp('materiais');renderResumoComp();};
   });
@@ -6326,7 +6419,7 @@ function addDocComp(){const t=$('cp-doc-novo').value.trim();if(!t)return;if(!com
 function renderBdiComp(){
   const b=comp.bdi,ed=PERM.funil;
   const campo=(k,rot,dica)=>`<div class="campo"><label>${rot} (%)</label><input type="number" step="any" min="0" data-bdi="${k}" value="${esc(b[k]??'')}" ${ed?'':'disabled'}>${dica?`<div class="dica">${dica}</div>`:''}</div>`;
-  $('cp-bdi').innerHTML=`<div class="form-grid" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))">${campo('adm_central','Administração central')}${campo('seguros_garantia','Seguros e garantias')}${campo('risco','Risco / imprevistos')}${campo('despesas_financeiras','Despesas financeiras')}${campo('tributos','Impostos','sobre o preço (ISS, PIS, COFINS, IRPJ, CSLL)')}${campo('lucro','Margem de lucro','padrão do tipo de cliente')}</div>`;
+  $('cp-bdi').innerHTML=`<div class="form-grid" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))">${campo('adm_central','Administração central')}${campo('seguros_garantia','Seguros e garantias')}${campo('risco','Risco / imprevistos')}${campo('despesas_financeiras','Despesas financeiras')}${campo('tributos','Impostos',esc(textoRegime(comp.empresa_id))||'sobre o preço (ISS, PIS, COFINS, IRPJ, CSLL)')}${campo('lucro','Margem de lucro','padrão do tipo de cliente')}</div>`;
   $('cp-bdi').querySelectorAll('[data-bdi]').forEach(i=>i.oninput=()=>{b[i.dataset.bdi]=n0(i.value);renderResumoComp();});
 }
 function renderComposicao(){
@@ -6405,13 +6498,21 @@ function renderParametrosPreco(){
     ${[['adicionais','sabado','Sábado (%)',a.sabado],['adicionais','domingo_feriado','Domingo / feriado (%)',a.domingo_feriado],['adicionais','noturno','Noturno (%)',a.noturno],
       ['bdi','adm_central','Administração central (%)',b.adm_central],['bdi','seguros_garantia','Seguros e garantias (%)',b.seguros_garantia],['bdi','risco','Risco (%)',b.risco],['bdi','despesas_financeiras','Despesas financeiras (%)',b.despesas_financeiras]]
       .map(([g,k,rot,v])=>`<div class="campo"><label>${rot}</label><input type="number" step="any" min="0" data-ppg="${g}" data-k="${k}" value="${esc(v??'')}"></div>`).join('')}</div>`;
-  $('pp-trib').innerHTML=`<div class="form-grid" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr))">${todasEmpresas.map(e=>`<div class="campo"><label>${esc(e.nome)} (%)</label><input type="number" step="any" min="0" data-pptrib="${esc(e.id)}" value="${esc((c.tributos_empresa||{})[e.id]??'')}"></div>`).join('')}</div>`;
+  c.regime_empresa=c.regime_empresa||{};
+  const linhaReg=e=>{const r=c.regime_empresa[e.id]||{anexo:(c.regime_padrao||{}).anexo||'III'},a=SIMPLES[r.anexo]?aliquotaSimples(r.anexo,r.rbt12):null;
+    return`<tr><td><strong>${esc(e.nome)}</strong></td><td><select data-reg="${esc(e.id)}" data-k="anexo"><option value="III" ${r.anexo==='III'?'selected':''}>Simples — Anexo III</option><option value="IV" ${r.anexo==='IV'?'selected':''}>Simples — Anexo IV</option><option value="manual" ${r.anexo==='manual'?'selected':''}>Outro (% fixo)</option></select></td>
+      <td>${r.anexo==='manual'?`<input type="number" step="any" min="0" data-reg="${esc(e.id)}" data-k="pct" value="${esc(r.pct??'')}" placeholder="%">`:`<input type="text" inputmode="numeric" data-reg="${esc(e.id)}" data-k="rbt12" value="${r.rbt12?esc(fmtMoeda(r.rbt12)):''}" placeholder="faturamento 12 meses (R$)" oninput="mascaraMoeda(this)">`}</td>
+      <td style="white-space:nowrap"><strong>${a?esc(fmtPct(Math.round(a.aliq*100)/100)):r.pct!=null&&r.pct!==''?esc(fmtPct(r.pct)):'—'}</strong>${a?`<div class="dica" style="margin:0">${a.estimada?'1ª faixa (sem faturamento)':a.faixa+'ª faixa'}</div>`:''}</td></tr>`;};
+  $('pp-trib').innerHTML=`<table class="tabela-itens"><thead><tr><th>Empresa</th><th style="width:190px">Regime</th><th style="width:220px">Faturamento dos últimos 12 meses</th><th style="width:130px">Imposto sobre o preço</th></tr></thead><tbody>${todasEmpresas.map(linhaReg).join('')}</tbody></table>
+    <div class="dica">Alíquota efetiva do Simples = (faturamento 12 meses × alíquota da faixa − parcela a deduzir) ÷ faturamento 12 meses. No <strong>Anexo IV</strong> (obras, paisagismo, limpeza e conservação costumam cair nele) o INSS patronal (CPP) é pago fora do DAS: nesse caso some-o no custo por dia das funções.</div>`;
   const m=$('modal-param-preco');
   m.querySelectorAll('[data-pp]').forEach(i=>i.oninput=i.onchange=()=>{const r=c[i.dataset.pp][+i.dataset.i];r[i.dataset.k]=i.type==='checkbox'?i.checked:i.type==='number'?n0(i.value):i.value;});
   m.querySelectorAll('[data-pp-rm]').forEach(b=>b.onclick=()=>{c[b.dataset.ppRm].splice(+b.dataset.i,1);renderParametrosPreco();});
-  m.querySelectorAll('[data-pp-add]').forEach(b=>b.onclick=()=>{const k=b.dataset.ppAdd;c[k].push(k==='funcoes'?{nome:'',custo_dia:0}:k==='tipos_cliente'?{nome:'',lucro:10}:{nome:'',custo:0,por_pessoa:false});renderParametrosPreco();});
+  m.querySelectorAll('[data-pp-add]').forEach(b=>b.onclick=()=>{const k=b.dataset.ppAdd;c[k].push(k==='funcoes'?{nome:'',custo_dia:0}:k==='tipos_cliente'?{nome:'',lucro:30}:{nome:'',custo:0,por_pessoa:false});renderParametrosPreco();});
   m.querySelectorAll('[data-ppg]').forEach(i=>i.oninput=()=>{c[i.dataset.ppg][i.dataset.k]=n0(i.value);});
-  m.querySelectorAll('[data-pptrib]').forEach(i=>i.oninput=()=>{c.tributos_empresa=c.tributos_empresa||{};c.tributos_empresa[i.dataset.pptrib]=i.value===''?null:n0(i.value);});
+  m.querySelectorAll('[data-reg]').forEach(i=>{const salva=()=>{const id=i.dataset.reg,r=c.regime_empresa[id]=c.regime_empresa[id]||{anexo:(c.regime_padrao||{}).anexo||'III'};
+      r[i.dataset.k]=i.dataset.k==='anexo'?i.value:i.dataset.k==='rbt12'?parseMoeda(i.value):(i.value===''?null:n0(i.value));};
+    if(i.tagName==='SELECT')i.onchange=()=>{salva();renderParametrosPreco();};else{i.oninput=()=>{if(i.dataset.k==='rbt12')mascaraMoeda(i);salva();};i.onchange=()=>{salva();renderParametrosPreco();};}});
 }
 async function salvarParametrosPreco(){
   if(!PERM.admin)return;
