@@ -289,6 +289,12 @@ tr.doc-vencido td{background:#fff5f5}
 .link-perfil{display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:var(--verde-claro);border:1.5px solid var(--verde);border-radius:8px;padding:10px 12px;font-size:13px}
 .link-perfil input{flex:1;min-width:220px;padding:7px 9px;border:1.5px solid var(--borda);border-radius:6px;font-size:12px;font-family:Consolas,monospace;background:#fff}
 .oculto{display:none!important}
+/* v23: composição de preço */
+.cp-grade{display:grid;grid-template-columns:1fr 300px;gap:20px;align-items:start}
+.cp-grade>div:last-child{align-self:stretch}
+.cp-resumo-box{position:sticky;top:70px;background:#fff;border:1.5px solid var(--verde);border-radius:12px;padding:14px 16px}
+.cp-grade .tabela-itens input{border:1px solid #e3e3e3;border-radius:4px;padding:4px 6px}
+@media(max-width:900px){.cp-grade{grid-template-columns:1fr}.cp-resumo-box{position:static}}
 /* v22: categorias do fornecedor */
 .chips-cat{display:flex;flex-wrap:wrap;gap:6px;max-height:220px;overflow-y:auto;padding:2px}
 .chip-cat{display:inline-flex!important;gap:5px;align-items:center;border:1.5px solid var(--borda);border-radius:20px;padding:4px 10px;font-size:12px!important;font-weight:500!important;cursor:pointer;background:#fff;margin:0!important}
@@ -879,7 +885,8 @@ tr.doc-vencido td{background:#fff5f5}
       </div>
     </div>
 
-    <div class="secao">Itens do orçamento</div>
+    <div class="secao">Itens do orçamento <button class="btn-sec" style="text-transform:none;letter-spacing:0" onclick="abrirComposicao()">🧮 Composição de preço</button></div>
+    <div class="info-box" id="cp-card-resumo" style="display:none"></div>
     <div style="overflow-x:auto">
     <table class="tabela-itens">
       <thead><tr>
@@ -916,6 +923,65 @@ tr.doc-vencido td{background:#fff5f5}
       <button class="btn-pdf" id="btn-pdf" style="display:none" onclick="gerarPDF()">📄 Gerar Proposta</button>
       <button class="btn-cancelar" onclick="fecharModal('modal-card')">Cancelar</button>
       <button class="btn-salvar so-edicao" id="btn-salvar-card" onclick="salvarCard()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL COMPOSIÇÃO DE PREÇO (v23) -->
+<div class="modal-overlay" id="modal-composicao">
+  <div class="modal modal-lg" style="max-width:1150px">
+    <h2 id="cp-titulo">🧮 Composição de preço</h2>
+    <p class="modal-sub">Monte o custo do serviço e o CRM calcula o preço com o BDI (custos indiretos, impostos e margem). Cada cliente tem o seu peso: escolha o tipo de cliente, o período e o turno, a equipe, os materiais (a média dos fornecedores entra sozinha), terceiros, mobilização e a documentação exigida.</p>
+    <div class="aviso-leitura">🔒 Seu perfil só consulta a composição.</div>
+    <div class="info-box" id="cp-avisos-cfg" style="display:block;line-height:1.5;background:#fffbea"></div>
+    <div class="cp-grade">
+      <div>
+        <div class="secao">1. Cliente, período e turno</div>
+        <div class="form-grid" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))">
+          <div class="campo"><label>Tipo de cliente</label><select id="cp-tipo" onchange="mudouTipoClienteComp()"></select></div>
+          <div class="campo"><label>Empresa executora</label><select id="cp-empresa" onchange="mudouEmpresaComp()"></select></div>
+          <div class="campo"><label>Turno</label><select id="cp-turno" onchange="mudouCabecalhoComp()"><option value="diurno">Diurno</option><option value="noturno">Noturno</option></select></div>
+          <div class="campo"><label>Dias úteis (seg–sex)</label><input type="number" min="0" step="any" id="cp-du" oninput="mudouCabecalhoComp()"></div>
+          <div class="campo"><label>Sábados</label><input type="number" min="0" step="any" id="cp-sab" oninput="mudouCabecalhoComp()"></div>
+          <div class="campo"><label>Domingos / feriados</label><input type="number" min="0" step="any" id="cp-dom" oninput="mudouCabecalhoComp()"></div>
+        </div>
+        <div class="secao">2. Equipe (mão de obra própria)</div><div id="cp-equipe"></div>
+        <div class="secao">3. Materiais</div><div id="cp-materiais"></div>
+        <div class="secao">4. Equipamentos e locações</div><div id="cp-equipamentos"></div>
+        <div class="secao">5. Serviços de terceiros</div><div id="cp-terceiros"></div>
+        <div class="secao">6. Mobilização e logística</div><div id="cp-mobilizacao"></div>
+        <div class="secao">7. Documentação exigida</div><div id="cp-documentos"></div>
+        <div class="secao">8. BDI, impostos e margem</div><div id="cp-bdi"></div>
+        <div class="campo"><label>Observações da composição</label><textarea id="cp-obs" rows="2" placeholder="Premissas, riscos, o que não está incluso…"></textarea></div>
+      </div>
+      <div><div class="cp-resumo-box"><h3 style="font-size:14px;margin-bottom:8px;color:var(--verde)">Resumo</h3><div id="cp-resumo"></div></div></div>
+    </div>
+    <div class="modal-btns">
+      <button class="btn-cancelar" onclick="abrirParametrosPreco()">⚙️ Parâmetros</button>
+      <button class="btn-cancelar" onclick="fecharModal('modal-composicao')">Fechar</button>
+      <button class="btn-sec so-edicao" onclick="aplicarComposicao('guardar')">Guardar composição</button>
+      <button class="btn-sec so-edicao" onclick="aplicarComposicao('preco')">Usar o preço no card</button>
+      <button class="btn-salvar so-edicao" onclick="aplicarComposicao('itens')">Gerar itens do orçamento</button>
+    </div>
+  </div>
+</div>
+<datalist id="cp-dl-funcoes"></datalist>
+<datalist id="cp-dl-mob"><option value="Transporte da equipe (van/carro)"><option value="Combustível"><option value="Pedágio e estacionamento"><option value="Alimentação da equipe"><option value="Hospedagem"><option value="Frete de materiais"><option value="Mobilização/desmobilização de equipamentos"><option value="Caçamba / descarte de resíduos"><option value="Canteiro, sanitário químico e apoio"></datalist>
+
+<!-- MODAL PARÂMETROS DE PREÇO (v23, administrador altera) -->
+<div class="modal-overlay" id="modal-param-preco">
+  <div class="modal modal-lg">
+    <h2>⚙️ Parâmetros de preço do grupo</h2>
+    <p class="modal-sub">Ponto de partida de toda composição (em cada proposta dá para ajustar). Os valores iniciais são exemplos: confira e ajuste.</p>
+    <div class="aviso-leitura">🔒 Só o Administrador altera os parâmetros.</div>
+    <div class="secao">Custo por dia de cada função</div><div id="pp-funcoes"></div>
+    <div class="secao">Margem de lucro por tipo de cliente</div><div id="pp-tipos"></div>
+    <div class="secao">Adicionais e BDI</div><div id="pp-adic"></div>
+    <div class="secao">Impostos sobre o preço, por empresa</div><div class="dica" style="margin:-6px 0 8px">Soma de ISS, PIS, COFINS, IRPJ e CSLL (ou a alíquota do Simples) de cada empresa — confirme com a contabilidade.</div><div id="pp-trib"></div>
+    <div class="secao">Documentação (custos padrão)</div><div id="pp-docs"></div>
+    <div class="modal-btns">
+      <button class="btn-cancelar" onclick="fecharModal('modal-param-preco')">Fechar</button>
+      <button class="btn-salvar so-edicao" onclick="salvarParametrosPreco()">Salvar parâmetros</button>
     </div>
   </div>
 </div>
@@ -1979,7 +2045,7 @@ async function trocarSenha(){
 /* ================= CARGA DE DADOS ================= */
 async function carregarTudo(){
   await carregarEmpresas();
-  await Promise.all([carregarClientes(),carregarCards(),carregarAtividades(),carregarProjetos(),carregarPerfis(),carregarDocsTudo(),carregarBeneficiosTudo(),carregarRH(),carregarCurriculos(),carregarFinanceiro(),carregarSaidas(),carregarFornecedores()]);
+  await Promise.all([carregarClientes(),carregarCards(),carregarAtividades(),carregarProjetos(),carregarPerfis(),carregarDocsTudo(),carregarBeneficiosTudo(),carregarRH(),carregarCurriculos(),carregarFinanceiro(),carregarSaidas(),carregarFornecedores(),carregarPrecoCfg()]);
   atualizarBadgeRH();
   atualizarDatalists();
   renderTabAtual();
@@ -2245,7 +2311,7 @@ async function gerarNumeroProposta(empresaId){
 
 /* ================= MODAL ATENDIMENTO ================= */
 async function abrirModalCard(id=null){
-  cardEditandoId=id;cardOriginal=null;itensLocais=[];contatosDoCliente=[];
+  cardEditandoId=id;cardOriginal=null;itensLocais=[];contatosDoCliente=[];composicaoLocal=null;$('cp-card-resumo').style.display='none';
   ['card-cliente','card-titulo','card-responsavel','card-valor','card-fechamento','card-prazo','card-escopo','card-pagamento','card-obs','card-nota1','card-nota2','card-dias','nct-nome','nct-cargo','nct-tel','nct-email','card-motivo-detalhe','ca-desc','ca-data'].forEach(i=>{$(i).value='';});
   $('card-validade').value='30';$('card-pct-mao').value='30';$('card-pct-ins').value='70';
   $('card-prazo-unid').value='meses';preencherPagamentoForm(null,'');
@@ -2265,6 +2331,7 @@ async function abrirModalCard(id=null){
     const{data:card,error}=await sb.from('cards').select('*,clientes(*)').eq('id',id).single();
     if(erroSB(error,'Não foi possível abrir'))return;
     cardOriginal=card;
+    composicaoLocal=card.composicao||null;resumoComposicaoNoCard();
     $('modal-titulo').textContent='Editar Atendimento';
     ['btn-versao','btn-pdf'].forEach(b=>$(b).style.display='inline-block');
     $('btn-excluir').style.display=PERM.excluir?'inline-block':'none';
@@ -2419,6 +2486,7 @@ async function salvarCard(){
       motivo_perda_detalhe:etapa==='perdida'?($('card-motivo-detalhe').value||null):null,
       atualizado_em:new Date().toISOString(),
     };
+    if(composicaoLocal)dados.composicao=composicaoLocal;
     let savedId=cardEditandoId;
     if(cardEditandoId){
       const{error}=await sb.from('cards').update(dados).eq('id',cardEditandoId);
@@ -6063,6 +6131,218 @@ async function registrarPreco(){
 function registrarPrecoDoFornecedor(){const f=fornecedorPorId(fornEditandoId);fecharModal('modal-fornecedor');abrirMaterial(null);if(f)$('mt-p-fornecedor').value=f.nome;if(f&&(f.categorias||[]).length===1)$('mt-m-categoria').value=f.categorias[0];}
 // escolheu um material já cadastrado no campo nome → carrega ele
 function mudouNomeMaterial(){if(matEditandoId)return;const m=materialPorRotulo($('mt-m-nome').value);if(m){const forn=$('mt-p-fornecedor').value;abrirMaterial(m.id);$('mt-p-fornecedor').value=forn;}}
+
+/* ================= COMPOSIÇÃO DE PREÇO DA PROPOSTA (v23) ================= */
+// Custo direto (equipe, materiais, equipamentos, terceiros, mobilização, documentação) × BDI
+// Preço = CD × (1 + adm. central + seguros + risco) × (1 + desp. financeiras) × (1 + lucro) ÷ (1 − tributos)
+let precoCfg=null,v23Ok=true,composicaoLocal=null,comp=null;
+const PRECO_CFG_PADRAO={funcoes:[],adicionais:{sabado:50,domingo_feriado:100,noturno:20},bdi:{adm_central:4,seguros_garantia:0.8,risco:1.27,despesas_financeiras:1.23},tributos_empresa:{},tributos_padrao:0,tipos_cliente:[{nome:'Indústria / fábrica',lucro:10},{nome:'Condomínio',lucro:10}],documentos:[]};
+async function carregarPrecoCfg(){
+  if(!PERM.comercialVer)return;
+  const{data,error}=await sb.from('precificacao_config').select('*').eq('id',1).maybeSingle();
+  if(error){if(/precificacao_config/.test(error.message||''))v23Ok=false;else console.error(error);precoCfg=JSON.parse(JSON.stringify(PRECO_CFG_PADRAO));return;}
+  v23Ok=true;precoCfg=Object.assign(JSON.parse(JSON.stringify(PRECO_CFG_PADRAO)),(data&&data.dados)||{});
+}
+const n0=v=>{const x=Number(String(v??'').replace(',','.'));return isNaN(x)?0:x;};
+function compNova(){
+  const card=cardEditandoId?todosCards.find(c=>c.id===cardEditandoId):null;
+  const emp=$('card-empresa-id').value||(card&&card.empresa_id)||'';
+  return{tipo_cliente:'',empresa_id:emp,turno:'diurno',dias_uteis:1,sabados:0,domingos:0,equipe:[],materiais:[],equipamentos:[],terceiros:[],mobilizacao:[],documentos:[],
+    bdi:Object.assign({},precoCfg.bdi,{tributos:tributosDaEmpresa(emp),lucro:0}),obs:''};
+}
+function tributosDaEmpresa(emp){const t=(precoCfg.tributos_empresa||{})[emp];return t!=null&&t!==''?n0(t):n0(precoCfg.tributos_padrao);}
+function abrirComposicao(){
+  if(!precoCfg){alert('Carregando parâmetros, tente de novo em instantes.');return;}
+  if(!v23Ok){alert('Rode antes a migração v23 (supabase/migracao_crm_v23_composicao_preco.sql) no Supabase.');return;}
+  comp=JSON.parse(JSON.stringify(composicaoLocal||compNova()));
+  if(!comp.empresa_id)comp.empresa_id=$('card-empresa-id').value||'';
+  preencherSelect($('cp-tipo'),(precoCfg.tipos_cliente||[]).map(t=>[t.nome,`${t.nome} (lucro ${fmtPct(t.lucro)})`]),'Selecione o tipo de cliente');
+  preencherSelect($('cp-empresa'),todasEmpresas.map(e=>[e.id,`${e.nome} (${e.sigla})`]),'—');
+  $('cp-titulo').textContent='🧮 Composição de preço'+($('card-titulo').value?' — '+$('card-titulo').value:'');
+  $('cp-tipo').value=comp.tipo_cliente||'';$('cp-empresa').value=comp.empresa_id||'';$('cp-turno').value=comp.turno||'diurno';
+  $('cp-du').value=comp.dias_uteis;$('cp-sab').value=comp.sabados;$('cp-dom').value=comp.domingos;$('cp-obs').value=comp.obs||'';
+  $('cp-dl-funcoes').innerHTML=(precoCfg.funcoes||[]).map(f=>`<option value="${esc(f.nome)}">`).join('');
+  const pode=PERM.funil;
+  modoLeitura('modal-composicao',!pode);
+  $('cp-avisos-cfg').innerHTML=avisosCfgPreco();
+  renderComposicao();abrirModal('modal-composicao');
+}
+function fmtPct(v){return Number(v||0).toLocaleString('pt-BR',{maximumFractionDigits:2})+'%';}
+function avisosCfgPreco(){
+  const a=[];
+  if(!(precoCfg.funcoes||[]).some(f=>n0(f.custo_dia)>0))a.push('o <strong>custo por dia</strong> das funções');
+  const emp=comp&&comp.empresa_id;if(emp&&!tributosDaEmpresa(emp))a.push('os <strong>impostos</strong> desta empresa');
+  if((precoCfg.documentos||[]).length&&!(precoCfg.documentos||[]).some(d=>n0(d.custo)>0))a.push('o custo dos <strong>documentos</strong>');
+  return a.length?`⚠️ Ainda faltam nos parâmetros: ${a.join(', ')}. ${PERM.admin?'Clique em <em>⚙️ Parâmetros</em> para preencher (vale para todas as propostas).':'Peça ao administrador para preencher em ⚙️ Parâmetros.'} Enquanto isso, digite os valores direto aqui.`:'';
+}
+// multiplicador dos dias: sábado e domingo/feriado com adicional; noturno sobre tudo
+function fatorDias(c){
+  const du=n0(c.dias_uteis),sa=n0(c.sabados),dm=n0(c.domingos),t=du+sa+dm,a=precoCfg.adicionais||{};
+  const m=t>0?(du+sa*(1+n0(a.sabado)/100)+dm*(1+n0(a.domingo_feriado)/100))/t:1;
+  return m*(c.turno==='noturno'?1+n0(a.noturno)/100:1);
+}
+function totalDias(c){return n0(c.dias_uteis)+n0(c.sabados)+n0(c.domingos);}
+function pessoasEquipe(c){return c.equipe.reduce((s,r)=>s+n0(r.qtd),0);}
+function calcComposicao(c){
+  const f=fatorDias(c),td=totalDias(c),pessoas=pessoasEquipe(c);
+  const mo=c.equipe.reduce((s,r)=>s+n0(r.qtd)*n0(r.custo_dia)*(r.dias!==''&&r.dias!=null?n0(r.dias):td)*f,0);
+  const soma=(arr)=>arr.reduce((s,r)=>s+n0(r.qtd===undefined?1:r.qtd)*n0(r.custo_unit!==undefined?r.custo_unit:r.valor),0);
+  const mat=soma(c.materiais),eq=soma(c.equipamentos),ter=c.terceiros.reduce((s,r)=>s+n0(r.valor),0),mob=c.mobilizacao.reduce((s,r)=>s+n0(r.valor),0);
+  const doc=c.documentos.reduce((s,r)=>s+n0(r.qtd)*n0(r.custo),0);
+  const cd=mo+mat+eq+ter+mob+doc,b=c.bdi||{};
+  const T=n0(b.tributos)/100;
+  const fatorVenda=(1+(n0(b.adm_central)+n0(b.seguros_garantia)+n0(b.risco))/100)*(1+n0(b.despesas_financeiras)/100)*(1+n0(b.lucro)/100)/(T<0.95?1-T:0.05);
+  const preco=cd*fatorVenda;
+  return{f,td,pessoas,mo,mat,eq,ter,mob,doc,cd,fatorVenda,preco,bdiPct:(fatorVenda-1)*100,impostos:preco*T,lucroRS:cd*(1+(n0(b.adm_central)+n0(b.seguros_garantia)+n0(b.risco))/100)*(1+n0(b.despesas_financeiras)/100)*n0(b.lucro)/100};
+}
+// tabelas editáveis de cada bloco
+const BLOCOS_COMP={
+  equipe:{cols:[['funcao','Função','text','cp-dl-funcoes',220],['qtd','Pessoas','num',null,70],['custo_dia','Custo/dia (R$)','num',null,110],['dias','Dias','num',null,70]],
+    novo:()=>({funcao:'',qtd:1,custo_dia:0,dias:''}),sub:(r,c)=>n0(r.qtd)*n0(r.custo_dia)*(r.dias!==''&&r.dias!=null?n0(r.dias):totalDias(c))*fatorDias(c)},
+  materiais:{cols:[['descricao','Material','text','dl-materiais',260],['unidade','Un.','text','dl-unidades',75],['qtd','Qtd.','num',null,80],['custo_unit','Custo unit. (R$)','num',null,110]],
+    novo:()=>({descricao:'',unidade:'',qtd:1,custo_unit:0}),sub:r=>n0(r.qtd)*n0(r.custo_unit)},
+  equipamentos:{cols:[['descricao','Equipamento / locação','text',null,260],['unidade','Un.','text','dl-unidades',75],['qtd','Qtd.','num',null,80],['custo_unit','Custo unit. (R$)','num',null,110]],
+    novo:()=>({descricao:'',unidade:'diária',qtd:1,custo_unit:0}),sub:r=>n0(r.qtd)*n0(r.custo_unit)},
+  terceiros:{cols:[['descricao','Serviço contratado de terceiros','text','dl-fornecedores',330],['valor','Valor (R$)','num',null,120]],novo:()=>({descricao:'',valor:0}),sub:r=>n0(r.valor)},
+  mobilizacao:{cols:[['descricao','Mobilização e logística','text','cp-dl-mob',330],['valor','Valor (R$)','num',null,120]],novo:()=>({descricao:'',valor:0}),sub:r=>n0(r.valor)},
+};
+function renderBlocoComp(nome){
+  const B=BLOCOS_COMP[nome],linhas=comp[nome],el=$('cp-'+nome),ed=PERM.funil;
+  el.innerHTML=`<table class="tabela-itens"><thead><tr>${B.cols.map(c=>`<th style="width:${c[4]}px">${esc(c[1])}</th>`).join('')}<th style="width:110px;text-align:right">Subtotal</th><th style="width:30px"></th></tr></thead><tbody>${linhas.map((r,i)=>`<tr>${B.cols.map(c=>`<td><input ${c[2]==='num'?'type="number" step="any" min="0"':'type="text"'} ${c[3]?`list="${c[3]}"`:''} data-cp="${nome}" data-i="${i}" data-k="${c[0]}" value="${esc(r[c[0]]??'')}" ${c[0]==='dias'?`placeholder="${totalDias(comp)}"`:''}></td>`).join('')}
+    <td style="text-align:right;font-weight:600;color:var(--verde)" data-sub="${nome}-${i}">${fmtMoeda(B.sub(r,comp))}</td><td>${ed?`<button class="btn-rm-item" data-cp-rm="${nome}" data-i="${i}" title="Remover">×</button>`:''}</td></tr>${nome==='materiais'&&r.dica?`<tr><td colspan="${B.cols.length+2}" class="dica" style="padding-top:0">${esc(r.dica)}</td></tr>`:''}`).join('')}</tbody></table>${ed?`<button class="btn-add-item" onclick="addLinhaComp('${nome}')">+ linha</button>`:''}`;
+  el.querySelectorAll('input[data-cp]').forEach(inp=>{
+    inp.oninput=()=>{const r=comp[nome][+inp.dataset.i];r[inp.dataset.k]=inp.type==='number'?(inp.value===''&&inp.dataset.k==='dias'?'':n0(inp.value)):inp.value;
+      const s=el.querySelector(`[data-sub="${nome}-${inp.dataset.i}"]`);if(s)s.textContent=fmtMoeda(B.sub(r,comp));renderResumoComp();};
+    if(nome==='equipe'&&inp.dataset.k==='funcao')inp.onchange=()=>{const f=(precoCfg.funcoes||[]).find(x=>norm(x.nome)===norm(inp.value));const r=comp.equipe[+inp.dataset.i];if(f&&n0(f.custo_dia)>0&&!n0(r.custo_dia)){r.custo_dia=n0(f.custo_dia);renderBlocoComp('equipe');renderResumoComp();}};
+    if(nome==='materiais'&&inp.dataset.k==='descricao')inp.onchange=()=>{const m=materialPorRotulo(inp.value),r=comp.materiais[+inp.dataset.i];if(!m)return;
+      r.descricao=m.nome;r.material_id=m.id;if(m.unidade)r.unidade=m.unidade;const e=estatPreco(m.id);
+      if(e){r.custo_unit=Math.round(e.media*100)/100;r.dica=`Preço médio de ${e.nBase} cotação(ões)${e.doze?' nos últimos 12 meses':''} · menor ${fmtPreco(e.menor.preco)} · último ${fmtPreco(e.ultimo.preco)} (${fmtData(e.ultimo.data)})`;}
+      else r.dica='Sem preço registrado em Fornecedores para este material.';
+      renderBlocoComp('materiais');renderResumoComp();};
+  });
+  el.querySelectorAll('[data-cp-rm]').forEach(b=>b.onclick=()=>{comp[nome].splice(+b.dataset.i,1);renderBlocoComp(nome);renderResumoComp();});
+}
+function addLinhaComp(nome){comp[nome].push(BLOCOS_COMP[nome].novo());renderBlocoComp(nome);const ins=$('cp-'+nome).querySelectorAll('tbody input');if(ins.length)ins[ins.length-BLOCOS_COMP[nome].cols.length].focus();}
+function renderDocsComp(){
+  const lista=precoCfg.documentos||[],ed=PERM.funil;
+  const extras=comp.documentos.filter(d=>!lista.some(x=>x.nome===d.nome));
+  const todas=[...lista.map(x=>({nome:x.nome,custo:n0(x.custo),por_pessoa:!!x.por_pessoa})),...extras.map(d=>({nome:d.nome,custo:n0(d.custo),por_pessoa:!!d.por_pessoa}))];
+  $('cp-documentos').innerHTML=`<table class="tabela-itens"><thead><tr><th style="width:30px"></th><th>Documento / exigência</th><th style="width:80px">Qtd.</th><th style="width:110px">Custo unit. (R$)</th><th style="width:110px;text-align:right">Subtotal</th></tr></thead><tbody>${todas.map((d,i)=>{const sel=comp.documentos.find(x=>x.nome===d.nome);
+    return`<tr><td><input type="checkbox" data-doc-i="${i}" ${sel?'checked':''} ${ed?'':'disabled'} style="width:16px;height:16px;accent-color:var(--verde)"></td><td>${esc(d.nome)}${d.por_pessoa?' <span class="badge badge-cinza">por pessoa</span>':''}</td>
+      <td><input type="number" step="any" min="0" data-doc-q="${i}" value="${sel?esc(sel.qtd):''}" ${sel?'':'disabled'}></td><td><input type="number" step="any" min="0" data-doc-c="${i}" value="${sel?esc(sel.custo):esc(d.custo||'')}" ${sel?'':'disabled'}></td>
+      <td style="text-align:right;font-weight:600;color:var(--verde)">${sel?fmtMoeda(n0(sel.qtd)*n0(sel.custo)):''}</td></tr>`;}).join('')}</tbody></table>
+    ${ed?`<div class="linha-flex" style="margin-top:8px;max-width:520px"><input type="text" id="cp-doc-novo" placeholder="Outra exigência do cliente…" style="padding:7px 9px;border:1.5px solid var(--borda);border-radius:6px"><button class="btn-sec" style="flex:0 0 auto" onclick="addDocComp()">+ adicionar</button></div>`:''}`;
+  const el=$('cp-documentos');
+  el.querySelectorAll('[data-doc-i]').forEach(cb=>cb.onchange=()=>{const d=todas[+cb.dataset.docI];
+    if(cb.checked)comp.documentos.push({nome:d.nome,custo:d.custo,por_pessoa:d.por_pessoa,qtd:d.por_pessoa?(pessoasEquipe(comp)||1):1});else comp.documentos=comp.documentos.filter(x=>x.nome!==d.nome);
+    renderDocsComp();renderResumoComp();});
+  el.querySelectorAll('[data-doc-q],[data-doc-c]').forEach(inp=>inp.oninput=()=>{const d=todas[+(inp.dataset.docQ??inp.dataset.docC)],sel=comp.documentos.find(x=>x.nome===d.nome);if(!sel)return;
+    if(inp.dataset.docQ!==undefined)sel.qtd=n0(inp.value);else sel.custo=n0(inp.value);renderResumoComp();});
+}
+function addDocComp(){const t=$('cp-doc-novo').value.trim();if(!t)return;if(!comp.documentos.some(d=>d.nome===t))comp.documentos.push({nome:t,custo:0,qtd:1,por_pessoa:false});renderDocsComp();renderResumoComp();}
+function renderBdiComp(){
+  const b=comp.bdi,ed=PERM.funil;
+  const campo=(k,rot,dica)=>`<div class="campo"><label>${rot} (%)</label><input type="number" step="any" min="0" data-bdi="${k}" value="${esc(b[k]??'')}" ${ed?'':'disabled'}>${dica?`<div class="dica">${dica}</div>`:''}</div>`;
+  $('cp-bdi').innerHTML=`<div class="form-grid" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))">${campo('adm_central','Administração central')}${campo('seguros_garantia','Seguros e garantias')}${campo('risco','Risco / imprevistos')}${campo('despesas_financeiras','Despesas financeiras')}${campo('tributos','Impostos','sobre o preço (ISS, PIS, COFINS, IRPJ, CSLL)')}${campo('lucro','Margem de lucro','padrão do tipo de cliente')}</div>`;
+  $('cp-bdi').querySelectorAll('[data-bdi]').forEach(i=>i.oninput=()=>{b[i.dataset.bdi]=n0(i.value);renderResumoComp();});
+}
+function renderComposicao(){
+  ['equipe','materiais','equipamentos','terceiros','mobilizacao'].forEach(renderBlocoComp);
+  renderDocsComp();renderBdiComp();renderResumoComp();
+}
+function lerCabecalhoComp(){
+  comp.turno=$('cp-turno').value;comp.dias_uteis=n0($('cp-du').value);comp.sabados=n0($('cp-sab').value);comp.domingos=n0($('cp-dom').value);comp.obs=$('cp-obs').value;
+}
+function mudouCabecalhoComp(){lerCabecalhoComp();renderBlocoComp('equipe');renderResumoComp();}
+function mudouTipoClienteComp(){
+  comp.tipo_cliente=$('cp-tipo').value;const t=(precoCfg.tipos_cliente||[]).find(x=>x.nome===comp.tipo_cliente);
+  if(t){comp.bdi.lucro=n0(t.lucro);renderBdiComp();renderResumoComp();}
+}
+function mudouEmpresaComp(){comp.empresa_id=$('cp-empresa').value;comp.bdi.tributos=tributosDaEmpresa(comp.empresa_id);$('cp-avisos-cfg').innerHTML=avisosCfgPreco();renderBdiComp();renderResumoComp();}
+function renderResumoComp(){
+  const r=calcComposicao(comp);comp.resultado={custo_direto:r.cd,preco:r.preco,bdi:r.bdiPct,mao_obra:r.mo};
+  const lin=(rot,v,forte)=>`<div style="display:flex;justify-content:space-between;gap:8px;padding:3px 0;${forte?'font-weight:700;border-top:1px solid var(--borda);margin-top:4px;padding-top:6px':''}"><span>${rot}</span><span style="font-variant-numeric:tabular-nums">R$ ${fmtMoeda(v)}</span></div>`;
+  const pctMO=r.cd>0?Math.round(r.mo/r.cd*100):0;
+  $('cp-resumo').innerHTML=`<div style="font-size:13px">
+    ${lin(`Mão de obra (${r.pessoas} pessoa${r.pessoas===1?'':'s'} · ${r.td} dia${r.td===1?'':'s'}${Math.abs(r.f-1)>0.0001?` · ×${r.f.toLocaleString('pt-BR',{maximumFractionDigits:3})} adicionais`:''})`,r.mo)}
+    ${lin('Materiais',r.mat)}${lin('Equipamentos e locações',r.eq)}${lin('Serviços de terceiros',r.ter)}${lin('Mobilização e logística',r.mob)}${lin('Documentação',r.doc)}
+    ${lin('Custo direto',r.cd,true)}
+    <div style="display:flex;justify-content:space-between;padding:3px 0;color:var(--texto2)"><span>BDI (custos indiretos, impostos e lucro)</span><span>${fmtPct(r.bdiPct)}</span></div>
+    <div style="display:flex;justify-content:space-between;padding:3px 0;color:var(--texto2)"><span>Impostos · Lucro</span><span>R$ ${fmtMoeda(r.impostos)} · R$ ${fmtMoeda(r.lucroRS)}</span></div>
+    <div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:8px;padding:10px 12px;background:var(--verde-claro);border-radius:8px"><strong style="color:var(--verde)">Preço sugerido</strong><strong style="font-size:22px;color:var(--verde)">R$ ${fmtMoeda(r.preco)}</strong></div>
+    <div class="dica">Composição de custos: ${pctMO}% mão de obra e ${100-pctMO}% materiais, equipamentos e demais.${r.mo>0&&r.td===0?' ⚠️ Informe os dias de trabalho.':''}</div></div>`;
+}
+// salva a composição no card (direto no banco se o card já existe)
+async function aplicarComposicao(acao){
+  lerCabecalhoComp();comp.tipo_cliente=$('cp-tipo').value;comp.atualizado_em=new Date().toISOString();comp.atualizado_por=quemSou();
+  const r=calcComposicao(comp);
+  composicaoLocal=JSON.parse(JSON.stringify(comp));
+  if(acao==='preco'||acao==='itens'){
+    $('card-valor').value=fmtMoeda(Math.round(r.preco*100)/100);
+    const pmo=r.cd>0?Math.round(r.mo/r.cd*100):30;$('card-pct-mao').value=pmo;$('card-pct-ins').value=100-pmo;
+  }
+  if(acao==='itens'){
+    if(itensLocais.length&&!confirm('Substituir os itens do orçamento que já estão no card pelos itens da composição?'))return;
+    itensLocais=itensDaComposicao(comp,r);renderItens(true);
+  }
+  if(cardEditandoId&&PERM.funil){const{error}=await sb.from('cards').update({composicao:composicaoLocal}).eq('id',cardEditandoId);if(error){console.error(error);alert('Não foi possível guardar a composição: '+error.message);return;}
+    const c=todosCards.find(x=>x.id===cardEditandoId);if(c)c.composicao=composicaoLocal;}
+  fecharModal('modal-composicao');resumoComposicaoNoCard();
+  toast(acao==='itens'?'Itens gerados — confira e clique em Salvar':acao==='preco'?'Preço levado para o card — clique em Salvar':'Composição guardada');
+}
+function itensDaComposicao(c,r){
+  const f=r.fatorVenda,itens=[];let n=0;const r2=v=>Math.round(v*100)/100;
+  const add=(descricao,unidade,qtd,custoUnit)=>{n++;const vu=r2(custoUnit*f);itens.push({item:String(n),codigo:'',descricao,unidade,quantidade:qtd,valor_unitario:vu,valor_total:r2(vu*qtd)});};
+  if(r.mo>0){const eq=c.equipe.filter(x=>n0(x.qtd)>0).map(x=>`${n0(x.qtd)} ${x.funcao||'profissional'}`).join(', ');
+    const per=[n0(c.dias_uteis)?`${n0(c.dias_uteis)} dia(s) útil(eis)`:'',n0(c.sabados)?`${n0(c.sabados)} sábado(s)`:'',n0(c.domingos)?`${n0(c.domingos)} domingo(s)/feriado(s)`:''].filter(Boolean).join(' + ');
+    add(`Mão de obra — equipe: ${eq}${per?' · '+per:''}${c.turno==='noturno'?' · período noturno':''}`,'vb',1,r.mo);}
+  c.materiais.filter(x=>n0(x.qtd)*n0(x.custo_unit)>0).forEach(x=>add(x.descricao||'Material',x.unidade||'un',n0(x.qtd),n0(x.custo_unit)));
+  c.equipamentos.filter(x=>n0(x.qtd)*n0(x.custo_unit)>0).forEach(x=>add(x.descricao||'Equipamento',x.unidade||'un',n0(x.qtd),n0(x.custo_unit)));
+  c.terceiros.filter(x=>n0(x.valor)>0).forEach(x=>add(x.descricao||'Serviço de terceiros','vb',1,n0(x.valor)));
+  if(r.mob+r.doc>0)add(`Mobilização, logística e documentação${c.documentos.length?' ('+c.documentos.map(d=>d.nome.replace(/\s*\(.*\)$/,'')).join(', ')+')':''}`,'vb',1,r.mob+r.doc);
+  // acerto de centavos no primeiro item "vb" para fechar exatamente no preço
+  const dif=r2(r.preco-itens.reduce((s,i)=>s+i.valor_total,0)),vb=itens.find(i=>i.unidade==='vb'&&i.quantidade===1)||itens[0];
+  if(vb&&dif){vb.valor_unitario=r2(vb.valor_unitario+dif);vb.valor_total=vb.valor_unitario*vb.quantidade;}
+  return itens;
+}
+/* parâmetros (só administrador altera) */
+let cfgEdit=null;
+function abrirParametrosPreco(){
+  cfgEdit=JSON.parse(JSON.stringify(precoCfg));renderParametrosPreco();
+  modoLeitura('modal-param-preco',!PERM.admin);abrirModal('modal-param-preco');
+}
+function renderParametrosPreco(){
+  const c=cfgEdit,ed=PERM.admin;
+  const tab=(arr,cols,chave)=>`<table class="tabela-itens"><thead><tr>${cols.map(x=>`<th ${x[3]?`style="width:${x[3]}px"`:''}>${esc(x[1])}</th>`).join('')}<th style="width:30px"></th></tr></thead><tbody>${arr.map((r,i)=>`<tr>${cols.map(x=>`<td>${x[2]==='bool'?`<input type="checkbox" data-pp="${chave}" data-i="${i}" data-k="${x[0]}" ${r[x[0]]?'checked':''} style="width:16px;height:16px">`:`<input ${x[2]==='num'?'type="number" step="any" min="0"':'type="text"'} data-pp="${chave}" data-i="${i}" data-k="${x[0]}" value="${esc(r[x[0]]??'')}">`}</td>`).join('')}<td>${ed?`<button class="btn-rm-item" data-pp-rm="${chave}" data-i="${i}">×</button>`:''}</td></tr>`).join('')}</tbody></table>${ed?`<button class="btn-add-item" data-pp-add="${chave}">+ linha</button>`:''}`;
+  $('pp-funcoes').innerHTML=tab(c.funcoes,[['nome','Função','text'],['custo_dia','Custo por dia (R$) — salário + encargos + benefícios','num',260]],'funcoes');
+  $('pp-tipos').innerHTML=tab(c.tipos_cliente,[['nome','Tipo de cliente','text'],['lucro','Margem de lucro (%)','num',160]],'tipos_cliente');
+  $('pp-docs').innerHTML=tab(c.documentos,[['nome','Documento / exigência','text'],['custo','Custo (R$)','num',120],['por_pessoa','Por pessoa','bool',80]],'documentos');
+  const a=c.adicionais,b=c.bdi;
+  $('pp-adic').innerHTML=`<div class="form-grid" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))">
+    ${[['adicionais','sabado','Sábado (%)',a.sabado],['adicionais','domingo_feriado','Domingo / feriado (%)',a.domingo_feriado],['adicionais','noturno','Noturno (%)',a.noturno],
+      ['bdi','adm_central','Administração central (%)',b.adm_central],['bdi','seguros_garantia','Seguros e garantias (%)',b.seguros_garantia],['bdi','risco','Risco (%)',b.risco],['bdi','despesas_financeiras','Despesas financeiras (%)',b.despesas_financeiras]]
+      .map(([g,k,rot,v])=>`<div class="campo"><label>${rot}</label><input type="number" step="any" min="0" data-ppg="${g}" data-k="${k}" value="${esc(v??'')}"></div>`).join('')}</div>`;
+  $('pp-trib').innerHTML=`<div class="form-grid" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr))">${todasEmpresas.map(e=>`<div class="campo"><label>${esc(e.nome)} (%)</label><input type="number" step="any" min="0" data-pptrib="${esc(e.id)}" value="${esc((c.tributos_empresa||{})[e.id]??'')}"></div>`).join('')}</div>`;
+  const m=$('modal-param-preco');
+  m.querySelectorAll('[data-pp]').forEach(i=>i.oninput=i.onchange=()=>{const r=c[i.dataset.pp][+i.dataset.i];r[i.dataset.k]=i.type==='checkbox'?i.checked:i.type==='number'?n0(i.value):i.value;});
+  m.querySelectorAll('[data-pp-rm]').forEach(b=>b.onclick=()=>{c[b.dataset.ppRm].splice(+b.dataset.i,1);renderParametrosPreco();});
+  m.querySelectorAll('[data-pp-add]').forEach(b=>b.onclick=()=>{const k=b.dataset.ppAdd;c[k].push(k==='funcoes'?{nome:'',custo_dia:0}:k==='tipos_cliente'?{nome:'',lucro:10}:{nome:'',custo:0,por_pessoa:false});renderParametrosPreco();});
+  m.querySelectorAll('[data-ppg]').forEach(i=>i.oninput=()=>{c[i.dataset.ppg][i.dataset.k]=n0(i.value);});
+  m.querySelectorAll('[data-pptrib]').forEach(i=>i.oninput=()=>{c.tributos_empresa=c.tributos_empresa||{};c.tributos_empresa[i.dataset.pptrib]=i.value===''?null:n0(i.value);});
+}
+async function salvarParametrosPreco(){
+  if(!PERM.admin)return;
+  const c=cfgEdit;['funcoes','tipos_cliente','documentos'].forEach(k=>c[k]=c[k].filter(x=>String(x.nome||'').trim()));
+  const{error}=await sb.from('precificacao_config').upsert({id:1,dados:c,atualizado_em:new Date().toISOString(),atualizado_por:quemSou()},{onConflict:'id'});
+  if(erroSB(error))return;
+  precoCfg=JSON.parse(JSON.stringify(c));fecharModal('modal-param-preco');toast('Parâmetros salvos');
+  if($('modal-composicao').classList.contains('aberto')){$('cp-avisos-cfg').innerHTML=avisosCfgPreco();$('cp-dl-funcoes').innerHTML=(precoCfg.funcoes||[]).map(f=>`<option value="${esc(f.nome)}">`).join('');renderDocsComp();}
+}
+function resumoComposicaoNoCard(){
+  const c=composicaoLocal,el=$('cp-card-resumo');if(!c||!c.resultado){el.style.display='none';return;}
+  el.style.display='block';
+  el.innerHTML=`🧮 Composição${c.tipo_cliente?' · '+esc(c.tipo_cliente):''}: custo direto <strong>R$ ${esc(fmtMoeda(c.resultado.custo_direto))}</strong> · BDI ${esc(fmtPct(c.resultado.bdi))} · preço sugerido <strong>R$ ${esc(fmtMoeda(c.resultado.preco))}</strong>${c.atualizado_em?` <span class="dica" style="margin:0">(${esc(fmtDataHora(c.atualizado_em))}${c.atualizado_por?' · '+esc(c.atualizado_por):''})</span>`:''}`;
+}
 
 /* ================= INÍCIO ================= */
 ligarArrastarDoc();
