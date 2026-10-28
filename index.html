@@ -289,6 +289,11 @@ tr.doc-vencido td{background:#fff5f5}
 .link-perfil{display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:var(--verde-claro);border:1.5px solid var(--verde);border-radius:8px;padding:10px 12px;font-size:13px}
 .link-perfil input{flex:1;min-width:220px;padding:7px 9px;border:1.5px solid var(--borda);border-radius:6px;font-size:12px;font-family:Consolas,monospace;background:#fff}
 .oculto{display:none!important}
+/* v22: categorias do fornecedor */
+.chips-cat{display:flex;flex-wrap:wrap;gap:6px;max-height:220px;overflow-y:auto;padding:2px}
+.chip-cat{display:inline-flex!important;gap:5px;align-items:center;border:1.5px solid var(--borda);border-radius:20px;padding:4px 10px;font-size:12px!important;font-weight:500!important;cursor:pointer;background:#fff;margin:0!important}
+.chip-cat input{width:auto!important;margin:0;accent-color:var(--verde)}
+.chip-cat.marcado{border-color:var(--verde);background:var(--verde-claro);color:var(--verde)}
 .link-nome{background:none;border:none;padding:0;font:inherit;font-weight:700;color:var(--texto);cursor:pointer;text-align:left;text-decoration:underline dotted #9aa;text-underline-offset:3px}
 .link-nome:hover{color:var(--verde);text-decoration-color:var(--verde)}
 @media(max-width:700px){.linha-benef{grid-template-columns:1fr 1fr}.dim-linha{grid-template-columns:120px 1fr 60px}}
@@ -353,6 +358,7 @@ tr.doc-vencido td{background:#fff5f5}
     <div class="tab" data-tab="funil" data-comercial>Funil de Propostas</div>
     <div class="tab" data-tab="clientes" data-comercial>Clientes</div>
     <div class="tab" data-tab="projetos" data-comercial>Projetos</div>
+    <div class="tab" data-tab="fornecedores" data-comercial>Fornecedores</div>
     <div class="tab" data-tab="atividades" data-comercial>Atividades <span id="tab-ativ-badge"></span></div>
     <div class="tab" data-tab="empresas" data-comercial>Empresas</div>
     <div class="tab" data-tab="usuarios" id="tab-btn-usuarios" style="display:none">Usuários</div>
@@ -495,6 +501,37 @@ tr.doc-vencido td{background:#fff5f5}
         <div class="kpis" id="sd-kpis"></div>
         <div id="sd-categorias"></div>
         <div class="tabela-wrap"><table class="tabela" id="tabela-saidas"></table></div>
+      </div>
+    </div>
+
+    <!-- FORNECEDORES (v22): fornecedores, materiais e preços de referência -->
+    <div id="tab-fornecedores" style="display:none">
+      <div class="barra-acoes">
+        <h2>Fornecedores e preços</h2>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn-sec fo-edita" onclick="abrirMaterial(null)">+ Registrar preço</button>
+          <button class="btn-novo fo-edita" onclick="abrirFornecedor(null)">+ Novo fornecedor</button>
+        </div>
+      </div>
+      <div class="subabas" id="fo-subabas">
+        <div class="subaba ativo" data-fo="fornecedores">🏢 Fornecedores</div>
+        <div class="subaba" data-fo="materiais">📦 Materiais e preços</div>
+      </div>
+      <div class="info-box" id="fo-info" style="display:block;line-height:1.5"></div>
+      <div class="painel-rh ativo" id="fo-p-fornecedores">
+        <div class="filtros">
+          <input type="search" id="fo-busca" placeholder="Buscar nome, CNPJ, cidade, categoria" oninput="renderListaFornecedores()">
+          <select id="fo-cat" onchange="renderListaFornecedores()"></select>
+          <label class="rot-filtro" style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="fo-inativos" onchange="renderListaFornecedores()"> mostrar desativados</label>
+        </div>
+        <div class="tabela-wrap"><table class="tabela" id="tabela-fornecedores"></table></div>
+      </div>
+      <div class="painel-rh" id="fo-p-materiais">
+        <div class="filtros">
+          <input type="search" id="mt-busca" placeholder="Buscar material ou serviço" oninput="renderListaMateriais()">
+          <select id="mt-cat" onchange="renderListaMateriais()"></select>
+        </div>
+        <div class="tabela-wrap"><table class="tabela" id="tabela-materiais"></table></div>
       </div>
     </div>
 
@@ -1562,6 +1599,73 @@ tr.doc-vencido td{background:#fff5f5}
 </div>
 <datalist id="dl-fornecedores"></datalist>
 
+<!-- MODAL FORNECEDOR (v22) -->
+<div class="modal-overlay" id="modal-fornecedor">
+  <div class="modal">
+    <h2 id="fo-m-titulo">Fornecedor</h2>
+    <div class="aviso-leitura">🔒 Seu perfil só consulta os fornecedores.</div>
+    <div class="form-grid">
+      <div class="campo"><label>Nome *</label><input type="text" id="fo-m-nome" placeholder="Como vocês chamam o fornecedor"></div>
+      <div class="campo"><label>Razão social</label><input type="text" id="fo-m-razao"></div>
+      <div class="campo"><label>CNPJ / CPF</label><input type="text" id="fo-m-cnpj"></div>
+      <div class="campo"><label>Contato (pessoa)</label><input type="text" id="fo-m-contato"></div>
+      <div class="campo"><label>Telefone</label><input type="text" id="fo-m-telefone" oninput="mascaraTel(this)"></div>
+      <div class="campo"><label>WhatsApp</label><input type="text" id="fo-m-whatsapp" oninput="mascaraTel(this)"></div>
+      <div class="campo"><label>E-mail</label><input type="email" id="fo-m-email"></div>
+      <div class="campo"><label>Site</label><input type="text" id="fo-m-site"></div>
+      <div class="campo"><label>Cidade / região</label><input type="text" id="fo-m-cidade"></div>
+      <div class="campo"><label>Avaliação</label><select id="fo-m-avaliacao"><option value="">—</option><option value="5">★★★★★ excelente</option><option value="4">★★★★☆ bom</option><option value="3">★★★☆☆ regular</option><option value="2">★★☆☆☆ fraco</option><option value="1">★☆☆☆☆ evitar</option></select></div>
+      <div class="campo"><label>Prazo de entrega</label><input type="text" id="fo-m-prazo" placeholder="Ex.: 2 dias úteis"></div>
+      <div class="campo"><label>Condições de pagamento</label><input type="text" id="fo-m-pagto" placeholder="Ex.: 28 dias, boleto"></div>
+      <div class="campo full"><label>O que fornece (marque quantas quiser)</label><div id="fo-m-cats" class="chips-cat"></div>
+        <div class="linha-flex so-edicao" style="margin-top:8px"><input type="text" id="fo-m-cat-nova" list="dl-cat-forn" placeholder="Outra categoria…" onkeydown="if(event.key==='Enter')addCategoriaFornecedor()"><button class="btn-sec" style="flex:0 0 auto" onclick="addCategoriaFornecedor()">+ adicionar</button></div></div>
+      <div class="campo full"><label>Observações</label><textarea id="fo-m-obs" rows="2"></textarea></div>
+    </div>
+    <div class="secao">Preços deste fornecedor <button class="btn-link" id="fo-m-btn-preco" onclick="registrarPrecoDoFornecedor()">+ registrar preço</button></div>
+    <div id="fo-m-precos"></div>
+    <div class="modal-btns">
+      <button class="btn-cancelar so-edicao" id="fo-m-desativar" onclick="alternarFornecedor()">Desativar</button>
+      <button class="btn-cancelar" onclick="fecharModal('modal-fornecedor')">Fechar</button>
+      <button class="btn-salvar so-edicao" onclick="salvarFornecedor()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL MATERIAL E PREÇOS (v22) -->
+<div class="modal-overlay" id="modal-material">
+  <div class="modal">
+    <h2 id="mt-m-titulo">Material / serviço</h2>
+    <div class="aviso-leitura">🔒 Seu perfil só consulta os preços.</div>
+    <div class="form-grid">
+      <div class="campo full"><label>Material ou serviço *</label><input type="text" id="mt-m-nome" list="dl-materiais" placeholder="Ex.: Cimento CP-II 50 kg" onchange="mudouNomeMaterial()"></div>
+      <div class="campo"><label>Categoria</label><input type="text" id="mt-m-categoria" list="dl-cat-forn"></div>
+      <div class="campo"><label>Unidade</label><input type="text" id="mt-m-unidade" list="dl-unidades" placeholder="saco, m², m³, h…"></div>
+      <div class="campo full"><label>Observações (especificação, marca…)</label><input type="text" id="mt-m-obs"></div>
+    </div>
+    <div id="mt-m-resumo"></div>
+    <div class="secao so-edicao">Registrar preço</div>
+    <div class="form-grid so-edicao" style="background:#f7f7f7;border-radius:8px;padding:12px 12px 0">
+      <div class="campo"><label>Fornecedor</label><input type="text" id="mt-p-fornecedor" list="dl-fornecedores" placeholder="Escolha ou digite um novo"></div>
+      <div class="campo"><label>Preço unitário (R$) *</label><input type="text" inputmode="numeric" id="mt-p-preco" oninput="mascaraMoeda(this)" placeholder="0,00"></div>
+      <div class="campo"><label>Quantidade cotada</label><input type="text" inputmode="decimal" id="mt-p-qtd" placeholder="opcional"></div>
+      <div class="campo"><label>Data</label><input type="date" id="mt-p-data"></div>
+      <div class="campo"><label>Origem</label><select id="mt-p-origem"><option value="cotacao">Cotação</option><option value="compra">Compra (valor pago)</option><option value="manual">Referência (tabela, internet…)</option></select></div>
+      <div class="campo campo-check"><input type="checkbox" id="mt-p-frete"><label for="mt-p-frete">Frete incluso</label></div>
+      <div class="campo full"><label>Observação</label><input type="text" id="mt-p-obs" placeholder="Ex.: pedido mínimo 50 sacos"></div>
+      <div class="campo full" style="text-align:right"><button class="btn-salvar" onclick="registrarPreco()">+ Registrar preço</button></div>
+    </div>
+    <div class="secao">Histórico de preços</div>
+    <div id="mt-m-precos"></div>
+    <div class="modal-btns">
+      <button class="btn-cancelar" onclick="fecharModal('modal-material')">Fechar</button>
+      <button class="btn-salvar so-edicao" onclick="salvarMaterial()">Salvar material</button>
+    </div>
+  </div>
+</div>
+<datalist id="dl-cat-forn"></datalist>
+<datalist id="dl-materiais"></datalist>
+<datalist id="dl-unidades"><option value="un"><option value="m"><option value="m²"><option value="m³"><option value="kg"><option value="t"><option value="L"><option value="saco"><option value="caixa"><option value="pç"><option value="rolo"><option value="galão"><option value="h"><option value="diária"><option value="mês"><option value="vb"><option value="viagem"><option value="muda"></datalist>
+
 <datalist id="dl-bancos"><option value="Itaú Empresas"><option value="Inter"><option value="Bradesco"><option value="Banco do Brasil"><option value="Caixa"><option value="Santander"></datalist>
 
 <!-- MODAL CONFIGURAÇÃO DO WHATSAPP (v20, só administrador) -->
@@ -1659,7 +1763,9 @@ function calcularPermissoes(p){
     // v20: financeiro · pagamentos = lança pagamentos a autorizar · autorizar = marca como autorizado (André)
     financeiro:adm||admv||com,pagamentos:adm||admv,autorizar:adm,
     // v21: saídas · saidasTodas = vê todas, importa fatura e confere (o comercial vê só os próprios cartões)
-    saidasTodas:adm||admv};
+    saidasTodas:adm||admv,
+    // v22: fornecedores e preços (todos da área comercial veem; administrador e comercial editam)
+    fornEditar:adm||com};
 }
 const BUCKET_DOCS='documentos';
 const ABERTAS=ETAPAS.filter(e=>!['fechada','perdida'].includes(e.id)).map(e=>e.id);
@@ -1873,7 +1979,7 @@ async function trocarSenha(){
 /* ================= CARGA DE DADOS ================= */
 async function carregarTudo(){
   await carregarEmpresas();
-  await Promise.all([carregarClientes(),carregarCards(),carregarAtividades(),carregarProjetos(),carregarPerfis(),carregarDocsTudo(),carregarBeneficiosTudo(),carregarRH(),carregarCurriculos(),carregarFinanceiro(),carregarSaidas()]);
+  await Promise.all([carregarClientes(),carregarCards(),carregarAtividades(),carregarProjetos(),carregarPerfis(),carregarDocsTudo(),carregarBeneficiosTudo(),carregarRH(),carregarCurriculos(),carregarFinanceiro(),carregarSaidas(),carregarFornecedores()]);
   atualizarBadgeRH();
   atualizarDatalists();
   renderTabAtual();
@@ -1961,14 +2067,14 @@ function abrirTab(tab){
   if(tab==='rh'&&!PERM.rhPessoal)tab='painel';
   if(tab==='curriculos'&&!PERM.curriculos)tab='painel';
   if(tab==='financeiro'&&!PERM.financeiro)tab='painel';
-  if(!PERM.comercialVer&&['painel','funil','clientes','projetos','atividades','empresas'].includes(tab))tab='documentos';
+  if(!PERM.comercialVer&&['painel','funil','clientes','projetos','fornecedores','atividades','empresas'].includes(tab))tab='documentos';
   tabAtual=tab;
-  ['painel','documentos','beneficios','rh','curriculos','financeiro','funil','clientes','projetos','atividades','empresas','usuarios'].forEach(t=>{$('tab-'+t).style.display=t===tab?'block':'none';});
+  ['painel','documentos','beneficios','rh','curriculos','financeiro','fornecedores','funil','clientes','projetos','atividades','empresas','usuarios'].forEach(t=>{$('tab-'+t).style.display=t===tab?'block':'none';});
   document.querySelectorAll('#tabs .tab').forEach(el=>el.classList.toggle('ativo',el.dataset.tab===tab));
   renderTabAtual();
 }
 function renderTabAtual(){
-  ({painel:renderPainel,documentos:renderDocumentos,beneficios:renderBeneficios,rh:renderRH,curriculos:renderCurriculos,financeiro:renderFinanceiro,funil:renderFunil,clientes:renderClientes,projetos:renderProjetos,atividades:renderAtividades,empresas:renderEmpresas,usuarios:renderUsuarios}[tabAtual]||(()=>{}))();
+  ({painel:renderPainel,documentos:renderDocumentos,beneficios:renderBeneficios,rh:renderRH,curriculos:renderCurriculos,financeiro:renderFinanceiro,fornecedores:renderFornecedoresTab,funil:renderFunil,clientes:renderClientes,projetos:renderProjetos,atividades:renderAtividades,empresas:renderEmpresas,usuarios:renderUsuarios}[tabAtual]||(()=>{}))();
 }
 function trocarEmpresa(){
   empresaAtual=$('select-empresa').value;
@@ -5785,10 +5891,184 @@ async function exportarSaidas(){
   toast('Planilha gerada');
 }
 
+/* ================= FORNECEDORES, MATERIAIS E PREÇOS (v22) ================= */
+let todosFornecedores=[],todosMateriais=[],todosPrecos=[],fornSub='fornecedores',v22Ok=true,fornEditandoId=null,matEditandoId=null;
+const CATEGORIAS_FORNECIMENTO=['Construção civil (cimento, areia, brita, blocos)','Concreto usinado e pré-moldados','Aço, ferragens e serralheria','Madeira e fôrmas','Elétrica','Hidráulica e drenagem','Pintura','Drywall e steel frame','Impermeabilização','Pavimentação e asfalto','Revestimentos, pisos e louças','Vidraçaria','Ar-condicionado e refrigeração','Caldeiraria, solda e tubulação','Demolição e terraplenagem','Caçamba, descarte e resíduos','Locação de equipamentos e máquinas','Andaimes e acesso em altura','Ferramentas','EPI e uniformes','Produtos de limpeza','Equipamentos de limpeza','Higienização e controle de pragas','Mudas, plantas e sementes','Terra, adubo e insumos de jardinagem','Poda, supressão e remoção de árvores','Irrigação','Transporte e frete','Combustível','Topografia e sondagem','Laboratório e ensaios','Projetos e consultoria técnica','Mão de obra terceirizada','Segurança patrimonial','Alimentação','Hospedagem','Escritório e papelaria','Informática e software','Gráfica e comunicação visual','Outros'];
+const UNIDADES=['un','m','m²','m³','kg','t','L','saco','caixa','pç','rolo','galão','h','diária','mês','vb','viagem','muda'];
+function avisarMigracaoV22(){
+  v22Ok=false;const el=$('fo-info');
+  if(el)el.innerHTML='<strong>Falta atualizar o banco de dados (v22).</strong> No Supabase, abra <em>SQL Editor → New query</em>, cole o conteúdo do arquivo <code>supabase/migracao_crm_v22_fornecedores_precos.sql</code> e clique em <em>Run</em>. Depois recarregue esta página.';
+}
+async function carregarFornecedores(){
+  if(!PERM.comercialVer)return;
+  const[f,m,p]=await Promise.all([sb.from('fornecedores').select('*').order('nome'),sb.from('materiais').select('*').order('nome'),sb.from('precos_fornecedor').select('*').order('data',{ascending:false})]);
+  const erro=f.error||m.error||p.error;
+  if(erro){if(/fornecedores|materiais|precos_fornecedor/.test(erro.message||''))avisarMigracaoV22();else console.error(erro);todosFornecedores=[];todosMateriais=[];todosPrecos=[];return;}
+  v22Ok=true;todosFornecedores=f.data||[];todosMateriais=m.data||[];todosPrecos=p.data||[];
+  atualizarDatalistsFornecedores();
+}
+function atualizarDatalistsFornecedores(){
+  $('dl-fornecedores').innerHTML=todosFornecedores.filter(f=>f.ativo!==false).map(f=>`<option value="${esc(f.nome)}">`).join('');
+  $('dl-cat-forn').innerHTML=categoriasFornecimento().map(c=>`<option value="${esc(c)}">`).join('');
+  $('dl-materiais').innerHTML=todosMateriais.filter(m=>m.ativo!==false).map(m=>`<option value="${esc(rotuloMaterial(m))}">`).join('');
+}
+function categoriasFornecimento(){
+  const usadas=new Set(CATEGORIAS_FORNECIMENTO);todosFornecedores.forEach(f=>(f.categorias||[]).forEach(c=>usadas.add(c)));todosMateriais.forEach(m=>{if(m.categoria)usadas.add(m.categoria);});
+  return[...usadas];
+}
+function fornecedorPorId(id){return todosFornecedores.find(f=>f.id===id);}
+function fornecedorPorNome(n){const k=norm(n);return k?todosFornecedores.find(f=>norm(f.nome)===k):null;}
+function materialPorId(id){return todosMateriais.find(m=>m.id===id);}
+function rotuloMaterial(m){return m?`${m.nome}${m.unidade?' ('+m.unidade+')':''}`:'';}
+function materialPorRotulo(t){const k=norm(t);return k?todosMateriais.find(m=>norm(rotuloMaterial(m))===k)||todosMateriais.find(m=>norm(m.nome)===k):null;}
+// média dos últimos 12 meses (se não houver, de todos), menor e último preço de um material
+function estatPreco(mid){
+  const ps=todosPrecos.filter(p=>p.material_id===mid);if(!ps.length)return null;
+  const corte=somarDias(hojeISO(),-365),rec=ps.filter(p=>p.data>=corte),base=rec.length?rec:ps;
+  const media=base.reduce((s,p)=>s+Number(p.preco),0)/base.length;
+  const menor=base.reduce((a,p)=>Number(p.preco)<Number(a.preco)?p:a,base[0]);
+  const ultimo=ps.slice().sort((a,b)=>String(b.data).localeCompare(String(a.data))||String(b.criado_em).localeCompare(String(a.criado_em)))[0];
+  return{n:ps.length,nBase:base.length,media,menor,ultimo,doze:!!rec.length};
+}
+function fmtPreco(v){const n=Number(v||0);return'R$ '+n.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:n<10&&n%1?4:2});}
+function linkWhats(t){const d=String(t||'').replace(/\D/g,'');if(d.length<10)return'';return`https://wa.me/${d.length<=11?'55'+d:d}`;}
+function renderFornecedoresTab(){
+  if(!PERM.comercialVer)return;
+  document.querySelectorAll('#fo-subabas .subaba').forEach(s=>s.classList.toggle('ativo',s.dataset.fo===fornSub));
+  document.querySelectorAll('#tab-fornecedores .painel-rh').forEach(p=>p.classList.toggle('ativo',p.id==='fo-p-'+fornSub));
+  document.querySelectorAll('.fo-edita').forEach(b=>b.style.display=PERM.fornEditar?'':'none');
+  if(!v22Ok){avisarMigracaoV22();return;}
+  $('fo-info').innerHTML='Cadastre os fornecedores e vá registrando os preços que eles passam (cotação) ou que vocês pagaram (compra). O CRM mostra a <strong>média dos últimos 12 meses</strong>, o <strong>menor</strong> e o <strong>último preço</strong> de cada material — e a composição de preço das propostas usa esses valores.';
+  const cats=categoriasFornecimento();
+  ['fo-cat','mt-cat'].forEach(id=>{const s=$(id),v=s.value;preencherSelect(s,cats.map(c=>[c,c]),'Todas as categorias');s.value=v;});
+  if(fornSub==='fornecedores')renderListaFornecedores();else renderListaMateriais();
+}
+function renderListaFornecedores(){
+  const q=norm($('fo-busca').value),cat=$('fo-cat').value,inat=$('fo-inativos').checked;
+  const nPrecos={},ultData={};todosPrecos.forEach(p=>{if(!p.fornecedor_id)return;nPrecos[p.fornecedor_id]=(nPrecos[p.fornecedor_id]||0)+1;if(!ultData[p.fornecedor_id]||p.data>ultData[p.fornecedor_id])ultData[p.fornecedor_id]=p.data;});
+  const lista=todosFornecedores.filter(f=>(inat||f.ativo!==false)&&(!cat||(f.categorias||[]).includes(cat))&&(!q||norm([f.nome,f.razao_social,f.cnpj,f.contato,f.cidade,(f.categorias||[]).join(' '),f.observacoes].join(' ')).includes(q)));
+  $('tabela-fornecedores').innerHTML=`<thead><tr><th>Fornecedor</th><th>Categorias</th><th>Contato</th><th>Avaliação</th><th class="num">Preços</th><th>Último preço</th></tr></thead><tbody>${lista.length?lista.map(f=>{
+    const wa=linkWhats(f.whatsapp||f.telefone);
+    return`<tr class="clicavel ${f.ativo===false?'inativo':''}" data-fo="${esc(f.id)}" style="cursor:pointer"><td><strong>${esc(f.nome)}</strong>${f.cidade?`<div class="dica" style="margin:0">${esc(f.cidade)}</div>`:''}</td>
+      <td style="white-space:normal;max-width:340px">${(f.categorias||[]).map(c=>`<span class="badge badge-cinza" style="margin:1px">${esc(c)}</span>`).join(' ')||'—'}</td>
+      <td style="font-size:12px">${esc(f.contato||'')}${f.telefone||f.whatsapp?`<div>${esc(fmtTel(String(f.whatsapp||f.telefone).replace(/\D/g,'').replace(/^55(?=\d{10,11}$)/,'')))}${wa?` <a href="${esc(wa)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="Abrir no WhatsApp">💬</a>`:''}</div>`:''}</td>
+      <td class="estrelas">${f.avaliacao?'★'.repeat(f.avaliacao)+'☆'.repeat(5-f.avaliacao):'—'}</td><td class="num">${nPrecos[f.id]||0}</td><td>${ultData[f.id]?esc(fmtData(ultData[f.id])):'—'}</td></tr>`;}).join('')
+    :`<tr><td colspan="6" class="vazio">Nenhum fornecedor${q||cat?' com esses filtros':' cadastrado ainda'}.</td></tr>`}</tbody>`;
+  $('tabela-fornecedores').querySelectorAll('[data-fo]').forEach(tr=>tr.onclick=()=>abrirFornecedor(tr.dataset.fo));
+}
+function renderListaMateriais(){
+  const q=norm($('mt-busca').value),cat=$('mt-cat').value;
+  const lista=todosMateriais.filter(m=>m.ativo!==false&&(!cat||m.categoria===cat)&&(!q||norm([m.nome,m.categoria,m.observacoes].join(' ')).includes(q)));
+  $('tabela-materiais').innerHTML=`<thead><tr><th>Material / serviço</th><th>Categoria</th><th>Un.</th><th class="num" title="Média dos últimos 12 meses">Preço médio</th><th class="num">Menor preço</th><th class="num">Último preço</th><th class="num">Cotações</th></tr></thead><tbody>${lista.length?lista.map(m=>{
+    const e=estatPreco(m.id),fm=e&&fornecedorPorId(e.menor.fornecedor_id),fu=e&&fornecedorPorId(e.ultimo.fornecedor_id);
+    return`<tr data-mt="${esc(m.id)}" style="cursor:pointer"><td><strong>${esc(m.nome)}</strong></td><td style="font-size:12px">${esc(m.categoria||'—')}</td><td>${esc(m.unidade||'')}</td>
+      <td class="num"><strong>${e?esc(fmtPreco(e.media)):'—'}</strong>${e&&!e.doze?'<div class="dica" style="margin:0">mais de 12 meses</div>':''}</td>
+      <td class="num">${e?`${esc(fmtPreco(e.menor.preco))}<div class="dica" style="margin:0">${esc(fm?fm.nome:'')}</div>`:'—'}</td>
+      <td class="num">${e?`${esc(fmtPreco(e.ultimo.preco))}<div class="dica" style="margin:0">${esc(fmtData(e.ultimo.data))}${fu?' · '+esc(fu.nome):''}</div>`:'—'}</td><td class="num">${e?e.n:0}</td></tr>`;}).join('')
+    :`<tr><td colspan="7" class="vazio">Nenhum material${q||cat?' com esses filtros':' cadastrado ainda'}. Clique em <em>+ Registrar preço</em> para começar.</td></tr>`}</tbody>`;
+  $('tabela-materiais').querySelectorAll('[data-mt]').forEach(tr=>tr.onclick=()=>abrirMaterial(tr.dataset.mt));
+}
+/* fornecedor */
+function renderChecksCategorias(sel){
+  const todas=[...new Set([...categoriasFornecimento(),...sel])];
+  $('fo-m-cats').innerHTML=todas.map(c=>`<label class="chip-cat ${sel.includes(c)?'marcado':''}"><input type="checkbox" value="${esc(c)}" ${sel.includes(c)?'checked':''}> ${esc(c)}</label>`).join('');
+  $('fo-m-cats').querySelectorAll('input').forEach(i=>i.onchange=()=>i.parentElement.classList.toggle('marcado',i.checked));
+}
+function addCategoriaFornecedor(){
+  const t=$('fo-m-cat-nova').value.trim();if(!t)return;
+  const sel=[...$('fo-m-cats').querySelectorAll('input:checked')].map(i=>i.value);if(!sel.includes(t))sel.push(t);
+  renderChecksCategorias(sel);$('fo-m-cat-nova').value='';
+}
+function abrirFornecedor(id){
+  if(!v22Ok){avisarMigracaoV22();alert('Rode antes a migração v22 no Supabase.');return;}
+  const f=id?fornecedorPorId(id):null;fornEditandoId=f?f.id:null;
+  $('fo-m-titulo').textContent=f?f.nome:'Novo fornecedor';
+  const v=(k)=>f&&f[k]!=null?f[k]:'';
+  $('fo-m-nome').value=v('nome');$('fo-m-razao').value=v('razao_social');$('fo-m-cnpj').value=v('cnpj');$('fo-m-contato').value=v('contato');
+  $('fo-m-telefone').value=v('telefone');$('fo-m-whatsapp').value=v('whatsapp');$('fo-m-email').value=v('email');$('fo-m-site').value=v('site');$('fo-m-cidade').value=v('cidade');
+  $('fo-m-avaliacao').value=f&&f.avaliacao?String(f.avaliacao):'';$('fo-m-prazo').value=v('prazo_entrega');$('fo-m-pagto').value=v('condicoes_pagamento');$('fo-m-obs').value=v('observacoes');
+  renderChecksCategorias(f?(f.categorias||[]):[]);
+  const ps=f?todosPrecos.filter(p=>p.fornecedor_id===f.id):[];
+  $('fo-m-precos').innerHTML=f?(ps.length?`<div class="tabela-wrap"><table class="tabela"><thead><tr><th>Data</th><th>Material</th><th class="num">Preço</th><th>Origem</th></tr></thead><tbody>${ps.map(p=>{const m=materialPorId(p.material_id);return`<tr><td>${esc(fmtData(p.data))}</td><td>${esc(rotuloMaterial(m))}</td><td class="num">${esc(fmtPreco(p.preco))}</td><td>${esc({cotacao:'cotação',compra:'compra',manual:'referência'}[p.origem]||p.origem)}</td></tr>`;}).join('')}</tbody></table></div>`:'<p class="vazio">Nenhum preço registrado deste fornecedor.</p>'):'<p class="vazio">Salve o fornecedor para registrar preços.</p>';
+  $('fo-m-btn-preco').style.display=f&&PERM.fornEditar?'':'none';
+  $('fo-m-desativar').style.display=f&&PERM.fornEditar?'':'none';$('fo-m-desativar').textContent=f&&f.ativo===false?'Reativar':'Desativar';
+  modoLeitura('modal-fornecedor',!PERM.fornEditar);
+  abrirModal('modal-fornecedor');
+}
+async function salvarFornecedor(){
+  if(!PERM.fornEditar)return;
+  const nome=$('fo-m-nome').value.trim();if(!nome){alert('Informe o nome do fornecedor.');return;}
+  if(todosFornecedores.some(f=>f.id!==fornEditandoId&&norm(f.nome)===norm(nome))){alert('Já existe um fornecedor com esse nome.');return;}
+  const dados={nome,razao_social:$('fo-m-razao').value.trim()||null,cnpj:$('fo-m-cnpj').value.trim()||null,contato:$('fo-m-contato').value.trim()||null,
+    telefone:$('fo-m-telefone').value.trim()||null,whatsapp:$('fo-m-whatsapp').value.trim()||null,email:$('fo-m-email').value.trim()||null,site:$('fo-m-site').value.trim()||null,
+    cidade:$('fo-m-cidade').value.trim()||null,categorias:[...$('fo-m-cats').querySelectorAll('input:checked')].map(i=>i.value),
+    avaliacao:$('fo-m-avaliacao').value?Number($('fo-m-avaliacao').value):null,prazo_entrega:$('fo-m-prazo').value.trim()||null,
+    condicoes_pagamento:$('fo-m-pagto').value.trim()||null,observacoes:$('fo-m-obs').value.trim()||null,atualizado_em:new Date().toISOString()};
+  const r=fornEditandoId?await sb.from('fornecedores').update(dados).eq('id',fornEditandoId):await sb.from('fornecedores').insert({...dados,criado_por:quemSou()});
+  if(erroSB(r.error))return;
+  fecharModal('modal-fornecedor');await carregarFornecedores();renderFornecedoresTab();toast('Fornecedor salvo');
+}
+async function alternarFornecedor(){
+  const f=fornecedorPorId(fornEditandoId);if(!f)return;
+  const{error}=await sb.from('fornecedores').update({ativo:f.ativo===false}).eq('id',f.id);if(erroSB(error))return;
+  fecharModal('modal-fornecedor');await carregarFornecedores();renderFornecedoresTab();
+}
+/* material + histórico de preços */
+function abrirMaterial(id){
+  if(!v22Ok){avisarMigracaoV22();alert('Rode antes a migração v22 no Supabase.');return;}
+  const m=id?materialPorId(id):null;matEditandoId=m?m.id:null;
+  $('mt-m-titulo').textContent=m?m.nome:'Novo material / serviço';
+  $('mt-m-nome').value=m?m.nome:'';$('mt-m-categoria').value=m?(m.categoria||''):'';$('mt-m-unidade').value=m?(m.unidade||''):'';$('mt-m-obs').value=m?(m.observacoes||''):'';
+  limparFormPreco();renderPrecosMaterial();
+  modoLeitura('modal-material',!PERM.fornEditar);
+  abrirModal('modal-material');
+}
+function renderPrecosMaterial(){
+  const ps=matEditandoId?todosPrecos.filter(p=>p.material_id===matEditandoId).sort((a,b)=>String(b.data).localeCompare(String(a.data))):[];
+  const e=matEditandoId?estatPreco(matEditandoId):null;
+  $('mt-m-resumo').innerHTML=e?`<div class="kpis" style="margin-bottom:10px"><div class="kpi"><div class="rot">Preço médio</div><div class="val">${esc(fmtPreco(e.media))}</div><div class="sub">${e.doze?'últimos 12 meses':'todas as cotações'} · ${e.nBase} preço(s)</div></div>
+    <div class="kpi"><div class="rot">Menor</div><div class="val">${esc(fmtPreco(e.menor.preco))}</div><div class="sub">${esc((fornecedorPorId(e.menor.fornecedor_id)||{}).nome||'—')}</div></div>
+    <div class="kpi"><div class="rot">Último</div><div class="val">${esc(fmtPreco(e.ultimo.preco))}</div><div class="sub">${esc(fmtData(e.ultimo.data))}</div></div></div>`:'';
+  $('mt-m-precos').innerHTML=ps.length?`<div class="tabela-wrap"><table class="tabela"><thead><tr><th>Data</th><th>Fornecedor</th><th class="num">Preço</th><th class="num">Qtd.</th><th>Origem</th><th>Obs.</th><th></th></tr></thead><tbody>${ps.map(p=>`<tr><td>${esc(fmtData(p.data))}</td><td>${esc((fornecedorPorId(p.fornecedor_id)||{}).nome||'—')}</td><td class="num"><strong>${esc(fmtPreco(p.preco))}</strong>${p.unidade?' / '+esc(p.unidade):''}</td><td class="num">${p.quantidade!=null?esc(Number(p.quantidade).toLocaleString('pt-BR')):''}</td><td>${esc({cotacao:'cotação',compra:'compra',manual:'referência'}[p.origem]||p.origem)}${p.frete_incluso?' · com frete':''}</td><td style="font-size:12px">${esc(p.observacoes||'')}</td><td>${PERM.fornEditar?`<button class="btn-rm-item" title="Apagar este preço" data-rm-preco="${esc(p.id)}">×</button>`:''}</td></tr>`).join('')}</tbody></table></div>`
+    :`<p class="vazio">${matEditandoId?'Nenhum preço registrado ainda.':'Preencha o material e registre o primeiro preço abaixo.'}</p>`;
+  $('mt-m-precos').querySelectorAll('[data-rm-preco]').forEach(b=>b.onclick=async()=>{if(!confirm('Apagar este preço?'))return;const{error}=await sb.from('precos_fornecedor').delete().eq('id',b.dataset.rmPreco);if(erroSB(error))return;await carregarFornecedores();renderPrecosMaterial();renderFornecedoresTab();});
+}
+function limparFormPreco(){$('mt-p-fornecedor').value='';$('mt-p-preco').value='';$('mt-p-qtd').value='';$('mt-p-data').value=hojeISO();$('mt-p-origem').value='cotacao';$('mt-p-frete').checked=false;$('mt-p-obs').value='';}
+// grava/atualiza o material do formulário e devolve o id
+async function garantirMaterial(){
+  const nome=$('mt-m-nome').value.trim();if(!nome){alert('Informe o nome do material ou serviço.');return null;}
+  const dados={nome,categoria:$('mt-m-categoria').value.trim()||null,unidade:$('mt-m-unidade').value.trim()||null,observacoes:$('mt-m-obs').value.trim()||null};
+  const igual=todosMateriais.find(m=>m.id!==matEditandoId&&norm(m.nome)===norm(nome)&&norm(m.unidade)===norm(dados.unidade));
+  if(igual){if(matEditandoId){alert('Já existe um material com esse nome e unidade.');return null;}matEditandoId=igual.id;}
+  if(matEditandoId){const{error}=await sb.from('materiais').update(dados).eq('id',matEditandoId);if(erroSB(error))return null;return matEditandoId;}
+  const{data,error}=await sb.from('materiais').insert(dados).select().single();if(erroSB(error))return null;matEditandoId=data.id;return data.id;
+}
+async function salvarMaterial(){if(!PERM.fornEditar)return;const id=await garantirMaterial();if(!id)return;await carregarFornecedores();renderFornecedoresTab();fecharModal('modal-material');toast('Material salvo');}
+async function registrarPreco(){
+  if(!PERM.fornEditar)return;
+  const preco=parseMoeda($('mt-p-preco').value);if(!(preco>0)){alert('Informe o preço.');return;}
+  const fTxt=$('mt-p-fornecedor').value.trim();let f=fTxt?fornecedorPorNome(fTxt):null;
+  if(fTxt&&!f){
+    if(!confirm(`"${fTxt}" ainda não está cadastrado. Cadastrar agora como fornecedor (só com o nome)?`))return;
+    const cat=$('mt-m-categoria').value.trim();
+    const{data,error}=await sb.from('fornecedores').insert({nome:fTxt,categorias:cat?[cat]:[],criado_por:quemSou()}).select().single();if(erroSB(error))return;f=data;
+  }
+  const mid=await garantirMaterial();if(!mid)return;
+  const q=$('mt-p-qtd').value.trim();
+  const{error}=await sb.from('precos_fornecedor').insert({material_id:mid,fornecedor_id:f?f.id:null,preco,unidade:$('mt-m-unidade').value.trim()||null,quantidade:q?Number(q.replace(/\./g,'').replace(',','.')):null,
+    data:$('mt-p-data').value||hojeISO(),origem:$('mt-p-origem').value,frete_incluso:$('mt-p-frete').checked,observacoes:$('mt-p-obs').value.trim()||null,criado_por:quemSou()});
+  if(erroSB(error))return;
+  await carregarFornecedores();limparFormPreco();$('mt-m-titulo').textContent=$('mt-m-nome').value.trim();renderPrecosMaterial();renderFornecedoresTab();toast('Preço registrado');
+}
+function registrarPrecoDoFornecedor(){const f=fornecedorPorId(fornEditandoId);fecharModal('modal-fornecedor');abrirMaterial(null);if(f)$('mt-p-fornecedor').value=f.nome;if(f&&(f.categorias||[]).length===1)$('mt-m-categoria').value=f.categorias[0];}
+// escolheu um material já cadastrado no campo nome → carrega ele
+function mudouNomeMaterial(){if(matEditandoId)return;const m=materialPorRotulo($('mt-m-nome').value);if(m){const forn=$('mt-p-fornecedor').value;abrirMaterial(m.id);$('mt-p-fornecedor').value=forn;}}
+
 /* ================= INÍCIO ================= */
 ligarArrastarDoc();
 document.querySelectorAll('#rh-subabas .subaba').forEach(s=>s.onclick=()=>{rhSub=s.dataset.rh;renderRH();});
 document.querySelectorAll('#fin-subabas .subaba').forEach(s=>s.onclick=()=>{finSub=s.dataset.fin;renderFinanceiro();});
+document.querySelectorAll('#fo-subabas .subaba').forEach(s=>s.onclick=()=>{fornSub=s.dataset.fo;renderFornecedoresTab();});
 document.querySelectorAll('#fi-subabas .subaba').forEach(s=>s.onclick=()=>{if(!fichaId&&s.dataset.fi!=='dados'){toast('Salve os dados do funcionário primeiro');return;}fichaSub=s.dataset.fi;renderFicha();});
 ligarDrop('rh-cc-drop',f=>lerPdfContracheques(f));
 ligarDrop('fi-ficha-drop',f=>enviarFichaRegistro(f));
