@@ -349,6 +349,7 @@ tr.doc-vencido td{background:#fff5f5}
     <div class="tab" data-tab="beneficios" id="tab-btn-beneficios" style="display:none">Benefícios</div>
     <div class="tab" data-tab="rh" id="tab-btn-rh" style="display:none">RH <span id="tab-rh-badge"></span></div>
     <div class="tab" data-tab="curriculos" id="tab-btn-curriculos" style="display:none">Currículos</div>
+    <div class="tab" data-tab="financeiro" id="tab-btn-financeiro" style="display:none">Financeiro <span id="tab-fin-badge"></span></div>
     <div class="tab" data-tab="funil" data-comercial>Funil de Propostas</div>
     <div class="tab" data-tab="clientes" data-comercial>Clientes</div>
     <div class="tab" data-tab="projetos" data-comercial>Projetos</div>
@@ -440,6 +441,34 @@ tr.doc-vencido td{background:#fff5f5}
         <span class="dica" id="proj-proximo"></span>
       </div>
       <div class="tabela-wrap"><table class="tabela" id="tabela-projetos"></table></div>
+    </div>
+
+    <!-- FINANCEIRO (v20): pagamentos a autorizar + lembrete no WhatsApp -->
+    <div id="tab-financeiro" style="display:none">
+      <div class="barra-acoes">
+        <h2>Financeiro</h2>
+      </div>
+      <div class="subabas" id="fin-subabas">
+        <div class="subaba ativo" data-fin="pagamentos" id="fin-sub-pagamentos">🔔 Pagamentos a autorizar</div>
+      </div>
+
+      <div class="painel-rh ativo" id="fin-p-pagamentos">
+        <div class="filtros">
+          <select id="pg-filtro" onchange="renderPagamentos()">
+            <option value="pendente">Aguardando autorização</option>
+            <option value="autorizado">Autorizados</option>
+            <option value="cancelado">Cancelados</option>
+            <option value="todos">Todos</option>
+          </select>
+          <button class="btn-novo" id="pg-btn-novo" onclick="abrirPagamento(null)">+ Pagamento a autorizar</button>
+          <button class="btn-sec" id="pg-btn-avisar" onclick="avisarAndreAgora()">📲 Avisar André agora</button>
+          <button class="btn-sec" id="pg-btn-wa" onclick="abrirWhatsAppManual()" title="Abre o seu WhatsApp com a mensagem pronta (sem lembrete automático)">💬 Abrir no meu WhatsApp</button>
+          <button class="btn-sec" id="pg-btn-config" onclick="abrirConfigWhatsApp()">⚙️ WhatsApp</button>
+        </div>
+        <div class="info-box" id="pg-info" style="display:block;line-height:1.5"></div>
+        <div class="kpis" id="pg-kpis"></div>
+        <div class="tabela-wrap"><table class="tabela" id="tabela-pagamentos"></table></div>
+      </div>
     </div>
 
     <!-- ATIVIDADES -->
@@ -1410,6 +1439,71 @@ tr.doc-vencido td{background:#fff5f5}
   </div>
 </div>
 
+<!-- MODAL PAGAMENTO A AUTORIZAR (v20) -->
+<div class="modal-overlay" id="modal-pagamento">
+  <div class="modal modal-sm">
+    <h2 id="pg-titulo">Pagamento a autorizar</h2>
+    <p class="modal-sub">Lance aqui o que já está no app do banco esperando a autorização do André. Enquanto estiver pendente, ele recebe um lembrete no WhatsApp de hora em hora.</p>
+    <div class="form-grid">
+      <div class="campo full"><label>Favorecido / fornecedor *</label><input type="text" id="pg-favorecido" placeholder="Ex.: Leroy Merlin" list="dl-fornecedores"></div>
+      <div class="campo"><label>Valor (R$)</label><input type="text" inputmode="numeric" id="pg-valor" oninput="mascaraMoeda(this)" placeholder="0,00"></div>
+      <div class="campo"><label>Vencimento</label><input type="date" id="pg-vencimento"></div>
+      <div class="campo"><label>Banco</label><input type="text" id="pg-banco" list="dl-bancos" placeholder="Itaú Empresas"></div>
+      <div class="campo"><label>Empresa</label><select id="pg-empresa"></select></div>
+      <div class="campo full"><label>Descrição</label><input type="text" id="pg-descricao" placeholder="Ex.: material da obra Vibra, NF 1234"></div>
+      <div class="campo full"><label>Observações</label><textarea id="pg-obs" rows="2"></textarea></div>
+      <div class="campo full campo-check" id="pg-linha-avisar"><input type="checkbox" id="pg-avisar" checked><label for="pg-avisar">Avisar o André pelo WhatsApp agora</label></div>
+    </div>
+    <div class="modal-btns">
+      <button class="btn-excluir" id="pg-btn-excluir" style="display:none" onclick="excluirPagamento()">Excluir</button>
+      <button class="btn-cancelar" onclick="fecharModal('modal-pagamento')">Cancelar</button>
+      <button class="btn-salvar" id="pg-btn-salvar" onclick="salvarPagamento()">Salvar</button>
+    </div>
+  </div>
+</div>
+<datalist id="dl-bancos"><option value="Itaú Empresas"><option value="Inter"><option value="Bradesco"><option value="Banco do Brasil"><option value="Caixa"><option value="Santander"></datalist>
+
+<!-- MODAL CONFIGURAÇÃO DO WHATSAPP (v20, só administrador) -->
+<div class="modal-overlay" id="modal-whatsapp">
+  <div class="modal">
+    <h2>⚙️ Lembrete no WhatsApp</h2>
+    <p class="modal-sub">Enquanto houver pagamento aguardando autorização, o próprio sistema manda a lista para o WhatsApp do André no intervalo escolhido, até que tudo seja marcado como autorizado. Os dados abaixo ficam guardados só no banco de dados (só o Administrador vê).</p>
+    <div class="form-grid">
+      <div class="campo full campo-check"><input type="checkbox" id="wa-ativo"><label for="wa-ativo">Lembrete automático ligado</label></div>
+      <div class="campo"><label>WhatsApp do André (com DDD) *</label><input type="text" id="wa-telefone" placeholder="(21) 99999-9999" oninput="mascaraTel(this)"></div>
+      <div class="campo"><label>Serviço de envio</label><select id="wa-provedor" onchange="mudouProvedorWA()"><option value="callmebot">CallMeBot (gratuito)</option><option value="meta">API oficial do WhatsApp (Meta, pago por mensagem)</option></select></div>
+      <div class="campo full" id="wa-box-callmebot">
+        <div class="info-box" style="display:block;line-height:1.6">
+          <strong>Como ativar o CallMeBot (uma vez só, pelo celular do André):</strong><br>
+          1. Abra <a href="https://www.callmebot.com/blog/free-api-whatsapp-messages/" target="_blank" rel="noopener">callmebot.com → WhatsApp</a> e salve nos contatos o número que aparece lá.<br>
+          2. Mande para esse contato, pelo WhatsApp, a frase: <code>I allow callmebot to send me messages</code><br>
+          3. Ele responde com a sua <strong>apikey</strong> (um número). Cole abaixo, salve e clique em <em>Enviar teste</em>.
+        </div>
+        <label style="font-size:13px;font-weight:600">apikey do CallMeBot *</label><input type="text" id="wa-apikey" autocomplete="off" style="width:100%;padding:10px 12px;border:1.5px solid var(--borda);border-radius:8px;margin-top:6px">
+      </div>
+      <div class="campo full oculto" id="wa-box-meta">
+        <div class="info-box" style="display:block;line-height:1.6">Exige conta no <strong>Meta Business</strong>, um número exclusivo para a API e um <strong>modelo de mensagem aprovado</strong> com uma variável (<code>{{1}}</code>), onde entra a lista de pagamentos. Sem modelo, a Meta só entrega se o André tiver mandado mensagem para esse número nas últimas 24h.</div>
+        <div class="form-grid">
+          <div class="campo"><label>Token de acesso</label><input type="password" id="wa-meta-token" autocomplete="off"></div>
+          <div class="campo"><label>ID do número (Phone number ID)</label><input type="text" id="wa-meta-phone"></div>
+          <div class="campo"><label>Nome do modelo aprovado</label><input type="text" id="wa-meta-modelo" placeholder="ex.: lembrete_pagamentos"></div>
+          <div class="campo"><label>Idioma do modelo</label><input type="text" id="wa-meta-idioma" placeholder="pt_BR"></div>
+        </div>
+      </div>
+      <div class="campo"><label>Repetir a cada (minutos)</label><input type="number" id="wa-intervalo" min="15" max="1440" step="5"></div>
+      <div class="campo"><label>Horário dos lembretes</label><div class="linha-flex"><input type="number" id="wa-hora-ini" min="0" max="23" title="das (hora)"><input type="number" id="wa-hora-fim" min="1" max="24" title="até (hora)"></div><div class="dica">Das … até … horas (horário de Brasília). O aviso pelo botão sai a qualquer hora.</div></div>
+      <div class="campo full campo-check"><input type="checkbox" id="wa-fds"><label for="wa-fds">Mandar lembretes também no sábado e domingo</label></div>
+    </div>
+    <div class="secao">Últimos envios</div>
+    <div id="wa-envios"><p class="vazio">—</p></div>
+    <div class="modal-btns">
+      <button class="btn-cancelar" onclick="fecharModal('modal-whatsapp')">Fechar</button>
+      <button class="btn-sec" onclick="testarWhatsApp()">📲 Enviar teste</button>
+      <button class="btn-salvar" onclick="salvarConfigWhatsApp()">Salvar</button>
+    </div>
+  </div>
+</div>
+
 <datalist id="dl-clientes"></datalist>
 <datalist id="dl-responsaveis"></datalist>
 <div class="toast" id="toast"></div>
@@ -1460,7 +1554,9 @@ function calcularPermissoes(p){
   return{admin:adm,funil:adm||com,clientes:adm||com,projetos:adm||com||admv,ativ:adm||com||admv,docs:adm||admv,excluir:adm,
     comercialVer:!cont,rh:adm||com||admv||cont,rhEditar:adm||admv,
     // v14: rhPessoal = salário, contracheques, vales, uniformes, envio à contabilidade · curriculos = banco de currículos
-    rhPessoal:adm||admv||cont,curriculos:adm||admv};
+    rhPessoal:adm||admv||cont,curriculos:adm||admv,
+    // v20: financeiro · pagamentos = lança pagamentos a autorizar · autorizar = marca como autorizado (André)
+    financeiro:adm||admv||com,pagamentos:adm||admv,autorizar:adm};
 }
 const BUCKET_DOCS='documentos';
 const ABERTAS=ETAPAS.filter(e=>!['fechada','perdida'].includes(e.id)).map(e=>e.id);
@@ -1601,6 +1697,8 @@ async function iniciarApp(){
   $('bn-mes').value=hojeISO().slice(0,7);
   $('rh-mes').value=hojeISO().slice(0,7);
   if(!PERM.comercialVer)abrirTab('documentos');
+  // link do lembrete do WhatsApp: …/#financeiro abre direto a aba
+  if(/^#(financeiro|pagamentos)/.test(location.hash)&&PERM.financeiro)abrirTab('financeiro');
   await carregarTudo();
   mostrarAvisosDoDia();
 }
@@ -1651,6 +1749,9 @@ function aplicarPermissoes(){
   mostra('tab-btn-beneficios',PERM.rh);
   mostra('tab-btn-rh',PERM.rhPessoal);
   mostra('tab-btn-curriculos',PERM.curriculos);
+  mostra('tab-btn-financeiro',PERM.financeiro);
+  mostra('fin-sub-pagamentos',PERM.pagamentos);
+  mostra('pg-btn-config',PERM.admin);
   mostra('btn-tipos-benef',PERM.rhEditar);
   document.querySelectorAll('#tabs [data-comercial]').forEach(t=>t.style.display=PERM.comercialVer?'':'none');
   mostra('pa-cobr',PERM.funil);
@@ -1669,7 +1770,7 @@ async function trocarSenha(){
 /* ================= CARGA DE DADOS ================= */
 async function carregarTudo(){
   await carregarEmpresas();
-  await Promise.all([carregarClientes(),carregarCards(),carregarAtividades(),carregarProjetos(),carregarPerfis(),carregarDocsTudo(),carregarBeneficiosTudo(),carregarRH(),carregarCurriculos()]);
+  await Promise.all([carregarClientes(),carregarCards(),carregarAtividades(),carregarProjetos(),carregarPerfis(),carregarDocsTudo(),carregarBeneficiosTudo(),carregarRH(),carregarCurriculos(),carregarFinanceiro()]);
   atualizarBadgeRH();
   atualizarDatalists();
   renderTabAtual();
@@ -1756,14 +1857,15 @@ function abrirTab(tab){
   if(tab==='beneficios'&&!PERM.rh)tab='painel';
   if(tab==='rh'&&!PERM.rhPessoal)tab='painel';
   if(tab==='curriculos'&&!PERM.curriculos)tab='painel';
+  if(tab==='financeiro'&&!PERM.financeiro)tab='painel';
   if(!PERM.comercialVer&&['painel','funil','clientes','projetos','atividades','empresas'].includes(tab))tab='documentos';
   tabAtual=tab;
-  ['painel','documentos','beneficios','rh','curriculos','funil','clientes','projetos','atividades','empresas','usuarios'].forEach(t=>{$('tab-'+t).style.display=t===tab?'block':'none';});
+  ['painel','documentos','beneficios','rh','curriculos','financeiro','funil','clientes','projetos','atividades','empresas','usuarios'].forEach(t=>{$('tab-'+t).style.display=t===tab?'block':'none';});
   document.querySelectorAll('#tabs .tab').forEach(el=>el.classList.toggle('ativo',el.dataset.tab===tab));
   renderTabAtual();
 }
 function renderTabAtual(){
-  ({painel:renderPainel,documentos:renderDocumentos,beneficios:renderBeneficios,rh:renderRH,curriculos:renderCurriculos,funil:renderFunil,clientes:renderClientes,projetos:renderProjetos,atividades:renderAtividades,empresas:renderEmpresas,usuarios:renderUsuarios}[tabAtual]||(()=>{}))();
+  ({painel:renderPainel,documentos:renderDocumentos,beneficios:renderBeneficios,rh:renderRH,curriculos:renderCurriculos,financeiro:renderFinanceiro,funil:renderFunil,clientes:renderClientes,projetos:renderProjetos,atividades:renderAtividades,empresas:renderEmpresas,usuarios:renderUsuarios}[tabAtual]||(()=>{}))();
 }
 function trocarEmpresa(){
   empresaAtual=$('select-empresa').value;
@@ -4992,9 +5094,204 @@ async function salvarFolha(){
   }finally{btn.disabled=false;}
 }
 
+/* ================= FINANCEIRO (v20): PAGAMENTOS A AUTORIZAR + WHATSAPP ================= */
+let todosPagamentos=[],pagamentoEditandoId=null,finSub='pagamentos',v20Ok=true,waConfig=null;
+const SITUACAO_PG={pendente:'Aguardando autorização',autorizado:'Autorizado',cancelado:'Cancelado'};
+function avisarMigracaoV20(){
+  v20Ok=false;
+  $('pg-info').innerHTML='<strong>Falta atualizar o banco de dados (v20).</strong> No Supabase, abra <em>SQL Editor → New query</em>, cole o conteúdo do arquivo <code>supabase/migracao_crm_v20_pagamentos_whatsapp.sql</code> e clique em <em>Run</em>. Depois recarregue esta página.';
+}
+async function carregarFinanceiro(){
+  if(!PERM.pagamentos)return;
+  const{data,error}=await sb.from('pagamentos_autorizacao').select('*').order('vencimento',{ascending:true,nullsFirst:false}).order('criado_em');
+  if(error){if(/pagamentos_autorizacao/.test(error.message||''))avisarMigracaoV20();else console.error(error);todosPagamentos=[];return;}
+  v20Ok=true;todosPagamentos=data||[];atualizarBadgeFin();
+}
+function atualizarBadgeFin(){
+  const n=todosPagamentos.filter(p=>p.situacao==='pendente').length,b=$('tab-fin-badge');
+  if(b)b.innerHTML=n&&PERM.pagamentos?`<span class="badge badge-atraso">${n}</span>`:'';
+}
+function renderFinanceiro(){
+  if(!PERM.pagamentos&&finSub==='pagamentos')finSub='saidas';
+  document.querySelectorAll('#fin-subabas .subaba').forEach(s=>s.classList.toggle('ativo',s.dataset.fin===finSub));
+  document.querySelectorAll('#tab-financeiro .painel-rh').forEach(p=>p.classList.toggle('ativo',p.id==='fin-p-'+finSub));
+  ({pagamentos:renderPagamentos,saidas:typeof renderSaidas==='function'?renderSaidas:()=>{}}[finSub]||(()=>{}))();
+}
+function renderPagamentos(){
+  if(!PERM.pagamentos)return;
+  ['pg-btn-novo','pg-btn-avisar','pg-btn-wa'].forEach(id=>$(id).disabled=!v20Ok);
+  if(!v20Ok){avisarMigracaoV20();$('tabela-pagamentos').innerHTML='';$('pg-kpis').innerHTML='';return;}
+  const filtro=$('pg-filtro').value;
+  const lista=filtraEmpresa(todosPagamentos).filter(p=>filtro==='todos'||p.situacao===filtro)
+    .sort((a,b)=>filtro==='pendente'?String(a.vencimento||'9999').localeCompare(String(b.vencimento||'9999')):String(b.autorizado_em||b.criado_em).localeCompare(String(a.autorizado_em||a.criado_em)));
+  const pend=filtraEmpresa(todosPagamentos).filter(p=>p.situacao==='pendente');
+  const totPend=pend.reduce((s,p)=>s+Number(p.valor||0),0);
+  const ultimo=pend.map(p=>p.ultimo_aviso_em).filter(Boolean).sort().pop();
+  const venceHoje=pend.filter(p=>p.vencimento&&diasAte(p.vencimento)<=0).length;
+  $('pg-kpis').innerHTML=[
+    ['Aguardando autorização',String(pend.length),pend.length?'no app do banco':'nada pendente 🎉'],
+    ['Valor pendente',fmtCurto(totPend),pend.length?`${pend.length} pagamento(s)`:'—'],
+    ['Vencendo hoje ou vencidos',String(venceHoje),venceHoje?'priorize estes':'—'],
+    ['Último lembrete',ultimo?fmtDataHora(ultimo):'—',pend.length?'repete até marcar autorizado':'—'],
+  ].map(([r,v,s])=>`<div class="kpi"><div class="rot">${esc(r)}</div><div class="val">${esc(v)}</div><div class="sub">${esc(s)}</div></div>`).join('');
+  $('pg-info').innerHTML=PERM.autorizar
+    ?'Depois de autorizar no app do banco, clique em <strong>✅ Autorizei</strong> (ou <em>Autorizei todos</em>). Os lembretes param sozinhos quando não sobra nada pendente.'
+    :'Lance o pagamento e marque <em>Avisar o André</em>: ele recebe a lista no WhatsApp e, enquanto não marcar como autorizado no CRM, o lembrete se repete no intervalo configurado.';
+  const linha=p=>{
+    const e=empresaPorId(p.empresa_id),d=p.vencimento?diasAte(p.vencimento):null;
+    const venc=p.vencimento?`${esc(fmtData(p.vencimento))}${p.situacao==='pendente'&&d!=null&&d<=0?` <span class="badge badge-atraso">${d===0?'hoje':'vencido'}</span>`:p.situacao==='pendente'&&d===1?' <span class="badge badge-hoje">amanhã</span>':''}`:'—';
+    const sit=p.situacao==='pendente'?`<span class="badge badge-hoje">aguardando</span>${p.lembrete_ativo?'':' <span class="badge badge-cinza" title="Este pagamento não entra nos lembretes">sem lembrete</span>'}`
+      :p.situacao==='autorizado'?`<span class="badge badge-ok">autorizado</span><div class="dica" style="margin:0">${esc(fmtDataHora(p.autorizado_em))}${p.autorizado_por?' · '+esc(p.autorizado_por):''}</div>`:'<span class="badge badge-cinza">cancelado</span>';
+    const acoes=[p.situacao==='pendente'&&PERM.autorizar?`<button class="btn-salvar" style="padding:6px 12px;font-size:13px" data-pg-ok="${esc(p.id)}">✅ Autorizei</button>`:'',
+      `<button class="btn-link" data-pg-ed="${esc(p.id)}">${p.situacao==='pendente'?'editar':'ver'}</button>`,
+      p.situacao==='pendente'?`<button class="btn-link" style="color:var(--texto2)" data-pg-lemb="${esc(p.id)}">${p.lembrete_ativo?'pausar lembrete':'voltar a lembrar'}</button>`:''].filter(Boolean).join(' ');
+    return`<tr><td><strong>${esc(p.favorecido)}</strong>${p.descricao?`<div class="dica" style="margin:0">${esc(p.descricao)}</div>`:''}</td>
+      <td class="num"><strong>${p.valor!=null?'R$ '+esc(fmtMoeda(p.valor)):'—'}</strong></td><td>${venc}</td><td>${esc(p.banco||'')}${e?` <span class="card-empresa-tag tag-${esc(e.sigla)}">${esc(e.sigla)}</span>`:''}</td>
+      <td>${sit}</td><td class="num" title="${p.ultimo_aviso_em?'último: '+esc(fmtDataHora(p.ultimo_aviso_em)):''}">${esc(p.avisos_enviados||0)}</td>
+      <td style="font-size:12px;color:var(--texto2)">${esc(p.criado_por||'')}<div>${esc(fmtDataHora(p.criado_em))}</div></td><td style="white-space:nowrap">${acoes}</td></tr>`;
+  };
+  $('tabela-pagamentos').innerHTML=`<thead><tr><th>Favorecido</th><th class="num">Valor</th><th>Vencimento</th><th>Banco</th><th>Situação</th><th class="num" title="Lembretes enviados no WhatsApp">Avisos</th><th>Lançado por</th><th>${filtro==='pendente'&&PERM.autorizar&&lista.length>1?'<button class="btn-sec" onclick="autorizarTodos()">✅ Autorizei todos</button>':''}</th></tr></thead>
+    <tbody>${lista.length?lista.map(linha).join(''):`<tr><td colspan="8" class="vazio">${filtro==='pendente'?'Nenhum pagamento aguardando autorização.':'Nada aqui.'}</td></tr>`}</tbody>`;
+  const t=$('tabela-pagamentos');
+  t.querySelectorAll('[data-pg-ok]').forEach(b=>b.onclick=()=>marcarAutorizado([b.dataset.pgOk]));
+  t.querySelectorAll('[data-pg-ed]').forEach(b=>b.onclick=()=>abrirPagamento(b.dataset.pgEd));
+  t.querySelectorAll('[data-pg-lemb]').forEach(b=>b.onclick=async()=>{const p=todosPagamentos.find(x=>x.id===b.dataset.pgLemb);if(!p)return;
+    const{error}=await sb.from('pagamentos_autorizacao').update({lembrete_ativo:!p.lembrete_ativo}).eq('id',p.id);if(erroSB(error))return;await carregarFinanceiro();renderPagamentos();});
+}
+function abrirPagamento(id){
+  if(!PERM.pagamentos||!v20Ok)return;
+  const p=id?todosPagamentos.find(x=>x.id===id):null;pagamentoEditandoId=p?p.id:null;
+  preencherSelect($('pg-empresa'),todasEmpresas.map(e=>[e.id,`${e.nome} (${e.sigla})`]),'—');
+  $('pg-titulo').textContent=p?'Pagamento a autorizar':'Novo pagamento a autorizar';
+  $('pg-favorecido').value=p?p.favorecido:'';$('pg-valor').value=p&&p.valor!=null?fmtMoeda(p.valor):'';
+  $('pg-vencimento').value=p&&p.vencimento?p.vencimento:'';$('pg-banco').value=p?(p.banco||''):'Itaú Empresas';
+  $('pg-empresa').value=p?(p.empresa_id||''):(empresaAtual!=='todas'?empresaAtual:'');
+  $('pg-descricao').value=p?(p.descricao||''):'';$('pg-obs').value=p?(p.observacoes||''):'';
+  $('pg-avisar').checked=!p;$('pg-linha-avisar').style.display=p?'none':'';
+  const leitura=!!p&&p.situacao!=='pendente';
+  modoLeitura('modal-pagamento',leitura);
+  $('pg-btn-salvar').style.display=leitura?'none':'';
+  $('pg-btn-excluir').style.display=p&&PERM.admin?'':'none';
+  abrirModal('modal-pagamento');setTimeout(()=>$('pg-favorecido').focus(),50);
+}
+async function salvarPagamento(){
+  const fav=$('pg-favorecido').value.trim();if(!fav){alert('Informe o favorecido.');return;}
+  const dados={favorecido:fav,valor:parseMoeda($('pg-valor').value),vencimento:$('pg-vencimento').value||null,banco:$('pg-banco').value.trim()||null,
+    empresa_id:$('pg-empresa').value||null,descricao:$('pg-descricao').value.trim()||null,observacoes:$('pg-obs').value.trim()||null};
+  const btn=$('pg-btn-salvar');btn.disabled=true;
+  try{
+    const r=pagamentoEditandoId?await sb.from('pagamentos_autorizacao').update(dados).eq('id',pagamentoEditandoId)
+      :await sb.from('pagamentos_autorizacao').insert({...dados,criado_por:quemSou()||null});
+    if(erroSB(r.error))return;
+    const avisar=!pagamentoEditandoId&&$('pg-avisar').checked;
+    fecharModal('modal-pagamento');await carregarFinanceiro();renderPagamentos();
+    if(avisar)await avisarAndreAgora(true);else toast('Pagamento salvo');
+  }finally{btn.disabled=false;}
+}
+async function excluirPagamento(){
+  if(!pagamentoEditandoId||!PERM.admin)return;
+  if(!confirm('Excluir este lançamento? (Para só tirar da lista, prefira marcar como autorizado.)'))return;
+  const{error}=await sb.from('pagamentos_autorizacao').delete().eq('id',pagamentoEditandoId);if(erroSB(error))return;
+  fecharModal('modal-pagamento');await carregarFinanceiro();renderPagamentos();toast('Excluído');
+}
+async function marcarAutorizado(ids){
+  if(!PERM.autorizar||!ids.length)return;
+  const{error}=await sb.from('pagamentos_autorizacao').update({situacao:'autorizado',autorizado_em:new Date().toISOString(),autorizado_por:quemSou()||null}).in('id',ids);
+  if(erroSB(error))return;
+  await carregarFinanceiro();renderPagamentos();
+  const resta=todosPagamentos.filter(p=>p.situacao==='pendente').length;
+  toast(resta?`Marcado como autorizado · ainda ${resta} pendente(s)`:'Tudo autorizado · lembretes encerrados');
+}
+function autorizarTodos(){
+  const ids=filtraEmpresa(todosPagamentos).filter(p=>p.situacao==='pendente').map(p=>p.id);
+  if(!ids.length)return;
+  if(!confirm(`Marcar ${ids.length} pagamento(s) como autorizados no banco?`))return;
+  marcarAutorizado(ids);
+}
+// mensagem com a lista pendente (a mesma que o banco manda nos lembretes)
+function textoPagamentosPendentes(){
+  const pend=todosPagamentos.filter(p=>p.situacao==='pendente'&&p.lembrete_ativo!==false);
+  if(!pend.length)return'';
+  const tot=pend.reduce((s,p)=>s+Number(p.valor||0),0);
+  return'🔔 *Grupo BVEK — pagamentos aguardando sua autorização no app do banco*\n'+
+    pend.map(p=>`• ${p.favorecido}${p.valor!=null?' — R$ '+fmtMoeda(p.valor):''}${p.vencimento?' — vence '+fmtData(p.vencimento).slice(0,5):''}${p.banco?' ('+p.banco+')':''}`).join('\n')+
+    `\nTotal: ${pend.length} pagamento(s) · R$ ${fmtMoeda(tot)}\nDepois de autorizar, marque no CRM: https://grupo-bvek.vercel.app/#financeiro`;
+}
+async function avisarAndreAgora(depoisDeSalvar){
+  if(!PERM.pagamentos||!v20Ok)return;
+  if(!todosPagamentos.some(p=>p.situacao==='pendente'&&p.lembrete_ativo!==false)){alert('Não há pagamento pendente com lembrete ligado.');return;}
+  const btn=$('pg-btn-avisar');btn.disabled=true;
+  try{
+    const{data,error}=await sb.rpc('bvek_avisar_pagamentos',{p_forcar:true});
+    if(error){
+      console.error(error);
+      const msg=/Cadastre o número|apikey|token/i.test(error.message||'')?error.message:'Não foi possível enviar pelo WhatsApp automático.';
+      if(confirm(`${msg}\n\nQuer abrir o seu WhatsApp com a mensagem pronta para mandar ao André?`))abrirWhatsAppManual();
+      return;
+    }
+    await carregarFinanceiro();renderPagamentos();
+    toast(data==='enviado'?(depoisDeSalvar?'Salvo e André avisado no WhatsApp':'André avisado no WhatsApp'):String(data||'ok'));
+  }finally{btn.disabled=false;}
+}
+// fase 1: abre o WhatsApp de quem está usando, com a mensagem pronta
+async function abrirWhatsAppManual(){
+  const txt=textoPagamentosPendentes();if(!txt){alert('Não há pagamento pendente.');return;}
+  let fone='';
+  if(PERM.admin){if(!waConfig)await carregarConfigWhatsApp();fone=String((waConfig&&waConfig.telefone)||'').replace(/\D/g,'');}
+  window.open(`https://wa.me/${fone}?text=${encodeURIComponent(txt)}`,'_blank','noopener');
+}
+async function carregarConfigWhatsApp(){
+  const{data,error}=await sb.from('whatsapp_config').select('*').eq('id',1).maybeSingle();
+  if(error){console.error(error);waConfig=null;return null;}
+  waConfig=data||{};return waConfig;
+}
+function mudouProvedorWA(){const m=$('wa-provedor').value==='meta';$('wa-box-meta').classList.toggle('oculto',!m);$('wa-box-callmebot').classList.toggle('oculto',m);}
+async function abrirConfigWhatsApp(){
+  if(!PERM.admin)return;
+  if(!v20Ok){avisarMigracaoV20();return;}
+  const c=await carregarConfigWhatsApp()||{};
+  $('wa-ativo').checked=!!c.ativo;$('wa-provedor').value=c.provedor||'callmebot';
+  const tel=String(c.telefone||'').replace(/^55/,'');$('wa-telefone').value=tel?fmtTel(tel):'';
+  $('wa-apikey').value=c.callmebot_apikey||'';$('wa-meta-token').value=c.meta_token||'';$('wa-meta-phone').value=c.meta_phone_id||'';
+  $('wa-meta-modelo').value=c.meta_modelo||'';$('wa-meta-idioma').value=c.meta_idioma||'pt_BR';
+  $('wa-intervalo').value=c.intervalo_min||60;$('wa-hora-ini').value=c.hora_inicio??8;$('wa-hora-fim').value=c.hora_fim??18;$('wa-fds').checked=!!c.fim_de_semana;
+  mudouProvedorWA();abrirModal('modal-whatsapp');renderEnviosWA();
+}
+async function renderEnviosWA(){
+  const{data,error}=await sb.rpc('bvek_whatsapp_ultimos');
+  if(error){$('wa-envios').innerHTML='<p class="vazio">Não foi possível ler os envios.</p>';return;}
+  const ok=r=>r.status>=200&&r.status<300&&!/error|invalid|not/i.test(r.resposta||'');
+  $('wa-envios').innerHTML=(data||[]).length?'<div class="sub-lista">'+data.map(r=>`<div class="sub-item"><span><strong>${esc(fmtDataHora(r.enviado_em))}</strong> · ${esc(r.motivo||'')}</span>
+    <span>${r.status==null?'<span class="badge badge-cinza" title="Resposta ainda não chegou ou já expirou">sem resposta</span>':ok(r)?'<span class="badge badge-ok">entregue ao serviço</span>':`<span class="badge badge-atraso" title="${esc(r.resposta||'')}">erro ${esc(r.status)}</span>`}</span></div>`).join('')+'</div>':'<p class="vazio">Nenhum envio ainda.</p>';
+}
+async function salvarConfigWhatsApp(silencioso){
+  if(!PERM.admin)return false;
+  const dig=$('wa-telefone').value.replace(/\D/g,'');
+  if(dig&&!(dig.length===10||dig.length===11)){alert('Informe o WhatsApp com DDD, ex.: (21) 99999-9999.');return false;}
+  const prov=$('wa-provedor').value;
+  if($('wa-ativo').checked&&(!dig||(prov==='callmebot'&&!$('wa-apikey').value.trim())||(prov==='meta'&&(!$('wa-meta-token').value.trim()||!$('wa-meta-phone').value.trim())))){
+    alert('Para ligar o lembrete, preencha o número e a chave do serviço escolhido.');return false;}
+  const hi=Math.round(Number($('wa-hora-ini').value)),hf=Math.round(Number($('wa-hora-fim').value));
+  if(!(hi>=0&&hi<=23&&hf>=1&&hf<=24&&hf>hi)){alert('Horário inválido: use, por exemplo, das 8 às 18.');return false;}
+  const dados={ativo:$('wa-ativo').checked,provedor:prov,telefone:dig?'55'+dig:null,callmebot_apikey:$('wa-apikey').value.trim()||null,
+    meta_token:$('wa-meta-token').value.trim()||null,meta_phone_id:$('wa-meta-phone').value.trim()||null,meta_modelo:$('wa-meta-modelo').value.trim()||null,
+    meta_idioma:$('wa-meta-idioma').value.trim()||'pt_BR',intervalo_min:Math.max(15,Math.round(Number($('wa-intervalo').value)||60)),
+    hora_inicio:hi,hora_fim:hf,fim_de_semana:$('wa-fds').checked,atualizado_em:new Date().toISOString()};
+  const{error}=await sb.from('whatsapp_config').update(dados).eq('id',1);
+  if(erroSB(error))return false;
+  waConfig=Object.assign(waConfig||{},dados);if(!silencioso)toast('Configuração salva');return true;
+}
+async function testarWhatsApp(){
+  if(!await salvarConfigWhatsApp(true))return;
+  const{error}=await sb.rpc('bvek_whatsapp_enviar',{p_texto:'✅ Teste do CRM Grupo BVEK: os lembretes de pagamento vão chegar por aqui.',p_motivo:'teste'});
+  if(erroSB(error,'Não foi possível enviar'))return;
+  toast('Teste enviado · confira o WhatsApp');setTimeout(renderEnviosWA,4000);
+}
+
 /* ================= INÍCIO ================= */
 ligarArrastarDoc();
 document.querySelectorAll('#rh-subabas .subaba').forEach(s=>s.onclick=()=>{rhSub=s.dataset.rh;renderRH();});
+document.querySelectorAll('#fin-subabas .subaba').forEach(s=>s.onclick=()=>{finSub=s.dataset.fin;renderFinanceiro();});
 document.querySelectorAll('#fi-subabas .subaba').forEach(s=>s.onclick=()=>{if(!fichaId&&s.dataset.fi!=='dados'){toast('Salve os dados do funcionário primeiro');return;}fichaSub=s.dataset.fi;renderFicha();});
 ligarDrop('rh-cc-drop',f=>lerPdfContracheques(f));
 ligarDrop('fi-ficha-drop',f=>enviarFichaRegistro(f));
