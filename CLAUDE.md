@@ -10,7 +10,7 @@ Sempre responda em português. O dono do sistema é o André Lessa (sócio do Gr
 - Banco: Supabase, projeto https://smusenaszgkqkjjwblyi.supabase.co
 - Tabelas principais: `clientes`, `contatos`, `cards` (funil/kanban), `itens_proposta`, `sequencia_propostas`, `projetos`, `atividades`, `historico_etapas`, `empresas`.
 - Empresas do grupo: **Engekat** (EK, Engekat Construções), **Verde Brasilis** (VB), **BrasiLimp** (BL) e **Kat Corretora** (KS).
-- Outros arquivos: `perfil.html` + `perfil-questionario.js` (formulário de perfil para candidatos) e `supabase/functions/` (funções do Supabase, ex.: criação de acesso de funcionário).
+- Outros arquivos: `perfil.html` + `perfil-questionario.js` (formulário de perfil para candidatos) e `supabase/functions/` (funções do Supabase: `email-contabilidade` e `secullum`).
 
 ## Regras de negócio (NÃO alterar sem pedido explícito do André)
 
