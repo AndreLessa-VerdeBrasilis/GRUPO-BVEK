@@ -450,6 +450,7 @@ tr.doc-vencido td{background:#fff5f5}
       </div>
       <div class="subabas" id="fin-subabas">
         <div class="subaba ativo" data-fin="pagamentos" id="fin-sub-pagamentos">🔔 Pagamentos a autorizar</div>
+        <div class="subaba" data-fin="saidas" id="fin-sub-saidas">💳 Saídas e cartões <span id="fin-saidas-badge"></span></div>
       </div>
 
       <div class="painel-rh ativo" id="fin-p-pagamentos">
@@ -468,6 +469,32 @@ tr.doc-vencido td{background:#fff5f5}
         <div class="info-box" id="pg-info" style="display:block;line-height:1.5"></div>
         <div class="kpis" id="pg-kpis"></div>
         <div class="tabela-wrap"><table class="tabela" id="tabela-pagamentos"></table></div>
+      </div>
+
+      <!-- v21: saídas dos cartões e do caixa -->
+      <div class="painel-rh" id="fin-p-saidas">
+        <div class="filtros">
+          <input type="month" id="sd-mes" onchange="renderSaidas()" title="Mês da fatura / da compra">
+          <select id="sd-cartao" onchange="renderSaidas()"></select>
+          <select id="sd-situacao" onchange="renderSaidas()">
+            <option value="">Todas as situações</option>
+            <option value="pendente">Sem justificativa</option>
+            <option value="justificada">Justificadas (a conferir)</option>
+            <option value="conferida">Conferidas</option>
+          </select>
+          <select id="sd-categoria" onchange="renderSaidas()"></select>
+          <input type="search" id="sd-busca" placeholder="Buscar loja, cliente, descrição" oninput="renderSaidas()">
+        </div>
+        <div class="filtros">
+          <button class="btn-novo" onclick="abrirSaida(null)">+ Lançar compra</button>
+          <button class="btn-sec" id="sd-btn-importar" onclick="abrirImportacao()">⬆️ Importar fatura / extrato</button>
+          <button class="btn-sec" id="sd-btn-cartoes" onclick="abrirCartoes()">💳 Cartões</button>
+          <button class="btn-sec" onclick="exportarSaidas()">⬇️ Excel</button>
+        </div>
+        <div class="info-box" id="sd-info" style="display:block;line-height:1.5"></div>
+        <div class="kpis" id="sd-kpis"></div>
+        <div id="sd-categorias"></div>
+        <div class="tabela-wrap"><table class="tabela" id="tabela-saidas"></table></div>
       </div>
     </div>
 
@@ -1461,6 +1488,80 @@ tr.doc-vencido td{background:#fff5f5}
     </div>
   </div>
 </div>
+<!-- MODAL SAÍDA (v21) -->
+<div class="modal-overlay" id="modal-saida">
+  <div class="modal">
+    <h2 id="sd-m-titulo">Lançar compra</h2>
+    <p class="modal-sub">Diga a categoria e para que foi: é isso que tira a compra da lista "sem justificativa". Anexe a foto da nota sempre que possível.</p>
+    <div class="aviso-leitura">🔒 Esta saída já foi conferida pelo financeiro.</div>
+    <div class="info-box" id="sd-m-extrato" style="display:none"></div>
+    <div class="form-grid">
+      <div class="campo"><label>Forma</label><select id="sd-m-forma" onchange="mudouFormaSaida()"></select></div>
+      <div class="campo" id="sd-m-linha-cartao"><label>Cartão</label><select id="sd-m-cartao"></select></div>
+      <div class="campo"><label>Data *</label><input type="date" id="sd-m-data"></div>
+      <div class="campo"><label>Valor (R$) *</label><input type="text" inputmode="numeric" id="sd-m-valor" oninput="mascaraMoeda(this)" placeholder="0,00"></div>
+      <div class="campo"><label>Categoria *</label><select id="sd-m-categoria"></select></div>
+      <div class="campo"><label>Fornecedor / loja</label><input type="text" id="sd-m-fornecedor" list="dl-fornecedores" placeholder="Ex.: Leroy Merlin"></div>
+      <div class="campo full"><label>Para que foi a compra? *</label><input type="text" id="sd-m-descricao" placeholder="Ex.: cimento e areia para a obra da Vibra"></div>
+      <div class="campo"><label>Cliente</label><input type="text" id="sd-m-cliente" list="dl-clientes" placeholder="C091 · Vibra" onchange="mudouClienteSaida()"></div>
+      <div class="campo"><label>Projeto</label><select id="sd-m-projeto"></select></div>
+      <div class="campo"><label>Empresa</label><select id="sd-m-empresa"></select></div>
+      <div class="campo"><label>Quem comprou</label><input type="text" id="sd-m-comprador" list="dl-responsaveis"></div>
+      <div class="campo full"><label>Foto ou PDF da nota</label><input type="file" id="sd-m-arquivo" accept="image/*,application/pdf"><div class="dica" id="sd-m-nota-atual"></div></div>
+      <div class="campo full"><label>Observações</label><textarea id="sd-m-obs" rows="2"></textarea></div>
+    </div>
+    <div class="modal-btns">
+      <button class="btn-excluir so-edicao" id="sd-m-excluir" onclick="excluirSaida()">Excluir</button>
+      <button class="btn-cancelar" onclick="fecharModal('modal-saida')">Cancelar</button>
+      <button class="btn-sec" id="sd-m-reabrir" onclick="salvarSaida('reabrir')">Reabrir conferência</button>
+      <button class="btn-sec so-edicao" id="sd-m-conferir" onclick="salvarSaida(true)">✔️ Salvar e conferir</button>
+      <button class="btn-salvar" id="sd-m-salvar" onclick="salvarSaida()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CARTÕES (v21) -->
+<div class="modal-overlay" id="modal-cartoes">
+  <div class="modal">
+    <h2>💳 Cartões da empresa</h2>
+    <p class="modal-sub">O <strong>final</strong> (4 números) serve para a importação reconhecer de qual cartão é cada compra. O <strong>dono</strong> é o login que vê e justifica as compras daquele cartão (ex.: Pedro, Bianca).</p>
+    <div class="form-grid" style="background:#f7f7f7;border-radius:8px;padding:12px 12px 0;margin-bottom:12px">
+      <div class="campo"><label>Nome *</label><input type="text" id="ct-nome" placeholder="Itaú Empresas — Pedro"></div>
+      <div class="campo"><label>Final (4 números)</label><input type="text" id="ct-final" inputmode="numeric" maxlength="4" placeholder="1234"></div>
+      <div class="campo"><label>Dono (login no CRM)</label><select id="ct-usuario"></select></div>
+      <div class="campo"><label>Banco</label><input type="text" id="ct-banco" list="dl-bancos"></div>
+      <div class="campo"><label>Nome impresso / titular</label><input type="text" id="ct-titular" placeholder="opcional"></div>
+      <div class="campo"><label>Empresa</label><select id="ct-empresa"></select></div>
+      <div class="campo full" style="display:flex;gap:8px;justify-content:flex-end">
+        <button class="btn-cancelar" id="ct-limpar" style="display:none" onclick="limparFormCartao()">Limpar</button>
+        <button class="btn-salvar" onclick="salvarCartao()">Salvar cartão</button>
+      </div>
+    </div>
+    <div class="tabela-wrap"><table class="tabela" id="ct-tabela"></table></div>
+    <div class="modal-btns"><button class="btn-cancelar" onclick="fecharModal('modal-cartoes')">Fechar</button></div>
+  </div>
+</div>
+
+<!-- MODAL IMPORTAR FATURA (v21) -->
+<div class="modal-overlay" id="modal-importar">
+  <div class="modal modal-lg">
+    <h2>⬆️ Importar fatura / extrato</h2>
+    <p class="modal-sub">No Itaú Empresas, baixe a fatura do cartão (ou o extrato) em <strong>OFX</strong>, <strong>Excel/CSV</strong> ou <strong>PDF</strong> e escolha o arquivo aqui. Pode importar o mesmo arquivo mais de uma vez: o que já entrou é ignorado.</p>
+    <div class="form-grid">
+      <div class="campo"><label>Arquivo</label><input type="file" id="im-arquivo" accept=".ofx,.qfx,.csv,.txt,.xls,.xlsx,.pdf" onchange="lerArquivoImportacao()"></div>
+      <div class="campo"><label>Mês da fatura</label><input type="month" id="im-fatura" onchange="if(importacao)lerArquivoImportacao()"><div class="dica">Usado quando a fatura traz só dia/mês.</div></div>
+      <div class="campo full"><label>Cartão</label><select id="im-cartao" onchange="if(importacao)montarPreviaImportacao()"></select><div class="dica">Se a fatura tiver vários cartões, deixe em "Detectar" — o CRM usa o final de cada um.</div></div>
+    </div>
+    <div class="info-box" id="im-resumo" style="display:block;line-height:1.5"></div>
+    <div id="im-previa"></div>
+    <div class="modal-btns">
+      <button class="btn-cancelar" onclick="fecharModal('modal-importar')">Cancelar</button>
+      <button class="btn-salvar" id="im-aplicar" onclick="aplicarImportacao()" disabled>Importar marcadas</button>
+    </div>
+  </div>
+</div>
+<datalist id="dl-fornecedores"></datalist>
+
 <datalist id="dl-bancos"><option value="Itaú Empresas"><option value="Inter"><option value="Bradesco"><option value="Banco do Brasil"><option value="Caixa"><option value="Santander"></datalist>
 
 <!-- MODAL CONFIGURAÇÃO DO WHATSAPP (v20, só administrador) -->
@@ -1556,7 +1657,9 @@ function calcularPermissoes(p){
     // v14: rhPessoal = salário, contracheques, vales, uniformes, envio à contabilidade · curriculos = banco de currículos
     rhPessoal:adm||admv||cont,curriculos:adm||admv,
     // v20: financeiro · pagamentos = lança pagamentos a autorizar · autorizar = marca como autorizado (André)
-    financeiro:adm||admv||com,pagamentos:adm||admv,autorizar:adm};
+    financeiro:adm||admv||com,pagamentos:adm||admv,autorizar:adm,
+    // v21: saídas · saidasTodas = vê todas, importa fatura e confere (o comercial vê só os próprios cartões)
+    saidasTodas:adm||admv};
 }
 const BUCKET_DOCS='documentos';
 const ABERTAS=ETAPAS.filter(e=>!['fechada','perdida'].includes(e.id)).map(e=>e.id);
@@ -1770,7 +1873,7 @@ async function trocarSenha(){
 /* ================= CARGA DE DADOS ================= */
 async function carregarTudo(){
   await carregarEmpresas();
-  await Promise.all([carregarClientes(),carregarCards(),carregarAtividades(),carregarProjetos(),carregarPerfis(),carregarDocsTudo(),carregarBeneficiosTudo(),carregarRH(),carregarCurriculos(),carregarFinanceiro()]);
+  await Promise.all([carregarClientes(),carregarCards(),carregarAtividades(),carregarProjetos(),carregarPerfis(),carregarDocsTudo(),carregarBeneficiosTudo(),carregarRH(),carregarCurriculos(),carregarFinanceiro(),carregarSaidas()]);
   atualizarBadgeRH();
   atualizarDatalists();
   renderTabAtual();
@@ -5108,8 +5211,11 @@ async function carregarFinanceiro(){
   v20Ok=true;todosPagamentos=data||[];atualizarBadgeFin();
 }
 function atualizarBadgeFin(){
-  const n=todosPagamentos.filter(p=>p.situacao==='pendente').length,b=$('tab-fin-badge');
-  if(b)b.innerHTML=n&&PERM.pagamentos?`<span class="badge badge-atraso">${n}</span>`:'';
+  const n=PERM.pagamentos?todosPagamentos.filter(p=>p.situacao==='pendente').length:0,b=$('tab-fin-badge');
+  // compras dos meus cartões ainda sem justificativa
+  const m=typeof saidasPendentesMinhas==='function'?saidasPendentesMinhas().length:0,bs=$('fin-saidas-badge');
+  if(b)b.innerHTML=(n?`<span class="badge badge-atraso" title="Pagamentos aguardando autorização">${n}</span>`:'')+(m?` <span class="badge badge-hoje" title="Suas compras sem justificativa">${m}</span>`:'');
+  if(bs)bs.innerHTML=m?`<span class="badge badge-hoje">${m}</span>`:'';
 }
 function renderFinanceiro(){
   if(!PERM.pagamentos&&finSub==='pagamentos')finSub='saidas';
@@ -5286,6 +5392,397 @@ async function testarWhatsApp(){
   const{error}=await sb.rpc('bvek_whatsapp_enviar',{p_texto:'✅ Teste do CRM Grupo BVEK: os lembretes de pagamento vão chegar por aqui.',p_motivo:'teste'});
   if(erroSB(error,'Não foi possível enviar'))return;
   toast('Teste enviado · confira o WhatsApp');setTimeout(renderEnviosWA,4000);
+}
+
+/* ================= FINANCEIRO (v21): SAÍDAS DOS CARTÕES E DO CAIXA ================= */
+// Sem serviço pago: a fatura/extrato do banco é importada (OFX, Excel/CSV ou PDF); cada compra entra uma vez só
+// e quem comprou só completa a justificativa. Se já tiver lançado na hora, a importação junta (não duplica).
+let todosCartoes=[],todasSaidas=[],saidaEditandoId=null,v21Ok=true,importacao=null,cartaoEditandoId=null;
+const CATEGORIAS_SAIDA=['Material de obra','Material de limpeza','Ferramentas e equipamentos','Aluguel de equipamento','EPI e uniforme','Mudas, adubo e insumos de jardinagem','Combustível','Pedágio e estacionamento','Transporte e frete','Alimentação','Hospedagem','Serviço de terceiros','Descarte de resíduos / caçamba','Escritório e papelaria','Software e assinaturas','Taxas, documentos e impostos','Manutenção de veículos','Outros'];
+const FORMAS_SAIDA=[['cartao','Cartão'],['pix','Pix'],['boleto','Boleto'],['dinheiro','Dinheiro'],['outro','Outro']];
+const SITUACAO_SAIDA={pendente:'sem justificativa',justificada:'justificada',conferida:'conferida'};
+function avisarMigracaoV21(){
+  v21Ok=false;
+  const el=$('sd-info');if(el)el.innerHTML='<strong>Falta atualizar o banco de dados (v21).</strong> No Supabase, abra <em>SQL Editor → New query</em>, cole o conteúdo do arquivo <code>supabase/migracao_crm_v21_saidas_cartoes.sql</code> e clique em <em>Run</em>. Depois recarregue esta página.';
+}
+async function carregarSaidas(){
+  if(!PERM.financeiro)return;
+  const[c,s]=await Promise.all([sb.from('cartoes').select('*').order('nome'),sb.from('saidas').select('*').order('data',{ascending:false})]);
+  const erro=c.error||s.error;
+  if(erro){if(/cartoes|saidas/.test(erro.message||''))avisarMigracaoV21();else console.error(erro);todosCartoes=[];todasSaidas=[];return;}
+  v21Ok=true;todosCartoes=c.data||[];todasSaidas=s.data||[];atualizarBadgeFin();
+}
+function cartaoPorId(id){return todosCartoes.find(c=>c.id===id);}
+function rotuloCartao(c){return c?`${c.nome}${c.final?' · final '+c.final:''}`:'';}
+function meusCartoes(){return PERM.saidasTodas?todosCartoes.filter(c=>c.ativo!==false):todosCartoes.filter(c=>c.usuario_id===(usuario&&usuario.id)&&c.ativo!==false);}
+function saidasPendentesMinhas(){
+  const meus=new Set(todosCartoes.filter(c=>c.usuario_id===(usuario&&usuario.id)).map(c=>c.id));
+  return todasSaidas.filter(s=>s.situacao==='pendente'&&(meus.has(s.cartao_id)||(!s.cartao_id&&s.criado_por_id===(usuario&&usuario.id))));
+}
+function situacaoAuto(d,atual){if(atual==='conferida')return'conferida';return d.categoria&&d.descricao?'justificada':'pendente';}
+function filtrosSaidasIniciais(){
+  if($('sd-mes').value)return;
+  $('sd-mes').value=hojeISO().slice(0,7);
+}
+function saidasFiltradas(){
+  const mes=$('sd-mes').value,cart=$('sd-cartao').value,sit=$('sd-situacao').value,cat=$('sd-categoria').value,q=norm($('sd-busca').value||'');
+  return filtraEmpresa(todasSaidas).filter(s=>{
+    if(mes&&String(s.fatura||s.data).slice(0,7)!==mes&&String(s.data).slice(0,7)!==mes)return false;
+    if(cart==='sem'&&s.cartao_id)return false;
+    if(cart&&cart!=='sem'&&s.cartao_id!==cart)return false;
+    if(sit&&s.situacao!==sit)return false;
+    if(cat&&(s.categoria||'')!==cat)return false;
+    if(q){const c=clientePorId(s.cliente_id);const txt=norm([s.descricao_extrato,s.descricao,s.fornecedor,s.categoria,s.comprador,c&&rotuloCliente(c)].filter(Boolean).join(' '));if(!txt.includes(q))return false;}
+    return true;
+  });
+}
+function renderSaidas(){
+  if(!PERM.financeiro)return;
+  filtrosSaidasIniciais();
+  ['sd-btn-importar','sd-btn-cartoes'].forEach(id=>$(id).style.display=PERM.saidasTodas?'':'none');
+  if(!v21Ok){avisarMigracaoV21();$('tabela-saidas').innerHTML='';$('sd-kpis').innerHTML='';return;}
+  // filtros dependentes dos dados
+  const sc=$('sd-cartao'),vc=sc.value;preencherSelect(sc,[...meusCartoes().map(c=>[c.id,rotuloCartao(c)]),['sem','Pix / boleto / dinheiro']],'Todos os cartões');sc.value=vc;
+  const sg=$('sd-categoria'),vg=sg.value;preencherSelect(sg,CATEGORIAS_SAIDA.map(c=>[c,c]),'Todas as categorias');sg.value=vg;
+  const lista=saidasFiltradas().sort((a,b)=>String(b.data).localeCompare(String(a.data)));
+  const tot=lista.reduce((s,x)=>s+Number(x.valor||0),0),pend=lista.filter(s=>s.situacao==='pendente'),totPend=pend.reduce((s,x)=>s+Number(x.valor||0),0);
+  const semNota=lista.filter(s=>!s.nota_path&&Number(s.valor)>0).length;
+  $('sd-kpis').innerHTML=[
+    ['Saídas no período',fmtCurto(tot),`${lista.length} lançamento(s)`],
+    ['Sem justificativa',String(pend.length),pend.length?fmtCurto(totPend)+' para explicar':'tudo justificado 🎉'],
+    ['Sem nota anexada',String(semNota),semNota?'anexe a foto da nota':'—'],
+    ['Conferidas',String(lista.filter(s=>s.situacao==='conferida').length),'pelo financeiro'],
+  ].map(([r,v,s])=>`<div class="kpi"><div class="rot">${esc(r)}</div><div class="val">${esc(v)}</div><div class="sub">${esc(s)}</div></div>`).join('');
+  // resumo por categoria
+  const porCat={};lista.forEach(s=>{const k=s.categoria||'(sem categoria)';porCat[k]=(porCat[k]||0)+Number(s.valor||0);});
+  const cats=Object.entries(porCat).sort((a,b)=>b[1]-a[1]),max=Math.max(1,...cats.map(c=>c[1]));
+  $('sd-categorias').innerHTML=cats.length?`<div class="painel" style="margin-bottom:16px"><h3 style="font-size:14px;margin-bottom:10px">Por categoria</h3>${cats.map(([n,v])=>`<div class="barra-linha"><span class="nome" title="${esc(n)}">${esc(n)}</span><div class="barra-trilho"><div class="barra-cheia" style="width:${Math.round(v/max*100)}%"></div></div><span class="num">${esc(fmtCurto(v))}</span></div>`).join('')}</div>`:'';
+  $('sd-info').innerHTML=PERM.saidasTodas
+    ?'<strong>Como funciona:</strong> 1) no fim do mês (ou quando quiser), baixe a fatura/extrato do cartão no Itaú Empresas (OFX, Excel ou PDF) e clique em <em>⬆️ Importar fatura</em> — o que já foi importado é ignorado e o que a pessoa lançou na hora é juntado; 2) quem comprou completa a justificativa; 3) o financeiro clica em <em>✔️ Conferir</em>.'
+    :'<strong>Suas compras:</strong> as compras dos seus cartões aparecem aqui quando o financeiro importa a fatura. Clique em <em>justificar</em> e diga a categoria, para que foi e o cliente/projeto (e anexe a foto da nota). Se preferir, lance na hora da compra em <em>+ Lançar compra</em> — quando a fatura chegar, o sistema junta sozinho.';
+  const linha=s=>{
+    const c=cartaoPorId(s.cartao_id),cli=clientePorId(s.cliente_id),pj=todosProjetos.find(p=>p.id===s.projeto_id);
+    const sit=s.situacao==='pendente'?'<span class="badge badge-atraso">sem justificativa</span>':s.situacao==='justificada'?'<span class="badge badge-hoje">justificada</span>':'<span class="badge badge-ok">conferida</span>';
+    const pode=PERM.saidasTodas||s.situacao!=='conferida';
+    return`<tr class="${s.situacao==='pendente'?'doc-vencido':''}"><td style="white-space:nowrap">${esc(fmtData(s.data))}</td>
+      <td style="font-size:12px">${c?esc(rotuloCartao(c)):esc((FORMAS_SAIDA.find(f=>f[0]===s.forma)||[,'—'])[1])}${s.conciliada||s.origem==='extrato'?' <span class="badge badge-cinza" title="Confere com o extrato do banco">extrato</span>':''}</td>
+      <td><strong>${esc(s.descricao_extrato||s.fornecedor||'—')}</strong>${s.parcela?` <span class="badge badge-cinza">parc. ${esc(s.parcela)}</span>`:''}
+        ${s.descricao||s.fornecedor?`<div class="dica" style="margin:0">${esc([s.descricao_extrato&&s.fornecedor?s.fornecedor:'',s.descricao].filter(Boolean).join(' · '))}</div>`:''}</td>
+      <td class="num" style="white-space:nowrap"><strong class="${Number(s.valor)<0?'menos':''}">R$ ${esc(fmtMoeda(s.valor))}</strong></td>
+      <td>${esc(s.categoria||'—')}</td>
+      <td style="font-size:12px">${cli?esc(rotuloCliente(cli)):''}${pj?`<div class="cod">${esc(pj.codigo)}</div>`:''}</td>
+      <td>${s.nota_path?`<button class="btn-link" data-sd-nota="${esc(s.id)}" title="Ver a nota">📎</button>`:'<span style="color:#bbb">—</span>'}</td>
+      <td>${sit}</td>
+      <td style="white-space:nowrap">${pode?`<button class="btn-link" data-sd-ed="${esc(s.id)}">${s.situacao==='pendente'?'justificar':'editar'}</button>`:`<button class="btn-link" data-sd-ed="${esc(s.id)}">ver</button>`}
+        ${PERM.saidasTodas&&s.situacao==='justificada'?` <button class="btn-link" data-sd-conf="${esc(s.id)}">✔️ conferir</button>`:''}</td></tr>`;
+  };
+  $('tabela-saidas').innerHTML=`<thead><tr><th>Data</th><th>Cartão / forma</th><th>Descrição</th><th class="num">Valor</th><th>Categoria</th><th>Cliente / projeto</th><th>Nota</th><th>Situação</th><th>${PERM.saidasTodas&&lista.some(s=>s.situacao==='justificada')?'<button class="btn-sec" onclick="conferirSaidasVisiveis()">✔️ Conferir justificadas</button>':''}</th></tr></thead>
+    <tbody>${lista.length?lista.map(linha).join(''):`<tr><td colspan="9" class="vazio">Nenhuma saída com esses filtros.${PERM.saidasTodas&&!todosCartoes.length?' Comece cadastrando os cartões em 💳 Cartões.':''}</td></tr>`}</tbody>
+    ${lista.length?`<tfoot><tr><td colspan="3"><strong>Total (${lista.length})</strong></td><td class="num"><strong>R$ ${esc(fmtMoeda(tot))}</strong></td><td colspan="5"></td></tr></tfoot>`:''}`;
+  const t=$('tabela-saidas');
+  t.querySelectorAll('[data-sd-ed]').forEach(b=>b.onclick=()=>abrirSaida(b.dataset.sdEd));
+  t.querySelectorAll('[data-sd-conf]').forEach(b=>b.onclick=()=>conferirSaidas([b.dataset.sdConf]));
+  t.querySelectorAll('[data-sd-nota]').forEach(b=>b.onclick=()=>abrirNotaSaida(b.dataset.sdNota));
+}
+/* lançar / justificar */
+function mudouClienteSaida(){
+  const c=acharClientePorRotulo($('sd-m-cliente').value);
+  const pjs=todosProjetos.filter(p=>!c||p.cliente_id===c.id);
+  const v=$('sd-m-projeto').value;preencherSelect($('sd-m-projeto'),pjs.map(p=>[p.id,`${p.codigo} · ${p.nome}`]),'—');
+  if(pjs.some(p=>p.id===v))$('sd-m-projeto').value=v;
+}
+function mudouFormaSaida(){const cartao=$('sd-m-forma').value==='cartao';$('sd-m-linha-cartao').style.display=cartao?'':'none';}
+function abrirSaida(id){
+  if(!v21Ok){avisarMigracaoV21();alert('Rode antes a migração v21 no Supabase.');return;}
+  const s=id?todasSaidas.find(x=>x.id===id):null;saidaEditandoId=s?s.id:null;
+  const doExtrato=!!s&&s.origem==='extrato';
+  preencherSelect($('sd-m-cartao'),meusCartoes().map(c=>[c.id,rotuloCartao(c)]),'Selecione');
+  if(s&&s.cartao_id&&!meusCartoes().some(c=>c.id===s.cartao_id)){const c=cartaoPorId(s.cartao_id);if(c)$('sd-m-cartao').insertAdjacentHTML('beforeend',`<option value="${esc(c.id)}">${esc(rotuloCartao(c))}</option>`);}
+  preencherSelect($('sd-m-forma'),FORMAS_SAIDA);
+  preencherSelect($('sd-m-categoria'),CATEGORIAS_SAIDA.map(c=>[c,c]),'Selecione');
+  preencherSelect($('sd-m-empresa'),todasEmpresas.map(e=>[e.id,`${e.nome} (${e.sigla})`]),'—');
+  $('sd-m-titulo').textContent=s?(s.situacao==='pendente'?'Justificar compra':'Saída'):'Lançar compra / saída';
+  $('sd-m-extrato').style.display=doExtrato?'':'none';
+  $('sd-m-extrato').innerHTML=doExtrato?`🏦 No extrato: <strong>${esc(s.descricao_extrato||'')}</strong>${s.parcela?' · parcela '+esc(s.parcela):''} · ${esc(fmtData(s.data))} · <strong>R$ ${esc(fmtMoeda(s.valor))}</strong>`:'';
+  const meu=meusCartoes();
+  $('sd-m-forma').value=s?s.forma:(meu.length?'cartao':'pix');
+  $('sd-m-cartao').value=s?(s.cartao_id||''):(meu.length===1?meu[0].id:'');
+  $('sd-m-data').value=s?s.data:hojeISO();$('sd-m-valor').value=s?fmtMoeda(s.valor):'';
+  $('sd-m-categoria').value=s?(s.categoria||''):'';
+  if(s&&s.categoria&&!CATEGORIAS_SAIDA.includes(s.categoria))$('sd-m-categoria').insertAdjacentHTML('beforeend',`<option value="${esc(s.categoria)}" selected>${esc(s.categoria)}</option>`);
+  $('sd-m-fornecedor').value=s?(s.fornecedor||''):'';$('sd-m-descricao').value=s?(s.descricao||''):'';
+  const cli=s&&s.cliente_id?clientePorId(s.cliente_id):null;$('sd-m-cliente').value=cli?rotuloCliente(cli):'';
+  mudouClienteSaida();$('sd-m-projeto').value=s?(s.projeto_id||''):'';
+  $('sd-m-empresa').value=s?(s.empresa_id||''):(empresaAtual!=='todas'?empresaAtual:'');
+  $('sd-m-comprador').value=s?(s.comprador||''):(quemSou()||'');$('sd-m-obs').value=s?(s.observacoes||''):'';
+  $('sd-m-arquivo').value='';
+  $('sd-m-nota-atual').innerHTML=s&&s.nota_path?`📎 Nota anexada · <button class="btn-link" onclick="abrirNotaSaida('${esc(s.id)}')">abrir</button> (escolha outro arquivo para trocar)`:'';
+  // o que veio do extrato só o financeiro altera
+  const travaExtrato=doExtrato&&!PERM.saidasTodas;
+  ['sd-m-forma','sd-m-cartao','sd-m-data','sd-m-valor'].forEach(i=>{$(i).disabled=travaExtrato;$(i).closest('.campo').style.display='';});
+  mudouFormaSaida();
+  // quem justifica uma compra do extrato não precisa ver (nem mexer) em cartão, data e valor: já estão no quadro acima
+  if(travaExtrato)['sd-m-forma','sd-m-cartao','sd-m-data','sd-m-valor'].forEach(i=>$(i).closest('.campo').style.display='none');
+  const leitura=!!s&&s.situacao==='conferida'&&!PERM.saidasTodas;
+  modoLeitura('modal-saida',leitura);
+  $('sd-m-salvar').style.display=leitura?'none':'';
+  $('sd-m-conferir').style.display=PERM.saidasTodas&&s&&s.situacao!=='conferida'?'':'none';
+  $('sd-m-reabrir').style.display=PERM.saidasTodas&&s&&s.situacao==='conferida'?'':'none';
+  $('sd-m-excluir').style.display=s&&(PERM.saidasTodas||(s.origem==='manual'&&!s.conciliada&&s.situacao!=='conferida'&&s.criado_por_id===(usuario&&usuario.id)))?'':'none';
+  abrirModal('modal-saida');
+}
+async function salvarSaida(conferir){
+  const forma=$('sd-m-forma').value,cartao=forma==='cartao'?$('sd-m-cartao').value:null;
+  if(forma==='cartao'&&!cartao){alert('Escolha o cartão.');return;}
+  const valor=parseMoeda($('sd-m-valor').value);if(valor==null||!$('sd-m-data').value){alert('Informe a data e o valor.');return;}
+  const cliTxt=$('sd-m-cliente').value.trim(),cli=acharClientePorRotulo(cliTxt);
+  if(cliTxt&&!cli){alert('Cliente não encontrado. Escolha da lista (ou deixe em branco).');return;}
+  const atual=saidaEditandoId?todasSaidas.find(x=>x.id===saidaEditandoId):null;
+  const dados={forma,cartao_id:cartao||null,data:$('sd-m-data').value,valor,categoria:$('sd-m-categoria').value||null,fornecedor:$('sd-m-fornecedor').value.trim()||null,
+    descricao:$('sd-m-descricao').value.trim()||null,cliente_id:cli?cli.id:null,projeto_id:$('sd-m-projeto').value||null,empresa_id:$('sd-m-empresa').value||null,
+    comprador:$('sd-m-comprador').value.trim()||null,observacoes:$('sd-m-obs').value.trim()||null};
+  dados.situacao=situacaoAuto(dados,atual&&atual.situacao);
+  if(conferir===true){if(!dados.categoria||!dados.descricao){alert('Para conferir, preencha a categoria e para que foi a compra.');return;}dados.situacao='conferida';dados.conferido_por=quemSou();dados.conferido_em=new Date().toISOString();}
+  if(conferir==='reabrir'){dados.situacao=situacaoAuto(dados);dados.conferido_por=null;dados.conferido_em=null;}
+  if(atual&&atual.origem==='extrato'&&!PERM.saidasTodas){delete dados.forma;delete dados.cartao_id;delete dados.data;delete dados.valor;}
+  const btn=$('sd-m-salvar');btn.disabled=true;
+  try{
+    let id=saidaEditandoId;
+    if(id){const{error}=await sb.from('saidas').update(dados).eq('id',id);if(erroSB(error))return;}
+    else{const{data,error}=await sb.from('saidas').insert({...dados,origem:'manual',criado_por:quemSou()}).select().single();if(erroSB(error))return;id=data.id;}
+    const f=$('sd-m-arquivo').files[0];
+    if(f){
+      const caminho=`saidas/${id}/${Date.now()}_${nomeArquivoSeguro(f.name)}`;
+      const{error:eu}=await sb.storage.from('financeiro').upload(caminho,f,{contentType:f.type||undefined,upsert:false});
+      if(eu){console.error(eu);alert('A saída foi salva, mas a nota não subiu: '+(eu.message||eu));}
+      else{const{error:e2}=await sb.from('saidas').update({nota_path:caminho}).eq('id',id);if(e2)console.error(e2);}
+    }
+    fecharModal('modal-saida');await carregarSaidas();renderSaidas();
+    toast(dados.situacao==='conferida'?'Conferida':dados.situacao==='justificada'?'Compra justificada':'Salvo · falta a categoria e para que foi');
+  }finally{btn.disabled=false;}
+}
+async function excluirSaida(){
+  const s=todasSaidas.find(x=>x.id===saidaEditandoId);if(!s)return;
+  if(!confirm(s.origem==='extrato'?'Excluir esta linha que veio do extrato? Se importar a mesma fatura de novo, ela volta.':'Excluir este lançamento?'))return;
+  const{error}=await sb.from('saidas').delete().eq('id',s.id);if(erroSB(error))return;
+  if(s.nota_path)await sb.storage.from('financeiro').remove([s.nota_path]);
+  fecharModal('modal-saida');await carregarSaidas();renderSaidas();toast('Excluído');
+}
+async function conferirSaidas(ids){
+  if(!PERM.saidasTodas||!ids.length)return;
+  const{error}=await sb.from('saidas').update({situacao:'conferida',conferido_por:quemSou(),conferido_em:new Date().toISOString()}).in('id',ids);
+  if(erroSB(error))return;await carregarSaidas();renderSaidas();toast(`${ids.length} saída(s) conferida(s)`);
+}
+function conferirSaidasVisiveis(){
+  const ids=saidasFiltradas().filter(s=>s.situacao==='justificada').map(s=>s.id);
+  if(ids.length&&confirm(`Marcar ${ids.length} saída(s) justificada(s) como conferidas?`))conferirSaidas(ids);
+}
+async function abrirNotaSaida(id){
+  const s=todasSaidas.find(x=>x.id===id);if(!s||!s.nota_path)return;
+  const w=window.open('','_blank');
+  const{data,error}=await sb.storage.from('financeiro').createSignedUrl(s.nota_path,600);
+  if(error||!data){if(w)w.close();alert('Não foi possível abrir a nota.');return;}
+  if(w)w.location.href=data.signedUrl;else window.open(data.signedUrl,'_blank','noopener');
+}
+/* cartões */
+function abrirCartoes(){if(!PERM.saidasTodas)return;if(!v21Ok){avisarMigracaoV21();return;}limparFormCartao();renderCartoes();abrirModal('modal-cartoes');}
+function limparFormCartao(){
+  cartaoEditandoId=null;['ct-nome','ct-final','ct-titular'].forEach(i=>$(i).value='');$('ct-banco').value='Itaú Empresas';
+  preencherSelect($('ct-usuario'),todosPerfis.filter(p=>p.ativo&&!['pendente','funcionario'].includes(p.perfil)).map(p=>[p.id,`${p.nome||p.email} (${PERFIL_LABEL[p.perfil]||p.perfil})`]),'— ninguém —');
+  preencherSelect($('ct-empresa'),todasEmpresas.map(e=>[e.id,`${e.nome} (${e.sigla})`]),'—');
+  $('ct-limpar').style.display='none';
+}
+function renderCartoes(){
+  const uso={};todasSaidas.forEach(s=>{if(s.cartao_id)uso[s.cartao_id]=(uso[s.cartao_id]||0)+1;});
+  $('ct-tabela').innerHTML='<thead><tr><th>Cartão</th><th>Final</th><th>Dono (vê e justifica)</th><th class="num">Lançamentos</th><th></th></tr></thead><tbody>'+
+    (todosCartoes.length?todosCartoes.map(c=>{const p=todosPerfis.find(x=>x.id===c.usuario_id);return`<tr class="${c.ativo===false?'inativo':''}"><td><strong>${esc(c.nome)}</strong><div class="dica" style="margin:0">${esc(c.banco||'')}</div></td><td>${esc(c.final||'—')}</td><td>${esc(p?(p.nome||p.email):(c.titular||'—'))}</td><td class="num">${uso[c.id]||0}</td>
+      <td style="white-space:nowrap"><button class="btn-link" data-ct-ed="${esc(c.id)}">editar</button> <button class="btn-link" style="color:var(--texto2)" data-ct-alt="${esc(c.id)}">${c.ativo===false?'reativar':'desativar'}</button></td></tr>`;}).join(''):'<tr><td colspan="5" class="vazio">Nenhum cartão cadastrado.</td></tr>')+'</tbody>';
+  $('ct-tabela').querySelectorAll('[data-ct-ed]').forEach(b=>b.onclick=()=>{const c=cartaoPorId(b.dataset.ctEd);limparFormCartao();cartaoEditandoId=c.id;
+    $('ct-nome').value=c.nome;$('ct-final').value=c.final||'';$('ct-banco').value=c.banco||'';$('ct-usuario').value=c.usuario_id||'';$('ct-titular').value=c.titular||'';$('ct-empresa').value=c.empresa_id||'';$('ct-limpar').style.display='inline-block';$('ct-nome').focus();});
+  $('ct-tabela').querySelectorAll('[data-ct-alt]').forEach(b=>b.onclick=async()=>{const c=cartaoPorId(b.dataset.ctAlt);const{error}=await sb.from('cartoes').update({ativo:c.ativo===false}).eq('id',c.id);if(erroSB(error))return;await carregarSaidas();renderCartoes();renderSaidas();});
+}
+async function salvarCartao(){
+  const nome=$('ct-nome').value.trim();if(!nome){alert('Dê um nome ao cartão (ex.: Itaú Empresas — Pedro).');return;}
+  const fin=$('ct-final').value.replace(/\D/g,'');if(fin&&fin.length!==4){alert('Final do cartão: os 4 últimos números.');return;}
+  const p=todosPerfis.find(x=>x.id===$('ct-usuario').value);
+  const dados={nome,final:fin||null,banco:$('ct-banco').value.trim()||null,usuario_id:$('ct-usuario').value||null,titular:$('ct-titular').value.trim()||(p&&p.nome)||null,empresa_id:$('ct-empresa').value||null};
+  const{error}=cartaoEditandoId?await sb.from('cartoes').update(dados).eq('id',cartaoEditandoId):await sb.from('cartoes').insert(dados);
+  if(erroSB(error))return;limparFormCartao();await carregarSaidas();renderCartoes();renderSaidas();toast('Cartão salvo');
+}
+/* importação da fatura / extrato */
+function numExtrato(v){
+  if(typeof v==='number')return v;
+  let t=String(v||'').replace(/R\$|\s/g,'');if(!t)return null;
+  const neg=/^-|-$|^\(.*\)$/.test(t);t=t.replace(/[-()]/g,'');
+  if(/,\d{1,2}$/.test(t))t=t.replace(/\./g,'').replace(',','.');else t=t.replace(/,/g,'');
+  const n=Number(t);return isNaN(n)?null:(neg?-n:n);
+}
+// data dd/mm[/aaaa] → ISO; sem ano: usa o mês da fatura (compra em mês maior que o da fatura = ano anterior)
+function dataExtrato(v,faturaISO){
+  if(v instanceof Date&&!isNaN(v))return isoLocal(v);
+  if(typeof v==='number'&&v>20000&&v<80000){const d=new Date(Math.round((v-25569)*86400000));return isoLocal(new Date(d.getTime()+d.getTimezoneOffset()*60000));}
+  const t=String(v||'').trim();let m=t.match(/^(\d{4})-(\d{2})-(\d{2})/);if(m)return`${m[1]}-${m[2]}-${m[3]}`;
+  m=t.match(/^(\d{1,2})[\/.-](\d{1,2})(?:[\/.-](\d{2,4}))?/);if(!m)return null;
+  const dia=+m[1],mes=+m[2];if(!(dia>=1&&dia<=31&&mes>=1&&mes<=12))return null;
+  let ano=m[3]?+m[3]:null;if(ano&&ano<100)ano+=2000;
+  if(!ano){const fy=+faturaISO.slice(0,4),fm=+faturaISO.slice(5,7);ano=mes>fm?fy-1:fy;}
+  return`${ano}-${pad2(mes)}-${pad2(dia)}`;
+}
+function separarParcela(desc){
+  const m=String(desc).match(/\s(?:PARC(?:ELA)?\.?\s*)?(\d{1,2})\s*(?:\/|DE)\s*(\d{1,2})\s*$/i);
+  if(m&&+m[1]>=1&&+m[1]<=+m[2]&&+m[2]<=48)return{desc:String(desc).slice(0,m.index).trim(),parcela:pad2(m[1])+'/'+pad2(m[2])};
+  return{desc:String(desc).trim(),parcela:null};
+}
+const IGNORAR_EXTRATO=/PAGAMENTO\s*(EFETUADO|RECEBIDO|DE FATURA|FATURA)?|PGTO\s*FATURA|SALDO\s*(ANTERIOR|DA FATURA)|TOTAL\s*(DA FATURA|DOS LAN|NACIONAL|A PAGAR)|LIMITE/i;
+function lerOFX(txt){
+  const linhas=[];let final=null;
+  const acct=txt.match(/<ACCTID>\s*([^<\r\n]+)/i);if(acct){const d=acct[1].replace(/\D/g,'');if(d.length>=4)final=d.slice(-4);}
+  const cartao=/<CREDITCARDMSGSRSV1>|<CCSTMTRS>/i.test(txt);
+  const blocos=txt.split(/<STMTTRN>/i).slice(1);
+  blocos.forEach(b=>{
+    const tag=n=>{const m=b.match(new RegExp('<'+n+'>\\s*([^<\\r\\n]*)','i'));return m?m[1].trim():'';};
+    const dt=tag('DTPOSTED'),amt=numExtrato(tag('TRNAMT').replace(',','.'));
+    if(!dt||amt==null)return;
+    const desc=[tag('NAME'),tag('MEMO')].filter((x,i,a)=>x&&a.indexOf(x)===i).join(' ')||tag('PAYEE');
+    // no cartão, compra vem negativa no OFX; na conta corrente, saída também é negativa
+    linhas.push({data:`${dt.slice(0,4)}-${dt.slice(4,6)}-${dt.slice(6,8)}`,descricao:desc,valor:-amt,final,id:tag('FITID')});
+  });
+  return{linhas,final,tipo:cartao?'OFX do cartão':'OFX'};
+}
+async function lerPlanilhaExtrato(arquivo,faturaISO){
+  const X=await carregarXLSX();
+  let wb;
+  if(/\.(csv|txt)$/i.test(arquivo.name)){
+    const buf=await arquivo.arrayBuffer();let txt=new TextDecoder('utf-8').decode(buf);if(txt.includes('�'))txt=new TextDecoder('windows-1252').decode(buf);
+    // raw: mantém "02/10" e "1.234,56" como texto (senão viram data americana e número errado)
+    const sep=(txt.match(/;/g)||[]).length>(txt.match(/,/g)||[]).length/2?';':undefined;
+    wb=X.read(txt,{type:'string',raw:true,FS:sep});
+  }else wb=X.read(await arquivo.arrayBuffer(),{type:'array',cellDates:true});
+  const linhas=[];let final=null;
+  wb.SheetNames.forEach(nome=>{
+    const rows=X.utils.sheet_to_json(wb.Sheets[nome],{header:1,raw:true,defval:''});
+    let cab=-1,cD=-1,cT=-1,cV=-1;
+    const minus=x=>semAcento(String(x)).toLowerCase().replace(/\s+/g,' ').trim();
+    rows.forEach((r,i)=>{const t=r.map(minus);
+      const fm=t.join(' ').match(/final\s*(\d{4})/);if(fm&&!final)final=fm[1];
+      if(cab>=0)return;
+      const d=t.findIndex(x=>/^data/.test(x)),v=t.findIndex(x=>/^valor|^r\$|^debito|^saida/.test(x));
+      if(d>=0&&v>=0){cab=i;cD=d;cV=v;cT=t.findIndex(x=>/lancamento|descri|historico|estabelecimento|^local/.test(x));}});
+    const corpo=cab>=0?rows.slice(cab+1):rows;
+    corpo.forEach(r=>{
+      let d=cD,t=cT,v=cV;
+      if(cab<0){d=r.findIndex(x=>dataExtrato(x,faturaISO));v=r.length-1;while(v>0&&numExtrato(r[v])==null)v--;t=r.findIndex((x,k)=>k!==d&&k!==v&&typeof x==='string'&&/[A-Za-z]/.test(x));}
+      if(d<0||v<0)return;
+      const data=dataExtrato(r[d],faturaISO),valor=numExtrato(r[v]);
+      if(!data||valor==null||valor===0)return;
+      const fm=String(r.join(' ')).match(/final\s*(\d{4})/i);
+      linhas.push({data,descricao:String(t>=0?r[t]:'').trim(),valor,final:fm?fm[1]:null});
+    });
+  });
+  // extrato de conta: saída negativa → vira positiva
+  const neg=linhas.filter(l=>l.valor<0).length;if(neg>linhas.length/2)linhas.forEach(l=>l.valor=-l.valor);
+  linhas.forEach(l=>{if(!l.final)l.final=final;});
+  return{linhas,final,tipo:'Planilha'};
+}
+async function lerPdfExtrato(arquivo,faturaISO){
+  const txt=await textoDoPdf(arquivo);
+  const linhas=[];let final=null;
+  const re=/(\d{2}\/\d{2}(?:\/\d{2,4})?)\s+(.+?)\s+(-\s?)?(?:R\$\s?)?(-?\d{1,3}(?:\.\d{3})*,\d{2})(\s?-)?(?=\s+\d{2}\/\d{2}\s|\s*$)/g;
+  txt.forEach(l=>{
+    const fm=l.match(/final\s*(\d{4})/i);if(fm)final=fm[1];
+    let m;re.lastIndex=0;
+    while((m=re.exec(l))){
+      const desc=m[2].trim();if(IGNORAR_EXTRATO.test(desc)||/^\d+$/.test(desc))continue;
+      const data=dataExtrato(m[1],faturaISO);let valor=numExtrato(m[4]);if(!data||valor==null)continue;
+      if(m[3]||m[5])valor=-Math.abs(valor);
+      linhas.push({data,descricao:desc,valor,final});
+    }
+  });
+  return{linhas,final,tipo:'PDF'};
+}
+function abrirImportacao(){
+  if(!PERM.saidasTodas)return;if(!v21Ok){avisarMigracaoV21();alert('Rode antes a migração v21 no Supabase.');return;}
+  if(!todosCartoes.length){alert('Cadastre antes os cartões (botão 💳 Cartões), com o final de 4 números de cada um.');abrirCartoes();return;}
+  importacao=null;$('im-arquivo').value='';$('im-previa').innerHTML='';$('im-resumo').innerHTML='';$('im-aplicar').disabled=true;
+  $('im-fatura').value=$('sd-mes').value||hojeISO().slice(0,7);
+  preencherSelect($('im-cartao'),todosCartoes.filter(c=>c.ativo!==false).map(c=>[c.id,rotuloCartao(c)]),'Detectar pelo final do cartão');
+  abrirModal('modal-importar');
+}
+async function lerArquivoImportacao(){
+  const f=$('im-arquivo').files[0];if(!f)return;
+  const fatura=($('im-fatura').value||hojeISO().slice(0,7))+'-01';
+  $('im-resumo').innerHTML='Lendo o arquivo…';
+  let r;
+  try{
+    if(/\.ofx$|\.qfx$/i.test(f.name))r=lerOFX(await f.text());
+    else if(/\.pdf$/i.test(f.name))r=await lerPdfExtrato(f,fatura);
+    else r=await lerPlanilhaExtrato(f,fatura);
+  }catch(e){console.error(e);$('im-resumo').innerHTML=`<span style="color:var(--vermelho)">Não consegui ler este arquivo (${esc(e.message||e)}). Tente baixar a fatura em outro formato (OFX ou Excel).</span>`;return;}
+  if(!r.linhas.length){$('im-resumo').innerHTML='<span style="color:var(--vermelho)">Nenhum lançamento encontrado neste arquivo. Se for PDF escaneado (imagem), baixe a fatura em OFX ou Excel no Itaú Empresas.</span>';return;}
+  importacao={arquivo:f.name,fatura,tipo:r.tipo,linhas:r.linhas.map(l=>Object.assign(l,separarParcela(l.descricao),{descricao:separarParcela(l.descricao).desc}))};
+  montarPreviaImportacao();
+}
+function montarPreviaImportacao(){
+  const I=importacao;if(!I)return;
+  const fixo=$('im-cartao').value;
+  const cont={};
+  I.linhas.forEach(l=>{
+    const c=fixo?cartaoPorId(fixo):todosCartoes.find(x=>x.final&&x.final===l.final);
+    l.cartao=c||null;
+    const base=[c?c.id:'?',l.data,l.valor.toFixed(2),norm(l.descricao).replace(/\s+/g,' '),l.parcela||''].join('|');
+    cont[base]=(cont[base]||0)+1;l.hash=base+'|'+cont[base];
+    l.ignorar=IGNORAR_EXTRATO.test(l.descricao);
+    l.existe=c?todasSaidas.find(s=>s.hash_extrato===l.hash):null;
+    l.parecida=!l.existe&&c?todasSaidas.find(s=>s.origem==='extrato'&&s.cartao_id===c.id&&s.data===l.data&&Math.abs(Number(s.valor)-l.valor)<0.005&&(s.parcela||'')===(l.parcela||'')):null;
+    l.juntar=!l.existe&&!l.parecida&&c&&l.valor>0?todasSaidas.find(s=>s.origem==='manual'&&!s.conciliada&&s.cartao_id===c.id&&Math.abs(Number(s.valor)-l.valor)<0.005&&Math.abs(new Date(s.data)-new Date(l.data))<=7*86400000&&!I.linhas.some(o=>o!==l&&o.juntar===s)):null;
+    if(l.incluir===undefined)l.incluir=!!c&&!l.existe&&!l.parecida&&!l.ignorar;
+    if(!c||l.existe)l.incluir=false;
+  });
+  const semCartao=I.linhas.filter(l=>!l.cartao).length,finais=[...new Set(I.linhas.filter(l=>!l.cartao).map(l=>l.final||'?'))];
+  const st=l=>l.existe?'<span class="badge badge-cinza">já importada</span>':l.parecida?'<span class="badge badge-hoje" title="Mesmo cartão, data e valor de uma linha já importada">parece repetida</span>':!l.cartao?'<span class="badge badge-atraso">cartão?</span>':l.ignorar?'<span class="badge badge-cinza">pagamento/saldo</span>':l.juntar?`<span class="badge badge-ok" title="Lançada à mão por ${esc(l.juntar.criado_por||'')}">junta com lançamento de ${esc(fmtData(l.juntar.data))}</span>`:l.valor<0?'<span class="badge badge-hoje">estorno/crédito</span>':'<span class="badge badge-ok">nova</span>';
+  $('im-previa').innerHTML=`<div class="tabela-wrap" style="max-height:52vh;overflow:auto"><table class="tabela"><thead><tr><th><input type="checkbox" id="im-todos" title="Marcar/desmarcar todas"></th><th>Data</th><th>Descrição</th><th>Parcela</th><th class="num">Valor</th><th>Cartão</th><th>Situação</th></tr></thead><tbody>${I.linhas.map((l,i)=>`<tr style="${l.existe||l.ignorar?'opacity:.55':''}"><td><input type="checkbox" data-im="${i}" ${l.incluir?'checked':''} ${l.cartao&&!l.existe?'':'disabled'}></td>
+    <td>${esc(fmtData(l.data))}</td><td>${esc(l.descricao)}</td><td>${esc(l.parcela||'')}</td><td class="num ${l.valor<0?'menos':''}">${esc(fmtMoeda(l.valor))}</td><td style="font-size:12px">${l.cartao?esc(rotuloCartao(l.cartao)):`final ${esc(l.final||'?')}`}</td><td>${st(l)}</td></tr>`).join('')}</tbody></table></div>`;
+  $('im-previa').querySelectorAll('[data-im]').forEach(c=>c.onchange=()=>{I.linhas[+c.dataset.im].incluir=c.checked;resumoImportacao();});
+  $('im-todos').onchange=e=>{I.linhas.forEach(l=>{if(l.cartao&&!l.existe)l.incluir=e.target.checked;});montarPreviaImportacao();};
+  I.avisoCartao=semCartao?`⚠️ ${semCartao} linha(s) sem cartão reconhecido (final ${finais.join(', ')}): escolha o cartão acima ou cadastre o final em 💳 Cartões.`:'';
+  resumoImportacao();
+}
+function resumoImportacao(){
+  const I=importacao;const sel=I.linhas.filter(l=>l.incluir);
+  const novas=sel.filter(l=>!l.juntar).length,juntas=sel.filter(l=>l.juntar).length,ja=I.linhas.filter(l=>l.existe).length;
+  $('im-resumo').innerHTML=`<strong>${esc(I.arquivo)}</strong> (${esc(I.tipo)}) · ${I.linhas.length} linha(s) lida(s) · <strong>${novas}</strong> nova(s) a importar${juntas?` · <strong>${juntas}</strong> juntada(s) com lançamentos já feitos`:''}${ja?` · ${ja} já importada(s) antes (ignoradas)`:''} · total marcado R$ ${esc(fmtMoeda(sel.reduce((s,l)=>s+l.valor,0)))}${I.avisoCartao?`<div style="color:var(--laranja);margin-top:6px">${esc(I.avisoCartao)}</div>`:''}`;
+  $('im-aplicar').disabled=!sel.length;
+}
+async function aplicarImportacao(){
+  const I=importacao;if(!I||!PERM.saidasTodas)return;
+  const sel=I.linhas.filter(l=>l.incluir&&l.cartao);if(!sel.length)return;
+  const btn=$('im-aplicar');btn.disabled=true;let erros=0;
+  try{
+    const novas=sel.filter(l=>!l.juntar).map(l=>({cartao_id:l.cartao.id,forma:'cartao',data:l.data,valor:Math.round(l.valor*100)/100,descricao_extrato:l.descricao,parcela:l.parcela,fatura:I.fatura,
+      origem:'extrato',hash_extrato:l.hash,conciliada:true,empresa_id:l.cartao.empresa_id||null,comprador:l.cartao.titular||null,situacao:l.valor<0?'justificada':'pendente',categoria:l.valor<0?'Outros':null,descricao:l.valor<0?'Estorno / crédito na fatura':null,criado_por:quemSou()}));
+    for(let i=0;i<novas.length;i+=200){
+      const{error}=await sb.from('saidas').upsert(novas.slice(i,i+200),{onConflict:'hash_extrato',ignoreDuplicates:true});
+      if(error){console.error(error);erros++;}
+    }
+    for(const l of sel.filter(l=>l.juntar)){
+      const{error}=await sb.from('saidas').update({origem:'extrato',hash_extrato:l.hash,conciliada:true,descricao_extrato:l.descricao,parcela:l.parcela,fatura:I.fatura,data:l.data}).eq('id',l.juntar.id);
+      if(error){console.error(error);erros++;}
+    }
+    await carregarSaidas();fecharModal('modal-importar');$('sd-mes').value=I.fatura.slice(0,7);renderSaidas();
+    if(erros)alert('Parte das linhas não foi gravada. Veja o console e tente importar de novo (o que já entrou não duplica).');
+    else toast(`Fatura importada: ${sel.length} lançamento(s)`);
+  }finally{btn.disabled=false;}
+}
+async function exportarSaidas(){
+  const lista=saidasFiltradas().sort((a,b)=>String(a.data).localeCompare(String(b.data)));
+  if(!lista.length){alert('Nada para exportar com esses filtros.');return;}
+  const linhas=[['Data','Fatura','Cartão / forma','Descrição no extrato','Parcela','Valor','Categoria','Fornecedor','Para que foi','Cliente','Projeto','Empresa','Comprador','Situação','Conferido por','Nota anexada','Observações']];
+  lista.forEach(s=>{const c=cartaoPorId(s.cartao_id),cli=clientePorId(s.cliente_id),pj=todosProjetos.find(p=>p.id===s.projeto_id),e=empresaPorId(s.empresa_id);
+    linhas.push([fmtData(s.data),s.fatura?nomeMes(s.fatura):'',c?rotuloCartao(c):((FORMAS_SAIDA.find(f=>f[0]===s.forma)||[,''])[1]),s.descricao_extrato||'',s.parcela||'',Number(s.valor),s.categoria||'',s.fornecedor||'',s.descricao||'',cli?rotuloCliente(cli):'',pj?pj.codigo:'',e?e.sigla:'',s.comprador||'',SITUACAO_SAIDA[s.situacao]||s.situacao,s.conferido_por||'',s.nota_path?'sim':'não',s.observacoes||'']);});
+  const nome=`BVK-FIN-SAIDAS-${$('sd-mes').value||'TODAS'}`;
+  try{const X=await carregarXLSX();const wb=X.utils.book_new(),ws=X.utils.aoa_to_sheet(linhas);ws['!cols']=[10,12,26,34,8,12,24,22,34,26,14,8,16,16,14,8,24].map(w=>({wch:w}));X.utils.book_append_sheet(wb,ws,'Saídas');X.writeFile(wb,nome+'.xlsx');}
+  catch(e){const csv=v=>{const t=typeof v==='number'?String(v).replace('.',','):String(v??'');return/[;"\n]/.test(t)?'"'+t.replace(/"/g,'""')+'"':t;};baixarArquivo(nome+'.csv','﻿'+linhas.map(r=>r.map(csv).join(';')).join('\r\n'),'text/csv;charset=utf-8');}
+  toast('Planilha gerada');
 }
 
 /* ================= INÍCIO ================= */
