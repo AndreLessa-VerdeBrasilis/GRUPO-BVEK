@@ -7497,6 +7497,21 @@ async function salvarComunicado(silencioso){
   if(!silencioso)toast('Comunicado salvo');
   return r.data;
 }
+// v30.1: diz o motivo real quando uma função do Supabase falha (antes, quase tudo aparecia como "não publicada")
+async function explicarErroFuncao(nome,error,data){
+  if(data&&data.erro)return data.erro;
+  if(!error)return'A função não respondeu. Tente de novo.';
+  const ctx=error.context,status=ctx&&ctx.status;let corpo='';
+  try{corpo=ctx&&typeof ctx.text==='function'?await ctx.clone().text():'';}catch(e){}
+  let j=null;try{j=JSON.parse(corpo);}catch(e){}
+  if(j&&j.erro)return j.erro;
+  const det=`\n\nDetalhe técnico: ${status?'código '+status+' · ':''}${(j&&(j.message||j.msg||j.code))||corpo.slice(0,200)||error.message||''}`;
+  if(status===404||/NOT_FOUND|not found/i.test(corpo))return`O Supabase não encontrou uma função com o nome "${nome}". Confira em Edge Functions se o nome está exatamente assim (tudo minúsculo, com hífen).`+det;
+  if(status===401||/jwt/i.test(corpo))return`O Supabase recusou o login ao chamar "${nome}". Saia e entre de novo no CRM; se continuar, em Edge Functions → ${nome} → Settings, deixe "Verify JWT" igual ao da função email-contabilidade.`+det;
+  if(status===503||status===546||/BOOT_ERROR|WORKER/i.test(corpo))return`A função "${nome}" está publicada, mas não conseguiu iniciar (erro no código colado). Em Edge Functions → ${nome} → Logs aparece o motivo; confira se o arquivo foi colado inteiro.`+det;
+  if(/Failed to send|fetch/i.test(error.message||''))return`O navegador não conseguiu falar com a função "${nome}". Geralmente é o nome diferente no Supabase ou a função travando ao iniciar: veja Edge Functions → ${nome} → Logs.`+det;
+  return(error.message||'erro desconhecido')+det;
+}
 async function enviarComunicado(teste){
   const ids=idsDestCom();
   if(!teste&&!ids.length){alert('Marque pelo menos um funcionário com e-mail.');return;}
@@ -7506,11 +7521,7 @@ async function enviarComunicado(teste){
   try{
     const corpo=teste?{comunicado_id:c.id,teste_para:(meuPerfil&&meuPerfil.email)||(usuario&&usuario.email)}:{comunicado_id:c.id,funcionario_ids:ids};
     const{data,error}=await sb.functions.invoke('email-comunicado',{body:corpo});
-    if(error||!data||data.erro){
-      let msg=data&&data.erro;if(error&&!msg){try{const b=await error.context.json();msg=b&&b.erro;}catch(e){}msg=msg||error.message;}
-      if(/Failed to send|NOT_FOUND|404/i.test(msg||''))msg='A função "email-comunicado" ainda não foi publicada no Supabase.';
-      alert('Não foi possível enviar:\n'+(msg||'erro desconhecido'));return;
-    }
+    if(error||!data||data.erro){alert('Não foi possível enviar:\n'+await explicarErroFuncao('email-comunicado',error,data));return;}
     if(teste){toast(data.ok?'Teste enviado para o seu e-mail':'O teste não foi: '+((data.resultado||[])[0]||{}).erro);return;}
     await carregarComunicados();renderComunicados();
     const atual=todosComunicados.find(x=>x.id===c.id);renderResultadoCom(atual);
