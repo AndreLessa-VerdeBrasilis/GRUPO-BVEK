@@ -2336,7 +2336,7 @@ function renderFunil(){
 function renderCard(c,prox){
   const cli=c.clientes;
   const sigla=c.empresas?c.empresas.sigla:'?';
-  const num=c.numero_proposta?`<div class="card-numero">${esc(c.numero_proposta)}${c.versao>1?' · V'+esc(c.versao):''}</div>`:'';
+  const num=c.numero_proposta?`<div class="card-numero">${esc(numeroProposta(c))}</div>`:'';
   const dias=diasDesde(c.etapa_desde||c.atualizado_em);
   const aberto=ABERTAS.includes(c.etapa);
   let badges='';
@@ -2375,7 +2375,20 @@ async function confirmarPerda(){
 }
 
 /* ================= NÚMERO DA PROPOSTA ================= */
-async function gerarNumeroProposta(empresaId){
+// v27: número no padrão C###-NNNN-PRP-SSSS (sequência única do grupo); a revisão _RXX vem da versão
+const RE_NUM_NOVO=/^C\d{3,}-\d{4}-PRP-\d{4}$/;
+function revisao(v){return'R'+String(Math.max(0,(Number(v)||1)-1)).padStart(2,'0');}
+function numeroProposta(c,versao){
+  if(!c||!c.numero_proposta)return'';const v=versao!=null?versao:c.versao;
+  return RE_NUM_NOVO.test(c.numero_proposta)?`${c.numero_proposta}_${revisao(v)}`:`${c.numero_proposta}.V${v||1}`;
+}
+async function gerarNumeroProposta(empresaId,clienteId){
+  if(clienteId){
+    const{data,error}=await sb.rpc('gerar_numero_proposta_grupo',{p_cliente:clienteId});
+    if(!error&&data)return data;
+    if(error&&!/gerar_numero_proposta_grupo|function|schema cache/i.test(error.message||'')){alert('Não foi possível gerar o número da proposta:\n'+error.message);return null;}
+    alert('Rode antes a migração v27 (supabase/migracao_crm_v27_numero_proposta_novo_padrao.sql) no Supabase para gerar o número no padrão novo.');return null;
+  }
   const{data,error}=await sb.rpc('gerar_numero_proposta',{p_empresa:empresaId});
   if(!error&&data)return data;
   // reserva (caso a função do banco ainda não exista)
@@ -2414,7 +2427,7 @@ async function abrirModalCard(id=null){
     ['btn-versao','btn-pdf'].forEach(b=>$(b).style.display='inline-block');
     $('btn-excluir').style.display=PERM.excluir?'inline-block':'none';
     $('etapa-box').style.display='flex';$('card-extras').style.display='block';
-    if(card.numero_proposta){$('numero-box').style.display='flex';$('numero-display').textContent=card.numero_proposta+'.V'+(card.versao||1);}
+    if(card.numero_proposta){$('numero-box').style.display='flex';$('numero-display').textContent=numeroProposta(card);}
     const proj=card.projeto_id?todosProjetos.find(p=>p.id===card.projeto_id):null;
     $('projeto-display').innerHTML=proj?`Projeto <span class="cod">${esc(proj.codigo)}</span>`:'';
     if(proj){$('numero-box').style.display='flex';}
@@ -2570,7 +2583,8 @@ async function salvarCard(){
       const{error}=await sb.from('cards').update(dados).eq('id',cardEditandoId);
       if(erroSB(error))return;
     }else{
-      dados.numero_proposta=await gerarNumeroProposta(empId);dados.versao=1;
+      dados.numero_proposta=await gerarNumeroProposta(empId,cli.id);dados.versao=1;
+      if(!dados.numero_proposta)return;
       const{data:nc,error}=await sb.from('cards').insert(dados).select().single();
       if(erroSB(error))return;
       savedId=nc.id;cardEditandoId=savedId;
@@ -2608,7 +2622,7 @@ async function criarNovaVersao(){
   const{data:itens}=await sb.from('itens_proposta').select('*').eq('card_id',cardEditandoId);
   if(itens&&itens.length)await sb.from('itens_proposta').insert(itens.map(i=>{const x={...i,card_id:nova.id};delete x.id;return x;}));
   fecharModal('modal-card');await carregarCards();renderTabAtual();
-  toast(`Nova versão criada: ${o.numero_proposta}.V${novaVersao}`);
+  toast(`Nova versão criada: ${numeroProposta(o,novaVersao)}`);
   setTimeout(()=>abrirModalCard(nova.id),250);
 }
 async function excluirCard(){
@@ -2628,7 +2642,7 @@ async function carregarVersoes(card){
   const{data}=await sb.from('cards').select('id,versao,etapa,valor_estimado,atualizado_em').or(`id.eq.${raiz},card_pai_id.eq.${raiz}`).order('versao');
   if(!data||data.length<2){$('card-versoes-box').style.display='none';return;}
   $('card-versoes-box').style.display='block';
-  $('card-versoes').innerHTML='<div class="sub-lista">'+data.map(v=>`<div class="sub-item clicavel" data-v="${esc(v.id)}"><span><strong>V${esc(v.versao||1)}</strong> ${v.id===card.id?'(esta)':''} · ${esc(ETAPA_LABEL[v.etapa]||v.etapa)}</span><span>R$ ${esc(fmtMoeda(v.valor_estimado))}</span></div>`).join('')+'</div>';
+  $('card-versoes').innerHTML='<div class="sub-lista">'+data.map(v=>`<div class="sub-item clicavel" data-v="${esc(v.id)}"><span><strong>${esc(card.numero_proposta&&RE_NUM_NOVO.test(card.numero_proposta)?revisao(v.versao):'V'+(v.versao||1))}</strong> ${v.id===card.id?'(esta)':''} · ${esc(ETAPA_LABEL[v.etapa]||v.etapa)}</span><span>R$ ${esc(fmtMoeda(v.valor_estimado))}</span></div>`).join('')+'</div>';
   $('card-versoes').querySelectorAll('[data-v]').forEach(el=>el.onclick=()=>{if(el.dataset.v!==card.id)abrirModalCard(el.dataset.v);});
 }
 
@@ -3941,7 +3955,7 @@ async function verificarAlertas(){
 async function criarRecorrente(c){
   const{data:existe}=await sb.from('cards').select('id').eq('card_origem_id',c.id).in('etapa',ABERTAS).limit(1);
   if(existe&&existe.length)return;
-  const numero=await gerarNumeroProposta(c.empresa_id);
+  const numero=await gerarNumeroProposta(c.empresa_id,c.cliente_id);if(!numero)return;
   await sb.from('cards').insert({empresa_id:c.empresa_id,cliente_id:c.cliente_id,contato_id:c.contato_id||null,titulo:'🔄 '+c.titulo.replace(/^🔄\s*/,'').replace(/\s*\(Recorrente\)$/,'')+' (Recorrente)',descricao:c.descricao,etapa:'entrada',valor_estimado:c.valor_estimado,responsavel:c.responsavel,recorrente:true,dias_recorrencia:c.dias_recorrencia,card_origem_id:c.id,numero_proposta:numero,versao:1,origem:'Cliente atual'});
   await carregarCards();if(tabAtual==='funil')renderFunil();
 }
@@ -4083,7 +4097,7 @@ async function gerarPDF(){
   const quem=contato||{};
   const br=s=>esc(s).replace(/\n/g,'<br>');
   // nome do arquivo no padrão da rede: VB-COM-PRP-C### NOME DESCRIÇÃO
-  const nomeArquivo=semAcento(`${emp.sigla||'BVK'}-COM-PRP-${cli.codigo||'C000'} ${cli.nome||''} ${card.titulo||''} ${card.numero_proposta||''}.V${card.versao||1}`).toUpperCase().replace(/[\\/:*?"<>|]/g,' ').replace(/\s+/g,' ').trim();
+  const nomeArquivo=semAcento(`${emp.sigla||'BVK'}-COM-PRP-${cli.codigo||'C000'} ${cli.nome||''} ${card.titulo||''} ${numeroProposta(card)}`).toUpperCase().replace(/[\\/:*?"<>|]/g,' ').replace(/\s+/g,' ').trim();
   const html=`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">
   <title>${esc(nomeArquivo)}</title>
   <style>
@@ -4121,7 +4135,7 @@ async function gerarPDF(){
     ${quem.nome?`<p>At.: ${esc(quem.nome)}${quem.cargo?' — '+esc(quem.cargo):''}</p>`:''}
     <p class="ref">Ref. cliente: ${esc(cli.codigo||'')}</p>
   </div>
-  <div class="numero-prop">Proposta de Serviços — ${esc(card.titulo)} — ${esc(card.numero_proposta||'')}.V${esc(card.versao||1)}</div>
+  <div class="numero-prop">Proposta de Serviços — ${esc(card.titulo)} — ${esc(numeroProposta(card))}</div>
   <p><strong>Prezados Senhores,</strong></p>
   <p>A ${esc(emp.nome||'')} é uma empresa especializada, que atende as principais demandas de nossos clientes e parceiros com funcionários próprios, ganhando agilidade e qualidade em todos os processos.</p>
   ${card.escopo?`<h2>Escopo dos Serviços</h2><p>${br(card.escopo)}</p>`:''}
