@@ -1013,7 +1013,7 @@ tr.doc-vencido td{background:#fff5f5}
     <div class="secao">Custo por dia de cada função</div><div id="pp-funcoes"></div>
     <div class="secao">Margem de lucro por tipo de cliente</div><div id="pp-tipos"></div>
     <div class="secao">Adicionais e BDI</div><div id="pp-adic"></div>
-    <div class="secao">Impostos sobre o preço, por empresa</div><div class="dica" style="margin:-6px 0 8px">Hoje o grupo está no Simples Nacional, Anexo III. Informe o faturamento dos últimos 12 meses de cada empresa para o CRM achar a faixa e a alíquota efetiva — confirme com a contabilidade (Innove).</div><div id="pp-trib"></div>
+    <div class="secao">Impostos sobre o preço, por empresa</div><div class="dica" style="margin:-6px 0 8px">Hoje o grupo está no Simples Nacional, Anexo IV — no Anexo IV o INSS patronal (CPP) é pago fora da guia do Simples, então inclua-o no custo por dia de cada função. Informe o faturamento dos últimos 12 meses de cada empresa para o CRM achar a faixa e a alíquota efetiva — confirme com a contabilidade (Innove).</div><div id="pp-trib"></div>
     <div class="secao">Documentação (custos padrão)</div><div id="pp-docs"></div>
     <div class="modal-btns">
       <button class="btn-cancelar" onclick="fecharModal('modal-param-preco')">Fechar</button>
@@ -6293,7 +6293,7 @@ function mudouNomeMaterial(){if(matEditandoId)return;const m=materialPorRotulo($
 // Custo direto (equipe, materiais, equipamentos, terceiros, mobilização, documentação) × BDI
 // Preço = CD × (1 + adm. central + seguros + risco) × (1 + desp. financeiras) × (1 + lucro) ÷ (1 − tributos)
 let precoCfg=null,v23Ok=true,composicaoLocal=null,comp=null;
-const PRECO_CFG_PADRAO={funcoes:[],adicionais:{sabado:50,domingo_feriado:100,noturno:20},bdi:{adm_central:4,seguros_garantia:0.8,risco:1.27,despesas_financeiras:1.23},tributos_empresa:{},tributos_padrao:0,regime_padrao:{anexo:'III'},regime_empresa:{},tipos_cliente:[{nome:'Indústria / fábrica',lucro:30},{nome:'Condomínio',lucro:30}],documentos:[]};
+const PRECO_CFG_PADRAO={funcoes:[],adicionais:{sabado:50,domingo_feriado:100,noturno:20},bdi:{adm_central:4,seguros_garantia:0.8,risco:1.27,despesas_financeiras:1.23},tributos_empresa:{},tributos_padrao:0,regime_padrao:{anexo:'IV'},regime_empresa:{},tipos_cliente:[{nome:'Indústria / fábrica',lucro:30},{nome:'Condomínio',lucro:30}],documentos:[]};
 // v25: Simples Nacional (LC 123/2006, tabelas desde 2018): [receita bruta 12 meses até, alíquota nominal %, parcela a deduzir]
 const SIMPLES={III:[[180000,6,0],[360000,11.2,9360],[720000,13.5,17640],[1800000,16,35640],[3600000,21,125640],[4800000,33,648000]],
   IV:[[180000,4.5,0],[360000,9,8100],[720000,10.2,12420],[1800000,14,39780],[3600000,22,183780],[4800000,33,828000]]};
@@ -6490,7 +6490,7 @@ function abrirParametrosPreco(){
 function renderParametrosPreco(){
   const c=cfgEdit,ed=PERM.admin;
   const tab=(arr,cols,chave)=>`<table class="tabela-itens"><thead><tr>${cols.map(x=>`<th ${x[3]?`style="width:${x[3]}px"`:''}>${esc(x[1])}</th>`).join('')}<th style="width:30px"></th></tr></thead><tbody>${arr.map((r,i)=>`<tr>${cols.map(x=>`<td>${x[2]==='bool'?`<input type="checkbox" data-pp="${chave}" data-i="${i}" data-k="${x[0]}" ${r[x[0]]?'checked':''} style="width:16px;height:16px">`:`<input ${x[2]==='num'?'type="number" step="any" min="0"':'type="text"'} data-pp="${chave}" data-i="${i}" data-k="${x[0]}" value="${esc(r[x[0]]??'')}">`}</td>`).join('')}<td>${ed?`<button class="btn-rm-item" data-pp-rm="${chave}" data-i="${i}">×</button>`:''}</td></tr>`).join('')}</tbody></table>${ed?`<button class="btn-add-item" data-pp-add="${chave}">+ linha</button>`:''}`;
-  $('pp-funcoes').innerHTML=tab(c.funcoes,[['nome','Função','text'],['custo_dia','Custo por dia (R$) — salário + encargos + benefícios','num',260]],'funcoes');
+  $('pp-funcoes').innerHTML=tab(c.funcoes,[['nome','Função','text'],['custo_dia','Custo por dia (R$) — salário + encargos (inclusive INSS patronal) + benefícios','num',260]],'funcoes');
   $('pp-tipos').innerHTML=tab(c.tipos_cliente,[['nome','Tipo de cliente','text'],['lucro','Margem de lucro (%)','num',160]],'tipos_cliente');
   $('pp-docs').innerHTML=tab(c.documentos,[['nome','Documento / exigência','text'],['custo','Custo (R$)','num',120],['por_pessoa','Por pessoa','bool',80]],'documentos');
   const a=c.adicionais,b=c.bdi;
@@ -6499,7 +6499,7 @@ function renderParametrosPreco(){
       ['bdi','adm_central','Administração central (%)',b.adm_central],['bdi','seguros_garantia','Seguros e garantias (%)',b.seguros_garantia],['bdi','risco','Risco (%)',b.risco],['bdi','despesas_financeiras','Despesas financeiras (%)',b.despesas_financeiras]]
       .map(([g,k,rot,v])=>`<div class="campo"><label>${rot}</label><input type="number" step="any" min="0" data-ppg="${g}" data-k="${k}" value="${esc(v??'')}"></div>`).join('')}</div>`;
   c.regime_empresa=c.regime_empresa||{};
-  const linhaReg=e=>{const r=c.regime_empresa[e.id]||{anexo:(c.regime_padrao||{}).anexo||'III'},a=SIMPLES[r.anexo]?aliquotaSimples(r.anexo,r.rbt12):null;
+  const linhaReg=e=>{const r=c.regime_empresa[e.id]||{anexo:(c.regime_padrao||{}).anexo||'IV'},a=SIMPLES[r.anexo]?aliquotaSimples(r.anexo,r.rbt12):null;
     return`<tr><td><strong>${esc(e.nome)}</strong></td><td><select data-reg="${esc(e.id)}" data-k="anexo"><option value="III" ${r.anexo==='III'?'selected':''}>Simples — Anexo III</option><option value="IV" ${r.anexo==='IV'?'selected':''}>Simples — Anexo IV</option><option value="manual" ${r.anexo==='manual'?'selected':''}>Outro (% fixo)</option></select></td>
       <td>${r.anexo==='manual'?`<input type="number" step="any" min="0" data-reg="${esc(e.id)}" data-k="pct" value="${esc(r.pct??'')}" placeholder="%">`:`<input type="text" inputmode="numeric" data-reg="${esc(e.id)}" data-k="rbt12" value="${r.rbt12?esc(fmtMoeda(r.rbt12)):''}" placeholder="faturamento 12 meses (R$)" oninput="mascaraMoeda(this)">`}</td>
       <td style="white-space:nowrap"><strong>${a?esc(fmtPct(Math.round(a.aliq*100)/100)):r.pct!=null&&r.pct!==''?esc(fmtPct(r.pct)):'—'}</strong>${a?`<div class="dica" style="margin:0">${a.estimada?'1ª faixa (sem faturamento)':a.faixa+'ª faixa'}</div>`:''}</td></tr>`;};
@@ -6510,7 +6510,7 @@ function renderParametrosPreco(){
   m.querySelectorAll('[data-pp-rm]').forEach(b=>b.onclick=()=>{c[b.dataset.ppRm].splice(+b.dataset.i,1);renderParametrosPreco();});
   m.querySelectorAll('[data-pp-add]').forEach(b=>b.onclick=()=>{const k=b.dataset.ppAdd;c[k].push(k==='funcoes'?{nome:'',custo_dia:0}:k==='tipos_cliente'?{nome:'',lucro:30}:{nome:'',custo:0,por_pessoa:false});renderParametrosPreco();});
   m.querySelectorAll('[data-ppg]').forEach(i=>i.oninput=()=>{c[i.dataset.ppg][i.dataset.k]=n0(i.value);});
-  m.querySelectorAll('[data-reg]').forEach(i=>{const salva=()=>{const id=i.dataset.reg,r=c.regime_empresa[id]=c.regime_empresa[id]||{anexo:(c.regime_padrao||{}).anexo||'III'};
+  m.querySelectorAll('[data-reg]').forEach(i=>{const salva=()=>{const id=i.dataset.reg,r=c.regime_empresa[id]=c.regime_empresa[id]||{anexo:(c.regime_padrao||{}).anexo||'IV'};
       r[i.dataset.k]=i.dataset.k==='anexo'?i.value:i.dataset.k==='rbt12'?parseMoeda(i.value):(i.value===''?null:n0(i.value));};
     if(i.tagName==='SELECT')i.onchange=()=>{salva();renderParametrosPreco();};else{i.oninput=()=>{if(i.dataset.k==='rbt12')mascaraMoeda(i);salva();};i.onchange=()=>{salva();renderParametrosPreco();};}});
 }
