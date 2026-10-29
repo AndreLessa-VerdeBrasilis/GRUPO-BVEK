@@ -45,6 +45,15 @@ button{font-family:inherit}
 .cc-btns{display:flex;gap:8px}
 .cc-btns button{padding:9px 14px;border-radius:8px;border:1.5px solid var(--verde);background:#fff;color:var(--verde);font-weight:600;font-size:13px;cursor:pointer}
 .cc-btns button.cc-prim{background:var(--verde);color:#fff}
+.cc-abas{display:flex;gap:8px;margin-bottom:12px}
+.cc-abas button{flex:1;padding:10px;border-radius:10px;border:1.5px solid var(--verde);background:#fff;color:var(--verde);font-weight:600;font-size:14px;cursor:pointer}
+.cc-abas button.ativo{background:var(--verde);color:#fff}
+.cc-ponto-tab{background:#fff;border-radius:12px;box-shadow:0 1px 4px rgba(0,0,0,.06);overflow-x:auto}
+.cc-ponto-tab table{border-collapse:collapse;width:100%;font-size:13px;font-variant-numeric:tabular-nums}
+.cc-ponto-tab th{background:var(--verde-claro);color:var(--verde);text-align:left;padding:8px;white-space:nowrap;font-size:12px}
+.cc-ponto-tab td{padding:7px 8px;border-top:1px solid var(--borda);white-space:nowrap}
+.cc-ponto-tab tr.fds td{color:var(--texto2);background:#fafafa}
+.cc-ponto-tab tr.tot td{font-weight:700;background:var(--verde-claro)}
 .cc-vazio{background:#fff;border-radius:12px;padding:28px 20px;text-align:center;color:var(--texto2);font-size:14px;line-height:1.6}
 .topbar{background:var(--verde);color:#fff;padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:56px;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.15);gap:12px}
 .topbar-logo{font-weight:700;font-size:18px;letter-spacing:1px;white-space:nowrap}
@@ -354,8 +363,13 @@ tr.doc-vencido td{background:#fff5f5}
     </div>
   </div>
   <div class="cc-wrap">
-    <div class="cc-ola"><h2 id="cc-nome">Meus contracheques</h2><p>Toque em <strong>Abrir</strong> para ver o contracheque do mês ou em <strong>Baixar</strong> para salvar o PDF.</p></div>
+    <div class="cc-ola"><h2 id="cc-nome">Meus contracheques</h2><p id="cc-dica">Toque em <strong>Abrir</strong> para ver o contracheque do mês ou em <strong>Baixar</strong> para salvar o PDF.</p></div>
+    <div class="cc-abas"><button id="cc-aba-cc" class="ativo" onclick="ccAba('cc')">📄 Contracheques</button><button id="cc-aba-ponto" onclick="ccAba('ponto')">🕒 Meu ponto</button></div>
     <div class="cc-lista" id="cc-lista"><div class="cc-vazio">Carregando…</div></div>
+    <div id="cc-ponto" style="display:none">
+      <div class="cc-ola" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><label for="cc-ponto-mes" style="font-size:13px;font-weight:600">Mês</label><select id="cc-ponto-mes" onchange="carregarMeuPonto()" style="padding:8px;border:1.5px solid var(--borda);border-radius:8px;font-size:14px"></select><span id="cc-ponto-per" style="font-size:12px;color:var(--texto2)"></span></div>
+      <div id="cc-ponto-res"></div>
+    </div>
   </div>
 </div>
 
@@ -786,17 +800,17 @@ tr.doc-vencido td{background:#fff5f5}
       <div class="barra-acoes"><h2>Usuários e perfis de acesso</h2></div>
       <div class="info-box" style="display:block;line-height:1.6">
         <strong>Para dar acesso a um funcionário:</strong> no Supabase, abra <em>Authentication → Users → Add user → Create new user</em>, informe o e-mail e uma senha provisória e marque <em>Auto Confirm User</em>. Ele aparece aqui como <em>Aguardando liberação</em>: escolha o perfil e clique em Salvar. Depois do primeiro acesso, ele troca a senha no botão 🔑 Senha.<br>
-        <strong>Intermitente (só contracheque):</strong> crie o usuário no Supabase com o e-mail <code>CPF@funcionario.bvek.com.br</code> (CPF só com números) e escolha aqui o perfil <em>Funcionário (só contracheque)</em>. Ele entra digitando só o CPF e a senha e vê todos os contracheques guardados para aquele CPF — o CPF precisa estar na ficha do funcionário.
+        <strong>Intermitente (só contracheque):</strong> crie o usuário no Supabase com o e-mail <code>CPF@funcionario.bvek.com.br</code> (CPF só com números) e escolha aqui o perfil <em>Funcionário (contracheque e ponto)</em>. Ele entra digitando só o CPF e a senha e vê todos os contracheques guardados para aquele CPF — o CPF precisa estar na ficha do funcionário.
         <span style="display:inline-flex;gap:6px;align-items:center;margin-left:4px">CPF: <input type="text" id="u-cpf" placeholder="000.000.000-00" style="width:140px;padding:4px 8px;border:1.5px solid var(--borda);border-radius:6px" oninput="mostrarEmailCPF()"> <code id="u-cpf-email"></code></span><br>
         <strong>Funcionário saiu?</strong> Desmarque "Ativo" — o login para de funcionar no CRM e o histórico continua guardado.
       </div>
       <div class="legenda-perfis">
         <div><strong>Administrador</strong>Tudo: usuários, empresas, exclusões e todas as abas.</div>
-        <div><strong>Comercial</strong>Funil, propostas, clientes, contatos, projetos e atividades. Não exclui atendimentos nem clientes. Documentos só consulta.</div>
+        <div><strong>Comercial</strong>Funil, propostas, clientes, contatos, projetos e atividades. Não exclui atendimentos nem clientes. Documentos só consulta. Não acessa benefícios, ponto nem RH.</div>
         <div><strong>Administrativo</strong>Documentos e certidões, funcionários, RH (ficha, uniformes, contracheques, vales, adiantamentos, envio à contabilidade), currículos, projetos e atividades. Funil e clientes só consulta.</div>
         <div><strong>Consulta</strong>Vê funil, clientes, projetos e documentos, não altera nada. Não vê benefícios, RH nem currículos.</div>
         <div><strong>Contabilidade</strong>Só funcionários, benefícios, RH (salários, contracheques, vales e adiantamentos) e documentos/certidões, para consulta e exportação. Não vê funil, propostas, clientes nem currículos.</div>
-        <div><strong>Funcionário (só contracheque)</strong>Entra com CPF e senha e vê somente os próprios contracheques (todos os meses guardados para o CPF). Não vê nada mais do CRM.</div>
+        <div><strong>Funcionário (contracheque e ponto)</strong>Entra com CPF e senha e vê somente os próprios contracheques (todos os meses guardados para o CPF) e as próprias marcações do ponto (Secullum). Não vê nada mais do CRM.</div>
       </div>
       <div class="barra-acoes" style="margin-top:18px"><h2>Acesso dos intermitentes ao contracheque</h2>
         <label class="dica" style="display:flex;gap:6px;align-items:center;font-size:12px"><input type="checkbox" id="u-todos-func" onchange="renderAcessosFunc()"> mostrar todos os funcionários ativos</label></div>
@@ -957,6 +971,7 @@ tr.doc-vencido td{background:#fff5f5}
       <button class="btn-versao so-edicao" id="btn-versao" style="display:none" onclick="criarNovaVersao()">+ Nova versão</button>
       <button class="btn-projeto so-edicao" id="btn-projeto" style="display:none" onclick="abrirModalProjeto(null,cardEditandoId)">Gerar projeto</button>
       <button class="btn-pdf" id="btn-pdf" style="display:none" onclick="gerarPDF()">📄 Gerar Proposta</button>
+      <button class="btn-pdf" id="btn-os" style="display:none;background:var(--verde)" onclick="gerarOS()" title="Ordem de serviço para a equipe, montada a partir da proposta (sem valores)">📋 Ordem de Serviço</button>
       <button class="btn-cancelar" onclick="fecharModal('modal-card')">Cancelar</button>
       <button class="btn-salvar so-edicao" id="btn-salvar-card" onclick="salvarCard()">Salvar</button>
     </div>
@@ -1011,7 +1026,7 @@ tr.doc-vencido td{background:#fff5f5}
     <p class="modal-sub">Ponto de partida de toda composição (em cada proposta dá para ajustar). Os valores iniciais são exemplos: confira e ajuste.</p>
     <div class="aviso-leitura">🔒 Só o Administrador altera os parâmetros.</div>
     <div class="secao">Custo por dia de cada função</div><div id="pp-funcoes"></div>
-    <div class="secao">Margem de lucro por tipo de cliente</div><div id="pp-tipos"></div>
+    <div class="secao">Margem de lucro por tipo de cliente</div><div class="dica" style="margin:-6px 0 8px">Use a % <strong>ou</strong> um valor fixo de lucro por dia de serviço (multiplicado pelos dias úteis + sábados + domingos/feriados da composição). Se o valor por dia estiver preenchido, ele vale no lugar da %. Em cada proposta dá para trocar.</div><div id="pp-tipos"></div>
     <div class="secao">Adicionais e BDI</div><div id="pp-adic"></div>
     <div class="secao">Impostos sobre o preço, por empresa</div><div class="dica" style="margin:-6px 0 8px">Hoje o grupo está no Simples Nacional, Anexo IV — no Anexo IV o INSS patronal (CPP) é pago fora da guia do Simples, então inclua-o no custo por dia de cada função. Informe o faturamento dos últimos 12 meses de cada empresa para o CRM achar a faixa e a alíquota efetiva — confirme com a contabilidade (Innove).</div><div id="pp-trib"></div>
     <div class="secao">Documentação (custos padrão)</div><div id="pp-docs"></div>
@@ -1890,16 +1905,16 @@ const CADENCIA_COBRANCA={enviada:3,cobranca1:4,cobranca2:7,negociacao:7};
 const ETAPAS_COBRANCA=Object.keys(CADENCIA_COBRANCA);
 const PROXIMA_ETAPA_COBRANCA={enviada:'cobranca1',cobranca1:'cobranca2'};
 // Perfis de acesso (as regras valem no banco; aqui só ajustam a tela)
-const PERFIS=[['administrador','Administrador'],['comercial','Comercial'],['administrativo','Administrativo'],['contabilidade','Contabilidade'],['consulta','Consulta'],['funcionario','Funcionário (só contracheque)'],['pendente','Aguardando liberação']];
+const PERFIS=[['administrador','Administrador'],['comercial','Comercial'],['administrativo','Administrativo'],['contabilidade','Contabilidade'],['consulta','Consulta'],['funcionario','Funcionário (contracheque e ponto)'],['pendente','Aguardando liberação']];
 // v17: login por CPF do perfil Funcionário → e-mail interno CPF@funcionario.bvek.com.br
 const DOMINIO_FUNC='funcionario.bvek.com.br';
 const PERFIL_LABEL=Object.fromEntries(PERFIS);
 function calcularPermissoes(p){
   const adm=p==='administrador',com=p==='comercial',admv=p==='administrativo',cont=p==='contabilidade';
   // comercialVer: vê funil, clientes, projetos, atividades e empresas (a contabilidade não vê)
-  // rh: vê benefícios · rhEditar: altera benefícios
+  // rh: vê benefícios e ponto (v28: o comercial não acessa o RH) · rhEditar: altera benefícios
   return{admin:adm,funil:adm||com,clientes:adm||com,projetos:adm||com||admv,ativ:adm||com||admv,docs:adm||admv,excluir:adm,
-    comercialVer:!cont,rh:adm||com||admv||cont,rhEditar:adm||admv,
+    comercialVer:!cont,rh:adm||admv||cont,rhEditar:adm||admv,
     // v14: rhPessoal = salário, contracheques, vales, uniformes, envio à contabilidade · curriculos = banco de currículos
     rhPessoal:adm||admv||cont,curriculos:adm||admv,
     // v20: financeiro · pagamentos = lança pagamentos a autorizar · autorizar = marca como autorizado (André)
@@ -2071,6 +2086,40 @@ async function iniciarContracheques(){
   $('cc-lista').innerHTML=meusCC.map((c,i)=>`<div class="cc-item"><div><strong>${esc(nomeMes(c.competencia))}</strong>
     <div class="cc-sub">${esc([c.empresa,c.cargo].filter(Boolean).join(' · '))}</div></div>
     <div class="cc-btns"><button class="cc-prim" onclick="abrirMeuCC(${i},false)">Abrir</button><button onclick="abrirMeuCC(${i},true)">Baixar</button></div></div>`).join('');
+}
+// v28: o funcionário também vê as próprias marcações do ponto (Secullum), período de 26 a 25
+function ccAba(a){
+  const p=a==='ponto';$('cc-aba-cc').classList.toggle('ativo',!p);$('cc-aba-ponto').classList.toggle('ativo',p);
+  $('cc-lista').style.display=p?'none':'';$('cc-ponto').style.display=p?'':'none';
+  $('cc-dica').innerHTML=p?'Suas marcações de entrada e saída, como estão no ponto (Secullum). O mês vai do dia 26 do mês anterior ao dia 25. Se algo estiver errado, fale com o RH.'
+    :'Toque em <strong>Abrir</strong> para ver o contracheque do mês ou em <strong>Baixar</strong> para salvar o PDF.';
+  if(p&&!$('cc-ponto-mes').options.length){
+    const h=new Date(),base=new Date(h.getFullYear(),h.getMonth()+(h.getDate()>25?1:0),1),ops=[];
+    for(let i=0;i<6;i++){const d=new Date(base.getFullYear(),base.getMonth()-i,1);const iso=isoLocal(d);ops.push([iso,nomeMes(iso)]);}
+    preencherSelect($('cc-ponto-mes'),ops);carregarMeuPonto();
+  }
+}
+function periodoMeuPonto(iso){const d=new Date(iso+'T00:00:00'),ini=new Date(d.getFullYear(),d.getMonth()-1,26),fim=new Date(d.getFullYear(),d.getMonth(),25);
+  const h=hojeISO(),f=isoLocal(fim);return{ini:isoLocal(ini),fim:f>h?h:f};}
+async function carregarMeuPonto(){
+  const per=periodoMeuPonto($('cc-ponto-mes').value),res=$('cc-ponto-res');
+  $('cc-ponto-per').textContent=`${fmtData(per.ini)} a ${fmtData(per.fim)}`;
+  res.innerHTML='<div class="cc-vazio">Buscando suas marcações…</div>';
+  const{data,error}=await sb.functions.invoke('secullum',{body:{acao:'meu_ponto',dataInicio:per.ini,dataFim:per.fim}});
+  let msg=data&&data.erro;
+  if(error&&!msg){try{const b=await error.context.json();msg=b&&b.erro;}catch(e){}}
+  if(msg&&/não pode buscar/i.test(msg))msg='O ponto ainda está sendo liberado para o seu acesso. Tente de novo mais tarde.';
+  if(error||!data||msg){console.error(error||msg);res.innerHTML=`<div class="cc-vazio">${esc(msg||'Não foi possível buscar o ponto agora. Tente de novo mais tarde.')}</div>`;return;}
+  const cols=data.colunas||[],dias=data.dias||[];
+  if(!dias.length){res.innerHTML='<div class="cc-vazio">Nenhuma marcação neste período.</div>';return;}
+  // a 1ª coluna do Secullum é a data: o CRM mostra a data com o dia da semana; esconde colunas sempre vazias
+  const ini=/^data/i.test(cols[0]||'')?1:0;
+  const usar=cols.map((c,i)=>i).filter(i=>i>=ini&&(dias.some(d=>String(d.valores[i]||'').trim())||(data.totais&&String(data.totais[i]||'').trim())));
+  const sem=['dom','seg','ter','qua','qui','sex','sáb'];
+  const linhas=dias.map(d=>{const w=new Date(d.data+'T00:00:00').getDay();
+    return`<tr class="${w===0||w===6?'fds':''}"><td><strong>${esc(fmtData(d.data).slice(0,5))}</strong> ${sem[w]||''}</td>${usar.map(i=>`<td>${esc(d.valores[i]||'')}</td>`).join('')}</tr>`;}).join('');
+  const tot=data.totais&&data.totais.length?`<tr class="tot"><td>Total</td>${usar.map(i=>`<td>${esc(data.totais[i]||'')}</td>`).join('')}</tr>`:'';
+  res.innerHTML=`<div class="cc-ponto-tab"><table><thead><tr><th>Dia</th>${usar.map(i=>`<th>${esc(cols[i])}</th>`).join('')}</tr></thead><tbody>${linhas}${tot}</tbody></table></div>`;
 }
 async function abrirMeuCC(i,baixar){
   const c=meusCC[i];if(!c)return;
@@ -2411,7 +2460,7 @@ async function abrirModalCard(id=null){
   document.querySelectorAll('#modal-card .campo-preenchido').forEach(e=>e.classList.remove('campo-preenchido'));
   $('card-prob').value='';$('card-origem').value='';$('card-motivo-perda').value='';
   $('card-recorrente').checked=false;$('campo-recorrencia').style.display='none';
-  ['btn-excluir','btn-versao','btn-pdf','btn-projeto'].forEach(b=>$(b).style.display='none');
+  ['btn-excluir','btn-versao','btn-pdf','btn-os','btn-projeto'].forEach(b=>$(b).style.display='none');
   $('etapa-box').style.display='none';$('numero-box').style.display='none';$('perda-box').style.display='none';
   $('card-extras').style.display='none';$('novo-contato-box').style.display='none';
   $('cobranca-box').style.display='none';$('card-prox-cobranca').value='';$('cobranca-info').textContent='';
@@ -2424,7 +2473,7 @@ async function abrirModalCard(id=null){
     cardOriginal=card;
     composicaoLocal=card.composicao||null;resumoComposicaoNoCard();
     $('modal-titulo').textContent='Editar Atendimento';
-    ['btn-versao','btn-pdf'].forEach(b=>$(b).style.display='inline-block');
+    ['btn-versao','btn-pdf','btn-os'].forEach(b=>$(b).style.display='inline-block');
     $('btn-excluir').style.display=PERM.excluir?'inline-block':'none';
     $('etapa-box').style.display='flex';$('card-extras').style.display='block';
     if(card.numero_proposta){$('numero-box').style.display='flex';$('numero-display').textContent=numeroProposta(card);}
@@ -4169,6 +4218,91 @@ async function montarPDF(win){
   win.document.open();win.document.write(html);win.document.close();
   setTimeout(()=>win.print(),800);
   toast('Ao salvar o PDF, o nome sugerido já segue o padrão da rede');
+}
+
+/* ================= ORDEM DE SERVIÇO (v28) ================= */
+// Montada a partir da proposta salva: escopo, itens (sem valores), equipe, materiais e
+// equipamentos da composição de preço, período, turno e campos para a execução.
+// Número: o da proposta com OS no lugar de PRP (C###-NNNN-OS-SSSS), sem a revisão.
+function numeroOS(c){
+  const n=c&&c.numero_proposta;if(!n)return'';
+  return RE_NUM_NOVO.test(n)?n.replace('-PRP-','-OS-'):'OS-'+n;
+}
+async function gerarOS(){
+  if(!cardEditandoId)return;
+  const win=window.open('','_blank');
+  if(!win){alert('O navegador bloqueou a janela da ordem de serviço. Permita pop-ups para este site.');return;}
+  win.document.write('<p style="font-family:Arial;padding:30px">Gerando a ordem de serviço…</p>');
+  try{await montarOS(win);}
+  catch(e){console.error(e);win.close();alert('Não foi possível gerar a ordem de serviço:\n'+(e&&e.message||e));}
+}
+async function montarOS(win){
+  const{data:card,error}=await sb.from('cards').select('*,clientes(*),empresas(*)').eq('id',cardEditandoId).single();
+  if(error||!card)throw new Error(error?error.message:'atendimento não encontrado');
+  const{data:itens}=await sb.from('itens_proposta').select('*').eq('card_id',cardEditandoId).order('ordem');
+  let contato=null;
+  if(card.contato_id){const r=await sb.from('contatos').select('*').eq('id',card.contato_id).maybeSingle();contato=r.data;}
+  const emp=card.empresas||{},cli=card.clientes||{},quem=contato||{},cp=card.composicao||null;
+  const proj=card.projeto_id?todosProjetos.find(p=>p.id===card.projeto_id):null;
+  const hoje=new Date().toLocaleDateString('pt-BR');
+  const br=s=>esc(s).replace(/\n/g,'<br>');
+  const fmtNum=v=>v!=null&&v!==''?Number(v).toLocaleString('pt-BR',{maximumFractionDigits:2}):'';
+  const num=numeroOS(card);
+  const nomeCliente=cli.razao_social||cli.empresa_cliente||cli.nome||'';
+  const tabela=(cab,linhas)=>linhas.length?`<table><thead><tr>${cab.map(c=>`<th>${esc(c)}</th>`).join('')}</tr></thead><tbody>${linhas.map(l=>`<tr>${l.map(c=>`<td>${c}</td>`).join('')}</tr>`).join('')}</tbody></table>`:'';
+  // período e turno (da composição de preço, se houver)
+  let periodo='';
+  if(cp){const p=[n0(cp.dias_uteis)?`${fmtNum(cp.dias_uteis)} dia(s) útil(eis)`:'',n0(cp.sabados)?`${fmtNum(cp.sabados)} sábado(s)`:'',n0(cp.domingos)?`${fmtNum(cp.domingos)} domingo(s)/feriado(s)`:''].filter(Boolean).join(' + ');
+    periodo=[p,cp.turno==='noturno'?'turno noturno':'turno diurno'].filter(Boolean).join(' · ');}
+  const equipe=cp?(cp.equipe||[]).filter(x=>n0(x.qtd)>0).map(x=>[esc(x.funcao||'Profissional'),esc(fmtNum(x.qtd)),esc(x.dias!==''&&x.dias!=null?fmtNum(x.dias):fmtNum(totalDias(cp)))]):[];
+  const mats=cp?(cp.materiais||[]).filter(x=>n0(x.qtd)>0).map(x=>[esc(x.descricao||'Material'),esc(x.unidade||''),esc(fmtNum(x.qtd)),'']):[];
+  const eqs=cp?(cp.equipamentos||[]).filter(x=>n0(x.qtd)>0).map(x=>[esc(x.descricao||'Equipamento'),esc(x.unidade||''),esc(fmtNum(x.qtd)),'']):[];
+  const ters=cp?(cp.terceiros||[]).filter(x=>String(x.descricao||'').trim()).map(x=>[esc(x.descricao)]):[];
+  const docs=cp?(cp.documentos||[]).map(d=>[esc(d.nome),esc(fmtNum(d.qtd)),'']):[];
+  const its=(itens||[]).map(i=>[esc(i.item||''),esc(i.descricao||''),esc(i.unidade||''),esc(fmtNum(i.quantidade)),'']);
+  const nomeArquivo=semAcento(`${emp.sigla||'BVK'}-COM-OS-${cli.codigo||'C000'} ${cli.nome||''} ${card.titulo||''} ${num}`).toUpperCase().replace(/[\\/:*?"<>|]/g,' ').replace(/\s+/g,' ').trim();
+  const linha=(rot,v)=>v?`<tr><th>${rot}</th><td>${v}</td></tr>`:'';
+  const html=`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>${esc(nomeArquivo)}</title>
+  <style>
+    body{font-family:Arial,sans-serif;font-size:11px;color:#222;margin:0}
+    .pagina{padding:26px 36px;max-width:800px;margin:0 auto}
+    .topo{display:flex;justify-content:space-between;align-items:flex-end;padding-bottom:10px;border-bottom:2px solid #1a6b3c;margin-bottom:14px}
+    .topo h1{color:#1a6b3c;font-size:18px;margin:0}.topo .os{text-align:right}.topo .os strong{display:block;font-size:15px;color:#1a6b3c}
+    h2{color:#1a6b3c;font-size:12px;margin:16px 0 6px;border-bottom:1px solid #e8f5ee;padding-bottom:3px;text-transform:uppercase}
+    table{width:100%;border-collapse:collapse;margin:4px 0;font-size:10.5px}
+    th,td{border:1px solid #ccc;padding:5px 7px;text-align:left;vertical-align:top}
+    thead th{background:#1a6b3c;color:#fff;border-color:#1a6b3c}
+    table.dados th{width:150px;background:#f3f7f4;font-weight:600}
+    .campo-livre{border:1px solid #ccc;min-height:60px;padding:6px}
+    .grade2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    .assin{display:flex;gap:30px;margin-top:34px}.assin div{flex:1;text-align:center;border-top:1px solid #222;padding-top:5px}
+    .rodape{margin-top:20px;font-size:9px;color:#999;text-align:center}
+    @media print{.pagina{padding:14px}h2{break-after:avoid}tr{break-inside:avoid}}
+  </style></head><body><div class="pagina">
+  <div class="topo"><div><h1>${esc(emp.nome||'GRUPO-BVEK')}</h1><div>Emitida em ${esc(hoje)}</div></div>
+    <div class="os">ORDEM DE SERVIÇO<strong>${esc(num)}</strong>Ref. proposta ${esc(numeroProposta(card))}${proj?`<br>Projeto ${esc(proj.codigo)}`:''}</div></div>
+  <h2>Cliente e local</h2>
+  <table class="dados">${linha('Cliente',esc(`${cli.codigo?cli.codigo+' — ':''}${nomeCliente}`))}${linha('CNPJ / CPF',esc(cli.documento||''))}${linha('Endereço / local',esc(cli.endereco||''))}
+    ${linha('Contato no local',esc([quem.nome,quem.cargo].filter(Boolean).join(' — ')))}${linha('Telefone / e-mail',esc([quem.telefone,quem.email].filter(Boolean).join(' · ')))}
+    ${linha('Serviço',esc(card.titulo||''))}${linha('Responsável',esc(card.responsavel||''))}
+    ${linha('Prazo de execução',card.prazo_execucao_meses?esc('até '+textoPrazo(card.prazo_execucao_meses,card.prazo_execucao_unidade)):'')}${linha('Período e turno',esc(periodo))}</table>
+  ${card.escopo?`<h2>Escopo dos serviços</h2><p>${br(card.escopo)}</p>`:''}
+  ${its.length?`<h2>Itens a executar</h2>${tabela(['Item','Descrição','Und','Qtd','Executado ✓'],its)}`:''}
+  ${equipe.length?`<h2>Equipe</h2>${tabela(['Função','Pessoas','Dias'],equipe)}`:''}
+  ${mats.length?`<h2>Materiais</h2>${tabela(['Material','Und','Qtd prevista','Qtd usada'],mats)}`:''}
+  ${eqs.length?`<h2>Equipamentos e locações</h2>${tabela(['Equipamento','Und','Qtd prevista','Qtd usada'],eqs)}`:''}
+  ${ters.length?`<h2>Serviços de terceiros</h2>${tabela(['Serviço'],ters)}`:''}
+  ${docs.length?`<h2>Documentação exigida</h2>${tabela(['Documento / exigência','Qtd','Entregue ✓'],docs)}`:''}
+  ${(card.observacoes||cp&&cp.obs||card.nota1||card.nota2)?`<h2>Observações</h2>${card.observacoes?`<p>${br(card.observacoes)}</p>`:''}${cp&&cp.obs?`<p>${br(cp.obs)}</p>`:''}${card.nota1?`<p><strong>Nota 1:</strong> ${esc(card.nota1)}</p>`:''}${card.nota2?`<p><strong>Nota 2:</strong> ${esc(card.nota2)}</p>`:''}`:''}
+  <h2>Execução</h2>
+  <table class="dados"><tr><th>Início</th><td>____/____/______ às ____:____</td></tr><tr><th>Término</th><td>____/____/______ às ____:____</td></tr><tr><th>Encarregado</th><td></td></tr></table>
+  <div class="grade2" style="margin-top:8px"><div><strong>Ocorrências</strong><div class="campo-livre"></div></div><div><strong>Pendências</strong><div class="campo-livre"></div></div></div>
+  <div class="assin"><div>Encarregado / responsável pela execução<br><small>${esc(emp.nome||'')}</small></div><div>${esc(quem.nome||'Cliente')} — aceite do serviço<br><small>${esc(nomeCliente)} · data ____/____/______</small></div></div>
+  <div class="rodape">${esc(num)} · documento interno de execução — não contém valores</div>
+  </div></body></html>`;
+  win.document.open();win.document.write(html);win.document.close();
+  setTimeout(()=>win.print(),800);
+  toast('Ordem de serviço gerada a partir da proposta');
 }
 
 /* ================= RH (v14): ficha, uniformes, contracheques, vales, adiantamentos, envio ================= */
@@ -6313,6 +6447,7 @@ function mudouNomeMaterial(){if(matEditandoId)return;const m=materialPorRotulo($
 /* ================= COMPOSIÇÃO DE PREÇO DA PROPOSTA (v23) ================= */
 // Custo direto (equipe, materiais, equipamentos, terceiros, mobilização, documentação) × BDI
 // Preço = CD × (1 + adm. central + seguros + risco) × (1 + desp. financeiras) × (1 + lucro) ÷ (1 − tributos)
+// v28: ou, com lucro fixo por dia: [CD × (1 + indiretos) × (1 + desp. financeiras) + lucro/dia × dias] ÷ (1 − tributos)
 let precoCfg=null,v23Ok=true,composicaoLocal=null,comp=null;
 const PRECO_CFG_PADRAO={funcoes:[],adicionais:{sabado:50,domingo_feriado:100,noturno:20},bdi:{adm_central:4,seguros_garantia:0.8,risco:1.27,despesas_financeiras:1.23},tributos_empresa:{},tributos_padrao:0,regime_padrao:{anexo:'IV'},regime_empresa:{},tipos_cliente:[{nome:'Indústria / fábrica',lucro:30},{nome:'Condomínio',lucro:30}],documentos:[]};
 // v25: Simples Nacional (LC 123/2006, tabelas desde 2018): [receita bruta 12 meses até, alíquota nominal %, parcela a deduzir]
@@ -6352,7 +6487,7 @@ function abrirComposicao(){
   if(!v23Ok){alert('Rode antes a migração v23 (supabase/migracao_crm_v23_composicao_preco.sql) no Supabase.');return;}
   comp=JSON.parse(JSON.stringify(composicaoLocal||compNova()));
   if(!comp.empresa_id)comp.empresa_id=$('card-empresa-id').value||'';
-  preencherSelect($('cp-tipo'),(precoCfg.tipos_cliente||[]).map(t=>[t.nome,`${t.nome} (lucro ${fmtPct(t.lucro)})`]),'Selecione o tipo de cliente');
+  preencherSelect($('cp-tipo'),(precoCfg.tipos_cliente||[]).map(t=>[t.nome,`${t.nome} (lucro ${n0(t.lucro_dia)>0?'R$ '+fmtMoeda(t.lucro_dia)+'/dia':fmtPct(t.lucro)})`]),'Selecione o tipo de cliente');
   preencherSelect($('cp-empresa'),todasEmpresas.map(e=>[e.id,`${e.nome} (${e.sigla})`]),'—');
   $('cp-titulo').textContent='🧮 Composição de preço'+($('card-titulo').value?' — '+$('card-titulo').value:'');
   $('cp-tipo').value=comp.tipo_cliente||'';$('cp-empresa').value=comp.empresa_id||'';$('cp-turno').value=comp.turno||'diurno';
@@ -6388,9 +6523,14 @@ function calcComposicao(c){
   const doc=c.documentos.reduce((s,r)=>s+n0(r.qtd)*n0(r.custo),0);
   const cd=mo+mat+eq+ter+mob+doc,b=c.bdi||{};
   const T=n0(b.tributos)/100;
-  const fatorVenda=(1+(n0(b.adm_central)+n0(b.seguros_garantia)+n0(b.risco))/100)*(1+n0(b.despesas_financeiras)/100)*(1+n0(b.lucro)/100)/(T<0.95?1-T:0.05);
-  const preco=cd*fatorVenda;
-  return{f,td,pessoas,mo,mat,eq,ter,mob,doc,cd,fatorVenda,preco,bdiPct:(fatorVenda-1)*100,impostos:preco*T,lucroRS:cd*(1+(n0(b.adm_central)+n0(b.seguros_garantia)+n0(b.risco))/100)*(1+n0(b.despesas_financeiras)/100)*n0(b.lucro)/100};
+  // custo com indiretos (adm. central, seguros, risco e despesas financeiras)
+  const comInd=cd*(1+(n0(b.adm_central)+n0(b.seguros_garantia)+n0(b.risco))/100)*(1+n0(b.despesas_financeiras)/100);
+  // v28: lucro em % (sobre o custo com indiretos) ou valor fixo por dia de serviço
+  const lucroDia=b.lucro_tipo==='dia';
+  const lucroRS=lucroDia?n0(b.lucro_dia)*td:comInd*n0(b.lucro)/100;
+  const preco=(comInd+lucroRS)/(T<0.95?1-T:0.05);
+  const fatorVenda=cd>0?preco/cd:1;
+  return{f,td,pessoas,mo,mat,eq,ter,mob,doc,cd,fatorVenda,preco,bdiPct:(fatorVenda-1)*100,impostos:preco*T,lucroRS,lucroDia};
 }
 // tabelas editáveis de cada bloco
 const BLOCOS_COMP={
@@ -6440,20 +6580,33 @@ function addDocComp(){const t=$('cp-doc-novo').value.trim();if(!t)return;if(!com
 function renderBdiComp(){
   const b=comp.bdi,ed=PERM.funil;
   const campo=(k,rot,dica)=>`<div class="campo"><label>${rot} (%)</label><input type="number" step="any" min="0" data-bdi="${k}" value="${esc(b[k]??'')}" ${ed?'':'disabled'}>${dica?`<div class="dica">${dica}</div>`:''}</div>`;
-  $('cp-bdi').innerHTML=`<div class="form-grid" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))">${campo('adm_central','Administração central')}${campo('seguros_garantia','Seguros e garantias')}${campo('risco','Risco / imprevistos')}${campo('despesas_financeiras','Despesas financeiras')}${campo('tributos','Impostos',esc(textoRegime(comp.empresa_id))||'sobre o preço (ISS, PIS, COFINS, IRPJ, CSLL)')}${campo('lucro','Margem de lucro','padrão do tipo de cliente')}</div>`;
-  $('cp-bdi').querySelectorAll('[data-bdi]').forEach(i=>i.oninput=()=>{b[i.dataset.bdi]=n0(i.value);renderResumoComp();});
+  $('cp-bdi').innerHTML=`<div class="form-grid" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))">${campo('adm_central','Administração central')}${campo('seguros_garantia','Seguros e garantias')}${campo('risco','Risco / imprevistos')}${campo('despesas_financeiras','Despesas financeiras')}${campo('tributos','Impostos',esc(textoRegime(comp.empresa_id))||'sobre o preço (ISS, PIS, COFINS, IRPJ, CSLL)')}${campoLucro()}</div>`;
+  $('cp-bdi').querySelectorAll('[data-bdi]').forEach(i=>i.oninput=()=>{b[i.dataset.bdi]=n0(i.value);renderResumoComp();if(i.dataset.bdi==='lucro_dia')dicaLucroDia();});
+  const tl=$('cp-lucro-tipo');if(tl)tl.onchange=()=>{b.lucro_tipo=tl.value;renderBdiComp();renderResumoComp();};
+}
+// v28: margem em % ou valor fixo de lucro por dia de serviço
+function campoLucro(){
+  const b=comp.bdi,ed=PERM.funil,dia=b.lucro_tipo==='dia';
+  return`<div class="campo"><label style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">Margem de lucro <select id="cp-lucro-tipo" ${ed?'':'disabled'} style="padding:2px 4px;font-size:12px;width:auto"><option value="pct" ${dia?'':'selected'}>%</option><option value="dia" ${dia?'selected':''}>R$ por dia</option></select></label>
+    ${dia?`<input type="number" step="any" min="0" data-bdi="lucro_dia" value="${esc(b.lucro_dia??'')}" placeholder="R$ por dia" ${ed?'':'disabled'}><div class="dica" id="cp-lucro-dica"></div>`
+      :`<input type="number" step="any" min="0" data-bdi="lucro" value="${esc(b.lucro??'')}" ${ed?'':'disabled'}><div class="dica">padrão do tipo de cliente</div>`}</div>`;
+}
+function dicaLucroDia(){
+  const d=$('cp-lucro-dica');if(!d)return;const td=totalDias(comp);
+  d.textContent=td?`R$ ${fmtMoeda(n0(comp.bdi.lucro_dia))} × ${td} dia${td===1?'':'s'} = R$ ${fmtMoeda(n0(comp.bdi.lucro_dia)*td)} de lucro`:'⚠️ informe os dias de trabalho no item 1';
 }
 function renderComposicao(){
   ['equipe','materiais','equipamentos','terceiros','mobilizacao'].forEach(renderBlocoComp);
-  renderDocsComp();renderBdiComp();renderResumoComp();
+  renderDocsComp();renderBdiComp();renderResumoComp();dicaLucroDia();
 }
 function lerCabecalhoComp(){
   comp.turno=$('cp-turno').value;comp.dias_uteis=n0($('cp-du').value);comp.sabados=n0($('cp-sab').value);comp.domingos=n0($('cp-dom').value);comp.obs=$('cp-obs').value;
 }
-function mudouCabecalhoComp(){lerCabecalhoComp();renderBlocoComp('equipe');renderResumoComp();}
+function mudouCabecalhoComp(){lerCabecalhoComp();renderBlocoComp('equipe');renderResumoComp();dicaLucroDia();}
 function mudouTipoClienteComp(){
   comp.tipo_cliente=$('cp-tipo').value;const t=(precoCfg.tipos_cliente||[]).find(x=>x.nome===comp.tipo_cliente);
-  if(t){comp.bdi.lucro=n0(t.lucro);renderBdiComp();renderResumoComp();}
+  if(t){if(n0(t.lucro_dia)>0){comp.bdi.lucro_tipo='dia';comp.bdi.lucro_dia=n0(t.lucro_dia);}else{comp.bdi.lucro_tipo='pct';comp.bdi.lucro=n0(t.lucro);}
+    renderBdiComp();renderResumoComp();dicaLucroDia();}
 }
 function mudouEmpresaComp(){comp.empresa_id=$('cp-empresa').value;comp.bdi.tributos=tributosDaEmpresa(comp.empresa_id);$('cp-avisos-cfg').innerHTML=avisosCfgPreco();renderBdiComp();renderResumoComp();}
 function renderResumoComp(){
@@ -6465,7 +6618,7 @@ function renderResumoComp(){
     ${lin('Materiais',r.mat)}${lin('Equipamentos e locações',r.eq)}${lin('Serviços de terceiros',r.ter)}${lin('Mobilização e logística',r.mob)}${lin('Documentação',r.doc)}
     ${lin('Custo direto',r.cd,true)}
     <div style="display:flex;justify-content:space-between;padding:3px 0;color:var(--texto2)"><span>BDI (custos indiretos, impostos e lucro)</span><span>${fmtPct(r.bdiPct)}</span></div>
-    <div style="display:flex;justify-content:space-between;padding:3px 0;color:var(--texto2)"><span>Impostos · Lucro</span><span>R$ ${fmtMoeda(r.impostos)} · R$ ${fmtMoeda(r.lucroRS)}</span></div>
+    <div style="display:flex;justify-content:space-between;padding:3px 0;color:var(--texto2)"><span>Impostos · Lucro${r.lucroDia?` (R$ ${fmtMoeda(n0(comp.bdi.lucro_dia))}/dia)`:''}</span><span>R$ ${fmtMoeda(r.impostos)} · R$ ${fmtMoeda(r.lucroRS)}</span></div>
     <div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:8px;padding:10px 12px;background:var(--verde-claro);border-radius:8px"><strong style="color:var(--verde)">Preço sugerido</strong><strong style="font-size:22px;color:var(--verde)">R$ ${fmtMoeda(r.preco)}</strong></div>
     <div class="dica">Composição de custos: ${pctMO}% mão de obra e ${100-pctMO}% materiais, equipamentos e demais.${r.mo>0&&r.td===0?' ⚠️ Informe os dias de trabalho.':''}</div></div>`;
 }
@@ -6512,7 +6665,7 @@ function renderParametrosPreco(){
   const c=cfgEdit,ed=PERM.admin;
   const tab=(arr,cols,chave)=>`<table class="tabela-itens"><thead><tr>${cols.map(x=>`<th ${x[3]?`style="width:${x[3]}px"`:''}>${esc(x[1])}</th>`).join('')}<th style="width:30px"></th></tr></thead><tbody>${arr.map((r,i)=>`<tr>${cols.map(x=>`<td>${x[2]==='bool'?`<input type="checkbox" data-pp="${chave}" data-i="${i}" data-k="${x[0]}" ${r[x[0]]?'checked':''} style="width:16px;height:16px">`:`<input ${x[2]==='num'?'type="number" step="any" min="0"':'type="text"'} data-pp="${chave}" data-i="${i}" data-k="${x[0]}" value="${esc(r[x[0]]??'')}">`}</td>`).join('')}<td>${ed?`<button class="btn-rm-item" data-pp-rm="${chave}" data-i="${i}">×</button>`:''}</td></tr>`).join('')}</tbody></table>${ed?`<button class="btn-add-item" data-pp-add="${chave}">+ linha</button>`:''}`;
   $('pp-funcoes').innerHTML=tab(c.funcoes,[['nome','Função','text'],['custo_dia','Custo por dia (R$) — salário + encargos (inclusive INSS patronal) + benefícios','num',260]],'funcoes');
-  $('pp-tipos').innerHTML=tab(c.tipos_cliente,[['nome','Tipo de cliente','text'],['lucro','Margem de lucro (%)','num',160]],'tipos_cliente');
+  $('pp-tipos').innerHTML=tab(c.tipos_cliente,[['nome','Tipo de cliente','text'],['lucro','Margem de lucro (%)','num',150],['lucro_dia','ou lucro fixo por dia (R$)','num',170]],'tipos_cliente');
   $('pp-docs').innerHTML=tab(c.documentos,[['nome','Documento / exigência','text'],['custo','Custo (R$)','num',120],['por_pessoa','Por pessoa','bool',80]],'documentos');
   const a=c.adicionais,b=c.bdi;
   $('pp-adic').innerHTML=`<div class="form-grid" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))">

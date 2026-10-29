@@ -26,7 +26,7 @@ Sempre responda em português. O dono do sistema é o André Lessa (sócio do Gr
 1. **Antes de mexer**, leia o `index.html` atual e as migrações em `supabase/`. Não reescreva o que já funciona; faça a menor mudança que resolve.
 2. **Decisões do André**: se algo exigir regra de negócio, nome, campo novo ou mudança de comportamento visível, pergunte antes de implementar.
 3. **Banco de dados**:
-   - Toda mudança de banco vira um arquivo novo em `supabase/` no formato `migracao_crm_vNN_descricao.sql`, com o próximo número (confira o maior existente; em 29/out/2026 a última era a v27).
+   - Toda mudança de banco vira um arquivo novo em `supabase/` no formato `migracao_crm_vNN_descricao.sql`, com o próximo número (confira o maior existente; em 29/out/2026 a última era a v28).
    - A migração precisa poder rodar mais de uma vez sem duplicar nada (`if not exists`, `where not exists`, `create or replace`, `on conflict do nothing`).
    - Termine o arquivo com um `select` que permita ao André conferir o resultado.
    - O André roda o SQL manualmente no SQL Editor do Supabase. Não execute SQL no banco de produção por conta própria. Quando o código depender da migração, diga claramente: "rode a migração vNN ANTES de testar".
@@ -47,7 +47,7 @@ Boa parte disto já foi implementada nas versões v11 a v18 (acessos, documentos
 **Perfis de acesso**
 - Administrador, Comercial, Administrativo, Consulta — todos veem todas as empresas; a restrição é só por cargo.
 - Contabilidade: vê só RH e documentos (ponto, VA, VT, academia, odonto etc.).
-- "Funcionário (só contracheque)": para intermitentes; login por CPF + senha, vê todos os contracheques do CPF.
+- "Funcionário (contracheque e ponto)": login por CPF + senha, vê todos os contracheques do CPF e as próprias marcações do ponto (Secullum, ação `meu_ponto`).
 - Objetivo: abrir o CRM deve ser o primeiro movimento dos funcionários ao chegar no escritório.
 
 **Funil / propostas**
@@ -68,7 +68,7 @@ Boa parte disto já foi implementada nas versões v11 a v18 (acessos, documentos
 - Adiantamento de 40% do salário no dia 15 para quem solicita; vales (empréstimos informais) descontados com valor livre mês a mês.
 - Regra de prazos (dia 25 e dia 15): sábado → sexta anterior; domingo → segunda seguinte; feriado → dia útil anterior.
 - Contracheques: a contabilidade manda um PDF único sem CPF; o CRM separa por funcionário e acrescenta nome, CPF, admissão e função.
-- Salário, contracheques e vales visíveis para admin, administrativo e contabilidade. Ponto/benefícios visíveis para admin, administrativo, contabilidade e comercial.
+- Salário, contracheques e vales visíveis para admin, administrativo e contabilidade. Ponto/benefícios visíveis para admin, administrativo e contabilidade (desde a v28 o comercial não acessa o RH).
 
 **Currículos**
 - Banco de currículos (inclui freelas) com análise de perfil e formulário de perfil emocional para candidatos, com parecer do RH.

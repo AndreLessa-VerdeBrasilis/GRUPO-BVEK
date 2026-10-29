@@ -15,8 +15,11 @@
 //                               → cartão-ponto calculado de cada funcionário ativo:
 //                                 dias com falta, justificativa, férias ou abono
 //   { "acao": "explorar", ... } → diagnóstico das respostas (só Administrador)
+//   { "acao": "meu_ponto", "dataInicio": "...", "dataFim": "..." }
+//                               → (v28) marcações do próprio funcionário: só o perfil
+//                                 Funcionário (login por CPF), e só do CPF do login
 //
-// Só Administrador e Administrativo do CRM podem chamar.
+// Administrador e Administrativo do CRM chamam as demais ações.
 // =====================================================================
 import { createClient } from "npm:@supabase/supabase-js@2";
 
@@ -54,7 +57,14 @@ Deno.serve(async (req) => {
     const { data: { user }, error: erroUsuario } = await adm.auth.getUser(jwt);
     if (erroUsuario || !user) return json({ erro: "Sessão inválida. Saia e entre de novo no CRM." }, 401);
     const { data: perfil } = await adm.from("perfis").select("perfil,ativo").eq("id", user.id).maybeSingle();
-    if (!perfil || !perfil.ativo || !["administrador", "administrativo"].includes(perfil.perfil)) {
+    const pedido = await req.json().catch(() => ({}));
+    // v28: o funcionário (login CPF@funcionario.bvek.com.br) só pode ver o próprio ponto
+    const cpfDoLogin = (String(user.email || "").toLowerCase().match(/^(\d{11})@funcionario\.bvek\.com\.br$/) || [])[1] || "";
+    const ehFuncionario = !!perfil && perfil.ativo && perfil.perfil === "funcionario";
+    if (ehFuncionario && (pedido.acao !== "meu_ponto" || !cpfDoLogin)) {
+      return json({ erro: "Seu perfil só pode ver o próprio ponto." }, 403);
+    }
+    if (!perfil || !perfil.ativo || (!ehFuncionario && !["administrador", "administrativo"].includes(perfil.perfil))) {
       return json({ erro: "Seu perfil não pode buscar dados do Secullum." }, 403);
     }
 
@@ -63,7 +73,6 @@ Deno.serve(async (req) => {
     if (!usuario || !senha) {
       return json({ erro: "Faltam os segredos SECULLUM_USUARIO e SECULLUM_SENHA no Supabase (Edge Functions → Secrets)." }, 500);
     }
-    const pedido = await req.json().catch(() => ({}));
 
     // 2. entra no Secullum
     const rt = await fetch(AUTENTICADOR + "/Token", {
@@ -147,6 +156,33 @@ Deno.serve(async (req) => {
         saida.push(await testar(`FuncionariosAfastamentos?dataInicio=${di}&dataFim=${df}`));
       }
       return json({ banco: campo(banco, "nome"), funcionario_teste: campo(f0, "Nome"), resultados: saida });
+    }
+    // meu_ponto (v28): cartão-ponto do próprio funcionário, dia a dia, como o Secullum calcula
+    if (pedido.acao === "meu_ponto") {
+      if (!ehFuncionario) return json({ erro: "Ação só para o login do funcionário." }, 403);
+      const di = String(pedido.dataInicio || ""), df = String(pedido.dataFim || "");
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(di) || !/^\d{4}-\d{2}-\d{2}$/.test(df) || di > df) return json({ erro: "Período inválido." }, 400);
+      if ((Date.parse(df) - Date.parse(di)) / 86400000 > 62) return json({ erro: "Período maior que 62 dias." }, 400);
+      await pontoWeb("Funcionarios"); // escolhe o banco que responde
+      const idBanco = String(campo(banco, "id") ?? "");
+      const r = await fetch(PONTOWEB + "Calcular", {
+        method: "POST",
+        headers: { Authorization: "Bearer " + token, secullumidbancoselecionado: idBanco, "Content-Type": "application/json" },
+        body: JSON.stringify({ FuncionarioCpf: cpfDoLogin, DataInicial: di, DataFinal: df }),
+      });
+      const t = await r.text();
+      if (r.status === 429) return json({ erro: "O sistema de ponto está ocupado. Tente de novo em 1 minuto." }, 503);
+      if (!r.ok) return json({ erro: "Não encontramos suas marcações no ponto. Fale com o RH.", detalhe: r.status }, 404);
+      const c = t ? JSON.parse(t) : {};
+      const colunas: string[] = (campo(c, "Colunas") || []).map((x: unknown) => String(x ?? ""));
+      // deno-lint-ignore no-explicit-any
+      const dias = ((campo(c, "Linhas") || []) as any[]).map((l) => ({
+        data: String(campo(l, "Key") || "").slice(0, 10),
+        valores: ((campo(l, "Value") || []) as unknown[]).map((v) => (v == null ? "" : String(v))),
+      }));
+      const tot = campo(c, "Totais");
+      const totais = Array.isArray(tot) ? tot.map((v: unknown) => (v == null ? "" : String(v))) : null;
+      return json({ periodo: { inicio: di, fim: df }, colunas, dias, totais });
     }
     // ponto: cartão-ponto calculado de cada funcionário no período (faltas, justificativas, férias, atrasos)
     if (pedido.acao === "ponto") {
