@@ -59,6 +59,7 @@ button{font-family:inherit}
 .cc-ass.ok{border-left-color:var(--verde)}.cc-ass.disc{border-left-color:var(--laranja)}.cc-ass span{font-size:12px;color:var(--texto2)}
 .cc-btn-ass{width:100%;margin-top:10px;padding:13px;border-radius:10px;border:0;background:var(--verde);color:#fff;font-weight:700;font-size:15px;cursor:pointer}
 .cc-aviso{background:#fff;border-radius:12px;padding:14px 16px;box-shadow:0 1px 4px rgba(0,0,0,.06);border-left:4px solid var(--verde)}.cc-aviso strong{font-size:15px}.cc-aviso p{font-size:14px;margin-top:6px;line-height:1.5}
+.cc-termo{max-height:220px;overflow:auto;border:1px solid var(--borda);border-radius:8px;padding:10px 12px;font-size:12.5px;line-height:1.5;color:var(--texto2);background:#fafafa}.cc-termo p{margin:0 0 6px}
 .cc-vazio{background:#fff;border-radius:12px;padding:28px 20px;text-align:center;color:var(--texto2);font-size:14px;line-height:1.6}
 .topbar{background:var(--verde);color:#fff;padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:56px;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.15);gap:12px}
 .topbar-logo{font-weight:700;font-size:18px;letter-spacing:1px;white-space:nowrap}
@@ -368,6 +369,21 @@ tr.doc-vencido td{background:#fff5f5}
     </div>
   </div>
   <div class="cc-wrap">
+    <!-- v31: 1º acesso — senha pessoal + aceite do termo de assinatura eletrônica -->
+    <div id="cc-primeiro" style="display:none">
+      <div class="cc-ola"><h2>Bem-vindo(a) ao CRM do Grupo BVEK</h2><p>Antes de começar, crie a <strong>sua senha pessoal</strong>. Ela é só sua: nem o RH vai saber. É com ela que você vê seus contracheques e assina o seu ponto.</p></div>
+      <div class="cc-ola">
+        <div class="campo"><label for="pa-s1">Nova senha (mínimo 8 caracteres)</label><input type="password" id="pa-s1" autocomplete="new-password"></div>
+        <div class="campo" style="margin-top:10px"><label for="pa-s2">Repita a nova senha</label><input type="password" id="pa-s2" autocomplete="new-password"></div>
+        <div id="pa-termo-box">
+          <div style="font-size:13px;font-weight:700;margin:16px 0 6px">Termo de uso da assinatura eletrônica</div>
+          <div id="pa-termo" class="cc-termo"></div>
+          <div class="campo-check" style="align-items:flex-start;margin-top:10px"><input type="checkbox" id="pa-aceito" style="width:18px;height:18px;flex:none;margin:2px 8px 0 0"><label for="pa-aceito">Li e concordo com o termo acima.</label></div>
+        </div>
+        <button class="cc-btn-ass" id="pa-btn" onclick="concluirPrimeiroAcesso()">Criar minha senha e entrar</button>
+      </div>
+    </div>
+    <div id="cc-conteudo">
     <div class="cc-ola"><h2 id="cc-nome">Meus contracheques</h2><p id="cc-dica">Toque em <strong>Abrir</strong> para ver o contracheque do mês ou em <strong>Baixar</strong> para salvar o PDF.</p></div>
     <div class="cc-abas"><button id="cc-aba-cc" class="ativo" onclick="ccAba('cc')">📄 Contracheques</button><button id="cc-aba-ponto" onclick="ccAba('ponto')">🕒 Meu ponto</button><button id="cc-aba-avisos" onclick="ccAba('avisos')">📢 Avisos</button></div>
     <div class="cc-lista" id="cc-lista"><div class="cc-vazio">Carregando…</div></div>
@@ -377,6 +393,7 @@ tr.doc-vencido td{background:#fff5f5}
       <div id="cc-ponto-ass"></div>
     </div>
     <div id="cc-avisos" class="cc-lista" style="display:none"></div>
+    </div>
   </div>
 </div>
 
@@ -1476,6 +1493,7 @@ tr.doc-vencido td{background:#fff5f5}
       </div>
       <div class="form-grid" style="margin-top:12px">
         <div class="campo"><label>Kit admissional devolvido assinado em</label><input type="date" id="fi-kit"></div>
+        <div class="campo"><label>Termo de assinatura eletrônica (papel) assinado em</label><input type="date" id="fi-termo"></div>
       </div>
       <div class="secao">Benefícios escolhidos na admissão</div>
       <p class="dica" style="margin-bottom:6px">Marque <strong>Sim</strong> ou <strong>Não</strong> para cada benefício. "Sim" já inclui o benefício no fechamento mensal com o valor informado (por dia para VA/VR/VT, por mês para os demais); "Não" registra a recusa (ex.: não optou pelo VT) e tira o benefício do fechamento.</p>
@@ -2210,8 +2228,44 @@ async function iniciarApp(){
 }
 /* ================= v17: PERFIL FUNCIONÁRIO — só os próprios contracheques ================= */
 let meusCC=[];
+// v31: termo de uso da assinatura eletrônica (mesmo texto do modelo em Word, em modelos/)
+const TERMO_VERSAO='2026-10';
+const TERMO_ASSINATURA=[
+  'Eu, funcionário(a) do Grupo BVEK, concordo em usar o CRM do Grupo BVEK (grupo-bvek.vercel.app), com o meu login pessoal (CPF e senha), para consultar os meus contracheques e o meu ponto e para assinar eletronicamente o espelho de ponto de cada mês e outros documentos do meu contrato de trabalho.',
+  'Reconheço que a assinatura feita desta forma tem a mesma validade da minha assinatura em papel, nos termos do art. 10, § 2º, da Medida Provisória 2.200-2/2001.',
+  'A minha senha é pessoal e secreta. Não vou passá-la a ninguém e vou trocá-la e avisar o RH imediatamente se achar que outra pessoa a conhece. Tudo o que for feito com o meu login será considerado feito por mim.',
+  'A cada assinatura ficam registrados a data e a hora, o meu login, o endereço de internet (IP), o aparelho usado e uma cópia do documento assinado com código de conferência. As assinaturas não podem ser alteradas nem apagadas, e eu recebo uma cópia no meu e-mail cadastrado.',
+  'Se eu não concordar com o ponto de algum mês, vou marcar “não concordo” e explicar o motivo, para o RH conferir e corrigir antes de nova assinatura.',
+  'Os meus dados pessoais são usados só para a relação de trabalho, conforme a Lei Geral de Proteção de Dados (Lei 13.709/2018).',
+  'Este termo vale enquanto durar o meu contrato de trabalho. Posso pedir ao RH, a qualquer momento, para voltar a assinar o ponto em papel.'];
+function precisaPrimeiroAcesso(){return!!meuPerfil&&('senha_definida_em' in meuPerfil)&&!meuPerfil.senha_definida_em;}
+function mostrarPrimeiroAcesso(){
+  $('cc-conteudo').style.display='none';$('cc-primeiro').style.display='';
+  $('pa-termo').innerHTML=TERMO_ASSINATURA.map((t,i)=>`<p>${i+1}. ${esc(t)}</p>`).join('');
+  const jaAceitou=meuPerfil.termo_aceito_em&&meuPerfil.termo_versao===TERMO_VERSAO;
+  $('pa-termo-box').style.display=jaAceitou?'none':'';
+  setTimeout(()=>$('pa-s1').focus(),50);
+}
+async function concluirPrimeiroAcesso(){
+  const a=$('pa-s1').value,b=$('pa-s2').value,precisaTermo=$('pa-termo-box').style.display!=='none';
+  if(a.length<8){alert('A senha precisa ter pelo menos 8 caracteres.');return;}
+  if(a!==b){alert('As duas senhas não são iguais.');return;}
+  if(/^[\d.\-\s]+$/.test(a)&&a.replace(/\D/g,'')===String((usuario&&usuario.email)||'').split('@')[0]){alert('Não use o CPF como senha.');return;}
+  if(precisaTermo&&!$('pa-aceito').checked){alert('Para continuar, leia e marque que concorda com o termo.');return;}
+  const btn=$('pa-btn');btn.disabled=true;
+  try{
+    const{error}=await sb.auth.updateUser({password:a});
+    if(error){alert(/same|different|igual/i.test(error.message||'')?'Escolha uma senha diferente da provisória.':'Não foi possível criar a senha: '+error.message);return;}
+    const r=await sb.rpc('bvek_primeiro_acesso_concluido',{p_termo_versao:precisaTermo?TERMO_VERSAO:null});
+    if(r.error){console.error(r.error);alert('A senha foi criada, mas não deu para registrar. Avise o RH.');}
+    meuPerfil.senha_definida_em=new Date().toISOString();if(precisaTermo){meuPerfil.termo_aceito_em=meuPerfil.senha_definida_em;meuPerfil.termo_versao=TERMO_VERSAO;}
+    $('pa-s1').value='';$('pa-s2').value='';toast('Senha criada. Bem-vindo(a)!');iniciarContracheques();
+  }finally{btn.disabled=false;}
+}
 async function iniciarContracheques(){
   $('tela-login').style.display='none';$('app').style.display='none';$('tela-cc').style.display='block';
+  if(precisaPrimeiroAcesso()){mostrarPrimeiroAcesso();return;}
+  $('cc-primeiro').style.display='none';$('cc-conteudo').style.display='';
   const[n,l]=await Promise.all([sb.rpc('bvek_meu_nome_funcionario'),sb.rpc('bvek_meus_contracheques')]);
   const nome=(n&&n.data)||meuPerfil.nome||'';
   $('cc-nome').dataset.nome=nome||'';
@@ -2283,7 +2337,8 @@ function renderAssinaturaMes(){
   const box=$('cc-ponto-ass');if(!pontoTela||minhasAssinaturas===false){box.innerHTML='';return;}
   const iso=pontoTela.competencia,per=periodoMeuPonto(iso),a=(minhasAssinaturas||[]).find(x=>x.competencia===iso);
   let h;
-  if(a&&a.concorda)h=`<div class="cc-ass ok">✅ <strong>Você assinou o ponto de ${esc(nomeMes(iso))}</strong><br><span>${esc(fmtDataHora(a.assinado_em))} · código ${esc(String(a.hash||'').slice(0,12))}</span></div>`;
+  if(a&&a.concorda)h=`<div class="cc-ass ok">✅ <strong>Você assinou o ponto de ${esc(nomeMes(iso))}</strong><br><span>${esc(fmtDataHora(a.assinado_em))} · código ${esc(String(a.hash||'').slice(0,12))}</span></div>
+    <button class="cc-btn-ass" style="background:#fff;color:var(--verde);border:1.5px solid var(--verde)" onclick="verMeuComprovante()">📄 Ver / baixar comprovante</button>`;
   else if(a)h=`<div class="cc-ass disc">⚠️ <strong>Você indicou que o ponto de ${esc(nomeMes(iso))} tem erro</strong><br><span>${esc(a.observacao||'')}</span><br><span>O RH vai conferir. Depois da correção, assine de novo.</span></div>
     <button class="cc-btn-ass" onclick="abrirAssinaturaPonto()">✍️ Assinar de novo</button>`;
   else if(!per.fechado)h=`<div class="cc-ass">🕒 A assinatura do ponto de ${esc(nomeMes(iso))} libera depois do dia ${esc(fmtData(per.fimMes).slice(0,5))}, quando o período fecha.</div>`;
@@ -2318,13 +2373,28 @@ async function confirmarAssinaturaPonto(){
   const btn=$('ap-btn');btn.disabled=true;
   try{
     const p=pontoTela;
-    const{error}=await sb.rpc('bvek_assinar_ponto',{p_competencia:p.competencia,p_inicio:p.inicio,p_fim:p.fim,p_concorda:conc,p_observacao:obs||null,p_nome:nome,
+    const{data:feita,error}=await sb.rpc('bvek_assinar_ponto',{p_competencia:p.competencia,p_inicio:p.inicio,p_fim:p.fim,p_concorda:conc,p_observacao:obs||null,p_nome:nome,
       p_assinatura:$('ap-canvas').toDataURL('image/png'),p_dados:{colunas:p.colunas,dias:p.dias,totais:p.totais},p_user_agent:navigator.userAgent});
     if(error){alert('Não foi possível assinar: '+(error.message||error));return;}
     minhasAssinaturas=null;fecharModal('modal-assinar-ponto');
     const r=await sb.rpc('bvek_minhas_assinaturas_ponto');minhasAssinaturas=r.error?false:(r.data||[]);renderAssinaturaMes();
     toast(conc?'Ponto assinado. Obrigado!':'Enviado ao RH');
+    // v31: cópia do espelho assinado para o e-mail do funcionário
+    const idFeita=feita&&(Array.isArray(feita)?(feita[0]||{}).id:feita.id);
+    if(idFeita)sb.functions.invoke('email-comunicado',{body:{acao:'copia_ponto',assinatura_id:idFeita}}).then(({data})=>{
+      if(data&&data.ok)toast('Uma cópia foi enviada para '+data.email);
+      else if(data&&data.sem_email)toast('Peça ao RH para cadastrar seu e-mail e receber a cópia');
+    }).catch(e=>console.error(e));
   }finally{btn.disabled=false;}
+}
+async function verMeuComprovante(){
+  const w=window.open('','_blank');if(!w){alert('Permita pop-ups para este site.');return;}
+  w.document.write('<p style="font-family:Arial;padding:30px">Carregando…</p>');
+  const{data,error}=await sb.rpc('bvek_minha_assinatura_ponto',{p_competencia:pontoTela.competencia});
+  const a=Array.isArray(data)?data[0]:data;
+  if(error||!a){w.close();alert('O comprovante ainda está sendo liberado. Tente de novo mais tarde.');return;}
+  const nome=$('cc-nome').dataset.nome||a.nome_digitado||'';
+  w.document.open();w.document.write(htmlEspelhoAssinado(a,{nome,cpf:fmtCPF(String(usuario.email||'').split('@')[0])}));w.document.close();
 }
 async function carregarMeusAvisos(){
   const box=$('cc-avisos');box.innerHTML='<div class="cc-vazio">Carregando…</div>';
@@ -2377,6 +2447,7 @@ async function trocarSenha(){
   if(a!==b){alert('As duas senhas não são iguais.');return;}
   const{error}=await sb.auth.updateUser({password:a});
   if(erroSB(error,'Não foi possível trocar a senha'))return;
+  sb.rpc('bvek_primeiro_acesso_concluido',{p_termo_versao:null}).then(()=>{if(meuPerfil)meuPerfil.senha_definida_em=new Date().toISOString();});
   fecharModal('modal-senha');toast('Senha alterada');
 }
 
@@ -4865,7 +4936,7 @@ function preencherFichaDados(){
   $('fi-adianta').checked=!!r.adianta_mensal;$('fi-obs').value=r.observacoes||'';
   $('fi-adianta-rot').textContent=`Recebe adiantamento de ${pctAdiant()}% do salário todo dia ${diaAdiant()} (ou dia útil próximo)`;
   $('fi-tam-camisa').value=r.tam_camisa||'';$('fi-tam-calca').value=r.tam_calca||'';$('fi-tam-calcado').value=r.tam_calcado||'';
-  $('fi-kit').value=r.kit_recebido_em||'';
+  $('fi-kit').value=r.kit_recebido_em||'';$('fi-termo').value=r.termo_assinatura_em||'';
   $('fi-titulo').textContent=f?f.nome:'Novo funcionário';
   const e=f&&empresaPorId(f.empresa_id);
   $('fi-resumo').textContent=f?[f.cargo,e&&e.sigla,f.cpf&&'CPF '+f.cpf,f.data_admissao&&'admissão '+fmtData(f.data_admissao),f.ativo===false&&'DESLIGADO'].filter(Boolean).join(' · '):'Preencha os dados e salve; depois as outras abas da ficha ficam liberadas.';
@@ -4949,7 +5020,11 @@ async function salvarFichaAdmissao(){
   }
   const res=await Promise.all(ops);const e=res.find(x=>x.error);
   if(e&&erroSB(e.error,'Não foi possível gravar um dos benefícios'))return;
-  const r=await sb.from('funcionario_rh').upsert({funcionario_id:fichaId,opcoes_beneficios:op,kit_recebido_em:$('fi-kit').value||null,atualizado_em:agora},{onConflict:'funcionario_id'});
+  const linhaRH={funcionario_id:fichaId,opcoes_beneficios:op,kit_recebido_em:$('fi-kit').value||null,atualizado_em:agora};
+  // v31: só grava a data do termo se a migração v31 já criou a coluna
+  if(todosRH.some(x=>'termo_assinatura_em' in x))linhaRH.termo_assinatura_em=$('fi-termo').value||null;
+  else if($('fi-termo').value)alert('Para guardar a data do termo, rode antes a migração v31 no Supabase.');
+  const r=await sb.from('funcionario_rh').upsert(linhaRH,{onConflict:'funcionario_id'});
   if(erroSB(r.error))return;
   await Promise.all([carregarBeneficiosTudo(),recarregarFuncionariosRH()]);
   renderFicha();renderTabAtual();toast('Admissão e benefícios salvos');
@@ -7555,7 +7630,11 @@ let assinaturasMes=[];
 async function renderAssinaturasPonto(){
   const iso=mesRH(),per=periodoMeuPonto(iso);
   $('as-info').innerHTML=`Ponto de <strong>${esc(nomeMes(iso))}</strong> (${esc(fmtData(per.ini))} a ${esc(fmtData(somarDias(iso,24)))}). Cada funcionário entra no CRM com o CPF, abre <em>Meu ponto</em>, confere e assina com o dedo. Se discordar, escreve o que está errado e o RH corrige no Secullum e pede para assinar de novo. Clique em <em>ver</em> para imprimir ou salvar em PDF o espelho assinado.`;
-  const{data,error}=await sb.from('ponto_assinaturas').select('id,funcionario_id,competencia,concorda,observacao,nome_digitado,assinado_em,ip,hash').eq('competencia',iso).order('assinado_em',{ascending:false});
+  const campos='id,funcionario_id,competencia,concorda,observacao,nome_digitado,assinado_em,ip,hash';
+  let{data,error}=await sb.from('ponto_assinaturas').select(campos+',copia_enviada_em,copia_enviada_para').eq('competencia',iso).order('assinado_em',{ascending:false});
+  if(error&&/copia_enviada/.test(error.message||''))({data,error}=await sb.from('ponto_assinaturas').select(campos).eq('competencia',iso).order('assinado_em',{ascending:false}));
+  // v31: quem já criou a senha pessoal e aceitou o termo (no CRM e em papel)
+  const tr=await sb.rpc('bvek_termos_funcionarios');const termos=tr.error?null:Object.fromEntries((tr.data||[]).map(t=>[t.funcionario_id,t]));
   if(error){if(/ponto_assinaturas|schema cache|does not exist/i.test(error.message||''))avisarMigracaoV30('as-info');else console.error(error);$('tabela-assinaturas').innerHTML='';$('as-kpis').innerHTML='';return;}
   assinaturasMes=data||[];
   const ultima=fid=>assinaturasMes.find(a=>a.funcionario_id===fid);
@@ -7565,12 +7644,16 @@ async function renderAssinaturasPonto(){
   const ass=lista.filter(f=>{const a=ultima(f.id);return a&&a.concorda;}).length,disc=lista.filter(f=>{const a=ultima(f.id);return a&&!a.concorda;}).length;
   $('as-kpis').innerHTML=[['Assinaram',String(ass),'concordaram com o ponto'],['Discordaram',String(disc),disc?'corrigir e pedir nova assinatura':'—'],['Faltam assinar',String(lista.length-ass-disc),'de '+lista.length+' funcionário(s)']]
     .map(([r,v,s])=>`<div class="kpi"><div class="rot">${esc(r)}</div><div class="val">${esc(v)}</div><div class="sub">${esc(s)}</div></div>`).join('');
-  $('tabela-assinaturas').innerHTML=`<thead><tr><th>Funcionário</th><th>Situação</th><th>Assinado em</th><th>Observação</th><th></th></tr></thead><tbody>${lista.length?lista.map(f=>{const a=ultima(f.id);
-    return`<tr><td><strong>${esc(f.nome)}</strong>${tagEmpresa(f)}${f.cpf?'':' <span class="badge badge-atraso">sem CPF</span>'}</td>
+  const colTermo=f=>{if(!termos)return'';const t=termos[f.id],papel=(rhPorFunc(f.id)||{}).termo_assinatura_em;
+    return`<td style="font-size:12px">${!t?'<span class="badge badge-cinza" title="Crie o acesso na aba Usuários">sem acesso</span>':t.senha_definida_em?'<span class="badge badge-ok" title="Só o funcionário sabe a senha">senha pessoal ✓</span>':'<span class="badge badge-hoje" title="Ainda usa a senha provisória">senha provisória</span>'}
+      <div>${t&&t.termo_aceito_em?'termo no CRM ✓ '+esc(fmtData(t.termo_aceito_em)):'<span style="color:var(--texto2)">termo no CRM —</span>'}</div><div>${papel?'termo em papel ✓ '+esc(fmtData(papel)):'<span style="color:var(--laranja)">termo em papel: falta</span>'}</div></td>`;};
+  if(termos)$('as-info').innerHTML+='<br><strong>Segurança jurídica:</strong> cada funcionário precisa ter <em>senha pessoal</em> (criada por ele no 1º acesso), o <em>termo aceito no CRM</em> e o <em>termo em papel</em> assinado uma vez (modelo em Word com o André; registre a data na ficha → Admissão).';
+  $('tabela-assinaturas').innerHTML=`<thead><tr><th>Funcionário</th>${termos?'<th>Acesso e termo</th>':''}<th>Situação</th><th>Assinado em</th><th>Observação</th><th></th></tr></thead><tbody>${lista.length?lista.map(f=>{const a=ultima(f.id);
+    return`<tr><td><strong>${esc(f.nome)}</strong>${tagEmpresa(f)}${f.cpf?'':' <span class="badge badge-atraso">sem CPF</span>'}</td>${colTermo(f)}
       <td>${!a?'<span class="badge badge-cinza">falta assinar</span>':a.concorda?'<span class="badge badge-ok">✓ assinou</span>':'<span class="badge badge-atraso">discordou</span>'}</td>
-      <td>${a?esc(fmtDataHora(a.assinado_em)):'—'}</td><td style="font-size:12px;white-space:normal;max-width:320px">${a&&a.observacao?esc(a.observacao):''}</td>
+      <td>${a?esc(fmtDataHora(a.assinado_em)):'—'}${a&&a.copia_enviada_em?`<div class="dica" style="margin:0" title="${esc(a.copia_enviada_para||'')}">📧 cópia enviada</div>`:''}</td><td style="font-size:12px;white-space:normal;max-width:320px">${a&&a.observacao?esc(a.observacao):''}</td>
       <td>${a?`<button class="btn-link" data-as-ver="${esc(a.id)}">ver</button>`:''}</td></tr>`;}).join('')
-    :'<tr><td colspan="5" class="vazio">Nenhum funcionário ativo.</td></tr>'}</tbody>`;
+    :`<tr><td colspan="${termos?6:5}" class="vazio">Nenhum funcionário ativo.</td></tr>`}</tbody>`;
   $('tabela-assinaturas').querySelectorAll('[data-as-ver]').forEach(b=>b.onclick=()=>verAssinaturaPonto(b.dataset.asVer));
 }
 async function verAssinaturaPonto(id){
@@ -7578,17 +7661,20 @@ async function verAssinaturaPonto(id){
   w.document.write('<p style="font-family:Arial;padding:30px">Carregando…</p>');
   const{data:a,error}=await sb.from('ponto_assinaturas').select('*').eq('id',id).single();
   if(error||!a){w.close();erroSB(error||{message:'não encontrada'});return;}
-  const f=funcPorId(a.funcionario_id)||{},e=empresaPorId(f.empresa_id)||{},d=a.dados||{};
-  const tabela=tabelaPontoHTML(d);
-  w.document.open();w.document.write(`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>Ponto ${esc(String(a.competencia).slice(0,7))} ${esc(f.nome||'')}</title>
+  const f=funcPorId(a.funcionario_id)||{},e=empresaPorId(f.empresa_id)||{};
+  w.document.open();w.document.write(htmlEspelhoAssinado(a,{nome:f.nome,cpf:f.cpf,cargo:f.cargo,empresa:e.nome}));w.document.close();
+}
+function htmlEspelhoAssinado(a,f){
+  return`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>Ponto ${esc(String(a.competencia).slice(0,7))} ${esc(f.nome||'')}</title>
   <style>body{font-family:Arial,sans-serif;font-size:11px;color:#222;margin:24px}h1{font-size:15px;margin:0 0 4px}table{border-collapse:collapse;width:100%;margin-top:10px}th,td{border:1px solid #ccc;padding:4px 6px;text-align:left;white-space:nowrap}th{background:#eef3ee}tr.fds td{color:#888}tr.tot td{font-weight:700;background:#eef3ee}
-  .ass{margin-top:18px;border:1px solid #999;padding:10px;display:flex;gap:20px;align-items:center}.ass img{height:90px;border-bottom:1px solid #222}.meta{font-size:10px;color:#555;line-height:1.5}</style></head><body>
+  .ass{margin-top:18px;border:1px solid #999;padding:10px;display:flex;gap:20px;align-items:center;flex-wrap:wrap}.ass img{height:90px;border-bottom:1px solid #222}.meta{font-size:10px;color:#555;line-height:1.5}@media print{button{display:none}}</style></head><body>
+  <button onclick="print()" style="float:right;padding:8px 14px">Imprimir / salvar PDF</button>
   <h1>Espelho de ponto — ${esc(nomeMes(a.competencia))}</h1>
-  <div>${esc(f.nome||a.nome_digitado||'')}${f.cpf?' · CPF '+esc(f.cpf):''}${f.cargo?' · '+esc(f.cargo):''}${e.nome?' · '+esc(e.nome):''}<br>Período: ${esc(fmtData(a.periodo_inicio))} a ${esc(fmtData(a.periodo_fim))}</div>
-  ${tabela}
+  <div>${esc(f.nome||a.nome_digitado||'')}${f.cpf?' · CPF '+esc(f.cpf):''}${f.cargo?' · '+esc(f.cargo):''}${f.empresa?' · '+esc(f.empresa):''}<br>Período: ${esc(fmtData(a.periodo_inicio))} a ${esc(fmtData(a.periodo_fim))}</div>
+  ${tabelaPontoHTML(a.dados||{})}
   <div class="ass"><img src="${esc(a.assinatura||'')}" alt="assinatura"><div><strong>${a.concorda?'Concordo com as marcações e totais deste período.':'NÃO CONCORDO com o ponto deste período.'}</strong>${a.observacao?`<br>Observação: ${esc(a.observacao)}`:''}
-  <div class="meta">Assinado eletronicamente por ${esc(a.nome_digitado||'')} em ${esc(fmtDataHora(a.assinado_em))} (login por CPF no CRM Grupo BVEK)<br>IP: ${esc(a.ip||'—')} · Navegador: ${esc(String(a.user_agent||'').slice(0,90))}<br>Código de conferência (SHA-256 da cópia do ponto): ${esc(a.hash||'')}</div></div></div>
-  </body></html>`);w.document.close();
+  <div class="meta">Assinado eletronicamente por ${esc(a.nome_digitado||'')} em ${esc(fmtDataHora(a.assinado_em))}, com login pessoal (CPF e senha) no CRM Grupo BVEK<br>IP: ${esc(a.ip||'—')} · Aparelho/navegador: ${esc(String(a.user_agent||'').slice(0,110))}<br>Código de conferência (SHA-256 da cópia do ponto): ${esc(a.hash||'')}${a.copia_enviada_em?`<br>Cópia enviada para ${esc(a.copia_enviada_para||'')} em ${esc(fmtDataHora(a.copia_enviada_em))}`:''}</div></div></div>
+  </body></html>`;
 }
 
 /* ================= INÍCIO ================= */
