@@ -26,7 +26,7 @@ Sempre responda em português. O dono do sistema é o André Lessa (sócio do Gr
 1. **Antes de mexer**, leia o `index.html` atual e as migrações em `supabase/`. Não reescreva o que já funciona; faça a menor mudança que resolve.
 2. **Decisões do André**: se algo exigir regra de negócio, nome, campo novo ou mudança de comportamento visível, pergunte antes de implementar.
 3. **Banco de dados**:
-   - Toda mudança de banco vira um arquivo novo em `supabase/` no formato `migracao_crm_vNN_descricao.sql`, com o próximo número (confira o maior existente; em 29/out/2026 a última era a v28).
+   - Toda mudança de banco vira um arquivo novo em `supabase/` no formato `migracao_crm_vNN_descricao.sql`, com o próximo número (confira o maior existente; em 29/out/2026 a última era a v29).
    - A migração precisa poder rodar mais de uma vez sem duplicar nada (`if not exists`, `where not exists`, `create or replace`, `on conflict do nothing`).
    - Termine o arquivo com um `select` que permita ao André conferir o resultado.
    - O André roda o SQL manualmente no SQL Editor do Supabase. Não execute SQL no banco de produção por conta própria. Quando o código depender da migração, diga claramente: "rode a migração vNN ANTES de testar".
@@ -52,6 +52,10 @@ Boa parte disto já foi implementada nas versões v11 a v18 (acessos, documentos
 
 **Funil / propostas**
 - Cobrança de retorno das propostas enviadas é feita com colunas no funil atual (não em aba ou funil separado).
+- PDF da proposta segue o modelo da proposta da Vibra (`C091-0000-PRP-0019_R00`, SharePoint `03_CLIENTES/C091_VIBRA/02_PROPOSTAS`): carta de apresentação, quadro-resumo, seções numeradas, planilha com subtotais por etapa, condições comerciais e assinaturas. **Nunca mostrar margem de lucro** (nem BDI/impostos separados) na proposta.
+- Textos fixos do modelo ficam em ⚙️ Parâmetros (`precificacao_config.dados.proposta`). Dados bancários só no banco — o repositório é público.
+- Impostos na composição de preço: preço = custo total ÷ 0,85 (15% sobre o preço).
+- Ordem de serviço: número da proposta com OS no lugar de PRP (`C###-NNNN-OS-SSSS`), sem valores.
 
 **Controle de documentos**
 - Certidões das empresas do grupo, documentos de funcionários e renovação do CAU, com alertas de vencimento (já houve renovações em cima da hora).

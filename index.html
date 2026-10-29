@@ -1028,8 +1028,9 @@ tr.doc-vencido td{background:#fff5f5}
     <div class="secao">Custo por dia de cada função</div><div id="pp-funcoes"></div>
     <div class="secao">Margem de lucro por tipo de cliente</div><div class="dica" style="margin:-6px 0 8px">Use a % <strong>ou</strong> um valor fixo de lucro por dia de serviço (multiplicado pelos dias úteis + sábados + domingos/feriados da composição). Se o valor por dia estiver preenchido, ele vale no lugar da %. Em cada proposta dá para trocar.</div><div id="pp-tipos"></div>
     <div class="secao">Adicionais e BDI</div><div id="pp-adic"></div>
-    <div class="secao">Impostos sobre o preço, por empresa</div><div class="dica" style="margin:-6px 0 8px">Hoje o grupo está no Simples Nacional, Anexo IV — no Anexo IV o INSS patronal (CPP) é pago fora da guia do Simples, então inclua-o no custo por dia de cada função. Informe o faturamento dos últimos 12 meses de cada empresa para o CRM achar a faixa e a alíquota efetiva — confirme com a contabilidade (Innove).</div><div id="pp-trib"></div>
+    <div class="secao">Impostos sobre o preço, por empresa</div><div class="dica" style="margin:-6px 0 8px">Regra do grupo: <strong>preço = custo total ÷ 0,85</strong> (15% de impostos sobre o preço). É o padrão "% fixo" com 15. Se quiser simular pelo Simples Nacional, escolha o Anexo e informe o faturamento dos últimos 12 meses.</div><div id="pp-trib"></div>
     <div class="secao">Documentação (custos padrão)</div><div id="pp-docs"></div>
+    <div class="secao">Modelo da proposta (textos fixos do PDF)</div><div class="dica" style="margin:-6px 0 8px">Textos usados em todas as propostas geradas (modelo da proposta da Vibra). <strong>Dados bancários</strong> ficam só aqui no banco do CRM — preencha para aparecerem na carta de apresentação.</div><div id="pp-prop"></div>
     <div class="modal-btns">
       <button class="btn-cancelar" onclick="fecharModal('modal-param-preco')">Fechar</button>
       <button class="btn-salvar so-edicao" onclick="salvarParametrosPreco()">Salvar parâmetros</button>
@@ -4140,84 +4141,154 @@ async function gerarPDF(){
   try{await montarPDF(win);}
   catch(e){console.error(e);win.close();alert('Não foi possível gerar a proposta:\n'+(e&&e.message||e));}
 }
+// v29: proposta no modelo da Vibra (C091-0000-PRP-0019_R00): carta de apresentação, quadro-resumo,
+// seções numeradas, planilha com subtotais por etapa, resumo por etapa, condições comerciais e assinaturas.
+// Não mostra margem de lucro, BDI nem impostos separados: só preços finais.
+const PROPOSTA_PADRAO={
+  apresentacao:'A Verde Brasilis Gestão e Serviços – Engekat Construções é uma empresa especializada em Facility, importa-se tanto com a gestão da qualidade que criou internamente áreas específicas segmentadas por atividades, que atendem as principais demandas de nossos clientes.\nTodos os nossos seguimentos de serviços possuem corpo funcional próprio, divisões dentro do mesmo CNPJ da empresa.\nNossa empresa é registrada no CREA, CAU, CRA, FPJ e IBAMA.',
+  segmentos:'Engekat Construções – Construção Civil, Projetos Técnicos, Comercial e Industrial, Drywall, Steel Frame, Solda Técnica, Caldeiraria, Tubulação de Vapor e Condensado, Alpinismo, Pintura Industrial e Comercial.\nVerde Brasilis – Áreas Verdes, Poda Técnica de Alto Risco, Remoções e Transplantio, Reflorestamento, Legalizações, Medida Compensatória, Roçadas, Paisagismo e Jardinagem.\nBrasilimp – Limpeza, Conservação e Higienização, Manutenção Periódica e Mensal e Serviço de Segurança.',
+  fecho_apresentacao:'Conseguimos atender as principais demandas com funcionários próprios, ganhando agilidade em 99% dos processos em um Facility.',
+  seguros:'R$ 1.000.000,00 Prestação de Serviços, englobando todas as atividades que executamos.\nR$ 100.000,00 Seguro de Vida e Acidentes Pessoais, por funcionário.',
+  dados_bancarios:'',
+  tributos:'Incluídos todos os tributos incidentes (ISS, PIS, COFINS, IRPJ e CSLL), encargos sociais, seguros e BDI. Alterações na legislação tributária após a data da proposta ensejarão o reequilíbrio do preço.',
+  faturamento:'Emissão de nota fiscal após aprovação de cada medição pela Contratante.',
+  consideracoes:'Colocamo-nos à disposição para visita técnica conjunta, reunião de equalização e esclarecimentos que se fizerem necessários.',
+  assinaturas:'André F. Lessa | Diretor Comercial | Tel: 21-3040-3700 · Cel: 21-99675-0707 | CRA-RJ 07-00050 · CREA-RJ 2017200613\nAila C. Lessa | Gerente Técnica de Arquitetura | CAU-RJ 326980-9\nMichelle Chagas | Engenheira Civil · Engenheira e Técnica de Segurança do Trabalho | CREA-RJ 2012116219'
+};
+function modeloProposta(){return Object.assign({},PROPOSTA_PADRAO,(precoCfg&&precoCfg.proposta)||{});}
+// número por extenso (reais e centavos), ex.: três milhões, setecentos e setenta mil, trezentos e oitenta e oito reais e setenta e oito centavos
+const EXT_U=['','um','dois','três','quatro','cinco','seis','sete','oito','nove','dez','onze','doze','treze','quatorze','quinze','dezesseis','dezessete','dezoito','dezenove'];
+const EXT_D=['','','vinte','trinta','quarenta','cinquenta','sessenta','setenta','oitenta','noventa'];
+const EXT_C=['','cento','duzentos','trezentos','quatrocentos','quinhentos','seiscentos','setecentos','oitocentos','novecentos'];
+function ext999(n){if(n===100)return'cem';const c=Math.floor(n/100),r=n%100,p=[];if(c)p.push(EXT_C[c]);
+  if(r)p.push(r<20?EXT_U[r]:EXT_D[Math.floor(r/10)]+(r%10?' e '+EXT_U[r%10]:''));return p.join(' e ');}
+function extInteiro(n){
+  if(!n)return'zero';const nomes=[['',''],['mil','mil'],['milhão','milhões'],['bilhão','bilhões']],bl=[];
+  for(let r=n;r>0;r=Math.floor(r/1000))bl.push(r%1000);
+  const partes=[];for(let i=bl.length-1;i>=0;i--){const b=bl[i];if(!b)continue;partes.push({b,t:i===1&&b===1?'mil':ext999(b)+(i?' '+nomes[i][b===1?0:1]:'')});}
+  return partes.map((p,k)=>k===0?p.t:(k===partes.length-1&&(p.b<100||p.b%100===0)?' e ':', ')+p.t).join('');
+}
+function porExtenso(v){
+  const tot=Math.round(Number(v||0)*100),r=Math.floor(tot/100),c=tot%100;let t='';
+  if(r)t=extInteiro(r)+(r>=1e6&&r%1e6===0?' de':'')+(r===1?' real':' reais');
+  if(c)t+=(t?' e ':'')+ext999(c)+(c===1?' centavo':' centavos');
+  return t||'zero real';
+}
+function extensoNumero(n){return extInteiro(Math.round(Number(n)||0));}
+function valorComExtenso(v){return`R$ ${fmtMoeda(v)} (${porExtenso(v)})`;}
 async function montarPDF(win){
   const{data:card,error}=await sb.from('cards').select('*,clientes(*),empresas(*)').eq('id',cardEditandoId).single();
   if(error||!card)throw new Error(error?error.message:'atendimento não encontrado');
   const{data:itens}=await sb.from('itens_proposta').select('*').eq('card_id',cardEditandoId).order('ordem');
   let contato=null;
   if(card.contato_id){const r=await sb.from('contatos').select('*').eq('id',card.contato_id).maybeSingle();contato=r.data;}
-  const emp=card.empresas||{},cli=card.clientes||{};
-  const hoje=new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric'});
-  const total=fmtMoeda(card.valor_estimado||0);
-  const fmtNum=v=>v?Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2}):'—';
-  const itensHTML=(itens||[]).map(i=>`<tr><td>${esc(i.item)}</td><td>${esc(i.codigo)}</td><td>${esc(i.descricao)}</td><td>${esc(i.unidade)}</td><td>${fmtNum(i.quantidade)}</td><td>${fmtMoeda(i.valor_unitario)}</td><td><strong>${fmtMoeda(i.valor_total)}</strong></td></tr>`).join('');
+  const emp=card.empresas||{},cli=card.clientes||{},quem=contato||{},cp=card.composicao||null,M=modeloProposta();
+  const hojeTxt=new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric'}),hojeCurto=new Date().toLocaleDateString('pt-BR');
+  const total=Number(card.valor_estimado||0);
+  const fmtNum=v=>v!=null&&v!==''?Number(v).toLocaleString('pt-BR',{maximumFractionDigits:2}):'';
   const nomeCliente=cli.razao_social||cli.empresa_cliente||cli.nome||'';
-  const quem=contato||{};
-  const br=s=>esc(s).replace(/\n/g,'<br>');
-  // nome do arquivo no padrão da rede: VB-COM-PRP-C### NOME DESCRIÇÃO
-  const nomeArquivo=semAcento(`${emp.sigla||'BVK'}-COM-PRP-${cli.codigo||'C000'} ${cli.nome||''} ${card.titulo||''} ${numeroProposta(card)}`).toUpperCase().replace(/[\\/:*?"<>|]/g,' ').replace(/\s+/g,' ').trim();
-  const html=`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">
-  <title>${esc(nomeArquivo)}</title>
+  const num=numeroProposta(card);
+  // texto com quebras de linha; linhas que começam com •, - ou * viram lista
+  const blocoTexto=s=>{const ls=String(s||'').split(/\n/);let h='',lista=[];const fecha=()=>{if(lista.length){h+='<ul>'+lista.map(x=>`<li>${esc(x)}</li>`).join('')+'</ul>';lista=[];}};
+    ls.forEach(l=>{const t=l.trim();if(!t){fecha();return;}const m=t.match(/^[•\-*–]\s*(.*)$/);if(m)lista.push(m[1]);else{fecha();h+=`<p>${esc(t)}</p>`;}});fecha();return h;};
+  const extensoDias=n=>{n=Number(n)||30;return`${n} (${extensoNumero(n)}) dias`;};
+  const validade=card.validade_proposta_dias||30;
+  const prazo=card.prazo_execucao_meses?textoPrazo(card.prazo_execucao_meses,card.prazo_execucao_unidade):'';
+  // planilha: linha com item "N" (sem ponto) e sem quantidade/valor = título da etapa; subtotais por etapa
+  const lista=(itens||[]).map(i=>({...i,item:String(i.item||'').trim()}));
+  const ehEtapa=i=>/^\d+$/.test(i.item)&&!Number(i.quantidade)&&!Number(i.valor_total);
+  const etapas=[];let atual=null;
+  lista.forEach(i=>{if(ehEtapa(i)){atual={item:i.item,descricao:i.descricao,linhas:[],total:0};etapas.push(atual);}
+    else{if(!atual){atual={item:'',descricao:'',linhas:[],total:0};etapas.push(atual);}atual.linhas.push(i);atual.total+=Number(i.valor_total||0);}});
+  const comEtapas=etapas.some(e=>e.item);
+  const somaItens=lista.reduce((s,i)=>s+Number(i.valor_total||0),0);
+  const linhaItem=i=>`<tr><td>${esc(i.item)}</td><td>${esc(i.descricao)}${i.codigo?` <span class="cod">(${esc(i.codigo)})</span>`:''}</td><td class="c">${esc(i.unidade)}</td><td class="n">${esc(fmtNum(i.quantidade))}</td><td class="n">${fmtMoeda(i.valor_unitario)}</td><td class="n">${fmtMoeda(i.valor_total)}</td></tr>`;
+  const planilha=lista.length?`<table class="plan"><thead><tr><th style="width:44px">Item</th><th>Descrição</th><th style="width:40px">Un.</th><th style="width:66px">Quant.</th><th style="width:86px">Preço unit.</th><th style="width:96px">Preço total</th></tr></thead><tbody>
+    ${etapas.map(e=>(e.item?`<tr class="etapa"><td>${esc(e.item)}</td><td colspan="5">${esc(String(e.descricao||'').toUpperCase())}</td></tr>`:'')+e.linhas.map(linhaItem).join('')+(e.item?`<tr class="sub"><td></td><td colspan="4">Subtotal ${esc(e.item)}</td><td class="n">${fmtMoeda(e.total)}</td></tr>`:'')).join('')}
+    </tbody><tfoot><tr><td colspan="5">VALOR GLOBAL DA PROPOSTA</td><td class="n">${fmtMoeda(total||somaItens)}</td></tr></tfoot></table>`:'';
+  const pmo=Number(card.percentual_mao_obra)||0,pins=Number(card.percentual_insumos)||(pmo?100-pmo:0);
+  // equipe e equipamentos previstos (da composição de preço, sem valores)
+  const equipe=cp?(cp.equipe||[]).filter(x=>n0(x.qtd)>0).map(x=>`${fmtNum(x.qtd)} ${x.funcao||'profissional'}`):[];
+  const equip=cp?(cp.equipamentos||[]).filter(x=>String(x.descricao||'').trim()).map(x=>x.descricao):[];
+  const premissas=[card.observacoes,card.nota1,card.nota2,cp&&cp.turno==='noturno'?'Trabalho considerado em período noturno.':''].filter(x=>String(x||'').trim());
+  // seções numeradas
+  const secoes=[];const sec=(titulo,html)=>{if(html)secoes.push(`<h2>${secoes.length+1}. ${titulo}</h2>${html}`);};
+  sec('OBJETO',`<p>${esc(card.titulo||'')}${prazo?`, com prazo de execução de até ${esc(prazo)}`:''}.</p>`);
+  sec('ESCOPO DE FORNECIMENTO',card.escopo?blocoTexto(card.escopo):'');
+  sec('PLANILHA DE PREÇOS',planilha?`<p>Preços unitários e totais em Reais (R$), com todos os custos diretos, encargos sociais e trabalhistas, administração, tributos e seguros (BDI) incluídos.</p>${planilha}
+    <p><strong>Valor global:</strong> ${esc(valorComExtenso(total||somaItens))}.</p>${pmo?`<p><strong>Composição de custos:</strong> ${esc(fmtNum(pmo))}% de mão de obra e ${esc(fmtNum(pins))}% equipamentos e materiais.</p>`:''}`:'');
+  if(comEtapas&&etapas.filter(e=>e.item).length>1){const T=etapas.reduce((s,e)=>s+e.total,0)||1;
+    sec('RESUMO POR ETAPA',`<table class="plan"><thead><tr><th style="width:44px">Item</th><th>Etapa</th><th style="width:110px">Valor (R$)</th><th style="width:80px">% do total</th></tr></thead><tbody>${etapas.filter(e=>e.item).map(e=>`<tr><td>${esc(e.item)}</td><td>${esc(e.descricao)}</td><td class="n">${fmtMoeda(e.total)}</td><td class="n">${(e.total/T*100).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}%</td></tr>`).join('')}</tbody><tfoot><tr><td colspan="2">TOTAL</td><td class="n">${fmtMoeda(T)}</td><td class="n">100,00%</td></tr></tfoot></table>`);}
+  sec('EQUIPE E EQUIPAMENTOS PREVISTOS',(equipe.length||equip.length)?`${equipe.length?`<p><strong>Equipe técnica e operacional</strong></p><ul>${equipe.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:''}${equip.length?`<p><strong>Principais equipamentos</strong></p><ul>${equip.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:''}`:'');
+  sec('PREMISSAS E ESCLARECIMENTOS',premissas.length?premissas.map(blocoTexto).join(''):'');
+  const cond=[['Valor global',esc(valorComExtenso(total||somaItens))],['Tributos',esc(M.tributos)],prazo?['Prazo de execução',esc(`Até ${prazo} a partir da emissão da Ordem de Serviço`)]:null,
+    card.forma_pagamento?['Pagamento',br2(card.forma_pagamento)]:null,M.faturamento?['Faturamento',esc(M.faturamento)]:null,['Validade da proposta',esc(`${extensoDias(validade)} a contar de ${hojeCurto}`)]].filter(Boolean);
+  sec('CONDIÇÕES COMERCIAIS',`<table class="dados">${cond.map(([a,b])=>`<tr><th>${a}</th><td>${b}</td></tr>`).join('')}</table>`);
+  const ass=String(M.assinaturas||'').split('\n').map(l=>l.split('|').map(x=>x.trim())).filter(p=>p[0]);
+  sec('CONSIDERAÇÕES FINAIS',`${blocoTexto(M.consideracoes)}<p>Atenciosamente,</p><div class="ass">${ass.map(p=>`<div><div class="linha"></div><strong>${esc(p[0])}</strong>${p.slice(1).filter(Boolean).map(x=>`<br>${esc(x)}`).join('')}</div>`).join('')}</div>`);
+  function br2(s){return esc(s).replace(/\n/g,'<br>');}
+  const nomeArquivo=semAcento(num||`${emp.sigla||'BVK'}-COM-PRP-${cli.codigo||'C000'}`).toUpperCase().replace(/[\\/:*?"<>|]/g,' ').replace(/\s+/g,' ').trim();
+  const rodape=`<div class="rodape"><strong>Conheça nossas empresas</strong><br>www.engekat.com.br &nbsp; www.brasilimp.com.br &nbsp; www.verdebrasilis.com.br &nbsp; www.katseguros.com.br</div>`;
+  const topo=`<div class="topo"><div class="marca">${esc(emp.nome||'GRUPO BVEK')}</div><div class="slogan">UMA EMPRESA, TODOS OS SERVIÇOS</div></div>`;
+  const html=`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>${esc(nomeArquivo)}</title>
   <style>
-    body{font-family:Arial,sans-serif;font-size:11px;color:#222;margin:0;padding:0}
-    .pagina{padding:30px 40px;max-width:800px;margin:0 auto}
-    .topo{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px;padding-bottom:16px;border-bottom:2px solid #1a6b3c}
-    .logo-area h1{color:#1a6b3c;font-size:20px;margin:0}
-    .logo-area p{color:#666;font-size:10px;margin:2px 0 0}
-    .sites{font-size:9px;color:#666;text-align:right}
-    h2{color:#1a6b3c;font-size:13px;margin:20px 0 6px;border-bottom:1px solid #e8f5ee;padding-bottom:4px}
-    .destinatario{margin:16px 0}
-    .destinatario strong{display:block;font-size:13px}
-    .numero-prop{background:#e8f5ee;border-left:4px solid #1a6b3c;padding:8px 14px;margin:16px 0;font-size:13px;font-weight:700;color:#1a6b3c}
-    p{margin:6px 0;line-height:1.5}
-    table{width:100%;border-collapse:collapse;margin:12px 0;font-size:10px}
-    th{background:#1a6b3c;color:#fff;padding:6px 8px;text-align:left}
-    td{padding:5px 8px;border-bottom:1px solid #eee}
-    tr:nth-child(even) td{background:#f9f9f9}
-    .total-row td{font-weight:700;background:#e8f5ee;font-size:12px}
-    .valor-total{text-align:right;font-size:14px;font-weight:700;color:#1a6b3c;margin:16px 0;padding:12px;background:#e8f5ee;border-radius:6px}
-    .assinaturas{display:flex;gap:40px;margin-top:40px;padding-top:20px;border-top:1px solid #ddd}
-    .ass-item{flex:1;text-align:center}
-    .ass-linha{border-top:1px solid #222;margin:40px 0 6px;padding-top:6px}
-    .rodape{margin-top:30px;padding-top:10px;border-top:1px solid #ddd;font-size:9px;color:#999;text-align:center}
-    .ref{font-size:9px;color:#888}
-    @media print{body{margin:0}.pagina{padding:20px}}
+    @page{size:A4;margin:16mm 16mm 22mm}
+    body{font-family:Arial,sans-serif;font-size:10.5px;color:#222;margin:0;line-height:1.45;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    .pagina{max-width:780px;margin:0 auto;padding:10px 20px}
+    .topo{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid #1a6b3c;padding-bottom:6px;margin-bottom:16px}
+    .marca{color:#1a6b3c;font-size:17px;font-weight:700}.slogan{color:#1a6b3c;font-size:10px;font-weight:700;letter-spacing:.06em}
+    .rodape{margin-top:22px;padding-top:6px;border-top:1px solid #ccc;font-size:8.5px;color:#666;text-align:center;background:#fff}
+    table.moldura{margin:0}table.moldura>thead td,table.moldura>tfoot td,table.moldura>tbody>tr>td{padding:0;border:0}
+    .quebra{break-after:page;page-break-after:always}
+    h1{font-size:14px;color:#1a6b3c;margin:0 0 10px}
+    h2{font-size:11.5px;color:#1a6b3c;margin:16px 0 6px;padding-bottom:3px;border-bottom:1px solid #d7e9de;break-after:avoid}
+    p{margin:5px 0;text-align:justify}ul{margin:4px 0 6px 18px;padding:0}li{margin:2px 0}
+    .apres p{margin:8px 0}.apres h3{font-size:11px;color:#1a6b3c;margin:14px 0 4px}
+    table{width:100%;border-collapse:collapse;margin:6px 0}
+    table.dados th{width:150px;text-align:left;background:#eef5f0;color:#1a6b3c;vertical-align:top}
+    table.dados th,table.dados td{border:1px solid #cfdcd3;padding:5px 8px}
+    .destaque{margin:12px 0;border:1.5px solid #1a6b3c}.destaque td{padding:6px 10px;border-bottom:1px solid #d7e9de}.destaque tr:first-child td{background:#1a6b3c;color:#fff;font-size:12.5px;font-weight:700}
+    .destaque td.n{text-align:right;white-space:nowrap}
+    table.plan{font-size:9.5px}table.plan th{background:#1a6b3c;color:#fff;padding:5px 6px;text-align:left}
+    table.plan td{padding:4px 6px;border-bottom:1px solid #e3e3e3;vertical-align:top}
+    table.plan td.n{text-align:right;white-space:nowrap}table.plan td.c{text-align:center}
+    table.plan tr.etapa td{background:#eef5f0;font-weight:700;color:#1a6b3c}
+    table.plan tr.sub td{font-weight:700;border-bottom:1.5px solid #cfdcd3}
+    table.plan tfoot td{background:#1a6b3c;color:#fff;font-weight:700;padding:6px}
+    tr{break-inside:avoid}.cod{color:#888;font-size:8.5px}
+    .ass{display:flex;flex-wrap:wrap;gap:24px;margin-top:30px}.ass>div{flex:1 1 200px;font-size:9.5px}.ass .linha{border-top:1px solid #222;margin-bottom:5px;height:28px}
   </style></head><body><div class="pagina">
-  <div class="topo">
-    <div class="logo-area"><h1>${esc(emp.nome||'GRUPO-BVEK')}</h1><p>Rio de Janeiro, ${esc(hoje)}</p></div>
-    <div class="sites">www.engekat.com.br | www.brasilimp.com.br<br>www.verdebrasilis.com.br | www.katseguros.com.br</div>
-  </div>
-  <div class="destinatario">
-    <p>A</p>
-    <strong>${esc(nomeCliente)}</strong>
-    ${quem.nome?`<p>At.: ${esc(quem.nome)}${quem.cargo?' — '+esc(quem.cargo):''}</p>`:''}
-    <p class="ref">Ref. cliente: ${esc(cli.codigo||'')}</p>
-  </div>
-  <div class="numero-prop">Proposta de Serviços — ${esc(card.titulo)} — ${esc(numeroProposta(card))}</div>
+  <table class="moldura"><thead><tr><td>${topo}</td></tr></thead><tfoot><tr><td>${rodape}</td></tr></tfoot><tbody><tr><td>
+  <div class="quebra apres">
+    <p>Rio de Janeiro, ${esc(hojeTxt)}.</p>
+    <p>A<br><strong>${esc(nomeCliente)}</strong>${quem.nome?`<br>A/C ${esc(quem.nome)}${quem.cargo?' — '+esc(quem.cargo):''}`:''}</p>
+    <p><strong>Prezados Senhores,</strong></p>
+    ${blocoTexto(M.apresentacao)}
+    ${M.segmentos?`<ul>${String(M.segmentos).split('\n').filter(x=>x.trim()).map(l=>{const k=l.indexOf('–');return`<li>${k>0?`<strong>${esc(l.slice(0,k).trim())}</strong> – ${esc(l.slice(k+1).trim())}`:esc(l)}</li>`;}).join('')}</ul>`:''}
+    ${blocoTexto(M.fecho_apresentacao)}
+    ${M.seguros?`<h3>Seguros em vigência</h3>${blocoTexto(M.seguros)}`:''}
+    ${M.dados_bancarios?`<h3>Dados bancários</h3>${blocoTexto(M.dados_bancarios)}`:''}
+    </div>
+  <h1>PROPOSTA TÉCNICA E COMERCIAL - ${esc(num)}</h1>
+  <table class="dados">
+    <tr><th>Cliente</th><td>${esc(nomeCliente)}${cli.endereco?` – ${esc(cli.endereco)}`:''}</td></tr>
+    ${quem.nome?`<tr><th>A/C</th><td>${esc(quem.nome)}${quem.cargo?` (${esc(quem.cargo)})`:''}</td></tr>`:''}
+    <tr><th>Objeto</th><td>${esc(card.titulo||'')}</td></tr>
+    <tr><th>Proponente</th><td>${esc(String(emp.nome||'').toUpperCase())}${emp.cnpj?` – CNPJ: ${esc(emp.cnpj)}`:''}</td></tr>
+    <tr><th>Data</th><td>Rio de Janeiro, ${esc(hojeTxt)}</td></tr>
+    <tr><th>Validade</th><td>${esc(extensoDias(validade))} a contar da data de emissão</td></tr>
+  </table>
   <p><strong>Prezados Senhores,</strong></p>
-  <p>A ${esc(emp.nome||'')} é uma empresa especializada, que atende as principais demandas de nossos clientes e parceiros com funcionários próprios, ganhando agilidade e qualidade em todos os processos.</p>
-  ${card.escopo?`<h2>Escopo dos Serviços</h2><p>${br(card.escopo)}</p>`:''}
-  ${(itens&&itens.length)?`<h2>Orçamento Sintético</h2>
-  <table><thead><tr><th>Item</th><th>Código</th><th>Descrição</th><th>Und</th><th>Qtd</th><th>Vl Unit</th><th>Total</th></tr></thead>
-  <tbody>${itensHTML}</tbody>
-  <tfoot><tr class="total-row"><td colspan="6" style="text-align:right">VALOR TOTAL</td><td>R$ ${total}</td></tr></tfoot></table>`:''}
-  <div class="valor-total">Valor total dos serviços, materiais, insumos e mão de obra: R$ ${total}</div>
-  ${card.prazo_execucao_meses?`<p><strong>Prazo de Execução:</strong> até ${esc(textoPrazo(card.prazo_execucao_meses,card.prazo_execucao_unidade))}</p>`:''}
-  <p><strong>Validade da proposta:</strong> ${esc(card.validade_proposta_dias||30)} dias.</p>
-  ${card.forma_pagamento?`<p><strong>Forma de Pagamento:</strong> ${esc(card.forma_pagamento)}</p>`:''}
-  ${card.percentual_mao_obra?`<p><strong>Composição de Custos:</strong> ${esc(card.percentual_mao_obra)}% Mão de Obra + ${esc(card.percentual_insumos)}% Insumos e Equipamentos</p>`:''}
-  ${card.observacoes?`<p><strong>Observações:</strong> ${br(card.observacoes)}</p>`:''}
-  ${card.nota1?`<p><strong>Nota 1:</strong> ${esc(card.nota1)}</p>`:''}
-  ${card.nota2?`<p><strong>Nota 2:</strong> ${esc(card.nota2)}</p>`:''}
-  <div class="assinaturas">
-    <div class="ass-item"><div class="ass-linha"></div><strong>André F. Lessa</strong><br>Diretor Comercial<br><small>Tel: 21-3040-3700 | Cel: 21-99675-0707</small></div>
-    <div class="ass-item"><div class="ass-linha"></div><strong>${esc(quem.nome||'Cliente')}</strong><br>${esc(quem.cargo||'Representante')}<br><small>${esc(nomeCliente)}</small></div>
-  </div>
-  <div class="rodape">www.engekat.com.br | www.brasilimp.com.br | www.verdebrasilis.com.br | www.katseguros.com.br</div>
+  <p>Em atenção à sua solicitação, apresentamos nossa proposta técnica e comercial para ${esc(String(card.titulo||'os serviços').replace(/^./,c=>c.toLowerCase()))}, com fornecimento de mão de obra, materiais e equipamentos conforme o escopo descrito a seguir.</p>
+  <table class="destaque"><tr><td>VALOR GLOBAL DA PROPOSTA</td><td class="n">R$ ${fmtMoeda(total||somaItens)}</td></tr>
+    ${prazo?`<tr><td>Prazo global de execução</td><td class="n">${esc(prazo)}</td></tr>`:''}
+    ${card.forma_pagamento?`<tr><td>Forma de pagamento</td><td class="n">${esc(String(card.forma_pagamento).split('\n')[0])}</td></tr>`:''}</table>
+  ${secoes.join('\n')}
+  </td></tr></tbody></table>
   </div></body></html>`;
   win.document.open();win.document.write(html);win.document.close();
   setTimeout(()=>win.print(),800);
-  toast('Ao salvar o PDF, o nome sugerido já segue o padrão da rede');
+  toast('Ao salvar o PDF, o nome sugerido já é o número da proposta');
 }
 
 /* ================= ORDEM DE SERVIÇO (v28) ================= */
@@ -4264,7 +4335,7 @@ async function montarOS(win){
   const linha=(rot,v)=>v?`<tr><th>${rot}</th><td>${v}</td></tr>`:'';
   const html=`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>${esc(nomeArquivo)}</title>
   <style>
-    body{font-family:Arial,sans-serif;font-size:11px;color:#222;margin:0}
+    body{font-family:Arial,sans-serif;font-size:11px;color:#222;margin:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}
     .pagina{padding:26px 36px;max-width:800px;margin:0 auto}
     .topo{display:flex;justify-content:space-between;align-items:flex-end;padding-bottom:10px;border-bottom:2px solid #1a6b3c;margin-bottom:14px}
     .topo h1{color:#1a6b3c;font-size:18px;margin:0}.topo .os{text-align:right}.topo .os strong{display:block;font-size:15px;color:#1a6b3c}
@@ -6449,7 +6520,7 @@ function mudouNomeMaterial(){if(matEditandoId)return;const m=materialPorRotulo($
 // Preço = CD × (1 + adm. central + seguros + risco) × (1 + desp. financeiras) × (1 + lucro) ÷ (1 − tributos)
 // v28: ou, com lucro fixo por dia: [CD × (1 + indiretos) × (1 + desp. financeiras) + lucro/dia × dias] ÷ (1 − tributos)
 let precoCfg=null,v23Ok=true,composicaoLocal=null,comp=null;
-const PRECO_CFG_PADRAO={funcoes:[],adicionais:{sabado:50,domingo_feriado:100,noturno:20},bdi:{adm_central:4,seguros_garantia:0.8,risco:1.27,despesas_financeiras:1.23},tributos_empresa:{},tributos_padrao:0,regime_padrao:{anexo:'IV'},regime_empresa:{},tipos_cliente:[{nome:'Indústria / fábrica',lucro:30},{nome:'Condomínio',lucro:30}],documentos:[]};
+const PRECO_CFG_PADRAO={funcoes:[],adicionais:{sabado:50,domingo_feriado:100,noturno:20},bdi:{adm_central:4,seguros_garantia:0.8,risco:1.27,despesas_financeiras:1.23},tributos_empresa:{},tributos_padrao:0,regime_padrao:{anexo:'manual',pct:15},regime_empresa:{},tipos_cliente:[{nome:'Indústria / fábrica',lucro:30},{nome:'Condomínio',lucro:30}],documentos:[]};
 // v25: Simples Nacional (LC 123/2006, tabelas desde 2018): [receita bruta 12 meses até, alíquota nominal %, parcela a deduzir]
 const SIMPLES={III:[[180000,6,0],[360000,11.2,9360],[720000,13.5,17640],[1800000,16,35640],[3600000,21,125640],[4800000,33,648000]],
   IV:[[180000,4.5,0],[360000,9,8100],[720000,10.2,12420],[1800000,14,39780],[3600000,22,183780],[4800000,33,828000]]};
@@ -6461,7 +6532,9 @@ function aliquotaSimples(anexo,rbt12){
   return{aliq:Math.max(0,(r*t[i][1]/100-t[i][2])/r*100),faixa:i+1,estimada:false};
 }
 function regimeEmpresa(emp){const r=((precoCfg&&precoCfg.regime_empresa)||{})[emp];return r&&r.anexo?r:((precoCfg&&precoCfg.regime_padrao)||null);}
-function textoRegime(emp){const r=regimeEmpresa(emp);if(!r||!SIMPLES[r.anexo])return'';const a=aliquotaSimples(r.anexo,r.rbt12);
+function textoRegime(emp){const r=regimeEmpresa(emp);
+  if(r&&r.anexo==='manual'&&n0(r.pct)>0){const k=1-n0(r.pct)/100;return`custo ÷ ${k.toLocaleString('pt-BR',{maximumFractionDigits:4})} (${fmtPct(r.pct)} sobre o preço)`;}
+  if(!r||!SIMPLES[r.anexo])return'';const a=aliquotaSimples(r.anexo,r.rbt12);
   return`Simples Nacional, Anexo ${r.anexo}: alíquota efetiva ${fmtPct(Math.round(a.aliq*100)/100)}${a.estimada?' (1ª faixa — informe o faturamento dos últimos 12 meses em ⚙️ Parâmetros)':` (${a.faixa}ª faixa)`}`;}
 async function carregarPrecoCfg(){
   if(!PERM.comercialVer)return;
@@ -6674,12 +6747,18 @@ function renderParametrosPreco(){
       .map(([g,k,rot,v])=>`<div class="campo"><label>${rot}</label><input type="number" step="any" min="0" data-ppg="${g}" data-k="${k}" value="${esc(v??'')}"></div>`).join('')}</div>`;
   c.regime_empresa=c.regime_empresa||{};
   const linhaReg=e=>{const r=c.regime_empresa[e.id]||{anexo:(c.regime_padrao||{}).anexo||'IV'},a=SIMPLES[r.anexo]?aliquotaSimples(r.anexo,r.rbt12):null;
-    return`<tr><td><strong>${esc(e.nome)}</strong></td><td><select data-reg="${esc(e.id)}" data-k="anexo"><option value="III" ${r.anexo==='III'?'selected':''}>Simples — Anexo III</option><option value="IV" ${r.anexo==='IV'?'selected':''}>Simples — Anexo IV</option><option value="manual" ${r.anexo==='manual'?'selected':''}>Outro (% fixo)</option></select></td>
+    return`<tr><td><strong>${esc(e.nome)}</strong></td><td><select data-reg="${esc(e.id)}" data-k="anexo"><option value="III" ${r.anexo==='III'?'selected':''}>Simples — Anexo III</option><option value="IV" ${r.anexo==='IV'?'selected':''}>Simples — Anexo IV</option><option value="manual" ${r.anexo==='manual'?'selected':''}>% fixo (padrão: 15% = custo ÷ 0,85)</option></select></td>
       <td>${r.anexo==='manual'?`<input type="number" step="any" min="0" data-reg="${esc(e.id)}" data-k="pct" value="${esc(r.pct??'')}" placeholder="%">`:`<input type="text" inputmode="numeric" data-reg="${esc(e.id)}" data-k="rbt12" value="${r.rbt12?esc(fmtMoeda(r.rbt12)):''}" placeholder="faturamento 12 meses (R$)" oninput="mascaraMoeda(this)">`}</td>
       <td style="white-space:nowrap"><strong>${a?esc(fmtPct(Math.round(a.aliq*100)/100)):r.pct!=null&&r.pct!==''?esc(fmtPct(r.pct)):'—'}</strong>${a?`<div class="dica" style="margin:0">${a.estimada?'1ª faixa (sem faturamento)':a.faixa+'ª faixa'}</div>`:''}</td></tr>`;};
   $('pp-trib').innerHTML=`<table class="tabela-itens"><thead><tr><th>Empresa</th><th style="width:190px">Regime</th><th style="width:220px">Faturamento dos últimos 12 meses</th><th style="width:130px">Imposto sobre o preço</th></tr></thead><tbody>${todasEmpresas.map(linhaReg).join('')}</tbody></table>
     <div class="dica">Alíquota efetiva do Simples = (faturamento 12 meses × alíquota da faixa − parcela a deduzir) ÷ faturamento 12 meses. No <strong>Anexo IV</strong> (obras, paisagismo, limpeza e conservação costumam cair nele) o INSS patronal (CPP) é pago fora do DAS: nesse caso some-o no custo por dia das funções.</div>`;
+  c.proposta=Object.assign({},PROPOSTA_PADRAO,c.proposta||{});
+  const campoProp=(k,rot,linhas,dica)=>`<div class="campo full"><label>${rot}</label><textarea data-prop="${k}" rows="${linhas}">${esc(c.proposta[k]||'')}</textarea>${dica?`<div class="dica">${dica}</div>`:''}</div>`;
+  $('pp-prop').innerHTML=`<div class="form-grid">${campoProp('apresentacao','Apresentação (carta)',4)}${campoProp('segmentos','Empresas e serviços (uma por linha: Nome – serviços)',3)}${campoProp('fecho_apresentacao','Fecho da apresentação',2)}${campoProp('seguros','Seguros em vigência',2)}
+    ${campoProp('dados_bancarios','Dados bancários',3,'Ex.: Verde Brasilis Gestão e Serviços Ltda. · CNPJ … · Banco … · Agência … · Conta …')}${campoProp('tributos','Condições comerciais — Tributos',2)}${campoProp('faturamento','Condições comerciais — Faturamento',2)}${campoProp('consideracoes','Considerações finais',2)}
+    ${campoProp('assinaturas','Assinaturas (uma por linha: Nome | Cargo | Contato | Registro)',3)}</div>`;
   const m=$('modal-param-preco');
+  m.querySelectorAll('[data-prop]').forEach(t=>t.oninput=()=>{c.proposta[t.dataset.prop]=t.value;});
   m.querySelectorAll('[data-pp]').forEach(i=>i.oninput=i.onchange=()=>{const r=c[i.dataset.pp][+i.dataset.i];r[i.dataset.k]=i.type==='checkbox'?i.checked:i.type==='number'?n0(i.value):i.value;});
   m.querySelectorAll('[data-pp-rm]').forEach(b=>b.onclick=()=>{c[b.dataset.ppRm].splice(+b.dataset.i,1);renderParametrosPreco();});
   m.querySelectorAll('[data-pp-add]').forEach(b=>b.onclick=()=>{const k=b.dataset.ppAdd;c[k].push(k==='funcoes'?{nome:'',custo_dia:0}:k==='tipos_cliente'?{nome:'',lucro:30}:{nome:'',custo:0,por_pessoa:false});renderParametrosPreco();});
