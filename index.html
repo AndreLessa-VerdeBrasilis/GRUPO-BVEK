@@ -4084,7 +4084,16 @@ async function abrirArquivoProposta(caminho){
 /* ================= PDF DA PROPOSTA ================= */
 async function gerarPDF(){
   if(!cardEditandoId)return;
-  const{data:card}=await sb.from('cards').select('*,clientes(*),empresas(*)').eq('id',cardEditandoId).single();
+  // abre a janela já no clique (depois de esperar o banco, o navegador costuma bloquear o pop-up)
+  const win=window.open('','_blank');
+  if(!win){alert('O navegador bloqueou a janela da proposta. Permita pop-ups para este site.');return;}
+  win.document.write('<p style="font-family:Arial;padding:30px">Gerando a proposta…</p>');
+  try{await montarPDF(win);}
+  catch(e){console.error(e);win.close();alert('Não foi possível gerar a proposta:\n'+(e&&e.message||e));}
+}
+async function montarPDF(win){
+  const{data:card,error}=await sb.from('cards').select('*,clientes(*),empresas(*)').eq('id',cardEditandoId).single();
+  if(error||!card)throw new Error(error?error.message:'atendimento não encontrado');
   const{data:itens}=await sb.from('itens_proposta').select('*').eq('card_id',cardEditandoId).order('ordem');
   let contato=null;
   if(card.contato_id){const r=await sb.from('contatos').select('*').eq('id',card.contato_id).maybeSingle();contato=r.data;}
@@ -4157,9 +4166,7 @@ async function gerarPDF(){
   </div>
   <div class="rodape">www.engekat.com.br | www.brasilimp.com.br | www.verdebrasilis.com.br | www.katseguros.com.br</div>
   </div></body></html>`;
-  const win=window.open('','_blank');
-  if(!win){alert('O navegador bloqueou a janela da proposta. Permita pop-ups para este site.');return;}
-  win.document.write(html);win.document.close();
+  win.document.open();win.document.write(html);win.document.close();
   setTimeout(()=>win.print(),800);
   toast('Ao salvar o PDF, o nome sugerido já segue o padrão da rede');
 }
@@ -4217,9 +4224,9 @@ function motivoMudanca(iso,dia,prazo){
   return` (dia ${dia} ${w===6?'cai no sábado':w===0?'cai no domingo':f?'é feriado: '+f:'cai em feriado'})`;
 }
 const DIAS_SEMANA=['domingo','segunda-feira','terça-feira','quarta-feira','quinta-feira','sexta-feira','sábado'];
-function textoPrazo(iso,dia,prazo){const d=new Date(prazo+'T00:00:00');return`${DIAS_SEMANA[d.getDay()]}, ${fmtData(prazo)}${motivoMudanca(iso,dia,prazo)}`;}
-function textoDataEnvio(iso){return textoPrazo(iso,diaEnvio(),dataEnvioMes(iso));}
-function textoDataAdiant(iso){return textoPrazo(iso,diaAdiant(),dataAdiantMes(iso));}
+function textoPrazoRH(iso,dia,prazo){const d=new Date(prazo+'T00:00:00');return`${DIAS_SEMANA[d.getDay()]}, ${fmtData(prazo)}${motivoMudanca(iso,dia,prazo)}`;}
+function textoDataEnvio(iso){return textoPrazoRH(iso,diaEnvio(),dataEnvioMes(iso));}
+function textoDataAdiant(iso){return textoPrazoRH(iso,diaAdiant(),dataAdiantMes(iso));}
 function quemSou(){return(meuPerfil&&meuPerfil.nome)||(usuario&&usuario.email)||null;}
 function nomeArquivoSeguro(n){const p=String(n||'arquivo').split('.');const ext=p.length>1?'.'+p.pop().toLowerCase().replace(/[^a-z0-9]/g,''):'';return semAcento(p.join('.')).replace(/[^A-Za-z0-9._-]+/g,'_').replace(/^_+|_+$/g,'').slice(0,80)+ext;}
 const r2=v=>Math.round(Number(v||0)*100)/100;
