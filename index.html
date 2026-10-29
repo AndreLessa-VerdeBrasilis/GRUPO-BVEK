@@ -142,6 +142,27 @@ button{font-family:inherit}
 .barra-cheia.vermelha{background:#c0392b}
 .barra-linha .num{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
 .lista-mini{font-size:13px}
+/* v32: painel mais dinâmico */
+.pd-saudacao{font-size:13px;color:var(--texto2);margin-bottom:2px}
+.pd-atualizado{font-size:12px;color:var(--texto2)}
+.pd-kpis .kpi{border-left:5px solid var(--kpi-cor,var(--verde));cursor:pointer;transition:transform .15s,box-shadow .15s;position:relative;overflow:hidden}
+.pd-kpis .kpi:hover{transform:translateY(-2px);box-shadow:0 6px 18px rgba(0,0,0,.08)}
+.pd-kpis .kpi .val{color:var(--kpi-cor,var(--verde))}
+.pd-kpis .kpi .ico{position:absolute;right:12px;top:10px;font-size:22px;opacity:.35}
+.pd-topo{margin-bottom:16px}
+.pd-tarefas{grid-column:1/-1}
+.pd-abas{display:flex;gap:6px;margin-bottom:10px}
+.pd-aba{border:1.5px solid var(--borda);background:#fff;border-radius:999px;padding:4px 12px;font-size:12px;cursor:pointer;color:var(--texto2)}
+.pd-aba.ativo{background:var(--verde);border-color:var(--verde);color:#fff}
+.pd-tf-resumo{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+.pd-tf-resumo .pd-ch{flex:1;min-width:110px;border-radius:10px;padding:8px 12px;cursor:pointer;background:#f7f7f7}
+.pd-tf-resumo .pd-ch b{display:block;font-size:20px;font-variant-numeric:tabular-nums}
+.pd-tf-resumo .pd-ch span{font-size:11px;color:var(--texto2);text-transform:uppercase;letter-spacing:.3px}
+.pd-tf-resumo .pd-ch.marcado{outline:2px solid currentColor}
+.pd-resp{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.pd-resp .pilula{display:inline-flex;gap:6px;align-items:center;font-size:12px;padding:3px 10px}
+.barra-cheia{transition:width .6s ease}
+.barra-linha.clicavel{cursor:pointer}.barra-linha.clicavel:hover .nome{color:var(--verde);text-decoration:underline}
 .lista-mini .item{padding:8px 0;border-bottom:1px solid #f0f0f0;display:flex;justify-content:space-between;gap:10px;align-items:flex-start;cursor:pointer}
 .lista-mini .item:last-child{border-bottom:none}
 .lista-mini .item:hover{background:#fafafa}
@@ -160,6 +181,10 @@ table.tabela td.num{text-align:right;font-variant-numeric:tabular-nums;white-spa
 .modal{background:#fff;border-radius:16px;width:100%;max-width:800px;padding:30px;box-shadow:0 20px 60px rgba(0,0,0,.3);margin:auto}
 .modal-lg{max-width:1000px}
 .modal-sm{max-width:480px}
+.notif-box{border-top:6px solid var(--laranja,#E67E22);animation:notif-pulo .5s ease}
+@keyframes notif-pulo{0%{transform:scale(.92);opacity:0}60%{transform:scale(1.02);opacity:1}100%{transform:scale(1)}}
+.notif-item{display:flex;gap:10px;align-items:center;justify-content:space-between;padding:10px 12px;border:1px solid var(--borda);border-radius:10px;margin-bottom:8px;background:#fff}
+.notif-item .acoes{display:flex;gap:6px;flex:none}
 .modal h2{font-size:20px;margin-bottom:6px;color:var(--verde)}
 .modal-sub{font-size:13px;color:var(--texto2);margin-bottom:18px}
 /* Cabeçalho fixo dos pop-ups com botão × (v15.3) */
@@ -436,20 +461,35 @@ tr.doc-vencido td{background:#fff5f5}
     <!-- PAINEL -->
     <div id="tab-painel">
       <div class="barra-acoes">
-        <h2 id="titulo-painel">Painel</h2>
-        <div class="filtros" style="margin:0">
+        <div>
+          <div class="pd-saudacao" id="pd-saudacao"></div>
+          <h2 id="titulo-painel">Painel</h2>
+        </div>
+        <div class="filtros" style="margin:0;align-items:center">
+          <span class="pd-atualizado" id="pd-atualizado"></span>
+          <button class="btn-sec" onclick="atualizarPainel()" title="Buscar os dados mais recentes">🔄 Atualizar</button>
           <select id="painel-ano" onchange="renderPainel()"></select>
         </div>
       </div>
-      <div class="avisos-dia">
+      <div class="kpis pd-kpis" id="kpis"></div>
+      <div class="paineis pd-topo">
+        <!-- v32: tarefas ativas pendentes -->
+        <div class="painel pd-tarefas" id="pa-tarefas">
+          <h3>✅ Tarefas ativas pendentes <span class="contagem" id="pa-tf-cont"></span></h3>
+          <div class="pd-abas" id="pd-tf-abas">
+            <button class="pd-aba ativo" data-pdtf="todas">Todas</button>
+            <button class="pd-aba" data-pdtf="minhas">Só as minhas</button>
+          </div>
+          <div id="p-tf-resumo" class="pd-tf-resumo"></div>
+          <div id="p-tf-resp"></div>
+          <div id="p-ativ" class="lista-mini"></div>
+        </div>
         <div class="painel" id="pa-docs"><h3>📄 Documentos e certidões <span class="contagem" id="pa-docs-cont"></span></h3><div id="p-docs-resumo" class="resumo-docs"></div><div id="p-docs" class="lista-mini"></div></div>
-        <div class="painel" id="pa-cobr"><h3>📞 Cobrar retorno de propostas <span class="contagem" id="pa-cobr-cont"></span></h3><div id="p-cobr" class="lista-mini"></div></div>
+        <div class="painel" id="pa-cobr" style="display:none"><h3>📞 Cobrar retorno de propostas <span class="contagem" id="pa-cobr-cont"></span></h3><div id="p-cobr" class="lista-mini"></div></div>
       </div>
-      <div class="kpis" id="kpis"></div>
       <div class="paineis">
         <div class="painel"><h3>Funil — propostas em aberto por etapa</h3><div id="p-funil"></div></div>
         <div class="painel"><h3>Fechamentos por mês</h3><div id="p-meses"></div></div>
-        <div class="painel"><h3>Atividades atrasadas e de hoje</h3><div id="p-ativ" class="lista-mini"></div></div>
         <div class="painel"><h3>Propostas paradas há mais de 15 dias</h3><div id="p-parados" class="lista-mini"></div></div>
         <div class="painel"><h3>Motivos de perda</h3><div id="p-perdas"></div></div>
         <div class="painel"><h3>Maiores clientes (valor fechado)</h3><div id="p-clientes"></div></div>
@@ -833,6 +873,7 @@ tr.doc-vencido td{background:#fff5f5}
 
       <!-- v30: assinatura eletrônica do ponto pelos funcionários -->
       <div class="painel-rh" id="rh-p-assinaturas">
+        <div class="barra-acoes" style="margin-bottom:10px"><span></span><button class="btn-sec" id="as-btn-termos" onclick="gerarTermosAdesao()" title="Preenche o termo de adesão com os dados da empresa e de cada funcionário que usa o ponto eletrônico e guarda em Documentos">📄 Gerar termos de adesão preenchidos</button></div>
         <div class="info-box" id="as-info" style="display:block;line-height:1.5"></div>
         <div class="kpis" id="as-kpis"></div>
         <div class="tabela-wrap"><table class="tabela" id="tabela-assinaturas"></table></div>
@@ -1699,6 +1740,21 @@ tr.doc-vencido td{background:#fff5f5}
   </div>
 </div>
 
+<!-- v32: NOTIFICAÇÃO DE TAREFAS (aparece toda vez que entra, até concluir) -->
+<div class="modal-overlay" id="modal-notif">
+  <div class="modal modal-avisos notif-box">
+    <h2>🔔 Você tem pendências</h2>
+    <p class="modal-sub" id="nt-sub"></p>
+    <div id="nt-tarefas" class="grupo-aviso"></div>
+    <div id="nt-pag" class="grupo-aviso"></div>
+    <div class="modal-btns">
+      <button class="btn-sec" id="nt-btn-pag" onclick="fecharNotificacao();abrirTab('financeiro')">Ver pagamentos</button>
+      <button class="btn-sec" id="nt-btn-tarefas" onclick="fecharNotificacao();$('tf-minhas').checked=true;abrirTab('atividades')">Ver minhas tarefas</button>
+      <button class="btn-salvar" onclick="fecharNotificacao()">Lembrar depois</button>
+    </div>
+  </div>
+</div>
+
 <!-- v18: MODAL CRIAR ACESSO / NOVA SENHA DO FUNCIONÁRIO -->
 <div class="modal-overlay" id="modal-acesso-func">
   <div class="modal modal-sm">
@@ -1816,6 +1872,9 @@ tr.doc-vencido td{background:#fff5f5}
       <div class="campo"><label>Vencimento</label><input type="date" id="pg-vencimento"></div>
       <div class="campo"><label>Banco</label><input type="text" id="pg-banco" list="dl-bancos" placeholder="Itaú Empresas"></div>
       <div class="campo"><label>Empresa</label><select id="pg-empresa"></select></div>
+      <div class="campo full" id="pg-linha-periodo"><label>Prazo de aviso — alertar o André (deixe em branco para avisar sempre)</label>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="dica" style="margin:0">de</span><input type="date" id="pg-aviso-ini" style="flex:1;min-width:140px"><span class="dica" style="margin:0">até</span><input type="date" id="pg-aviso-fim" style="flex:1;min-width:140px"></div>
+        <div class="dica">Fora deste período o pagamento não entra no lembrete do WhatsApp nem no aviso ao entrar no CRM.</div></div>
       <div class="campo full"><label>Descrição</label><input type="text" id="pg-descricao" placeholder="Ex.: material da obra Vibra, NF 1234"></div>
       <div class="campo full"><label>Observações</label><textarea id="pg-obs" rows="2"></textarea></div>
       <div class="campo full campo-check" id="pg-linha-avisar"><input type="checkbox" id="pg-avisar" checked><label for="pg-avisar">Avisar o André pelo WhatsApp agora</label></div>
@@ -2139,7 +2198,7 @@ function diasDesde(d){if(!d)return 0;return Math.floor((Date.now()-new Date(d).g
 function semAcento(s){return String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'');}
 function norm(s){return semAcento(s).toUpperCase().replace(/[^A-Z0-9]/g,'');}
 function toast(msg){const t=$('toast');t.textContent=msg;t.classList.add('mostrar');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('mostrar'),3200);}
-function fecharModal(id){$(id).classList.remove('aberto');}
+function fecharModal(id){$(id).classList.remove('aberto');if(id==='modal-notif'&&typeof posNotificacao==='function')posNotificacao();}
 function abrirModal(id){$(id).classList.add('aberto');}
 function erroSB(error,msg){if(error){console.error(error);alert((msg||'Erro ao salvar')+':\n'+(error.message||error));return true;}return false;}
 function localParaISO(v){return v?new Date(v).toISOString():null;}
@@ -2224,7 +2283,71 @@ async function iniciarApp(){
   // link do lembrete do WhatsApp: …/#financeiro abre direto a aba
   if(/^#(financeiro|pagamentos)/.test(location.hash)&&PERM.financeiro)abrirTab('financeiro');
   await carregarTudo();
-  mostrarAvisosDoDia();
+  // v32: primeiro as tarefas (com som); ao fechar, os avisos do dia
+  mostrarNotificacao(mostrarAvisosDoDia);
+  ligarAtualizacaoPainel();
+  // enquanto o CRM fica aberto, lembra de novo a cada hora
+  setInterval(async()=>{if($('modal-notif').classList.contains('aberto'))return;await Promise.all([carregarAtividades(),carregarFinanceiro()]);mostrarNotificacao();},60*60*1000);
+}
+/* ================= v32: NOTIFICAÇÃO DE TAREFAS E PAGAMENTOS ================= */
+let notifDepois=null;
+// tarefas pendentes com o meu nome como responsável
+function minhasTarefasPendentes(){
+  const eu=norm(meuPerfil&&meuPerfil.nome);if(!eu)return[];
+  return todasAtividades.filter(a=>a.tipo!=='nota'&&!a.concluida&&norm(a.responsavel)===eu)
+    .sort((a,b)=>String(a.data_prevista||'9999').localeCompare(String(b.data_prevista||'9999')));
+}
+// pagamentos que o André precisa autorizar (dentro do prazo de aviso)
+function pagamentosParaAvisar(){
+  if(!PERM.autorizar)return[];
+  return todosPagamentos.filter(p=>p.situacao==='pendente'&&p.lembrete_ativo!==false&&pagNoAviso(p));
+}
+function mostrarNotificacao(depois){
+  const tf=minhasTarefasPendentes(),pg=pagamentosParaAvisar();
+  if(!tf.length&&!pg.length){if(depois)depois();return;}
+  notifDepois=depois||null;
+  const atras=tf.filter(a=>a.data_prevista&&new Date(a.data_prevista)<inicioDoDia()).length;
+  $('nt-sub').textContent=[tf.length?`${tf.length} tarefa(s) sob sua responsabilidade${atras?` (${atras} atrasada${atras>1?'s':''})`:''}`:'',pg.length?`${pg.length} pagamento(s) aguardando sua autorização`:''].filter(Boolean).join(' · ')+'. Este aviso volta toda vez que você entrar, até concluir.';
+  const prazo=a=>{if(!a.data_prevista)return'<span class="badge badge-cinza">sem prazo</span>';const d=new Date(a.data_prevista);
+    return d<inicioDoDia()?`<span class="badge badge-atraso">atrasada · ${esc(fmtData(a.data_prevista))}</span>`:d<=fimDoDia()?'<span class="badge badge-hoje">hoje</span>':`<span class="badge badge-ok">${esc(fmtData(a.data_prevista))}</span>`;};
+  const mostra=tf.slice(0,15);
+  $('nt-tarefas').innerHTML=tf.length?`<h4>✅ Minhas tarefas</h4>${mostra.map(a=>{const card=a.card_id?todosCards.find(c=>c.id===a.card_id):null;const cli=a.cliente_id?clientePorId(a.cliente_id):(card&&card.clientes);
+    return`<div class="notif-item"><div style="min-width:0"><strong>${a.prioridade==='urgente'?'🔴 ':a.prioridade==='alta'?'🟠 ':''}${esc(a.descricao)}</strong><div class="dica" style="margin:2px 0 0">${prazo(a)}${cli?` · <span class="cod">${esc(cli.codigo||'')}</span> ${esc(cli.nome)}`:''}${card?' · '+esc(card.titulo):''}</div></div>
+      <div class="acoes">${v24Ok?`<button class="btn-link" data-nt-abrir="${esc(a.id)}">abrir</button>`:''}${PERM.ativ?`<button class="btn-salvar" style="padding:6px 10px;font-size:12px" data-nt-ok="${esc(a.id)}">✔ Concluí</button>`:''}</div></div>`;}).join('')}${tf.length>mostra.length?`<p class="vazio">… e mais ${tf.length-mostra.length}.</p>`:''}`:'';
+  const totPg=pg.reduce((s,p)=>s+Number(p.valor||0),0);
+  $('nt-pag').innerHTML=pg.length?`<h4>💳 Pagamentos a autorizar no banco · R$ ${esc(fmtMoeda(totPg))}</h4>${pg.map(p=>`<div class="notif-item"><div><strong>${esc(p.favorecido)}</strong><div class="dica" style="margin:2px 0 0">${p.valor!=null?'R$ '+esc(fmtMoeda(p.valor)):''}${p.vencimento?' · vence '+esc(fmtData(p.vencimento)):''}</div></div></div>`).join('')}`:'';
+  $('nt-btn-pag').style.display=pg.length?'':'none';$('nt-btn-tarefas').style.display=tf.length?'':'none';
+  const m=$('modal-notif');
+  m.querySelectorAll('[data-nt-abrir]').forEach(b=>b.onclick=()=>{fecharNotificacao();abrirTarefa(b.dataset.ntAbrir);});
+  m.querySelectorAll('[data-nt-ok]').forEach(b=>b.onclick=async()=>{
+    b.disabled=true;
+    const{error}=await sb.from('atividades').update(v24Ok?{status:'feito'}:{concluida:true,concluida_em:new Date().toISOString()}).eq('id',b.dataset.ntOk);
+    if(erroSB(error)){b.disabled=false;return;}
+    await carregarAtividades();toast('Tarefa concluída ✅');
+    if(minhasTarefasPendentes().length||pagamentosParaAvisar().length)mostrarNotificacao(notifDepois);else fecharNotificacao();
+    renderTabAtual();
+  });
+  if(!m.classList.contains('aberto')){abrirModal('modal-notif');tocarAlerta();}
+}
+function fecharNotificacao(){fecharModal('modal-notif');}
+function posNotificacao(){const f=notifDepois;notifDepois=null;if(f)setTimeout(f,150);}
+// "plim-plim" feito pelo próprio navegador (sem arquivo de som)
+let audioAlerta=null;
+function tocarAlerta(){
+  try{
+    audioAlerta=audioAlerta||new(window.AudioContext||window.webkitAudioContext)();
+    const ctx=audioAlerta;
+    const tocar=()=>{const t0=ctx.currentTime;[[880,0],[1175,.18],[880,.5],[1175,.68]].forEach(([f,dt])=>{
+      const o=ctx.createOscillator(),g=ctx.createGain();o.type='sine';o.frequency.value=f;
+      g.gain.setValueAtTime(0.0001,t0+dt);g.gain.exponentialRampToValueAtTime(0.35,t0+dt+0.02);g.gain.exponentialRampToValueAtTime(0.0001,t0+dt+0.3);
+      o.connect(g).connect(ctx.destination);o.start(t0+dt);o.stop(t0+dt+0.32);});};
+    if(ctx.state==='suspended'){
+      // navegador bloqueia som antes do 1º clique: toca no primeiro toque na tela
+      ctx.resume().then(()=>{if(ctx.state==='running')tocar();}).catch(()=>{});
+      const uma=()=>{document.removeEventListener('pointerdown',uma,true);ctx.resume().then(tocar).catch(()=>{});};
+      if(ctx.state==='suspended')document.addEventListener('pointerdown',uma,true);
+    }else tocar();
+  }catch(e){console.warn('som indisponível',e);}
 }
 /* ================= v17: PERFIL FUNCIONÁRIO — só os próprios contracheques ================= */
 let meusCC=[];
@@ -2437,7 +2560,7 @@ function aplicarPermissoes(){
   mostra('pg-btn-config',PERM.admin);
   mostra('btn-tipos-benef',PERM.rhEditar);
   document.querySelectorAll('#tabs [data-comercial]').forEach(t=>t.style.display=PERM.comercialVer?'':'none');
-  mostra('pa-cobr',PERM.funil);
+  if(!PERM.funil)$('pa-cobr').style.display='none';
   $('funil-dica').textContent=PERM.funil?'Arraste os cards entre as colunas para mudar a etapa.':'🔒 Seu perfil só consulta o funil.';
 }
 function abrirModalSenha(){$('ns-1').value='';$('ns-2').value='';abrirModal('modal-senha');setTimeout(()=>$('ns-1').focus(),50);}
@@ -2573,18 +2696,28 @@ function renderPainel(){
   const semProb=abertos.filter(c=>c.probabilidade==null).length;
   const conv=fechados.length+perdidos.length?Math.round(100*fechados.length/(fechados.length+perdidos.length)):null;
   const rotAno=ano==='todos'?'todos os anos':ano;
-  $('kpis').innerHTML=[
-    ['Em aberto no funil',fmtCurto(soma(abertos)),`${abertos.length} atendimento(s)`],
-    ['Previsão ponderada',fmtCurto(ponderado),semProb?`${semProb} sem chance informada`:'valor × chance de fechar'],
-    ['Fechado',fmtCurto(soma(fechados)),`${fechados.length} proposta(s) · ${rotAno}`],
-    ['Taxa de conversão',conv==null?'—':conv+'%',`${fechados.length} fechadas × ${perdidos.length} perdidas`],
-    ['Ticket médio fechado',fechados.length?fmtCurto(soma(fechados)/fechados.length):'—',rotAno],
-  ].map(([r,v,s])=>`<div class="kpi"><div class="rot">${esc(r)}</div><div class="val">${esc(v)}</div><div class="sub">${esc(s)}</div></div>`).join('');
+  // v32: saudação, hora da atualização e indicadores clicáveis
+  const h=new Date().getHours(),pn=String((meuPerfil&&meuPerfil.nome)||'').trim().split(/\s+/)[0];
+  $('pd-saudacao').textContent=`${h<12?'Bom dia':h<18?'Boa tarde':'Boa noite'}${pn?', '+pn:''} · ${new Date().toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long'})}`;
+  $('pd-atualizado').textContent='atualizado às '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+  const tfPend=tarefasPendentesPainel(cards),tfAtras=tfPend.filter(a=>a.data_prevista&&new Date(a.data_prevista)<inicioDoDia()).length;
+  const kpis=[
+    ['Tarefas pendentes',String(tfPend.length),tfAtras?`${tfAtras} atrasada(s)`:'nenhuma atrasada 👍',tfAtras?'#c0392b':'#2980b9','✅',()=>{$('ativ-visao').value='quadro';abrirTab('atividades');}],
+    ['Em aberto no funil',fmtCurto(soma(abertos)),`${abertos.length} atendimento(s)`,'#1a6b3c','📊',()=>abrirTab('funil')],
+    ['Previsão ponderada',fmtCurto(ponderado),semProb?`${semProb} sem chance informada`:'valor × chance de fechar','#8e44ad','🎯',()=>abrirTab('funil')],
+    ['Fechado',fmtCurto(soma(fechados)),`${fechados.length} proposta(s) · ${rotAno}`,'#27ae60','🏆',()=>abrirTab('funil')],
+    ['Taxa de conversão',conv==null?'—':conv+'%',`${fechados.length} fechadas × ${perdidos.length} perdidas`,'#e67e22','📈',()=>abrirTab('funil')],
+    ['Ticket médio fechado',fechados.length?fmtCurto(soma(fechados)/fechados.length):'—',rotAno,'#16a085','💰',()=>abrirTab('funil')],
+  ].filter((k,i)=>i===0?PERM.ativ||tfPend.length:PERM.comercialVer);
+  $('kpis').innerHTML=kpis.map(([r,v,s,cor,ico],i)=>`<div class="kpi" data-kpi="${i}" style="--kpi-cor:${cor}" title="Clique para ver"><span class="ico">${ico}</span><div class="rot">${esc(r)}</div><div class="val" data-contar="${esc(v)}">${esc(v)}</div><div class="sub">${esc(s)}</div></div>`).join('');
+  $('kpis').querySelectorAll('[data-kpi]').forEach(el=>el.onclick=()=>kpis[+el.dataset.kpi][5]());
+  animarNumeros($('kpis'));
+  renderTarefasPainel(tfPend);
 
   // funil
   const porEtapa=ABERTAS.map(id=>{const l=abertos.filter(c=>c.etapa===id);return{n:ETAPA_LABEL[id],q:l.length,v:soma(l)};});
   const maxQ=Math.max(1,...porEtapa.map(e=>e.q));
-  $('p-funil').innerHTML=porEtapa.map(e=>`<div class="barra-linha"><span class="nome">${esc(e.n)}</span><div class="barra-trilho"><div class="barra-cheia" style="width:${100*e.q/maxQ}%"></div></div><span class="num">${e.q} · ${esc(fmtCurto(e.v))}</span></div>`).join('');
+  $('p-funil').innerHTML=porEtapa.map(e=>`<div class="barra-linha clicavel" onclick="abrirTab('funil')" title="Ver no funil"><span class="nome">${esc(e.n)}</span><div class="barra-trilho"><div class="barra-cheia" style="width:${100*e.q/maxQ}%"></div></div><span class="num">${e.q} · ${esc(fmtCurto(e.v))}</span></div>`).join('');
 
   // meses
   const meses={};
@@ -2593,11 +2726,6 @@ function renderPainel(){
   const maxM=Math.max(1,...chaves.map(k=>meses[k]));
   const nomesMes=['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
   $('p-meses').innerHTML=chaves.length?chaves.map(k=>`<div class="barra-linha"><span class="nome">${nomesMes[+k.slice(5)-1]}/${k.slice(2,4)}</span><div class="barra-trilho"><div class="barra-cheia" style="width:${100*meses[k]/maxM}%"></div></div><span class="num">${esc(fmtCurto(meses[k]))}</span></div>`).join(''):'<p class="vazio">Nenhuma proposta fechada no período.</p>';
-
-  // atividades
-  const idsCards=new Set(cards.map(c=>c.id));
-  const ativs=todasAtividades.filter(a=>!a.concluida&&a.data_prevista&&new Date(a.data_prevista)<=fimDoDia()&&(empresaAtual==='todas'||(a.card_id&&idsCards.has(a.card_id))||!a.card_id)).slice(0,10);
-  $('p-ativ').innerHTML=ativs.length?ativs.map(a=>itemAtividadeMini(a)).join(''):'<p class="vazio">Nada atrasado nem para hoje. 👍</p>';
 
   // parados
   const parados=abertos.filter(c=>diasDesde(c.etapa_desde||c.atualizado_em)>15).sort((a,b)=>new Date(a.etapa_desde||a.atualizado_em)-new Date(b.etapa_desde||b.atualizado_em)).slice(0,10);
@@ -2614,6 +2742,70 @@ function renderPainel(){
   $('p-clientes').innerHTML=top.length?top.map(x=>`<div class="barra-linha"><span class="nome" title="${esc(x.c.nome)}"><span class="cod">${esc(x.c.codigo||'')}</span> ${esc(x.c.nome)}</span><div class="barra-trilho"><div class="barra-cheia" style="width:${100*x.v/maxC}%"></div></div><span class="num">${esc(fmtCurto(x.v))}</span></div>`).join(''):'<p class="vazio">Sem fechamentos no período.</p>';
 
   ligarCliques($('tab-painel'));
+  animarBarras($('tab-painel'));
+}
+/* v32: painel dinâmico */
+let pdTfFiltro='todas',pdTfGrupo='',pdTfResp='',painelTimer=null;
+function tarefasPendentesPainel(cards){
+  const ids=new Set((cards||filtraEmpresa(todosCards)).map(c=>c.id));
+  return todasAtividades.filter(a=>a.tipo!=='nota'&&!a.concluida&&(empresaAtual==='todas'||!a.card_id||ids.has(a.card_id)));
+}
+function grupoTarefa(a){if(!a.data_prevista)return'semdata';const d=new Date(a.data_prevista);return d<inicioDoDia()?'atrasadas':d<=fimDoDia()?'hoje':'proximas';}
+function renderTarefasPainel(todas){
+  const eu=norm(meuPerfil&&meuPerfil.nome);
+  let l=pdTfFiltro==='minhas'?todas.filter(a=>norm(a.responsavel)===eu):todas;
+  $('pd-tf-abas').querySelectorAll('[data-pdtf]').forEach(b=>{b.classList.toggle('ativo',b.dataset.pdtf===pdTfFiltro);b.onclick=()=>{pdTfFiltro=b.dataset.pdtf;pdTfResp='';renderTarefasPainel(todas);};});
+  $('pa-tf-cont').textContent=l.length?`${l.length} pendente(s)`:'';
+  const G=[['atrasadas','Atrasadas','#c0392b','#fdecea'],['hoje','Para hoje','#b9770e','#fff6e0'],['proximas','Próximas','#1565c0','#e8f1fb'],['semdata','Sem prazo','#555','#f2f2f2']];
+  const cont=Object.fromEntries(G.map(g=>[g[0],l.filter(a=>grupoTarefa(a)===g[0]).length]));
+  $('p-tf-resumo').innerHTML=G.map(([k,r,cor,bg])=>`<div class="pd-ch ${pdTfGrupo===k?'marcado':''}" data-pdg="${k}" style="color:${cor};background:${bg}" title="Filtrar"><b data-contar="${cont[k]}">${cont[k]}</b><span>${esc(r)}</span></div>`).join('');
+  $('p-tf-resumo').querySelectorAll('[data-pdg]').forEach(el=>el.onclick=()=>{pdTfGrupo=pdTfGrupo===el.dataset.pdg?'':el.dataset.pdg;renderTarefasPainel(todas);});
+  // por responsável
+  const porResp={};l.forEach(a=>{const r=(a.responsavel||'').trim()||'Sem responsável';porResp[r]=(porResp[r]||0)+1;});
+  const rs=Object.entries(porResp).sort((a,b)=>b[1]-a[1]);
+  $('p-tf-resp').innerHTML=rs.length>1||pdTfResp?`<div class="pd-resp">${rs.map(([r,q])=>`<span class="pilula ${pdTfResp===r?'verde marcada':'cinza'}" data-pdr="${esc(r)}" style="cursor:pointer">${r==='Sem responsável'?'—':`<span class="avatar" style="width:18px;height:18px;font-size:8px">${esc(iniciais(r))}</span>`} ${esc(r.split(/\s+/)[0])} · ${q}</span>`).join('')}</div>`:'';
+  $('p-tf-resp').querySelectorAll('[data-pdr]').forEach(el=>el.onclick=()=>{pdTfResp=pdTfResp===el.dataset.pdr?'':el.dataset.pdr;renderTarefasPainel(todas);});
+  if(pdTfGrupo)l=l.filter(a=>grupoTarefa(a)===pdTfGrupo);
+  if(pdTfResp)l=l.filter(a=>(((a.responsavel||'').trim())||'Sem responsável')===pdTfResp);
+  const ordemG={atrasadas:0,hoje:1,proximas:2,semdata:3},ordemP={urgente:0,alta:1,normal:2,baixa:3};
+  l=[...l].sort((a,b)=>ordemG[grupoTarefa(a)]-ordemG[grupoTarefa(b)]||String(a.data_prevista||'').localeCompare(String(b.data_prevista||''))||(ordemP[a.prioridade]??2)-(ordemP[b.prioridade]??2));
+  const mostra=l.slice(0,12);
+  $('p-ativ').innerHTML=mostra.length?mostra.map(a=>{
+    const card=a.card_id?todosCards.find(c=>c.id===a.card_id):null,cli=a.cliente_id?clientePorId(a.cliente_id):(card&&card.clientes),g=grupoTarefa(a);
+    const badge=g==='atrasadas'?`<span class="badge badge-atraso">atrasada · ${esc(fmtData(a.data_prevista))}</span>`:g==='hoje'?'<span class="badge badge-hoje">hoje</span>':g==='proximas'?`<span class="badge badge-cinza">${esc(fmtData(a.data_prevista))}</span>`:'<span class="badge badge-cinza">sem prazo</span>';
+    const st=typeof STATUS_TAREFA_LABEL!=='undefined'&&a.status&&a.status!=='a_fazer'?` · ${esc(STATUS_TAREFA_LABEL[a.status]||a.status)}`:'';
+    return`<div class="item" data-pd-tarefa="${esc(a.id)}"><div style="display:flex;gap:8px;align-items:flex-start;min-width:0">${a.responsavel?`<span class="avatar" title="${esc(a.responsavel)}" style="flex:none">${esc(iniciais(a.responsavel))}</span>`:'<span class="avatar" style="flex:none;background:#bbb">?</span>'}<div style="min-width:0"><strong>${a.prioridade==='urgente'?'🔴 ':a.prioridade==='alta'?'🟠 ':''}${esc(a.descricao)}</strong><br><span style="color:var(--texto2)">${esc(TIPO_LABEL[a.tipo]||a.tipo)}${st}${cli?` · <span class="cod">${esc(cli.codigo||'')}</span> ${esc(cli.nome)}`:''}${card?' · '+esc(card.titulo):''}</span></div></div>${badge}</div>`;}).join('')+(l.length>mostra.length?`<p class="vazio" style="cursor:pointer" onclick="abrirTab('atividades')">… e mais ${l.length-mostra.length} — ver todas em Tarefas</p>`:'')
+    :`<p class="vazio">${pdTfFiltro==='minhas'?'Você não tem tarefas pendentes. 👍':'Nenhuma tarefa pendente. 👍'}</p>`;
+  $('p-ativ').querySelectorAll('[data-pd-tarefa]').forEach(el=>el.onclick=()=>{const a=todasAtividades.find(x=>x.id===el.dataset.pdTarefa);if(!a)return;
+    if(v24Ok)abrirTarefa(a.id);else if(a.card_id)abrirModalCard(a.card_id);else abrirTab('atividades');});
+  animarNumeros($('p-tf-resumo'));
+}
+// barras crescem do zero
+function animarBarras(raiz){
+  const bs=[...raiz.querySelectorAll('.barra-cheia')];
+  bs.forEach(b=>{b.dataset.w=b.style.width;b.style.width='0';});
+  requestAnimationFrame(()=>requestAnimationFrame(()=>bs.forEach(b=>b.style.width=b.dataset.w)));
+}
+// números sobem até o valor (só a parte numérica; mantém R$, %, mil etc.)
+function animarNumeros(raiz){
+  raiz.querySelectorAll('[data-contar]').forEach(el=>{
+    // número no padrão brasileiro: 1.234,56
+    const txt=el.dataset.contar,m=txt.match(/^(\D*?)(\d{1,3}(?:\.\d{3})+(?:,\d+)?|\d+(?:,\d+)?)(.*)$/);if(!m)return;
+    const alvo=Number(m[2].replace(/\./g,'').replace(',','.')),dec=(m[2].split(',')[1]||'').length;
+    if(!(alvo>0))return;const t0=performance.now(),dur=600;
+    const passo=t=>{const k=Math.min(1,(t-t0)/dur),v=alvo*(1-Math.pow(1-k,3));el.textContent=m[1]+v.toLocaleString('pt-BR',{minimumFractionDigits:dec,maximumFractionDigits:dec})+m[3];if(k<1)requestAnimationFrame(passo);else el.textContent=txt;};
+    requestAnimationFrame(passo);
+  });
+}
+async function atualizarPainel(silencioso){
+  await Promise.all([carregarCards(),carregarAtividades(),carregarDocumentos(),PERM.pagamentos?carregarFinanceiro():null]);
+  if(tabAtual==='painel')renderPainel();
+  if(!silencioso)toast('Painel atualizado');
+}
+// atualiza sozinho a cada 5 minutos enquanto o painel está na tela
+function ligarAtualizacaoPainel(){
+  if(painelTimer)return;
+  painelTimer=setInterval(()=>{if(tabAtual==='painel'&&!document.hidden&&!document.querySelector('.modal-overlay.aberto'))atualizarPainel(true);},5*60*1000);
 }
 function itemAtividadeMini(a){
   const atras=new Date(a.data_prevista)<inicioDoDia();
@@ -3390,10 +3582,12 @@ function renderAvisosPainel(){
     !vig.length?`<p class="vazio">Nenhum documento cadastrado ainda.${PERM.docs?' Cadastre as certidões na aba Documentos.':''}</p>`:
     at.length?at.slice(0,10).map(itemDocMini).join('')+(at.length>10?`<p class="vazio">… e mais ${at.length-10}. Veja a aba Documentos.</p>`:''):'<p class="vazio">Nenhum documento vencido ou dentro do prazo de aviso. 👍</p>';
   // cobranças
-  if(PERM.funil){
-    const cb=cobrancasDoDia();
-    $('pa-cobr-cont').textContent=cb.length?`${cb.length} para hoje/atrasadas`:'';
-    $('p-cobr').innerHTML=cb.length?cb.slice(0,10).map(itemCobrancaMini).join(''):'<p class="vazio">Nenhuma proposta para cobrar hoje. 👍</p>';
+  // v32: o quadro de cobrança só aparece quando há proposta para cobrar
+  const cb=PERM.funil?cobrancasDoDia():[];
+  $('pa-cobr').style.display=cb.length?'':'none';
+  if(cb.length){
+    $('pa-cobr-cont').textContent=`${cb.length} para hoje/atrasadas`;
+    $('p-cobr').innerHTML=cb.slice(0,10).map(itemCobrancaMini).join('')+(cb.length>10?`<p class="vazio">… e mais ${cb.length-10}. Veja o funil.</p>`:'');
   }
 }
 function renderDocumentos(){
@@ -6048,7 +6242,20 @@ async function carregarFinanceiro(){
   if(!PERM.pagamentos)return;
   const{data,error}=await sb.from('pagamentos_autorizacao').select('*').order('vencimento',{ascending:true,nullsFirst:false}).order('criado_em');
   if(error){if(/pagamentos_autorizacao/.test(error.message||''))avisarMigracaoV20();else console.error(error);todosPagamentos=[];return;}
-  v20Ok=true;todosPagamentos=data||[];atualizarBadgeFin();
+  v20Ok=true;todosPagamentos=data||[];
+  // v32: período de aviso (aviso_inicio / aviso_fim)
+  if(todosPagamentos.length)v32PagOk='aviso_inicio' in todosPagamentos[0];
+  else{const t=await sb.from('pagamentos_autorizacao').select('aviso_inicio').limit(1);v32PagOk=!t.error;}
+  atualizarBadgeFin();
+}
+let v32PagOk=false;
+// hoje está dentro do período de aviso do pagamento? (sem datas = sempre)
+function pagNoAviso(p){const h=hojeISO();return(!p.aviso_inicio||h>=p.aviso_inicio)&&(!p.aviso_fim||h<=p.aviso_fim);}
+function textoPeriodoAviso(p){
+  if(!p.aviso_inicio&&!p.aviso_fim)return'';
+  const t=p.aviso_inicio&&p.aviso_fim?`${fmtData(p.aviso_inicio)} a ${fmtData(p.aviso_fim)}`:p.aviso_inicio?`a partir de ${fmtData(p.aviso_inicio)}`:`até ${fmtData(p.aviso_fim)}`;
+  const h=hojeISO(),st=p.aviso_inicio&&h<p.aviso_inicio?'ainda não começou':p.aviso_fim&&h>p.aviso_fim?'período encerrado':'avisando agora';
+  return`🔔 ${t} · ${st}`;
 }
 function atualizarBadgeFin(){
   const n=PERM.pagamentos?todosPagamentos.filter(p=>p.situacao==='pendente').length:0,b=$('tab-fin-badge');
@@ -6086,7 +6293,8 @@ function renderPagamentos(){
   const linha=p=>{
     const e=empresaPorId(p.empresa_id),d=p.vencimento?diasAte(p.vencimento):null;
     const venc=p.vencimento?`${esc(fmtData(p.vencimento))}${p.situacao==='pendente'&&d!=null&&d<=0?` <span class="badge badge-atraso">${d===0?'hoje':'vencido'}</span>`:p.situacao==='pendente'&&d===1?' <span class="badge badge-hoje">amanhã</span>':''}`:'—';
-    const sit=p.situacao==='pendente'?`<span class="badge badge-hoje">aguardando</span>${p.lembrete_ativo?'':' <span class="badge badge-cinza" title="Este pagamento não entra nos lembretes">sem lembrete</span>'}`
+    const per=p.situacao==='pendente'?textoPeriodoAviso(p):'';
+    const sit=p.situacao==='pendente'?`<span class="badge badge-hoje">aguardando</span>${p.lembrete_ativo?'':' <span class="badge badge-cinza" title="Este pagamento não entra nos lembretes">sem lembrete</span>'}${per?`<div class="dica" style="margin:2px 0 0;${pagNoAviso(p)?'':'color:var(--texto2)'}" title="Prazo de aviso ao André">${esc(per)}</div>`:''}`
       :p.situacao==='autorizado'?`<span class="badge badge-ok">autorizado</span><div class="dica" style="margin:0">${esc(fmtDataHora(p.autorizado_em))}${p.autorizado_por?' · '+esc(p.autorizado_por):''}</div>`:'<span class="badge badge-cinza">cancelado</span>';
     const acoes=[p.situacao==='pendente'&&PERM.autorizar?`<button class="btn-salvar" style="padding:6px 12px;font-size:13px" data-pg-ok="${esc(p.id)}">✅ Autorizei</button>`:'',
       `<button class="btn-link" data-pg-ed="${esc(p.id)}">${p.situacao==='pendente'?'editar':'ver'}</button>`,
@@ -6113,6 +6321,8 @@ function abrirPagamento(id){
   $('pg-vencimento').value=p&&p.vencimento?p.vencimento:'';$('pg-banco').value=p?(p.banco||''):'Itaú Empresas';
   $('pg-empresa').value=p?(p.empresa_id||''):(empresaAtual!=='todas'?empresaAtual:'');
   $('pg-descricao').value=p?(p.descricao||''):'';$('pg-obs').value=p?(p.observacoes||''):'';
+  $('pg-linha-periodo').style.display=v32PagOk?'':'none';
+  $('pg-aviso-ini').value=p&&p.aviso_inicio?p.aviso_inicio:'';$('pg-aviso-fim').value=p&&p.aviso_fim?p.aviso_fim:'';
   $('pg-avisar').checked=!p;$('pg-linha-avisar').style.display=p?'none':'';
   const leitura=!!p&&p.situacao!=='pendente';
   modoLeitura('modal-pagamento',leitura);
@@ -6124,12 +6334,17 @@ async function salvarPagamento(){
   const fav=$('pg-favorecido').value.trim();if(!fav){alert('Informe o favorecido.');return;}
   const dados={favorecido:fav,valor:parseMoeda($('pg-valor').value),vencimento:$('pg-vencimento').value||null,banco:$('pg-banco').value.trim()||null,
     empresa_id:$('pg-empresa').value||null,descricao:$('pg-descricao').value.trim()||null,observacoes:$('pg-obs').value.trim()||null};
+  if(v32PagOk){
+    const ai=$('pg-aviso-ini').value||null,af=$('pg-aviso-fim').value||null;
+    if(ai&&af&&af<ai){alert('O fim do prazo de aviso está antes do início. Confira as datas.');return;}
+    dados.aviso_inicio=ai;dados.aviso_fim=af;
+  }
   const btn=$('pg-btn-salvar');btn.disabled=true;
   try{
     const r=pagamentoEditandoId?await sb.from('pagamentos_autorizacao').update(dados).eq('id',pagamentoEditandoId)
       :await sb.from('pagamentos_autorizacao').insert({...dados,criado_por:quemSou()||null});
     if(erroSB(r.error))return;
-    const avisar=!pagamentoEditandoId&&$('pg-avisar').checked;
+    const avisar=!pagamentoEditandoId&&$('pg-avisar').checked&&pagNoAviso(dados);
     fecharModal('modal-pagamento');await carregarFinanceiro();renderPagamentos();
     if(avisar)await avisarAndreAgora(true);else toast('Pagamento salvo');
   }finally{btn.disabled=false;}
@@ -6156,7 +6371,7 @@ function autorizarTodos(){
 }
 // mensagem com a lista pendente (a mesma que o banco manda nos lembretes)
 function textoPagamentosPendentes(){
-  const pend=todosPagamentos.filter(p=>p.situacao==='pendente'&&p.lembrete_ativo!==false);
+  const pend=todosPagamentos.filter(p=>p.situacao==='pendente'&&p.lembrete_ativo!==false&&pagNoAviso(p));
   if(!pend.length)return'';
   const tot=pend.reduce((s,p)=>s+Number(p.valor||0),0);
   return'🔔 *Grupo BVEK — pagamentos aguardando sua autorização no app do banco*\n'+
@@ -6165,7 +6380,7 @@ function textoPagamentosPendentes(){
 }
 async function avisarAndreAgora(depoisDeSalvar){
   if(!PERM.pagamentos||!v20Ok)return;
-  if(!todosPagamentos.some(p=>p.situacao==='pendente'&&p.lembrete_ativo!==false)){alert('Não há pagamento pendente com lembrete ligado.');return;}
+  if(!todosPagamentos.some(p=>p.situacao==='pendente'&&p.lembrete_ativo!==false&&pagNoAviso(p))){alert('Não há pagamento pendente com lembrete ligado dentro do prazo de aviso.');return;}
   const btn=$('pg-btn-avisar');btn.disabled=true;
   try{
     const{data,error}=await sb.rpc('bvek_avisar_pagamentos',{p_forcar:true});
@@ -7629,6 +7844,7 @@ async function excluirComunicado(){
 let assinaturasMes=[];
 async function renderAssinaturasPonto(){
   const iso=mesRH(),per=periodoMeuPonto(iso);
+  $('as-btn-termos').style.display=PERM.docs&&PERM.rhEditar?'':'none';
   $('as-info').innerHTML=`Ponto de <strong>${esc(nomeMes(iso))}</strong> (${esc(fmtData(per.ini))} a ${esc(fmtData(somarDias(iso,24)))}). Cada funcionário entra no CRM com o CPF, abre <em>Meu ponto</em>, confere e assina com o dedo. Se discordar, escreve o que está errado e o RH corrige no Secullum e pede para assinar de novo. Clique em <em>ver</em> para imprimir ou salvar em PDF o espelho assinado.`;
   const campos='id,funcionario_id,competencia,concorda,observacao,nome_digitado,assinado_em,ip,hash';
   let{data,error}=await sb.from('ponto_assinaturas').select(campos+',copia_enviada_em,copia_enviada_para').eq('competencia',iso).order('assinado_em',{ascending:false});
@@ -7646,7 +7862,7 @@ async function renderAssinaturasPonto(){
     .map(([r,v,s])=>`<div class="kpi"><div class="rot">${esc(r)}</div><div class="val">${esc(v)}</div><div class="sub">${esc(s)}</div></div>`).join('');
   const colTermo=f=>{if(!termos)return'';const t=termos[f.id],papel=(rhPorFunc(f.id)||{}).termo_assinatura_em;
     return`<td style="font-size:12px">${!t?'<span class="badge badge-cinza" title="Crie o acesso na aba Usuários">sem acesso</span>':t.senha_definida_em?'<span class="badge badge-ok" title="Só o funcionário sabe a senha">senha pessoal ✓</span>':'<span class="badge badge-hoje" title="Ainda usa a senha provisória">senha provisória</span>'}
-      <div>${t&&t.termo_aceito_em?'termo no CRM ✓ '+esc(fmtData(t.termo_aceito_em)):'<span style="color:var(--texto2)">termo no CRM —</span>'}</div><div>${papel?'termo em papel ✓ '+esc(fmtData(papel)):'<span style="color:var(--laranja)">termo em papel: falta</span>'}</div></td>`;};
+      <div>${t&&t.termo_aceito_em?'termo no CRM ✓ '+esc(fmtData(t.termo_aceito_em)):'<span style="color:var(--texto2)">termo no CRM —</span>'}</div><div>${papel?'termo em papel ✓ '+esc(fmtData(papel)):'<span style="color:var(--laranja)">termo em papel: falta</span>'}</div>${(()=>{const d=termoDocDoFunc(f.id);return d&&d.arquivo?`<button class="btn-link" style="font-size:12px" onclick="abrirArquivoDoc('${esc(d.arquivo)}')">📄 termo preenchido</button>`:'';})()}</td>`;};
   if(termos)$('as-info').innerHTML+='<br><strong>Segurança jurídica:</strong> cada funcionário precisa ter <em>senha pessoal</em> (criada por ele no 1º acesso), o <em>termo aceito no CRM</em> e o <em>termo em papel</em> assinado uma vez (modelo em Word com o André; registre a data na ficha → Admissão).';
   $('tabela-assinaturas').innerHTML=`<thead><tr><th>Funcionário</th>${termos?'<th>Acesso e termo</th>':''}<th>Situação</th><th>Assinado em</th><th>Observação</th><th></th></tr></thead><tbody>${lista.length?lista.map(f=>{const a=ultima(f.id);
     return`<tr><td><strong>${esc(f.nome)}</strong>${tagEmpresa(f)}${f.cpf?'':' <span class="badge badge-atraso">sem CPF</span>'}</td>${colTermo(f)}
@@ -7655,6 +7871,108 @@ async function renderAssinaturasPonto(){
       <td>${a?`<button class="btn-link" data-as-ver="${esc(a.id)}">ver</button>`:''}</td></tr>`;}).join('')
     :`<tr><td colspan="${termos?6:5}" class="vazio">Nenhum funcionário ativo.</td></tr>`}</tbody>`;
   $('tabela-assinaturas').querySelectorAll('[data-as-ver]').forEach(b=>b.onclick=()=>verAssinaturaPonto(b.dataset.asVer));
+}
+/* v32: termo de adesão preenchido (PDF) para cada funcionário que usa o ponto eletrônico */
+const TERMO_TIPO_NOME='Termo de adesão – assinatura eletrônica';
+const TERMO_EMPREGADORA={razao:'VERDE BRASILIS GESTÃO E SERVIÇOS LTDA.',cnpj:'27.400.958/0001-26',sede:'Rua Conquista, nº 270 – Jardim Guanabara – Ilha do Governador',representante:'André Ferreira Lessa',cargo:'Diretor'};
+function tipoTermo(){return todosTipos.find(t=>norm(t.nome)===norm(TERMO_TIPO_NOME));}
+function termoDocDoFunc(fid){const t=tipoTermo();return t?todosDocumentos.find(d=>d.tipo_id===t.id&&d.funcionario_id===fid&&(d.situacao||'vigente')==='vigente'):null;}
+// mesmos critérios da lista de assinaturas: ativos, menos sócios e intermitentes
+function funcionariosDoPonto(){
+  return todosFuncionarios.filter(f=>f.ativo!==false&&(rhPorFunc(f.id)||{}).tipo_contrato!=='socio'&&!ehIntermitente(f)).sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
+}
+async function pdfTermoAdesao(f){
+  const L=await carregarPdfLib();
+  const doc=await L.PDFDocument.create();
+  const fn=await doc.embedFont(L.StandardFonts.Helvetica),fb=await doc.embedFont(L.StandardFonts.HelveticaBold);
+  doc.setTitle('Termo de adesão à assinatura eletrônica — '+f.nome);doc.setAuthor('Grupo BVEK');
+  const W=595.28,H=841.89,M=52,larg=W-2*M,cor=L.rgb(.13,.13,.13);
+  let pg=doc.addPage([W,H]),y=H-M;
+  const novaPg=()=>{pg=doc.addPage([W,H]);y=H-M;};
+  // parágrafo com trechos em negrito: [[texto,negrito],...]
+  const par=(runs,{tam=9.6,alinhar='just',antes=0,depois=5}={})=>{
+    y-=antes;const lh=tam*1.34;
+    const pal=[];runs.forEach(([t,b])=>String(t).split(/(\s+)/).filter(x=>x!=='').forEach(w=>pal.push({w,f:b?fb:fn})));
+    let linhas=[],at=[],la=0;
+    pal.forEach(p=>{const esp=/^\s+$/.test(p.w);const wd=p.f.widthOfTextAtSize(esp?' ':p.w,tam);
+      if(!esp&&la+wd>larg&&at.length){while(at.length&&/^\s+$/.test(at[at.length-1].w))at.pop();linhas.push(at);at=[];la=0;}
+      if(esp&&!at.length)return;at.push({...p,wd});la+=wd;});
+    if(at.length)linhas.push(at);
+    linhas.forEach((ln,i)=>{
+      if(y-lh<M){novaPg();}
+      const pal2=ln.filter(p=>!/^\s+$/.test(p.w)),esps=ln.length-pal2.length;
+      const total=ln.reduce((s,p)=>s+p.wd,0);
+      let x=M,extra=0;
+      if(alinhar==='centro')x=M+(larg-total)/2;
+      else if(alinhar==='just'&&i<linhas.length-1&&esps)extra=(larg-total)/esps;
+      ln.forEach(p=>{if(/^\s+$/.test(p.w)){x+=p.wd+extra;return;}pg.drawText(p.w,{x,y:y-tam,size:tam,font:p.f,color:cor});x+=p.wd;});
+      y-=lh;});
+    y-=depois;
+  };
+  const E=TERMO_EMPREGADORA,adm=f.data_admissao?fmtData(f.data_admissao):'____/____/________';
+  par([['TERMO DE ADESÃO AO USO DE ASSINATURA ELETRÔNICA',true]],{tam:13,alinhar:'centro',depois:2});
+  par([['Espelho de ponto, contracheques e documentos do contrato de trabalho',false]],{tam:10,alinhar:'centro',depois:16});
+  par([['EMPREGADORA: ',true],[`${E.razao}, inscrita no CNPJ sob o nº ${E.cnpj}, com sede na ${E.sede}, Rio de Janeiro/RJ, integrante do Grupo BVEK.`,false]]);
+  par([['EMPREGADO(A): ',true],[`${String(f.nome||'').toUpperCase()}, CPF nº ${f.cpf?fmtCPF(f.cpf):'______________________'}, função ${f.cargo||'______________________________'}, admitido(a) em ${adm}.`,false]],{depois:10});
+  par([['As partes acima concordam com o seguinte:',false]]);
+  [['Cláusula 1ª – Objeto.','O(A) EMPREGADO(A) passa a usar o CRM do Grupo BVEK (https://grupo-bvek.vercel.app), com login pessoal formado pelo seu CPF e por senha criada por ele(a) no primeiro acesso, para consultar seus contracheques e suas marcações de ponto e para assinar eletronicamente o espelho de ponto de cada mês e outros documentos relativos ao contrato de trabalho.'],
+   ['Cláusula 2ª – Validade da assinatura.','As partes reconhecem, nos termos do art. 10, § 2º, da Medida Provisória nº 2.200-2/2001 e da Lei nº 14.063/2020, que a assinatura eletrônica realizada no CRM, com o login pessoal do(a) EMPREGADO(A), tem a mesma validade e eficácia da assinatura de próprio punho, e a admitem como válida entre si.'],
+   ['Cláusula 3ª – Senha pessoal.','A senha é pessoal, secreta e intransferível. A senha provisória entregue pelo RH deve ser trocada obrigatoriamente no primeiro acesso, de modo que só o(a) EMPREGADO(A) a conheça. O(A) EMPREGADO(A) compromete-se a não divulgá-la e a avisar o RH imediatamente se suspeitar que outra pessoa a conhece. Atos praticados com o login do(a) EMPREGADO(A) presumem-se praticados por ele(a).'],
+   ['Cláusula 4ª – Registros de segurança.','Em cada assinatura o sistema registra data e hora, login, endereço de internet (IP), aparelho e navegador utilizados, a assinatura desenhada, o nome digitado e uma cópia do documento assinado com código de conferência (hash SHA-256). As assinaturas não podem ser alteradas nem apagadas, e uma cópia do documento assinado é enviada ao e-mail cadastrado pelo(a) EMPREGADO(A).'],
+   ['Cláusula 5ª – Conferência do ponto.','O(A) EMPREGADO(A) deverá conferir o espelho de ponto de cada mês (período de 26 do mês anterior a 25 do mês de referência). Havendo divergência, marcará a opção “não concordo” e descreverá o motivo, para que a EMPREGADORA verifique e, se for o caso, corrija o registro antes de nova assinatura. A assinatura não impede o(a) EMPREGADO(A) de questionar posteriormente registros que entenda incorretos.'],
+   ['Cláusula 6ª – Ponto oficial.','O registro oficial de jornada continua sendo o do sistema de ponto eletrônico adotado pela EMPREGADORA (Secullum), nos termos da Portaria MTP nº 671/2021. O CRM apenas apresenta essas marcações para conferência e assinatura.'],
+   ['Cláusula 7ª – Dados pessoais.','Os dados pessoais tratados no CRM destinam-se exclusivamente à execução do contrato de trabalho e ao cumprimento de obrigações legais, conforme a Lei nº 13.709/2018 (LGPD).'],
+   ['Cláusula 8ª – Vigência.','Este termo vigora enquanto durar o contrato de trabalho. O(A) EMPREGADO(A) poderá, a qualquer tempo, solicitar por escrito ao RH a volta da assinatura em papel, sem qualquer prejuízo.'],
+  ].forEach(([t,x])=>par([[t+' ',true],[x,false]]));
+  par([['E, por estarem de acordo, assinam o presente termo em 2 (duas) vias de igual teor.',false]],{depois:12});
+  par([['Rio de Janeiro, ____ de ______________________ de ________.',false]],{alinhar:'centro',depois:10});
+  // assinaturas lado a lado (não deixa o bloco quebrar entre páginas)
+  if(y<M+90)novaPg();
+  y-=38;const colW=(larg-30)/2;
+  [[M,['EMPREGADO(A)','Nome: '+String(f.nome||'').toUpperCase(),'CPF: '+(f.cpf?fmtCPF(f.cpf):'')]],
+   [M+colW+30,[E.razao,'Representante: '+E.representante,'Cargo: '+E.cargo]]].forEach(([x0,ls])=>{
+    pg.drawLine({start:{x:x0,y},end:{x:x0+colW,y},thickness:.7,color:cor});
+    ls.forEach((t,i)=>{const fo=i?fn:fb,tam=i?8.6:8.8;let tx=t;while(fo.widthOfTextAtSize(tx,tam)>colW&&tx.length>4)tx=tx.slice(0,-1);
+      pg.drawText(tx,{x:x0+(colW-fo.widthOfTextAtSize(tx,tam))/2,y:y-12-i*12,size:tam,font:fo,color:cor});});
+  });
+  return doc.save();
+}
+async function gerarTermosAdesao(){
+  if(!PERM.docs||!PERM.rhEditar){alert('Seu perfil não pode gerar documentos.');return;}
+  const tipo=tipoTermo();
+  if(!tipo){alert('Rode antes a migração v32 (supabase/migracao_crm_v32_manoella_aviso_pagamentos_termo.sql) no Supabase: ela cria o tipo de documento do termo.');return;}
+  const todos=funcionariosDoPonto();
+  if(!todos.length){alert('Nenhum funcionário ativo que use o ponto eletrônico.');return;}
+  const jaTem=todos.filter(f=>termoDocDoFunc(f.id));
+  let lista=todos.filter(f=>!termoDocDoFunc(f.id));
+  if(jaTem.length&&confirm(`${jaTem.length} funcionário(s) já têm o termo preenchido em Documentos.\n\nOK = gerar de novo para TODOS (o anterior vai para o histórico)\nCancelar = gerar só para quem ainda não tem (${lista.length})`))lista=todos;
+  if(!lista.length){toast('Todos já têm o termo preenchido');return;}
+  const semDados=lista.filter(f=>!f.cpf||!f.cargo||!f.data_admissao);
+  if(!confirm(`Gerar o termo de adesão preenchido para ${lista.length} funcionário(s)?\n\nEle fica guardado em Documentos (documento do funcionário).${semDados.length?`\n\nAtenção: ${semDados.length} sem CPF, função ou admissão na ficha — esses campos saem em branco para preencher à mão:\n• `+semDados.slice(0,10).map(f=>f.nome).join('\n• '):''}`))return;
+  const btn=$('as-btn-termos');btn.disabled=true;let ok=0,erros=[];
+  try{
+    for(const f of lista){
+      btn.textContent=`Gerando ${ok+erros.length+1} de ${lista.length}…`;
+      try{
+        const bytes=await pdfTermoAdesao(f);
+        const anterior=termoDocDoFunc(f.id);
+        const ins=await sb.from('documentos').insert({tipo_id:tipo.id,funcionario_id:f.id,empresa_id:f.empresa_id||null,orgao:'RH',
+          descricao:'Termo de adesão à assinatura eletrônica (preenchido pelo CRM — imprimir, colher as assinaturas e registrar a data na ficha → Admissão)',
+          data_emissao:hojeISO(),data_validade:null,dias_aviso:0,situacao:'vigente',criado_por:usuario?usuario.email:null}).select().single();
+        if(ins.error)throw ins.error;
+        const emp=empresaPorId(f.empresa_id),nomeArq=`BVK-RH-TERMO DE ADESAO - ${semAcento(f.nome).replace(/[^\w\- ]+/g,'').trim()}.pdf`;
+        const caminho=`${(emp&&emp.sigla)||'GERAL'}/${ins.data.id}/${Date.now()}_${nomeArq}`;
+        const up=await sb.storage.from(BUCKET_DOCS).upload(caminho,new Blob([bytes],{type:'application/pdf'}),{contentType:'application/pdf',upsert:false});
+        if(up.error){await sb.from('documentos').delete().eq('id',ins.data.id);throw up.error;}
+        const u2=await sb.from('documentos').update({arquivo:caminho,arquivo_nome:nomeArq}).eq('id',ins.data.id);if(u2.error)throw u2.error;
+        if(anterior)await sb.from('documentos').update({situacao:'substituido',substituido_por:ins.data.id,atualizado_em:new Date().toISOString()}).eq('id',anterior.id);
+        ok++;
+      }catch(e){console.error(f.nome,e);erros.push(f.nome+': '+(e.message||e));}
+    }
+  }finally{btn.disabled=false;btn.textContent='📄 Gerar termos de adesão preenchidos';}
+  await carregarDocumentos();renderTabAtual();
+  if(erros.length)alert(`${ok} termo(s) gerado(s). Não foi possível gerar ${erros.length}:\n\n${erros.join('\n')}`);
+  else toast(`${ok} termo(s) gerado(s) e guardado(s) em Documentos`);
 }
 async function verAssinaturaPonto(id){
   const w=window.open('','_blank');if(!w){alert('Permita pop-ups para este site.');return;}
@@ -7693,7 +8011,7 @@ document.querySelectorAll('.modal-overlay').forEach(ov=>{
   const x=document.createElement('button');x.type='button';x.className='modal-x';x.title='Fechar (Esc)';x.setAttribute('aria-label','Fechar');x.innerHTML='<svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M2 2L12 12M12 2L2 12" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>';
   x.onclick=()=>fecharModal(ov.id);cab.appendChild(x);m.prepend(cab);
 });
-document.addEventListener('keydown',e=>{if(e.key==='Escape'){const abertos=[...document.querySelectorAll('.modal-overlay.aberto')];if(abertos.length)abertos[abertos.length-1].classList.remove('aberto');}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){const abertos=[...document.querySelectorAll('.modal-overlay.aberto')];if(abertos.length)fecharModal(abertos[abertos.length-1].id);}});
 sb.auth.getSession().then(({data:{session}})=>{if(session)iniciarApp();});
 </script>
 </body>
