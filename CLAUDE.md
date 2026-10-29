@@ -53,6 +53,7 @@ Boa parte disto já foi implementada nas versões v11 a v18 (acessos, documentos
 **Funil / propostas**
 - Cobrança de retorno das propostas enviadas é feita com colunas no funil atual (não em aba ou funil separado).
 - PDF da proposta segue o modelo da proposta da Vibra (`C091-0000-PRP-0019_R00`, SharePoint `03_CLIENTES/C091_VIBRA/02_PROPOSTAS`): carta de apresentação, quadro-resumo, seções numeradas, planilha com subtotais por etapa, condições comerciais e assinaturas. **Nunca mostrar margem de lucro** (nem BDI/impostos separados) na proposta.
+- Identidade visual dos PDFs (proposta e OS): logos e marcas d'água em `img/logos/` (as mesmas das atas, `00.5.1.1_MODELOS/_sistema`) e as cores de cada empresa em `TEMAS_EMPRESA` no `index.html` — Engekat é azul (#1E3A5F/#2E6DB4), Verde Brasilis verde/laranja, BrasiLimp azul. Fundos sempre claros (sem faixas sólidas).
 - Textos fixos do modelo ficam em ⚙️ Parâmetros (`precificacao_config.dados.proposta`). Dados bancários só no banco — o repositório é público.
 - Impostos na composição de preço: preço = custo total ÷ 0,85 (15% sobre o preço).
 - Ordem de serviço: número da proposta com OS no lugar de PRP (`C###-NNNN-OS-SSSS`), sem valores.

@@ -4155,6 +4155,23 @@ const PROPOSTA_PADRAO={
   consideracoes:'Colocamo-nos à disposição para visita técnica conjunta, reunião de equalização e esclarecimentos que se fizerem necessários.',
   assinaturas:'André F. Lessa | Diretor Comercial | Tel: 21-3040-3700 · Cel: 21-99675-0707 | CRA-RJ 07-00050 · CREA-RJ 2017200613\nAila C. Lessa | Gerente Técnica de Arquitetura | CAU-RJ 326980-9\nMichelle Chagas | Engenheira Civil · Engenheira e Técnica de Segurança do Trabalho | CREA-RJ 2012116219'
 };
+// identidade visual de cada empresa (mesmas cores e logos das atas do grupo: 00.5.1.1_MODELOS/_sistema)
+const TEMAS_EMPRESA={
+  EK:{sigla:'EK',principal:'1E3A5F',destaque:'2E6DB4',claro:'EAF1F9',zebra:'F5F8FC',linha:'C9D6E6',marca:true},
+  VB:{sigla:'VB',principal:'03450A',destaque:'E9792A',claro:'EDF5EC',zebra:'F6FAF5',linha:'CFE0CC',marca:true},
+  BL:{sigla:'BL',principal:'0B4A76',destaque:'2FA3DA',claro:'E7F3FA',zebra:'F4F9FD',linha:'C6DFEE',marca:true},
+  KS:{sigla:'KS',principal:'1E3A5F',destaque:'2E6DB4',claro:'EAF1F9',zebra:'F5F8FC',linha:'C9D6E6',marca:false},
+  BVK:{sigla:'BVK',principal:'0C4982',destaque:'329948',claro:'EAF2F8',zebra:'F5F8FB',linha:'C8D7E5',marca:true}};
+function temaEmpresa(sigla){return TEMAS_EMPRESA[String(sigla||'').toUpperCase()]||TEMAS_EMPRESA.BVK;}
+function urlLogo(sigla,tipo){return new URL(`img/logos/${String(sigla).toLowerCase()}-${tipo}.png`,location.href).href;}
+// a janela do PDF só imprime depois que as logos carregarem (ou 4 s, o que vier antes)
+function imprimirQuandoCarregar(win){
+  let feito=false;const vai=()=>{if(feito)return;feito=true;setTimeout(()=>win.print(),200);};
+  let imgs=[];try{imgs=Array.from(win.document.images||[]).filter(i=>!i.complete);}catch(e){}
+  if(!imgs.length){vai();return;}
+  let n=imgs.length;imgs.forEach(i=>{i.onload=i.onerror=()=>{if(--n<=0)vai();};});
+  setTimeout(vai,4000);
+}
 function modeloProposta(){return Object.assign({},PROPOSTA_PADRAO,(precoCfg&&precoCfg.proposta)||{});}
 // número por extenso (reais e centavos), ex.: três milhões, setecentos e setenta mil, trezentos e oitenta e oito reais e setenta e oito centavos
 const EXT_U=['','um','dois','três','quatro','cinco','seis','sete','oito','nove','dez','onze','doze','treze','quatorze','quinze','dezesseis','dezessete','dezoito','dezenove'];
@@ -4203,7 +4220,7 @@ async function montarPDF(win){
   const comEtapas=etapas.some(e=>e.item);
   const somaItens=lista.reduce((s,i)=>s+Number(i.valor_total||0),0);
   const linhaItem=i=>`<tr><td>${esc(i.item)}</td><td>${esc(i.descricao)}${i.codigo?` <span class="cod">(${esc(i.codigo)})</span>`:''}</td><td class="c">${esc(i.unidade)}</td><td class="n">${esc(fmtNum(i.quantidade))}</td><td class="n">${fmtMoeda(i.valor_unitario)}</td><td class="n">${fmtMoeda(i.valor_total)}</td></tr>`;
-  const planilha=lista.length?`<table class="plan"><thead><tr><th style="width:44px">Item</th><th>Descrição</th><th style="width:40px">Un.</th><th style="width:66px">Quant.</th><th style="width:86px">Preço unit.</th><th style="width:96px">Preço total</th></tr></thead><tbody>
+  const planilha=lista.length?`<table class="plan"><thead><tr><th style="width:44px">Item</th><th>Descrição</th><th style="width:40px;text-align:center">Un.</th><th style="width:66px;text-align:right">Quant.</th><th style="width:86px;text-align:right">Preço unit.</th><th style="width:96px;text-align:right">Preço total</th></tr></thead><tbody>
     ${etapas.map(e=>(e.item?`<tr class="etapa"><td>${esc(e.item)}</td><td colspan="5">${esc(String(e.descricao||'').toUpperCase())}</td></tr>`:'')+e.linhas.map(linhaItem).join('')+(e.item?`<tr class="sub"><td></td><td colspan="4">Subtotal ${esc(e.item)}</td><td class="n">${fmtMoeda(e.total)}</td></tr>`:'')).join('')}
     </tbody><tfoot><tr><td colspan="5">VALOR GLOBAL DA PROPOSTA</td><td class="n">${fmtMoeda(total||somaItens)}</td></tr></tfoot></table>`:'';
   const pmo=Number(card.percentual_mao_obra)||0,pins=Number(card.percentual_insumos)||(pmo?100-pmo:0);
@@ -4212,13 +4229,13 @@ async function montarPDF(win){
   const equip=cp?(cp.equipamentos||[]).filter(x=>String(x.descricao||'').trim()).map(x=>x.descricao):[];
   const premissas=[card.observacoes,card.nota1,card.nota2,cp&&cp.turno==='noturno'?'Trabalho considerado em período noturno.':''].filter(x=>String(x||'').trim());
   // seções numeradas
-  const secoes=[];const sec=(titulo,html)=>{if(html)secoes.push(`<h2>${secoes.length+1}. ${titulo}</h2>${html}`);};
+  const secoes=[];const sec=(titulo,html)=>{if(html)secoes.push(`<h2><span class="num">${secoes.length+1}</span>${titulo}</h2>${html}`);};
   sec('OBJETO',`<p>${esc(card.titulo||'')}${prazo?`, com prazo de execução de até ${esc(prazo)}`:''}.</p>`);
   sec('ESCOPO DE FORNECIMENTO',card.escopo?blocoTexto(card.escopo):'');
   sec('PLANILHA DE PREÇOS',planilha?`<p>Preços unitários e totais em Reais (R$), com todos os custos diretos, encargos sociais e trabalhistas, administração, tributos e seguros (BDI) incluídos.</p>${planilha}
     <p><strong>Valor global:</strong> ${esc(valorComExtenso(total||somaItens))}.</p>${pmo?`<p><strong>Composição de custos:</strong> ${esc(fmtNum(pmo))}% de mão de obra e ${esc(fmtNum(pins))}% equipamentos e materiais.</p>`:''}`:'');
   if(comEtapas&&etapas.filter(e=>e.item).length>1){const T=etapas.reduce((s,e)=>s+e.total,0)||1;
-    sec('RESUMO POR ETAPA',`<table class="plan"><thead><tr><th style="width:44px">Item</th><th>Etapa</th><th style="width:110px">Valor (R$)</th><th style="width:80px">% do total</th></tr></thead><tbody>${etapas.filter(e=>e.item).map(e=>`<tr><td>${esc(e.item)}</td><td>${esc(e.descricao)}</td><td class="n">${fmtMoeda(e.total)}</td><td class="n">${(e.total/T*100).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}%</td></tr>`).join('')}</tbody><tfoot><tr><td colspan="2">TOTAL</td><td class="n">${fmtMoeda(T)}</td><td class="n">100,00%</td></tr></tfoot></table>`);}
+    sec('RESUMO POR ETAPA',`<table class="plan"><thead><tr><th style="width:44px">Item</th><th>Etapa</th><th style="width:110px;text-align:right">Valor (R$)</th><th style="width:80px;text-align:right">% do total</th></tr></thead><tbody>${etapas.filter(e=>e.item).map(e=>`<tr><td>${esc(e.item)}</td><td>${esc(e.descricao)}</td><td class="n">${fmtMoeda(e.total)}</td><td class="n">${(e.total/T*100).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}%</td></tr>`).join('')}</tbody><tfoot><tr><td colspan="2">TOTAL</td><td class="n">${fmtMoeda(T)}</td><td class="n">100,00%</td></tr></tfoot></table>`);}
   sec('EQUIPE E EQUIPAMENTOS PREVISTOS',(equipe.length||equip.length)?`${equipe.length?`<p><strong>Equipe técnica e operacional</strong></p><ul>${equipe.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:''}${equip.length?`<p><strong>Principais equipamentos</strong></p><ul>${equip.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:''}`:'');
   sec('PREMISSAS E ESCLARECIMENTOS',premissas.length?premissas.map(blocoTexto).join(''):'');
   const cond=[['Valor global',esc(valorComExtenso(total||somaItens))],['Tributos',esc(M.tributos)],prazo?['Prazo de execução',esc(`Até ${prazo} a partir da emissão da Ordem de Serviço`)]:null,
@@ -4228,36 +4245,47 @@ async function montarPDF(win){
   sec('CONSIDERAÇÕES FINAIS',`${blocoTexto(M.consideracoes)}<p>Atenciosamente,</p><div class="ass">${ass.map(p=>`<div><div class="linha"></div><strong>${esc(p[0])}</strong>${p.slice(1).filter(Boolean).map(x=>`<br>${esc(x)}`).join('')}</div>`).join('')}</div>`);
   function br2(s){return esc(s).replace(/\n/g,'<br>');}
   const nomeArquivo=semAcento(num||`${emp.sigla||'BVK'}-COM-PRP-${cli.codigo||'C000'}`).toUpperCase().replace(/[\\/:*?"<>|]/g,' ').replace(/\s+/g,' ').trim();
-  const rodape=`<div class="rodape"><strong>Conheça nossas empresas</strong><br>www.engekat.com.br &nbsp; www.brasilimp.com.br &nbsp; www.verdebrasilis.com.br &nbsp; www.katseguros.com.br</div>`;
-  const topo=`<div class="topo"><div class="marca">${esc(emp.nome||'GRUPO BVEK')}</div><div class="slogan">UMA EMPRESA, TODOS OS SERVIÇOS</div></div>`;
+  const T=temaEmpresa(emp.sigla);
+  const rodape=`<div class="rodape"><strong>Conheça nossas empresas</strong><div class="logos">${['EK','VB','BL','KS'].map(k=>`<img src="${urlLogo(k,'logo')}" alt="">`).join('')}</div>www.engekat.com.br &nbsp; www.brasilimp.com.br &nbsp; www.verdebrasilis.com.br &nbsp; www.katseguros.com.br</div>`;
+  const topo=`<div class="topo"><img class="logo" src="${urlLogo(T.sigla,'logo')}" alt="${esc(emp.nome||'')}"><div class="slogan">UMA EMPRESA, TODOS OS SERVIÇOS</div><img class="grupo" src="${urlLogo('BVK','logo')}" alt="Grupo BVEK"></div>`;
   const html=`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>${esc(nomeArquivo)}</title>
   <style>
-    @page{size:A4;margin:16mm 16mm 22mm}
-    body{font-family:Arial,sans-serif;font-size:10.5px;color:#222;margin:0;line-height:1.45;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    @page{size:A4;margin:14mm 16mm 14mm}
+    :root{--pri:#${T.principal};--dest:#${T.destaque};--claro:#${T.claro};--zebra:#${T.zebra};--linha:#${T.linha}}
+    body{font-family:Calibri,Arial,sans-serif;font-size:10.5px;color:#222;margin:0;line-height:1.45;-webkit-print-color-adjust:exact;print-color-adjust:exact}
     .pagina{max-width:780px;margin:0 auto;padding:10px 20px}
-    .topo{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid #1a6b3c;padding-bottom:6px;margin-bottom:16px}
-    .marca{color:#1a6b3c;font-size:17px;font-weight:700}.slogan{color:#1a6b3c;font-size:10px;font-weight:700;letter-spacing:.06em}
-    .rodape{margin-top:22px;padding-top:6px;border-top:1px solid #ccc;font-size:8.5px;color:#666;text-align:center;background:#fff}
-    table.moldura{margin:0}table.moldura>thead td,table.moldura>tfoot td,table.moldura>tbody>tr>td{padding:0;border:0}
+    .marca-dagua{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:115mm;z-index:-1;pointer-events:none}
+    .topo{display:flex;justify-content:space-between;align-items:center;gap:12px;border-bottom:2px solid var(--dest);padding-bottom:6px;margin-bottom:14px}
+    .topo img.logo{height:58px}.topo img.grupo{height:40px}
+    .slogan{flex:1;text-align:center;color:var(--pri);font-size:10px;font-weight:700;letter-spacing:.12em}
+    .rodape{margin-top:18px;padding-top:6px;border-top:1px solid var(--dest);font-size:8.5px;color:#5F6B7A;text-align:center;background:#fff}
+    .rodape .logos{display:flex;justify-content:center;align-items:center;gap:22px;margin:4px 0 3px}.rodape .logos img{height:26px}
+    .rodape strong{color:var(--pri)}
+    table.moldura{margin:0}table.moldura>thead td,table.moldura>tfoot td,table.moldura>tbody>tr>td{padding:0;border:0;background:transparent}
     .quebra{break-after:page;page-break-after:always}
-    h1{font-size:14px;color:#1a6b3c;margin:0 0 10px}
-    h2{font-size:11.5px;color:#1a6b3c;margin:16px 0 6px;padding-bottom:3px;border-bottom:1px solid #d7e9de;break-after:avoid}
-    p{margin:5px 0;text-align:justify}ul{margin:4px 0 6px 18px;padding:0}li{margin:2px 0}
-    .apres p{margin:8px 0}.apres h3{font-size:11px;color:#1a6b3c;margin:14px 0 4px}
+    h1{font-size:14px;color:var(--pri);margin:0 0 10px;letter-spacing:.02em}
+    h2{font-size:11.5px;color:var(--pri);margin:16px 0 6px;padding-bottom:3px;border-bottom:1.5px solid var(--pri);break-after:avoid;letter-spacing:.04em}
+    h2 .num{display:inline-block;min-width:18px;padding:0 5px;margin-right:6px;border:1.5px solid var(--dest);color:var(--dest);border-radius:3px;text-align:center}
+    p{margin:5px 0;text-align:justify}ul{margin:4px 0 6px 18px;padding:0}li{margin:2px 0}li::marker{color:var(--dest)}
+    .apres p{margin:8px 0}.apres h3{font-size:11px;color:var(--pri);margin:14px 0 4px}
     table{width:100%;border-collapse:collapse;margin:6px 0}
-    table.dados th{width:150px;text-align:left;background:#eef5f0;color:#1a6b3c;vertical-align:top}
-    table.dados th,table.dados td{border:1px solid #cfdcd3;padding:5px 8px}
-    .destaque{margin:12px 0;border:1.5px solid #1a6b3c}.destaque td{padding:6px 10px;border-bottom:1px solid #d7e9de}.destaque tr:first-child td{background:#1a6b3c;color:#fff;font-size:12.5px;font-weight:700}
+    table.dados th{width:150px;text-align:left;background:var(--claro);color:var(--pri);vertical-align:top;font-weight:600}
+    table.dados th,table.dados td{border:1px solid var(--linha);padding:5px 8px}
+    .destaque{margin:12px 0;border:1.5px solid var(--dest);border-radius:4px;border-collapse:separate;border-spacing:0}
+    .destaque td{padding:6px 10px;border-bottom:1px solid var(--linha)}.destaque tr:last-child td{border-bottom:0}
+    .destaque tr:first-child td{background:var(--claro);color:var(--pri);font-size:12.5px;font-weight:700}
     .destaque td.n{text-align:right;white-space:nowrap}
-    table.plan{font-size:9.5px}table.plan th{background:#1a6b3c;color:#fff;padding:5px 6px;text-align:left}
-    table.plan td{padding:4px 6px;border-bottom:1px solid #e3e3e3;vertical-align:top}
+    table.plan{font-size:9.5px;border:1px solid var(--linha)}
+    table.plan th{background:var(--claro);color:var(--pri);padding:5px 6px;text-align:left;border-bottom:1.5px solid var(--dest)}
+    table.plan td{padding:4px 6px;border-bottom:1px solid var(--linha);vertical-align:top}
+    table.plan tbody tr:nth-child(even) td{background:var(--zebra)}
     table.plan td.n{text-align:right;white-space:nowrap}table.plan td.c{text-align:center}
-    table.plan tr.etapa td{background:#eef5f0;font-weight:700;color:#1a6b3c}
-    table.plan tr.sub td{font-weight:700;border-bottom:1.5px solid #cfdcd3}
-    table.plan tfoot td{background:#1a6b3c;color:#fff;font-weight:700;padding:6px}
+    table.plan tr.etapa td{background:#fff !important;font-weight:700;color:var(--pri);border-top:1px solid var(--dest)}
+    table.plan tr.sub td{font-weight:700;color:var(--pri);background:#fff !important}
+    table.plan tfoot td{background:var(--claro);color:var(--pri);font-weight:700;padding:6px;border-top:1.5px solid var(--dest)}
     tr{break-inside:avoid}.cod{color:#888;font-size:8.5px}
-    .ass{display:flex;flex-wrap:wrap;gap:24px;margin-top:30px}.ass>div{flex:1 1 200px;font-size:9.5px}.ass .linha{border-top:1px solid #222;margin-bottom:5px;height:28px}
-  </style></head><body><div class="pagina">
+    .ass{display:flex;flex-wrap:wrap;gap:24px;margin-top:30px}.ass>div{flex:1 1 200px;font-size:9.5px}.ass .linha{border-top:1px solid var(--pri);margin-bottom:5px;height:28px}.ass strong{color:var(--pri)}
+  </style></head><body>${T.marca?`<img class="marca-dagua" src="${urlLogo(T.sigla,'marca')}" alt="">`:''}<div class="pagina">
   <table class="moldura"><thead><tr><td>${topo}</td></tr></thead><tfoot><tr><td>${rodape}</td></tr></tfoot><tbody><tr><td>
   <div class="quebra apres">
     <p>Rio de Janeiro, ${esc(hojeTxt)}.</p>
@@ -4287,7 +4315,7 @@ async function montarPDF(win){
   </td></tr></tbody></table>
   </div></body></html>`;
   win.document.open();win.document.write(html);win.document.close();
-  setTimeout(()=>win.print(),800);
+  imprimirQuandoCarregar(win);
   toast('Ao salvar o PDF, o nome sugerido já é o número da proposta');
 }
 
@@ -4318,7 +4346,7 @@ async function montarOS(win){
   const hoje=new Date().toLocaleDateString('pt-BR');
   const br=s=>esc(s).replace(/\n/g,'<br>');
   const fmtNum=v=>v!=null&&v!==''?Number(v).toLocaleString('pt-BR',{maximumFractionDigits:2}):'';
-  const num=numeroOS(card);
+  const num=numeroOS(card),T=temaEmpresa(emp.sigla);
   const nomeCliente=cli.razao_social||cli.empresa_cliente||cli.nome||'';
   const tabela=(cab,linhas)=>linhas.length?`<table><thead><tr>${cab.map(c=>`<th>${esc(c)}</th>`).join('')}</tr></thead><tbody>${linhas.map(l=>`<tr>${l.map(c=>`<td>${c}</td>`).join('')}</tr>`).join('')}</tbody></table>`:'';
   // período e turno (da composição de preço, se houver)
@@ -4337,21 +4365,21 @@ async function montarOS(win){
   <style>
     body{font-family:Arial,sans-serif;font-size:11px;color:#222;margin:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}
     .pagina{padding:26px 36px;max-width:800px;margin:0 auto}
-    .topo{display:flex;justify-content:space-between;align-items:flex-end;padding-bottom:10px;border-bottom:2px solid #1a6b3c;margin-bottom:14px}
-    .topo h1{color:#1a6b3c;font-size:18px;margin:0}.topo .os{text-align:right}.topo .os strong{display:block;font-size:15px;color:#1a6b3c}
-    h2{color:#1a6b3c;font-size:12px;margin:16px 0 6px;border-bottom:1px solid #e8f5ee;padding-bottom:3px;text-transform:uppercase}
+    .topo{display:flex;justify-content:space-between;align-items:flex-end;padding-bottom:10px;border-bottom:2px solid #${T.destaque};margin-bottom:14px}
+    .topo img{height:56px}.topo .os{text-align:right;color:#5F6B7A}.topo .os strong{display:block;font-size:15px;color:#${T.principal}}.topo .os .tit{font-weight:700;letter-spacing:.1em;color:#${T.principal}}
+    h2{color:#${T.principal};font-size:12px;margin:16px 0 6px;border-bottom:1.5px solid #${T.principal};padding-bottom:3px;text-transform:uppercase}
     table{width:100%;border-collapse:collapse;margin:4px 0;font-size:10.5px}
-    th,td{border:1px solid #ccc;padding:5px 7px;text-align:left;vertical-align:top}
-    thead th{background:#1a6b3c;color:#fff;border-color:#1a6b3c}
-    table.dados th{width:150px;background:#f3f7f4;font-weight:600}
+    th,td{border:1px solid #${T.linha};padding:5px 7px;text-align:left;vertical-align:top}
+    thead th{background:#${T.claro};color:#${T.principal};border-bottom:1.5px solid #${T.destaque}}
+    table.dados th{width:150px;background:#${T.claro};color:#${T.principal};font-weight:600}
     .campo-livre{border:1px solid #ccc;min-height:60px;padding:6px}
     .grade2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
     .assin{display:flex;gap:30px;margin-top:34px}.assin div{flex:1;text-align:center;border-top:1px solid #222;padding-top:5px}
     .rodape{margin-top:20px;font-size:9px;color:#999;text-align:center}
     @media print{.pagina{padding:14px}h2{break-after:avoid}tr{break-inside:avoid}}
   </style></head><body><div class="pagina">
-  <div class="topo"><div><h1>${esc(emp.nome||'GRUPO-BVEK')}</h1><div>Emitida em ${esc(hoje)}</div></div>
-    <div class="os">ORDEM DE SERVIÇO<strong>${esc(num)}</strong>Ref. proposta ${esc(numeroProposta(card))}${proj?`<br>Projeto ${esc(proj.codigo)}`:''}</div></div>
+  <div class="topo"><div><img src="${urlLogo(T.sigla,'logo')}" alt="${esc(emp.nome||'')}"><div style="color:#5F6B7A">Emitida em ${esc(hoje)}</div></div>
+    <div class="os"><span class="tit">ORDEM DE SERVIÇO</span><strong>${esc(num)}</strong>Ref. proposta ${esc(numeroProposta(card))}${proj?`<br>Projeto ${esc(proj.codigo)}`:''}</div></div>
   <h2>Cliente e local</h2>
   <table class="dados">${linha('Cliente',esc(`${cli.codigo?cli.codigo+' — ':''}${nomeCliente}`))}${linha('CNPJ / CPF',esc(cli.documento||''))}${linha('Endereço / local',esc(cli.endereco||''))}
     ${linha('Contato no local',esc([quem.nome,quem.cargo].filter(Boolean).join(' — ')))}${linha('Telefone / e-mail',esc([quem.telefone,quem.email].filter(Boolean).join(' · ')))}
@@ -4372,7 +4400,7 @@ async function montarOS(win){
   <div class="rodape">${esc(num)} · documento interno de execução — não contém valores</div>
   </div></body></html>`;
   win.document.open();win.document.write(html);win.document.close();
-  setTimeout(()=>win.print(),800);
+  imprimirQuandoCarregar(win);
   toast('Ordem de serviço gerada a partir da proposta');
 }
 
