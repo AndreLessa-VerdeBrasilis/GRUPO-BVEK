@@ -51,9 +51,14 @@ button{font-family:inherit}
 .cc-ponto-tab{background:#fff;border-radius:12px;box-shadow:0 1px 4px rgba(0,0,0,.06);overflow-x:auto}
 .cc-ponto-tab table{border-collapse:collapse;width:100%;font-size:13px;font-variant-numeric:tabular-nums}
 .cc-ponto-tab th{background:var(--verde-claro);color:var(--verde);text-align:left;padding:8px;white-space:nowrap;font-size:12px}
+@media(max-width:520px){.cc-ponto-tab table{font-size:12px}.cc-ponto-tab th,.cc-ponto-tab td{padding:6px 5px}}
 .cc-ponto-tab td{padding:7px 8px;border-top:1px solid var(--borda);white-space:nowrap}
 .cc-ponto-tab tr.fds td{color:var(--texto2);background:#fafafa}
 .cc-ponto-tab tr.tot td{font-weight:700;background:var(--verde-claro)}
+.cc-ass{background:#fff;border-radius:12px;padding:14px 16px;margin-top:14px;font-size:14px;line-height:1.5;box-shadow:0 1px 4px rgba(0,0,0,.06);border-left:4px solid var(--borda)}
+.cc-ass.ok{border-left-color:var(--verde)}.cc-ass.disc{border-left-color:var(--laranja)}.cc-ass span{font-size:12px;color:var(--texto2)}
+.cc-btn-ass{width:100%;margin-top:10px;padding:13px;border-radius:10px;border:0;background:var(--verde);color:#fff;font-weight:700;font-size:15px;cursor:pointer}
+.cc-aviso{background:#fff;border-radius:12px;padding:14px 16px;box-shadow:0 1px 4px rgba(0,0,0,.06);border-left:4px solid var(--verde)}.cc-aviso strong{font-size:15px}.cc-aviso p{font-size:14px;margin-top:6px;line-height:1.5}
 .cc-vazio{background:#fff;border-radius:12px;padding:28px 20px;text-align:center;color:var(--texto2);font-size:14px;line-height:1.6}
 .topbar{background:var(--verde);color:#fff;padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:56px;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.15);gap:12px}
 .topbar-logo{font-weight:700;font-size:18px;letter-spacing:1px;white-space:nowrap}
@@ -364,12 +369,14 @@ tr.doc-vencido td{background:#fff5f5}
   </div>
   <div class="cc-wrap">
     <div class="cc-ola"><h2 id="cc-nome">Meus contracheques</h2><p id="cc-dica">Toque em <strong>Abrir</strong> para ver o contracheque do mês ou em <strong>Baixar</strong> para salvar o PDF.</p></div>
-    <div class="cc-abas"><button id="cc-aba-cc" class="ativo" onclick="ccAba('cc')">📄 Contracheques</button><button id="cc-aba-ponto" onclick="ccAba('ponto')">🕒 Meu ponto</button></div>
+    <div class="cc-abas"><button id="cc-aba-cc" class="ativo" onclick="ccAba('cc')">📄 Contracheques</button><button id="cc-aba-ponto" onclick="ccAba('ponto')">🕒 Meu ponto</button><button id="cc-aba-avisos" onclick="ccAba('avisos')">📢 Avisos</button></div>
     <div class="cc-lista" id="cc-lista"><div class="cc-vazio">Carregando…</div></div>
     <div id="cc-ponto" style="display:none">
       <div class="cc-ola" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><label for="cc-ponto-mes" style="font-size:13px;font-weight:600">Mês</label><select id="cc-ponto-mes" onchange="carregarMeuPonto()" style="padding:8px;border:1.5px solid var(--borda);border-radius:8px;font-size:14px"></select><span id="cc-ponto-per" style="font-size:12px;color:var(--texto2)"></span></div>
       <div id="cc-ponto-res"></div>
+      <div id="cc-ponto-ass"></div>
     </div>
+    <div id="cc-avisos" class="cc-lista" style="display:none"></div>
   </div>
 </div>
 
@@ -397,6 +404,7 @@ tr.doc-vencido td{background:#fff5f5}
     <div class="tab" data-tab="clientes" data-comercial>Clientes</div>
     <div class="tab" data-tab="projetos" data-comercial>Projetos</div>
     <div class="tab" data-tab="fornecedores" data-comercial>Fornecedores</div>
+    <div class="tab" data-tab="inventario" data-comercial>Inventário <span id="tab-inv-badge"></span></div>
     <div class="tab" data-tab="atividades" data-comercial>Tarefas <span id="tab-ativ-badge"></span></div>
     <div class="tab" data-tab="empresas" data-comercial>Empresas</div>
     <div class="tab" data-tab="usuarios" id="tab-btn-usuarios" style="display:none">Usuários</div>
@@ -575,6 +583,28 @@ tr.doc-vencido td{background:#fff5f5}
       </div>
     </div>
 
+    <!-- INVENTÁRIO (v30): materiais e equipamentos do grupo -->
+    <div id="tab-inventario" style="display:none">
+      <div class="barra-acoes">
+        <h2>Inventário de materiais e equipamentos</h2>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn-sec" onclick="exportarInventario()">⬇️ Excel</button>
+          <button class="btn-novo inv-edita" onclick="abrirItemInventario(null)">+ Novo item</button>
+        </div>
+      </div>
+      <div class="info-box" id="inv-info" style="display:block;line-height:1.5"></div>
+      <div class="kpis" id="inv-kpis"></div>
+      <div class="filtros">
+        <input type="search" id="inv-busca" placeholder="Buscar nome, código, série, local" oninput="renderInventario()">
+        <select id="inv-f-tipo" onchange="renderInventario()"></select>
+        <select id="inv-f-estado" onchange="renderInventario()"></select>
+        <select id="inv-f-cat" onchange="renderInventario()"></select>
+        <label class="rot-filtro" style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="inv-baixo" onchange="renderInventario()"> só estoque baixo</label>
+        <label class="rot-filtro" style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="inv-inativos" onchange="renderInventario()"> mostrar desativados</label>
+      </div>
+      <div class="tabela-wrap"><table class="tabela" id="tabela-inventario"></table></div>
+    </div>
+
     <!-- ATIVIDADES -->
     <div id="tab-atividades" style="display:none">
       <div class="barra-acoes">
@@ -695,6 +725,8 @@ tr.doc-vencido td{background:#fff5f5}
         <div class="subaba" data-rh="vales">💸 Vales e adiantamentos</div>
         <div class="subaba" data-rh="contracheques">📄 Contracheques</div>
         <div class="subaba" data-rh="envio">📧 Envio à contabilidade</div>
+        <div class="subaba" data-rh="comunicacao" id="rh-sub-comunicacao">📢 Comunicação interna</div>
+        <div class="subaba" data-rh="assinaturas">✍️ Assinatura do ponto</div>
       </div>
 
       <div class="painel-rh ativo" id="rh-p-funcionarios">
@@ -770,6 +802,23 @@ tr.doc-vencido td{background:#fff5f5}
         </div>
         <div class="secao">Envios deste mês</div>
         <div id="rh-envios-lista"></div>
+      </div>
+
+      <!-- v30: comunicação interna -->
+      <div class="painel-rh" id="rh-p-comunicacao">
+        <div class="filtros">
+          <button class="btn-novo rh-edita" onclick="abrirComunicado(null)">+ Novo comunicado</button>
+          <input type="search" id="com-busca" placeholder="Buscar título ou texto" oninput="renderComunicados()">
+        </div>
+        <div class="info-box" id="com-info" style="display:block;line-height:1.5"></div>
+        <div class="tabela-wrap"><table class="tabela" id="tabela-comunicados"></table></div>
+      </div>
+
+      <!-- v30: assinatura eletrônica do ponto pelos funcionários -->
+      <div class="painel-rh" id="rh-p-assinaturas">
+        <div class="info-box" id="as-info" style="display:block;line-height:1.5"></div>
+        <div class="kpis" id="as-kpis"></div>
+        <div class="tabela-wrap"><table class="tabela" id="tabela-assinaturas"></table></div>
       </div>
     </div>
 
@@ -949,6 +998,13 @@ tr.doc-vencido td{background:#fff5f5}
     <div class="total-box">Total: R$ <span id="total-geral">0,00</span></div>
 
     <div id="card-extras" style="display:none">
+      <div class="secao">Materiais e equipamentos do inventário <span class="dica" style="text-transform:none;letter-spacing:0">(saem na Ordem de Serviço)</span></div>
+      <div id="card-inv"></div>
+      <div class="ativ-form so-edicao" id="card-inv-form">
+        <input type="text" id="ci-item" list="dl-inv-itens" placeholder="Buscar item do inventário (nome ou código)" style="flex:1;min-width:220px">
+        <input type="number" id="ci-qtd" value="1" min="0" step="any" style="width:90px" title="Quantidade">
+        <button class="btn-sec" onclick="addInventarioCard()">Adicionar</button>
+      </div>
       <div class="secao">Atividades deste atendimento</div>
       <div id="card-atividades"></div>
       <div class="ativ-form so-edicao">
@@ -1399,6 +1455,7 @@ tr.doc-vencido td{background:#fff5f5}
         <div class="campo"><label>CPF</label><input type="text" id="fi-cpf" inputmode="numeric" maxlength="14" placeholder="000.000.000-00" oninput="this.value=fmtCPF(this.value)"></div>
         <div class="campo"><label>PIS</label><input type="text" id="fi-pis" inputmode="numeric" maxlength="14" placeholder="000.00000.00-0" oninput="this.value=fmtPIS(this.value)"></div>
         <div class="campo"><label>Data de admissão</label><input type="date" id="fi-admissao"></div>
+        <div class="campo"><label>E-mail (comunicados)</label><input type="email" id="fi-email" placeholder="nome@exemplo.com"></div>
         <div class="campo"><label>Tipo de contrato</label><select id="fi-contrato"></select></div>
         <div class="campo"><label>Salário (R$)</label><input type="text" inputmode="numeric" id="fi-salario" placeholder="0,00" oninput="mascaraMoeda(this)"></div>
         <div class="campo" style="display:flex;align-items:flex-end"><div class="campo-check"><input type="checkbox" id="fi-adianta"><label for="fi-adianta" id="fi-adianta-rot">Recebe adiantamento todo mês</label></div></div>
@@ -1653,6 +1710,84 @@ tr.doc-vencido td{background:#fff5f5}
 </div>
 
 <!-- MODAL PAGAMENTO A AUTORIZAR (v20) -->
+<!-- v30: comunicado interno -->
+<div class="modal-overlay" id="modal-comunicado">
+  <div class="modal">
+    <h2 id="com-titulo-modal">Novo comunicado</h2>
+    <p class="modal-sub">Escreva o comunicado, salve e dispare: cada funcionário recebe um e-mail próprio (pelo Microsoft 365) e o texto vai pronto para o grupo do WhatsApp. Tudo fica registrado aqui.</p>
+    <div class="form-grid">
+      <div class="campo full"><label>Título *</label><input type="text" id="com-titulo" maxlength="150" placeholder="Ex.: Feriado de Finados — expediente"></div>
+      <div class="campo full"><label>Mensagem *</label><textarea id="com-mensagem" rows="8" placeholder="Escreva o comunicado..."></textarea></div>
+      <div class="campo"><label>Para</label><select id="com-empresa" onchange="renderDestinatariosCom()"></select></div>
+      <div class="campo"><label>Anexo (opcional, até 3 MB)</label><input type="file" id="com-anexo" accept=".pdf,.jpg,.jpeg,.png,.docx,.xlsx"><div class="dica" id="com-anexo-info"></div></div>
+    </div>
+    <div class="secao">Quem recebe por e-mail <span class="dica" id="com-dest-cont" style="text-transform:none;letter-spacing:0"></span></div>
+    <div class="dica" style="margin:-6px 0 8px">O e-mail de cada um fica na ficha do funcionário (RH → Funcionários → Dados). <button class="btn-link" onclick="marcarDestCom(true)">marcar todos</button> · <button class="btn-link" onclick="marcarDestCom(false)">desmarcar todos</button></div>
+    <div id="com-destinatarios" class="sub-lista" style="max-height:240px;overflow:auto"></div>
+    <div id="com-resultado"></div>
+    <div class="modal-btns">
+      <button class="btn-excluir" id="com-btn-excluir" style="display:none" onclick="excluirComunicado()">Excluir</button>
+      <button class="btn-cancelar" onclick="fecharModal('modal-comunicado')">Fechar</button>
+      <button class="btn-sec" id="com-btn-salvar" onclick="salvarComunicado()">💾 Salvar rascunho</button>
+      <button class="btn-sec" id="com-btn-teste" onclick="enviarComunicado(true)" title="Manda só para o seu e-mail, para conferir">🧪 Teste para mim</button>
+      <button class="btn-sec" id="com-btn-wa" onclick="whatsappComunicado()" title="Abre o WhatsApp com o texto pronto: escolha o grupo da empresa e envie">💬 Grupo do WhatsApp</button>
+      <button class="btn-salvar" id="com-btn-email" onclick="enviarComunicado(false)">📧 Enviar por e-mail</button>
+    </div>
+  </div>
+</div>
+
+<!-- v30: item do inventário -->
+<div class="modal-overlay" id="modal-inventario">
+  <div class="modal modal-sm">
+    <h2 id="inv-titulo-modal">Novo item do inventário</h2>
+    <div class="aviso-leitura">🔒 Seu perfil só consulta o inventário.</div>
+    <div class="form-grid">
+      <div class="campo full"><label>Nome *</label><input type="text" id="inv-nome" placeholder="Ex.: Roçadeira Stihl FS 220"></div>
+      <div class="campo"><label>Tipo</label><select id="inv-tipo"></select></div>
+      <div class="campo"><label>Categoria</label><input type="text" id="inv-categoria" list="dl-inv-cat" placeholder="Ex.: Jardinagem"></div>
+      <div class="campo"><label>Quantidade em estoque</label><input type="number" min="0" step="any" id="inv-qtd" value="1"></div>
+      <div class="campo"><label>Unidade</label><input type="text" id="inv-unidade" value="un" list="dl-inv-un"></div>
+      <div class="campo"><label>Estoque mínimo (alerta)</label><input type="number" min="0" step="any" id="inv-min"></div>
+      <div class="campo"><label>Estado</label><select id="inv-estado"></select></div>
+      <div class="campo"><label>Marca / modelo</label><input type="text" id="inv-marca"></div>
+      <div class="campo"><label>Nº de série / patrimônio</label><input type="text" id="inv-serie"></div>
+      <div class="campo"><label>Onde está</label><input type="text" id="inv-local" list="dl-inv-local" placeholder="Ex.: Depósito, obra Vibra, veículo..."></div>
+      <div class="campo"><label>Empresa dona</label><select id="inv-empresa"></select></div>
+      <div class="campo"><label>Valor unitário (R$)</label><input type="text" inputmode="numeric" id="inv-valor" oninput="mascaraMoeda(this)" placeholder="0,00"></div>
+      <div class="campo"><label>Data de aquisição</label><input type="date" id="inv-data"></div>
+      <div class="campo full"><label>Observações</label><textarea id="inv-obs" rows="2"></textarea></div>
+    </div>
+    <div id="inv-uso"></div>
+    <div class="modal-btns">
+      <button class="btn-excluir" id="inv-btn-desativar" style="display:none" onclick="alternarItemInventario()">Desativar</button>
+      <button class="btn-cancelar" onclick="fecharModal('modal-inventario')">Cancelar</button>
+      <button class="btn-salvar so-edicao" onclick="salvarItemInventario()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- v30: assinatura do ponto (login do funcionário) -->
+<div class="modal-overlay" id="modal-assinar-ponto">
+  <div class="modal modal-sm">
+    <h2>✍️ Assinar o ponto</h2>
+    <p class="modal-sub" id="ap-resumo"></p>
+    <div class="form-grid" style="grid-template-columns:1fr">
+      <div class="campo"><div class="campo-check" style="align-items:flex-start;margin-bottom:8px"><input type="radio" name="ap-opcao" id="ap-concordo" checked style="width:18px;height:18px;flex:none;margin:2px 8px 0 0" onchange="mudouOpcaoAssinatura()"><label for="ap-concordo"><strong>Concordo</strong> com as marcações e os totais do meu ponto neste período</label></div>
+        <div class="campo-check" style="align-items:flex-start"><input type="radio" name="ap-opcao" id="ap-discordo" style="width:18px;height:18px;flex:none;margin:2px 8px 0 0" onchange="mudouOpcaoAssinatura()"><label for="ap-discordo"><strong>Não concordo</strong> — tem algo errado</label></div></div>
+      <div class="campo" id="ap-obs-box" style="display:none"><label>O que está errado? *</label><textarea id="ap-obs" rows="3" placeholder="Ex.: dia 03/10 eu entrei às 7h, não às 8h"></textarea></div>
+      <div class="campo"><label>Seu nome completo *</label><input type="text" id="ap-nome" autocomplete="name"></div>
+      <div class="campo"><label>Assine com o dedo ou o mouse *</label>
+        <canvas id="ap-canvas" width="560" height="170" style="width:100%;height:170px;border:1.5px dashed var(--borda);border-radius:8px;background:#fff;touch-action:none"></canvas>
+        <div><button class="btn-link" onclick="limparAssinatura()">limpar e assinar de novo</button></div></div>
+      <div class="dica">Ao assinar, ficam registrados a data e a hora, o seu login (CPF), o endereço de internet (IP) e uma cópia do ponto mostrado na tela. Isto vale como a sua assinatura na folha de ponto do mês.</div>
+    </div>
+    <div class="modal-btns">
+      <button class="btn-cancelar" onclick="fecharModal('modal-assinar-ponto')">Cancelar</button>
+      <button class="btn-salvar" id="ap-btn" onclick="confirmarAssinaturaPonto()">Assinar</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="modal-pagamento">
   <div class="modal modal-sm">
     <h2 id="pg-titulo">Pagamento a autorizar</h2>
@@ -1756,6 +1891,7 @@ tr.doc-vencido td{background:#fff5f5}
   </div>
 </div>
 <datalist id="dl-fornecedores"></datalist>
+<datalist id="dl-inv-itens"></datalist><datalist id="dl-inv-cat"></datalist><datalist id="dl-inv-un"></datalist><datalist id="dl-inv-local"></datalist>
 
 <!-- MODAL FORNECEDOR (v22) -->
 <div class="modal-overlay" id="modal-fornecedor">
@@ -1923,7 +2059,9 @@ function calcularPermissoes(p){
     // v21: saídas · saidasTodas = vê todas, importa fatura e confere (o comercial vê só os próprios cartões)
     saidasTodas:adm||admv,
     // v22: fornecedores e preços (todos da área comercial veem; administrador e comercial editam)
-    fornEditar:adm||com};
+    fornEditar:adm||com,
+    // v30: inventário (administrador, comercial e administrativo cadastram; consulta só vê)
+    invEditar:adm||com||admv};
 }
 const BUCKET_DOCS='documentos';
 const ABERTAS=ETAPAS.filter(e=>!['fechada','perdida'].includes(e.id)).map(e=>e.id);
@@ -2076,6 +2214,7 @@ async function iniciarContracheques(){
   $('tela-login').style.display='none';$('app').style.display='none';$('tela-cc').style.display='block';
   const[n,l]=await Promise.all([sb.rpc('bvek_meu_nome_funcionario'),sb.rpc('bvek_meus_contracheques')]);
   const nome=(n&&n.data)||meuPerfil.nome||'';
+  $('cc-nome').dataset.nome=nome||'';
   $('cc-nome').textContent=nome?`Olá, ${String(nome).split(' ')[0].charAt(0)+String(nome).split(' ')[0].slice(1).toLowerCase()}`:'Meus contracheques';
   if(l.error){console.error(l.error);
     $('cc-lista').innerHTML=/bvek_meus_contracheques|function|schema cache/i.test(l.error.message||'')
@@ -2089,38 +2228,110 @@ async function iniciarContracheques(){
     <div class="cc-btns"><button class="cc-prim" onclick="abrirMeuCC(${i},false)">Abrir</button><button onclick="abrirMeuCC(${i},true)">Baixar</button></div></div>`).join('');
 }
 // v28: o funcionário também vê as próprias marcações do ponto (Secullum), período de 26 a 25
+// v30: 3 abas (contracheques, ponto com assinatura do mês, avisos/comunicados)
 function ccAba(a){
-  const p=a==='ponto';$('cc-aba-cc').classList.toggle('ativo',!p);$('cc-aba-ponto').classList.toggle('ativo',p);
-  $('cc-lista').style.display=p?'none':'';$('cc-ponto').style.display=p?'':'none';
-  $('cc-dica').innerHTML=p?'Suas marcações de entrada e saída, como estão no ponto (Secullum). O mês vai do dia 26 do mês anterior ao dia 25. Se algo estiver errado, fale com o RH.'
+  ['cc','ponto','avisos'].forEach(k=>$('cc-aba-'+k).classList.toggle('ativo',k===a));
+  $('cc-lista').style.display=a==='cc'?'':'none';$('cc-ponto').style.display=a==='ponto'?'':'none';$('cc-avisos').style.display=a==='avisos'?'':'none';
+  $('cc-dica').innerHTML=a==='ponto'?'Suas marcações de entrada e saída, como estão no ponto (Secullum). O mês vai do dia 26 do mês anterior ao dia 25. Confira e <strong>assine</strong> no fim da página. Se algo estiver errado, marque “não concordo” e explique.'
+    :a==='avisos'?'Comunicados do RH para a equipe.'
     :'Toque em <strong>Abrir</strong> para ver o contracheque do mês ou em <strong>Baixar</strong> para salvar o PDF.';
-  if(p&&!$('cc-ponto-mes').options.length){
+  if(a==='ponto'&&!$('cc-ponto-mes').options.length){
     const h=new Date(),base=new Date(h.getFullYear(),h.getMonth()+(h.getDate()>25?1:0),1),ops=[];
     for(let i=0;i<6;i++){const d=new Date(base.getFullYear(),base.getMonth()-i,1);const iso=isoLocal(d);ops.push([iso,nomeMes(iso)]);}
     preencherSelect($('cc-ponto-mes'),ops);carregarMeuPonto();
   }
+  if(a==='avisos')carregarMeusAvisos();
 }
 function periodoMeuPonto(iso){const d=new Date(iso+'T00:00:00'),ini=new Date(d.getFullYear(),d.getMonth()-1,26),fim=new Date(d.getFullYear(),d.getMonth(),25);
-  const h=hojeISO(),f=isoLocal(fim);return{ini:isoLocal(ini),fim:f>h?h:f};}
+  const h=hojeISO(),f=isoLocal(fim);return{ini:isoLocal(ini),fim:f>h?h:f,fimMes:f,fechado:f<h};}
+// v30: só as colunas que importam para o funcionário
+const COLUNAS_PONTO=[['Entrada 1',/^ent(rada)?\.?\s*0?1$/],['Saída 1',/^sai(da)?\.?\s*0?1$/],['Entrada 2',/^ent(rada)?\.?\s*0?2$/],['Saída 2',/^sai(da)?\.?\s*0?2$/],
+  ['Normais',/^(horas\s*)?norm(ais)?\.?$/],['Faltas',/^(horas\s*)?falta?s?\.?$/],['Atraso',/^atras(o|os)?\.?$/],['Carga',/^carga(\s*horaria)?\.?$/]];
+function reduzirPonto(data){
+  const cols=data.colunas||[],dias=data.dias||[],tot=data.totais||null;
+  const ini=/^data/i.test(cols[0]||'')?1:0,chave=c=>semAcento(String(c||'')).toLowerCase().trim();
+  let usar=COLUNAS_PONTO.map(([rot,re])=>{const i=cols.findIndex((c,k)=>k>=ini&&re.test(chave(c)));return i>=0?[rot,i]:null;}).filter(Boolean);
+  // se o Secullum mudar os nomes e quase nada bater, mostra as colunas preenchidas (como antes)
+  if(usar.length<3)usar=cols.map((c,i)=>[c,i]).filter(([c,i])=>i>=ini&&(dias.some(d=>String(d.valores[i]||'').trim())||(tot&&String(tot[i]||'').trim())));
+  return{colunas:usar.map(u=>u[0]),dias:dias.map(d=>({data:d.data,valores:usar.map(u=>d.valores[u[1]]??'')})),totais:tot?usar.map(u=>tot[u[1]]??''):null,periodo:data.periodo||null};
+}
+function tabelaPontoHTML(p){
+  const sem=['dom','seg','ter','qua','qui','sex','sáb'],cols=p.colunas||[];
+  const linhas=(p.dias||[]).map(d=>{const w=new Date(d.data+'T00:00:00').getDay();
+    return`<tr class="${w===0||w===6?'fds':''}"><td><strong>${esc(fmtData(d.data).slice(0,5))}</strong> ${sem[w]||''}</td>${(d.valores||[]).map(v=>`<td>${esc(v||'')}</td>`).join('')}</tr>`;}).join('');
+  const tot=p.totais&&p.totais.some(x=>String(x||'').trim())?`<tr class="tot"><td>Total</td>${p.totais.map(v=>`<td>${esc(v||'')}</td>`).join('')}</tr>`:'';
+  return`<table><thead><tr><th>Dia</th>${cols.map(c=>`<th>${esc(c)}</th>`).join('')}</tr></thead><tbody>${linhas}${tot}</tbody></table>`;
+}
+let pontoTela=null,minhasAssinaturas=null;
 async function carregarMeuPonto(){
-  const per=periodoMeuPonto($('cc-ponto-mes').value),res=$('cc-ponto-res');
+  const iso=$('cc-ponto-mes').value,per=periodoMeuPonto(iso),res=$('cc-ponto-res');
   $('cc-ponto-per').textContent=`${fmtData(per.ini)} a ${fmtData(per.fim)}`;
-  res.innerHTML='<div class="cc-vazio">Buscando suas marcações…</div>';
-  const{data,error}=await sb.functions.invoke('secullum',{body:{acao:'meu_ponto',dataInicio:per.ini,dataFim:per.fim}});
+  res.innerHTML='<div class="cc-vazio">Buscando suas marcações…</div>';$('cc-ponto-ass').innerHTML='';pontoTela=null;
+  const[r,ass]=await Promise.all([sb.functions.invoke('secullum',{body:{acao:'meu_ponto',dataInicio:per.ini,dataFim:per.fim}}),minhasAssinaturas?Promise.resolve(null):sb.rpc('bvek_minhas_assinaturas_ponto')]);
+  if(ass)minhasAssinaturas=ass.error?false:(ass.data||[]);
+  const{data,error}=r;
   let msg=data&&data.erro;
   if(error&&!msg){try{const b=await error.context.json();msg=b&&b.erro;}catch(e){}}
   if(msg&&/não pode buscar/i.test(msg))msg='O ponto ainda está sendo liberado para o seu acesso. Tente de novo mais tarde.';
   if(error||!data||msg){console.error(error||msg);res.innerHTML=`<div class="cc-vazio">${esc(msg||'Não foi possível buscar o ponto agora. Tente de novo mais tarde.')}</div>`;return;}
-  const cols=data.colunas||[],dias=data.dias||[];
-  if(!dias.length){res.innerHTML='<div class="cc-vazio">Nenhuma marcação neste período.</div>';return;}
-  // a 1ª coluna do Secullum é a data: o CRM mostra a data com o dia da semana; esconde colunas sempre vazias
-  const ini=/^data/i.test(cols[0]||'')?1:0;
-  const usar=cols.map((c,i)=>i).filter(i=>i>=ini&&(dias.some(d=>String(d.valores[i]||'').trim())||(data.totais&&String(data.totais[i]||'').trim())));
-  const sem=['dom','seg','ter','qua','qui','sex','sáb'];
-  const linhas=dias.map(d=>{const w=new Date(d.data+'T00:00:00').getDay();
-    return`<tr class="${w===0||w===6?'fds':''}"><td><strong>${esc(fmtData(d.data).slice(0,5))}</strong> ${sem[w]||''}</td>${usar.map(i=>`<td>${esc(d.valores[i]||'')}</td>`).join('')}</tr>`;}).join('');
-  const tot=data.totais&&data.totais.length?`<tr class="tot"><td>Total</td>${usar.map(i=>`<td>${esc(data.totais[i]||'')}</td>`).join('')}</tr>`:'';
-  res.innerHTML=`<div class="cc-ponto-tab"><table><thead><tr><th>Dia</th>${usar.map(i=>`<th>${esc(cols[i])}</th>`).join('')}</tr></thead><tbody>${linhas}${tot}</tbody></table></div>`;
+  if(!(data.dias||[]).length){res.innerHTML='<div class="cc-vazio">Nenhuma marcação neste período.</div>';return;}
+  pontoTela={...reduzirPonto(data),competencia:iso,inicio:per.ini,fim:per.fim};
+  res.innerHTML=`<div class="cc-ponto-tab">${tabelaPontoHTML(pontoTela)}</div>`;
+  renderAssinaturaMes();
+}
+function renderAssinaturaMes(){
+  const box=$('cc-ponto-ass');if(!pontoTela||minhasAssinaturas===false){box.innerHTML='';return;}
+  const iso=pontoTela.competencia,per=periodoMeuPonto(iso),a=(minhasAssinaturas||[]).find(x=>x.competencia===iso);
+  let h;
+  if(a&&a.concorda)h=`<div class="cc-ass ok">✅ <strong>Você assinou o ponto de ${esc(nomeMes(iso))}</strong><br><span>${esc(fmtDataHora(a.assinado_em))} · código ${esc(String(a.hash||'').slice(0,12))}</span></div>`;
+  else if(a)h=`<div class="cc-ass disc">⚠️ <strong>Você indicou que o ponto de ${esc(nomeMes(iso))} tem erro</strong><br><span>${esc(a.observacao||'')}</span><br><span>O RH vai conferir. Depois da correção, assine de novo.</span></div>
+    <button class="cc-btn-ass" onclick="abrirAssinaturaPonto()">✍️ Assinar de novo</button>`;
+  else if(!per.fechado)h=`<div class="cc-ass">🕒 A assinatura do ponto de ${esc(nomeMes(iso))} libera depois do dia ${esc(fmtData(per.fimMes).slice(0,5))}, quando o período fecha.</div>`;
+  else h=`<div class="cc-ass">Confira as marcações acima. Se estiver tudo certo, assine o ponto do mês.</div><button class="cc-btn-ass" onclick="abrirAssinaturaPonto()">✍️ Assinar o ponto de ${esc(nomeMes(iso))}</button>`;
+  box.innerHTML=h;
+}
+/* assinatura desenhada (dedo ou mouse) */
+let assCtx=null,assDesenhou=false;
+function prepararCanvasAssinatura(){
+  const c=$('ap-canvas');assCtx=c.getContext('2d');assDesenhou=false;
+  assCtx.fillStyle='#fff';assCtx.fillRect(0,0,c.width,c.height);assCtx.lineWidth=2.4;assCtx.lineCap='round';assCtx.lineJoin='round';assCtx.strokeStyle='#14213d';
+  if(c.dataset.ligado)return;c.dataset.ligado='1';
+  let des=false;const pos=e=>{const r=c.getBoundingClientRect();return[(e.clientX-r.left)*c.width/r.width,(e.clientY-r.top)*c.height/r.height];};
+  c.addEventListener('pointerdown',e=>{des=true;c.setPointerCapture(e.pointerId);const[x,y]=pos(e);assCtx.beginPath();assCtx.moveTo(x,y);e.preventDefault();});
+  c.addEventListener('pointermove',e=>{if(!des)return;const[x,y]=pos(e);assCtx.lineTo(x,y);assCtx.stroke();assDesenhou=true;e.preventDefault();});
+  const fim=()=>{des=false;};c.addEventListener('pointerup',fim);c.addEventListener('pointercancel',fim);
+}
+function limparAssinatura(){prepararCanvasAssinatura();}
+function mudouOpcaoAssinatura(){const d=$('ap-discordo').checked;$('ap-obs-box').style.display=d?'':'none';$('ap-btn').textContent=d?'Enviar ao RH e assinar':'Assinar';}
+function abrirAssinaturaPonto(){
+  if(!pontoTela)return;
+  $('ap-resumo').textContent=`Ponto de ${nomeMes(pontoTela.competencia)} — ${fmtData(pontoTela.inicio)} a ${fmtData(pontoTela.fim)}.`;
+  $('ap-concordo').checked=true;$('ap-obs').value='';mudouOpcaoAssinatura();
+  if(!$('ap-nome').value)$('ap-nome').value=$('cc-nome').dataset.nome||'';
+  abrirModal('modal-assinar-ponto');setTimeout(prepararCanvasAssinatura,30);
+}
+async function confirmarAssinaturaPonto(){
+  const conc=$('ap-concordo').checked,obs=$('ap-obs').value.trim(),nome=$('ap-nome').value.trim();
+  if(!conc&&!obs){alert('Explique o que está errado no ponto.');return;}
+  if(nome.split(/\s+/).length<2){alert('Digite o seu nome completo.');return;}
+  if(!assDesenhou){alert('Faça a sua assinatura no quadro.');return;}
+  const btn=$('ap-btn');btn.disabled=true;
+  try{
+    const p=pontoTela;
+    const{error}=await sb.rpc('bvek_assinar_ponto',{p_competencia:p.competencia,p_inicio:p.inicio,p_fim:p.fim,p_concorda:conc,p_observacao:obs||null,p_nome:nome,
+      p_assinatura:$('ap-canvas').toDataURL('image/png'),p_dados:{colunas:p.colunas,dias:p.dias,totais:p.totais},p_user_agent:navigator.userAgent});
+    if(error){alert('Não foi possível assinar: '+(error.message||error));return;}
+    minhasAssinaturas=null;fecharModal('modal-assinar-ponto');
+    const r=await sb.rpc('bvek_minhas_assinaturas_ponto');minhasAssinaturas=r.error?false:(r.data||[]);renderAssinaturaMes();
+    toast(conc?'Ponto assinado. Obrigado!':'Enviado ao RH');
+  }finally{btn.disabled=false;}
+}
+async function carregarMeusAvisos(){
+  const box=$('cc-avisos');box.innerHTML='<div class="cc-vazio">Carregando…</div>';
+  const{data,error}=await sb.rpc('bvek_meus_comunicados');
+  if(error){box.innerHTML='<div class="cc-vazio">Os avisos ainda estão sendo liberados. Tente de novo mais tarde.</div>';return;}
+  box.innerHTML=(data||[]).length?data.map(c=>`<div class="cc-aviso"><div class="cc-sub">${esc(fmtDataHora(c.enviado_em))}</div><strong>${esc(c.titulo)}</strong><p>${esc(c.mensagem).replace(/\n/g,'<br>')}</p></div>`).join('')
+    :'<div class="cc-vazio">Nenhum aviso por enquanto.</div>';
 }
 async function abrirMeuCC(i,baixar){
   const c=meusCC[i];if(!c)return;
@@ -2172,7 +2383,7 @@ async function trocarSenha(){
 /* ================= CARGA DE DADOS ================= */
 async function carregarTudo(){
   await carregarEmpresas();
-  await Promise.all([carregarClientes(),carregarCards(),carregarAtividades(),carregarProjetos(),carregarPerfis(),carregarDocsTudo(),carregarBeneficiosTudo(),carregarRH(),carregarCurriculos(),carregarFinanceiro(),carregarSaidas(),carregarFornecedores(),carregarPrecoCfg()]);
+  await Promise.all([carregarClientes(),carregarCards(),carregarAtividades(),carregarProjetos(),carregarPerfis(),carregarDocsTudo(),carregarBeneficiosTudo(),carregarRH(),carregarCurriculos(),carregarFinanceiro(),carregarSaidas(),carregarFornecedores(),carregarPrecoCfg(),carregarComunicados(),carregarInventario()]);
   atualizarBadgeRH();
   await verificarV24();
   atualizarDatalists();
@@ -2261,14 +2472,14 @@ function abrirTab(tab){
   if(tab==='rh'&&!PERM.rhPessoal)tab='painel';
   if(tab==='curriculos'&&!PERM.curriculos)tab='painel';
   if(tab==='financeiro'&&!PERM.financeiro)tab='painel';
-  if(!PERM.comercialVer&&['painel','funil','clientes','projetos','fornecedores','atividades','empresas'].includes(tab))tab='documentos';
+  if(!PERM.comercialVer&&['painel','funil','clientes','projetos','fornecedores','inventario','atividades','empresas'].includes(tab))tab='documentos';
   tabAtual=tab;
-  ['painel','documentos','beneficios','rh','curriculos','financeiro','fornecedores','funil','clientes','projetos','atividades','empresas','usuarios'].forEach(t=>{$('tab-'+t).style.display=t===tab?'block':'none';});
+  ['painel','documentos','beneficios','rh','curriculos','financeiro','fornecedores','inventario','funil','clientes','projetos','atividades','empresas','usuarios'].forEach(t=>{$('tab-'+t).style.display=t===tab?'block':'none';});
   document.querySelectorAll('#tabs .tab').forEach(el=>el.classList.toggle('ativo',el.dataset.tab===tab));
   renderTabAtual();
 }
 function renderTabAtual(){
-  ({painel:renderPainel,documentos:renderDocumentos,beneficios:renderBeneficios,rh:renderRH,curriculos:renderCurriculos,financeiro:renderFinanceiro,fornecedores:renderFornecedoresTab,funil:renderFunil,clientes:renderClientes,projetos:renderProjetos,atividades:renderAtividades,empresas:renderEmpresas,usuarios:renderUsuarios}[tabAtual]||(()=>{}))();
+  ({painel:renderPainel,documentos:renderDocumentos,beneficios:renderBeneficios,rh:renderRH,curriculos:renderCurriculos,financeiro:renderFinanceiro,fornecedores:renderFornecedoresTab,inventario:renderInventario,funil:renderFunil,clientes:renderClientes,projetos:renderProjetos,atividades:renderAtividades,empresas:renderEmpresas,usuarios:renderUsuarios}[tabAtual]||(()=>{}))();
 }
 function trocarEmpresa(){
   empresaAtual=$('select-empresa').value;
@@ -2512,6 +2723,7 @@ async function abrirModalCard(id=null){
     itensLocais=(itens||[]).map(i=>({...i}));
     renderItens(false);
     renderAtividadesCard();
+    carregarInventarioCard(id);
     carregarHistorico(id);
     carregarVersoes(card);
   }else{
@@ -2671,6 +2883,9 @@ async function criarNovaVersao(){
   if(erroSB(error))return;
   const{data:itens}=await sb.from('itens_proposta').select('*').eq('card_id',cardEditandoId);
   if(itens&&itens.length)await sb.from('itens_proposta').insert(itens.map(i=>{const x={...i,card_id:nova.id};delete x.id;return x;}));
+  // v30: os itens do inventário separados para a OS vão junto
+  const{data:inv}=await sb.from('inventario_os').select('item_id,quantidade,observacao').eq('card_id',cardEditandoId);
+  if(inv&&inv.length)await sb.from('inventario_os').insert(inv.map(x=>({...x,card_id:nova.id,criado_por:quemSou()})));
   fecharModal('modal-card');await carregarCards();renderTabAtual();
   toast(`Nova versão criada: ${numeroProposta(o,novaVersao)}`);
   setTimeout(()=>abrirModalCard(nova.id),250);
@@ -4153,7 +4368,9 @@ const PROPOSTA_PADRAO={
   tributos:'Incluídos todos os tributos incidentes (ISS, PIS, COFINS, IRPJ e CSLL), encargos sociais, seguros e BDI. Alterações na legislação tributária após a data da proposta ensejarão o reequilíbrio do preço.',
   faturamento:'Emissão de nota fiscal após aprovação de cada medição pela Contratante.',
   consideracoes:'Colocamo-nos à disposição para visita técnica conjunta, reunião de equalização e esclarecimentos que se fizerem necessários.',
-  assinaturas:'André F. Lessa | Diretor Comercial | Tel: 21-3040-3700 · Cel: 21-99675-0707 | CRA-RJ 07-00050 · CREA-RJ 2017200613\nAila C. Lessa | Gerente Técnica de Arquitetura | CAU-RJ 326980-9\nMichelle Chagas | Engenheira Civil · Engenheira e Técnica de Segurança do Trabalho | CREA-RJ 2012116219'
+  assinaturas:'André F. Lessa | Diretor Comercial | Tel: 21-3040-3700 · Cel: 21-99675-0707 | CRA-RJ 07-00050 · CREA-RJ 2017200613\nAila C. Lessa | Gerente Técnica de Arquitetura | CAU-RJ 326980-9',
+  // v30: espaço de aceite para o cliente preencher e assinar
+  aceite:'Declaramos estar de acordo com os termos e condições desta proposta técnica e comercial, inclusive valor, prazo e forma de pagamento, e autorizamos o início dos serviços.'
 };
 // identidade visual de cada empresa (mesmas cores e logos das atas do grupo: 00.5.1.1_MODELOS/_sistema)
 const TEMAS_EMPRESA={
@@ -4242,7 +4459,18 @@ async function montarPDF(win){
     card.forma_pagamento?['Pagamento',br2(card.forma_pagamento)]:null,M.faturamento?['Faturamento',esc(M.faturamento)]:null,['Validade da proposta',esc(`${extensoDias(validade)} a contar de ${hojeCurto}`)]].filter(Boolean);
   sec('CONDIÇÕES COMERCIAIS',`<table class="dados">${cond.map(([a,b])=>`<tr><th>${a}</th><td>${b}</td></tr>`).join('')}</table>`);
   const ass=String(M.assinaturas||'').split('\n').map(l=>l.split('|').map(x=>x.trim())).filter(p=>p[0]);
-  sec('CONSIDERAÇÕES FINAIS',`${blocoTexto(M.consideracoes)}<p>Atenciosamente,</p><div class="ass">${ass.map(p=>`<div><div class="linha"></div><strong>${esc(p[0])}</strong>${p.slice(1).filter(Boolean).map(x=>`<br>${esc(x)}`).join('')}</div>`).join('')}</div>`);
+  // v30: assinatura escaneada (⚙️ Parâmetros) aparece em cima da linha de quem tiver
+  const imgsAss=M.assinatura_imagens||{};
+  sec('CONSIDERAÇÕES FINAIS',`${blocoTexto(M.consideracoes)}<p>Atenciosamente,</p><div class="ass">${ass.map(p=>{const img=imgsAss[chaveAssinatura(p[0])];
+    return`<div>${img?`<img class="img-ass" src="${esc(img)}" alt="">`:'<div class="espaco-ass"></div>'}<div class="linha"></div><strong>${esc(p[0])}</strong>${p.slice(1).filter(Boolean).map(x=>`<br>${esc(x)}`).join('')}</div>`;}).join('')}</div>`);
+  // v30: aceite do cliente
+  const aceite=`<div class="aceite"><h2>ACEITE DA PROPOSTA ${esc(num)}</h2>
+    <p>${esc(M.aceite||PROPOSTA_PADRAO.aceite)}</p>
+    <table class="dados"><tr><th>Valor global</th><td>${esc(valorComExtenso(total||somaItens))}</td></tr>
+      <tr><th>Contratante (razão social)</th><td>${esc(nomeCliente)}</td></tr><tr><th>CNPJ / CPF</th><td>${esc(cli.documento||'')}</td></tr>
+      <tr><th>Responsável pelo aceite</th><td></td></tr><tr><th>Cargo</th><td></td></tr><tr><th>CPF do responsável</th><td></td></tr><tr><th>E-mail / telefone</th><td></td></tr>
+      <tr><th>Local e data</th><td>______________________________, ____/____/________</td></tr></table>
+    <div class="ass" style="margin-top:44px"><div><div class="linha"></div><strong>Assinatura e carimbo do contratante</strong><br>${esc(nomeCliente)}</div></div></div>`;
   function br2(s){return esc(s).replace(/\n/g,'<br>');}
   const nomeArquivo=semAcento(num||`${emp.sigla||'BVK'}-COM-PRP-${cli.codigo||'C000'}`).toUpperCase().replace(/[\\/:*?"<>|]/g,' ').replace(/\s+/g,' ').trim();
   const T=temaEmpresa(emp.sigla);
@@ -4256,7 +4484,7 @@ async function montarPDF(win){
     .pagina{max-width:780px;margin:0 auto;padding:10px 20px}
     .marca-dagua{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:115mm;z-index:-1;pointer-events:none}
     .topo{display:flex;justify-content:space-between;align-items:center;gap:12px;border-bottom:2px solid var(--dest);padding-bottom:6px;margin-bottom:14px}
-    .topo img.logo{height:82px}.topo img.grupo{height:56px}
+    .topo img.logo{height:82px}.topo img.grupo{height:82px}
     .slogan{flex:1;text-align:center;color:var(--pri);font-size:11.5px;font-weight:700;letter-spacing:.12em}
     .rodape{margin-top:18px;padding-top:6px;border-top:1px solid var(--dest);font-size:9.5px;color:#5F6B7A;text-align:center;background:#fff}
     .rodape .logos{display:flex;justify-content:center;align-items:center;gap:22px;margin:4px 0 3px}.rodape .logos img{height:36px}
@@ -4284,7 +4512,9 @@ async function montarPDF(win){
     table.plan tr.sub td{font-weight:700;color:var(--pri);background:#fff !important}
     table.plan tfoot td{background:var(--claro);color:var(--pri);font-weight:700;padding:6px;border-top:1.5px solid var(--dest)}
     tr{break-inside:avoid}.cod{color:#888;font-size:10px}
-    .ass{display:flex;flex-wrap:wrap;gap:24px;margin-top:30px}.ass>div{flex:1 1 200px;font-size:11px}.ass .linha{border-top:1px solid var(--pri);margin-bottom:5px;height:28px}.ass strong{color:var(--pri)}
+    .ass{display:flex;flex-wrap:wrap;gap:24px;margin-top:30px}.ass>div{flex:1 1 200px;font-size:11px;break-inside:avoid}.ass .linha{border-top:1px solid var(--pri);margin-bottom:5px}.ass strong{color:var(--pri)}
+    .ass .img-ass{display:block;height:60px;max-width:100%;object-fit:contain;margin:0 auto -4px 0}.ass .espaco-ass{height:40px}
+    .aceite{break-before:page;page-break-before:always}.aceite table.dados td{height:22px}
   </style></head><body>${T.marca?`<img class="marca-dagua" src="${urlLogo(T.sigla,'marca')}" alt="">`:''}<div class="pagina">
   <table class="moldura"><thead><tr><td>${topo}</td></tr></thead><tfoot><tr><td>${rodape}</td></tr></tfoot><tbody><tr><td>
   <div class="quebra apres">
@@ -4312,6 +4542,7 @@ async function montarPDF(win){
     ${prazo?`<tr><td>Prazo global de execução</td><td class="n">${esc(prazo)}</td></tr>`:''}
     ${card.forma_pagamento?`<tr><td>Forma de pagamento</td><td class="n">${esc(String(card.forma_pagamento).split('\n')[0])}</td></tr>`:''}</table>
   ${secoes.join('\n')}
+  ${aceite}
   </td></tr></tbody></table>
   </div></body></html>`;
   win.document.open();win.document.write(html);win.document.close();
@@ -4358,6 +4589,9 @@ async function montarOS(win){
   const eqs=cp?(cp.equipamentos||[]).filter(x=>n0(x.qtd)>0).map(x=>[esc(x.descricao||'Equipamento'),esc(x.unidade||''),esc(fmtNum(x.qtd)),'']):[];
   const ters=cp?(cp.terceiros||[]).filter(x=>String(x.descricao||'').trim()).map(x=>[esc(x.descricao)]):[];
   const docs=cp?(cp.documentos||[]).map(d=>[esc(d.nome),esc(fmtNum(d.qtd)),'']):[];
+  // v30: itens do inventário separados na proposta
+  const{data:invOS}=await sb.from('inventario_os').select('*,inventario_itens(*)').eq('card_id',cardEditandoId);
+  const inv=(invOS||[]).filter(x=>x.inventario_itens).map(x=>{const i=x.inventario_itens;return[esc(i.codigo||''),esc(i.nome)+(i.marca_modelo||i.numero_serie?`<br><small>${esc([i.marca_modelo,i.numero_serie&&'série '+i.numero_serie].filter(Boolean).join(' · '))}</small>`:''),esc(i.unidade||''),esc(fmtNum(x.quantidade)),esc(i.localizacao||''),'',''];});
   const its=(itens||[]).map(i=>[esc(i.item||''),esc(i.descricao||''),esc(i.unidade||''),esc(fmtNum(i.quantidade)),'']);
   const nomeArquivo=semAcento(`${emp.sigla||'BVK'}-COM-OS-${cli.codigo||'C000'} ${cli.nome||''} ${card.titulo||''} ${num}`).toUpperCase().replace(/[\\/:*?"<>|]/g,' ').replace(/\s+/g,' ').trim();
   const linha=(rot,v)=>v?`<tr><th>${rot}</th><td>${v}</td></tr>`:'';
@@ -4389,6 +4623,7 @@ async function montarOS(win){
   ${its.length?`<h2>Itens a executar</h2>${tabela(['Item','Descrição','Und','Qtd','Executado ✓'],its)}`:''}
   ${equipe.length?`<h2>Equipe</h2>${tabela(['Função','Pessoas','Dias'],equipe)}`:''}
   ${mats.length?`<h2>Materiais</h2>${tabela(['Material','Und','Qtd prevista','Qtd usada'],mats)}`:''}
+  ${inv.length?`<h2>Materiais e equipamentos do inventário</h2>${tabela(['Código','Item','Und','Qtd','Retirar em','Saiu ✓','Voltou ✓'],inv)}`:''}
   ${eqs.length?`<h2>Equipamentos e locações</h2>${tabela(['Equipamento','Und','Qtd prevista','Qtd usada'],eqs)}`:''}
   ${ters.length?`<h2>Serviços de terceiros</h2>${tabela(['Serviço'],ters)}`:''}
   ${docs.length?`<h2>Documentação exigida</h2>${tabela(['Documento / exigência','Qtd','Entregue ✓'],docs)}`:''}
@@ -4562,9 +4797,12 @@ function renderRH(){
   $('btn-novo-func-rh').classList.toggle('oculto',!PERM.rhEditar);
   $('btn-secullum-rh').classList.toggle('oculto',!PERM.docs);
   document.querySelectorAll('#rh-subabas .subaba').forEach(s=>s.classList.toggle('ativo',s.dataset.rh===rhSub));
-  ['funcionarios','vales','contracheques','envio'].forEach(p=>$('rh-p-'+p).classList.toggle('ativo',p===rhSub));
+  if(rhSub==='comunicacao'&&!PERM.rhEditar)rhSub='funcionarios';
+  $('rh-sub-comunicacao').style.display=PERM.rhEditar?'':'none';
+  document.querySelectorAll('#rh-subabas .subaba').forEach(s=>s.classList.toggle('ativo',s.dataset.rh===rhSub));
+  ['funcionarios','vales','contracheques','envio','comunicacao','assinaturas'].forEach(p=>$('rh-p-'+p).classList.toggle('ativo',p===rhSub));
   renderAvisosRH();
-  ({funcionarios:renderRHFuncionarios,vales:renderRHVales,contracheques:renderRHContracheques,envio:renderRHEnvio}[rhSub]||(()=>{}))();
+  ({funcionarios:renderRHFuncionarios,vales:renderRHVales,contracheques:renderRHContracheques,envio:renderRHEnvio,comunicacao:renderComunicados,assinaturas:renderAssinaturasPonto}[rhSub]||(()=>{}))();
 }
 function tagEmpresa(f){const e=empresaPorId(f.empresa_id);return e?` <span class="card-empresa-tag tag-${esc(e.sigla)}">${esc(e.sigla)}</span>`:'';}
 function renderRHFuncionarios(){
@@ -4622,7 +4860,7 @@ function preencherFichaDados(){
   const f=fichaId?funcPorId(fichaId):null,r=(fichaId&&rhPorFunc(fichaId))||{};
   $('fi-nome').value=f?f.nome:'';$('fi-cargo').value=f&&f.cargo||'';
   $('fi-empresa').value=f?(f.empresa_id||''):(empresaAtual!=='todas'?empresaAtual:'');
-  $('fi-cpf').value=f&&f.cpf||'';$('fi-pis').value=f&&f.pis||'';$('fi-admissao').value=f&&f.data_admissao||'';$('fi-pasta').value=f&&f.pasta_url||'';
+  $('fi-cpf').value=f&&f.cpf||'';$('fi-email').value=f&&f.email||'';$('fi-pis').value=f&&f.pis||'';$('fi-admissao').value=f&&f.data_admissao||'';$('fi-pasta').value=f&&f.pasta_url||'';
   $('fi-contrato').value=r.tipo_contrato||'';$('fi-salario').value=r.salario!=null?fmtMoeda(r.salario):'';
   $('fi-adianta').checked=!!r.adianta_mensal;$('fi-obs').value=r.observacoes||'';
   $('fi-adianta-rot').textContent=`Recebe adiantamento de ${pctAdiant()}% do salário todo dia ${diaAdiant()} (ou dia útil próximo)`;
@@ -4652,6 +4890,11 @@ async function salvarFichaDados(){
   const salario=parseMoeda($('fi-salario').value);
   if($('fi-adianta').checked&&!salario){alert('Para receber adiantamento, informe o salário.');return;}
   const dados={nome,cargo:$('fi-cargo').value.trim()||null,empresa_id:$('fi-empresa').value||null,cpf:cpf||null,pis:pis||null,data_admissao:adm||null,pasta_url:pasta||null};
+  // v30: e-mail para os comunicados (só grava se a migração v30 já criou a coluna)
+  const email=$('fi-email').value.trim().toLowerCase();
+  if(email&&!/^[^\s@;,<>]+@[^\s@;,<>]+\.[^\s@;,<>]+$/.test(email)){alert('E-mail inválido.');return;}
+  if(todosFuncionarios.length?('email' in todosFuncionarios[0]):v30Ok)dados.email=email||null;
+  else if(email){alert('Para guardar o e-mail, rode antes a migração v30 no Supabase.');}
   const r=fichaId?await sb.from('funcionarios').update(dados).eq('id',fichaId).select().single():await sb.from('funcionarios').insert(dados).select().single();
   if(erroSB(r.error))return;
   const fid=r.data.id;
@@ -6784,9 +7027,13 @@ function renderParametrosPreco(){
   const campoProp=(k,rot,linhas,dica)=>`<div class="campo full"><label>${rot}</label><textarea data-prop="${k}" rows="${linhas}">${esc(c.proposta[k]||'')}</textarea>${dica?`<div class="dica">${dica}</div>`:''}</div>`;
   $('pp-prop').innerHTML=`<div class="form-grid">${campoProp('apresentacao','Apresentação (carta)',4)}${campoProp('segmentos','Empresas e serviços (uma por linha: Nome – serviços)',3)}${campoProp('fecho_apresentacao','Fecho da apresentação',2)}${campoProp('seguros','Seguros em vigência',2)}
     ${campoProp('dados_bancarios','Dados bancários',3,'Ex.: Verde Brasilis Gestão e Serviços Ltda. · CNPJ … · Banco … · Agência … · Conta …')}${campoProp('tributos','Condições comerciais — Tributos',2)}${campoProp('faturamento','Condições comerciais — Faturamento',2)}${campoProp('consideracoes','Considerações finais',2)}
-    ${campoProp('assinaturas','Assinaturas (uma por linha: Nome | Cargo | Contato | Registro)',3)}</div>`;
+    ${campoProp('assinaturas','Assinaturas (uma por linha: Nome | Cargo | Contato | Registro)',3)}
+    <div class="campo full"><label>Assinaturas escaneadas (aparecem em cima do nome, na proposta)</label><div id="pp-ass-imgs"></div>
+      <div class="dica">Assine numa folha branca com caneta azul ou preta, fotografe ou escaneie e envie a imagem (PNG ou JPG). O CRM recorta o fundo branco. Fica guardada só no banco do CRM.</div></div>
+    ${campoProp('aceite','Aceite da proposta (texto acima dos campos que o cliente preenche e assina)',2)}</div>`;
+  renderAssinaturasImg();
   const m=$('modal-param-preco');
-  m.querySelectorAll('[data-prop]').forEach(t=>t.oninput=()=>{c.proposta[t.dataset.prop]=t.value;});
+  m.querySelectorAll('[data-prop]').forEach(t=>t.oninput=()=>{c.proposta[t.dataset.prop]=t.value;if(t.dataset.prop==='assinaturas')renderAssinaturasImg();});
   m.querySelectorAll('[data-pp]').forEach(i=>i.oninput=i.onchange=()=>{const r=c[i.dataset.pp][+i.dataset.i];r[i.dataset.k]=i.type==='checkbox'?i.checked:i.type==='number'?n0(i.value):i.value;});
   m.querySelectorAll('[data-pp-rm]').forEach(b=>b.onclick=()=>{c[b.dataset.ppRm].splice(+b.dataset.i,1);renderParametrosPreco();});
   m.querySelectorAll('[data-pp-add]').forEach(b=>b.onclick=()=>{const k=b.dataset.ppAdd;c[k].push(k==='funcoes'?{nome:'',custo_dia:0}:k==='tipos_cliente'?{nome:'',lucro:30}:{nome:'',custo:0,por_pessoa:false});renderParametrosPreco();});
@@ -6794,6 +7041,39 @@ function renderParametrosPreco(){
   m.querySelectorAll('[data-reg]').forEach(i=>{const salva=()=>{const id=i.dataset.reg,r=c.regime_empresa[id]=c.regime_empresa[id]||{anexo:(c.regime_padrao||{}).anexo||'IV'};
       r[i.dataset.k]=i.dataset.k==='anexo'?i.value:i.dataset.k==='rbt12'?parseMoeda(i.value):(i.value===''?null:n0(i.value));};
     if(i.tagName==='SELECT')i.onchange=()=>{salva();renderParametrosPreco();};else{i.oninput=()=>{if(i.dataset.k==='rbt12')mascaraMoeda(i);salva();};i.onchange=()=>{salva();renderParametrosPreco();};}});
+}
+// v30: assinaturas escaneadas guardadas em precificacao_config.dados.proposta.assinatura_imagens {nome normalizado: imagem}
+function chaveAssinatura(nome){return norm(String(nome||'').split('|')[0]);}
+function renderAssinaturasImg(){
+  const box=$('pp-ass-imgs');if(!box||!cfgEdit)return;const P=cfgEdit.proposta,imgs=P.assinatura_imagens||{},ed=PERM.admin;
+  const nomes=String(P.assinaturas||'').split('\n').map(l=>l.split('|')[0].trim()).filter(Boolean);
+  box.innerHTML=nomes.length?`<div class="sub-lista">${nomes.map(n=>{const k=chaveAssinatura(n),img=imgs[k];
+    return`<div class="sub-item"><span><strong>${esc(n)}</strong></span><span style="display:flex;gap:10px;align-items:center">${img?`<img src="${esc(img)}" alt="assinatura" style="height:44px;max-width:200px;object-fit:contain;background:#fff;border:1px solid var(--borda);border-radius:4px">`:'<span class="dica" style="margin:0">sem assinatura</span>'}
+      ${ed?`<label class="btn-sec" style="cursor:pointer;padding:5px 10px;font-size:12px">${img?'trocar':'enviar'}<input type="file" accept="image/png,image/jpeg" data-ass-up="${esc(k)}" style="display:none"></label>${img?`<button class="btn-link" data-ass-rm="${esc(k)}">remover</button>`:''}`:''}</span></div>`;}).join('')}</div>`
+    :'<div class="dica">Preencha as assinaturas acima.</div>';
+  box.querySelectorAll('[data-ass-up]').forEach(i=>i.onchange=async()=>{const f=i.files[0];if(!f)return;
+    try{const url=await prepararImagemAssinatura(f);P.assinatura_imagens=Object.assign({},P.assinatura_imagens,{[i.dataset.assUp]:url});renderAssinaturasImg();toast('Assinatura carregada — clique em Salvar parâmetros');}
+    catch(e){alert('Não foi possível ler a imagem: '+(e.message||e));}});
+  box.querySelectorAll('[data-ass-rm]').forEach(b=>b.onclick=()=>{const o=Object.assign({},P.assinatura_imagens);delete o[b.dataset.assRm];P.assinatura_imagens=o;renderAssinaturasImg();});
+}
+// reduz a imagem, recorta as bordas e deixa o fundo branco transparente
+function prepararImagemAssinatura(arquivo){
+  return new Promise((ok,falha)=>{
+    if(arquivo.size>8*1024*1024){falha(new Error('imagem maior que 8 MB'));return;}
+    const img=new Image(),u=URL.createObjectURL(arquivo);
+    img.onerror=()=>{URL.revokeObjectURL(u);falha(new Error('formato não reconhecido'));};
+    img.onload=()=>{URL.revokeObjectURL(u);
+      const k=Math.min(1,900/img.width,400/img.height),w=Math.max(1,Math.round(img.width*k)),h=Math.max(1,Math.round(img.height*k));
+      const c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d');x.drawImage(img,0,0,w,h);
+      const d=x.getImageData(0,0,w,h),p=d.data;let x0=w,y0=h,x1=-1,y1=-1;
+      for(let y=0;y<h;y++)for(let xx=0;xx<w;xx++){const o=(y*w+xx)*4,lum=0.299*p[o]+0.587*p[o+1]+0.114*p[o+2];
+        if(lum>200)p[o+3]=0;else{p[o+3]=Math.min(255,Math.round((200-lum)*2.2));if(xx<x0)x0=xx;if(xx>x1)x1=xx;if(y<y0)y0=y;if(y>y1)y1=y;}}
+      if(x1<0){falha(new Error('não encontrei traço de assinatura na imagem'));return;}
+      x.putImageData(d,0,0);const m=6;x0=Math.max(0,x0-m);y0=Math.max(0,y0-m);x1=Math.min(w-1,x1+m);y1=Math.min(h-1,y1+m);
+      const c2=document.createElement('canvas');c2.width=x1-x0+1;c2.height=y1-y0+1;c2.getContext('2d').drawImage(c,x0,y0,c2.width,c2.height,0,0,c2.width,c2.height);
+      ok(c2.toDataURL('image/png'));};
+    img.src=u;
+  });
 }
 async function salvarParametrosPreco(){
   if(!PERM.admin)return;
@@ -6989,6 +7269,316 @@ async function excluirTarefa(){
 }
 function abrirPropostaDaTarefa(){const id=$('tf-m-card').value;if(!id)return;fecharModal('modal-tarefa');abrirModalCard(id);}
 function mudouVisaoTarefas(){try{localStorage.setItem('bvek_tarefas_visao',$('ativ-visao').value);}catch(e){}renderAtividades();}
+
+/* ================= v30: INVENTÁRIO DE MATERIAIS E EQUIPAMENTOS ================= */
+// Cadastro do que o grupo tem (estoque, estado, onde está). Na proposta (card do funil) os itens
+// são separados para o serviço e saem na Ordem de Serviço. "Em propostas" = soma do que está
+// separado em propostas que não foram perdidas.
+let todoInventario=[],todoInvOS=[],invEditandoId=null,v30InvOk=true,invCardLocal=[];
+const TIPOS_INV=[['equipamento','Equipamento'],['ferramenta','Ferramenta'],['material','Material de consumo'],['epi','EPI'],['veiculo','Veículo'],['outro','Outro']];
+const ESTADOS_INV=[['novo','Novo'],['bom','Bom'],['regular','Regular'],['manutencao','Em manutenção'],['inservivel','Inservível']];
+const TIPO_INV_LABEL=Object.fromEntries(TIPOS_INV),ESTADO_INV_LABEL=Object.fromEntries(ESTADOS_INV);
+const COR_ESTADO_INV={novo:'badge-ok',bom:'badge-ok',regular:'badge-hoje',manutencao:'badge-atraso',inservivel:'badge-cinza'};
+async function carregarInventario(){
+  if(!PERM.comercialVer)return;
+  const[a,b]=await Promise.all([sb.from('inventario_itens').select('*').order('nome'),sb.from('inventario_os').select('card_id,item_id,quantidade')]);
+  const e=a.error||b.error;
+  if(e){if(/inventario|schema cache|does not exist/i.test(e.message||''))v30InvOk=false;else console.error(e);todoInventario=[];todoInvOS=[];return;}
+  v30InvOk=true;todoInventario=a.data||[];todoInvOS=b.data||[];atualizarListasInventario();
+}
+function itemInvPorId(id){return todoInventario.find(i=>i.id===id);}
+function rotuloItemInv(i){return i?`${i.codigo||''} — ${i.nome}${i.marca_modelo?' ('+i.marca_modelo+')':''}`:'';}
+function itemInvPorRotulo(t){const k=norm(t);if(!k)return null;return todoInventario.find(i=>norm(rotuloItemInv(i))===k)||todoInventario.find(i=>norm(i.codigo)===k)||todoInventario.find(i=>norm(i.nome)===k);}
+function qtdEmPropostas(itemId){
+  const perdidos=new Set(todosCards.filter(c=>c.etapa==='perdida').map(c=>c.id));
+  return todoInvOS.filter(x=>x.item_id===itemId&&!perdidos.has(x.card_id)).reduce((s,x)=>s+Number(x.quantidade||0),0);
+}
+const estoqueBaixo=i=>i.ativo!==false&&i.quantidade_minima!=null&&Number(i.quantidade)<=Number(i.quantidade_minima);
+const fmtQtd=v=>Number(v||0).toLocaleString('pt-BR',{maximumFractionDigits:2});
+function atualizarListasInventario(){
+  const uniq=k=>[...new Set(todoInventario.map(i=>String(i[k]||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'pt-BR'));
+  $('dl-inv-itens').innerHTML=todoInventario.filter(i=>i.ativo!==false).map(i=>`<option value="${esc(rotuloItemInv(i))}">`).join('');
+  $('dl-inv-cat').innerHTML=[...new Set(['Jardinagem','Limpeza','Construção civil','Elétrica','Hidráulica','Pintura','Altura / alpinismo','Solda','Informática','Escritório',...uniq('categoria')])].map(x=>`<option value="${esc(x)}">`).join('');
+  $('dl-inv-un').innerHTML=[...new Set(['un','par','jogo','kit','m','m²','L','kg','cx','rolo','pç',...uniq('unidade')])].map(x=>`<option value="${esc(x)}">`).join('');
+  $('dl-inv-local').innerHTML=[...new Set(['Depósito','Escritório',...uniq('localizacao')])].map(x=>`<option value="${esc(x)}">`).join('');
+  const n=todoInventario.filter(estoqueBaixo).length,bdg=$('tab-inv-badge');if(bdg)bdg.innerHTML=n?`<span class="badge badge-hoje" title="Itens com estoque baixo">${n}</span>`:'';
+}
+function renderInventario(){
+  if(!PERM.comercialVer)return;
+  document.querySelectorAll('.inv-edita').forEach(b=>b.style.display=PERM.invEditar?'':'none');
+  if(!v30InvOk){avisarMigracaoV30('inv-info');$('tabela-inventario').innerHTML='';$('inv-kpis').innerHTML='';return;}
+  $('inv-info').innerHTML='Cadastre aqui os materiais e equipamentos do grupo, com quantidade, estado e onde estão. Ao montar a proposta (card do funil), separe os itens em <em>Materiais e equipamentos do inventário</em>: eles saem na <strong>Ordem de Serviço</strong>. A coluna <em>Em propostas</em> soma o que está separado em propostas não perdidas.';
+  const sel=(id,ops,todos)=>{const s=$(id),v=s.value;preencherSelect(s,ops,todos);s.value=v;};
+  sel('inv-f-tipo',TIPOS_INV,'Todos os tipos');sel('inv-f-estado',ESTADOS_INV,'Todos os estados');
+  sel('inv-f-cat',[...new Set(todoInventario.map(i=>i.categoria).filter(Boolean))].sort().map(c=>[c,c]),'Todas as categorias');
+  const q=norm($('inv-busca').value),tp=$('inv-f-tipo').value,es=$('inv-f-estado').value,ct=$('inv-f-cat').value,baixo=$('inv-baixo').checked,inat=$('inv-inativos').checked;
+  const base=todoInventario.filter(i=>empresaAtual==='todas'||!i.empresa_id||i.empresa_id===empresaAtual);
+  const ativos=base.filter(i=>i.ativo!==false);
+  const l=base.filter(i=>(inat||i.ativo!==false)&&(!tp||i.tipo===tp)&&(!es||i.estado===es)&&(!ct||i.categoria===ct)&&(!baixo||estoqueBaixo(i))
+    &&(!q||norm([i.codigo,i.nome,i.marca_modelo,i.numero_serie,i.localizacao,i.categoria,i.observacoes].join(' ')).includes(q)));
+  const valor=ativos.reduce((s,i)=>s+Number(i.valor_unitario||0)*Number(i.quantidade||0),0);
+  $('inv-kpis').innerHTML=[['Itens cadastrados',String(ativos.length),nomeEmpresaAtual()],['Estoque baixo',String(ativos.filter(estoqueBaixo).length),'no mínimo ou abaixo'],
+    ['Em manutenção',String(ativos.filter(i=>i.estado==='manutencao').length),'fora de uso'],['Valor estimado',valor?fmtCurto(valor):'—','quantidade × valor unitário']]
+    .map(([r,v,s])=>`<div class="kpi"><div class="rot">${esc(r)}</div><div class="val">${esc(v)}</div><div class="sub">${esc(s)}</div></div>`).join('');
+  $('tabela-inventario').innerHTML=`<thead><tr><th>Código</th><th>Item</th><th>Tipo</th><th class="num">Estoque</th><th class="num" title="Separado em propostas não perdidas">Em propostas</th><th>Estado</th><th>Onde está</th><th>Empresa</th></tr></thead><tbody>${l.length?l.map(i=>{
+    const e=i.empresa_id&&empresaPorId(i.empresa_id),uso=qtdEmPropostas(i.id);
+    return`<tr class="clicavel ${i.ativo===false?'inativo':''}" data-inv="${esc(i.id)}" style="cursor:pointer"><td style="white-space:nowrap"><strong>${esc(i.codigo||'')}</strong></td>
+      <td><strong>${esc(i.nome)}</strong>${i.marca_modelo||i.numero_serie?`<div class="dica" style="margin:0">${esc([i.marca_modelo,i.numero_serie&&'série '+i.numero_serie].filter(Boolean).join(' · '))}</div>`:''}${i.categoria?`<div class="dica" style="margin:0">${esc(i.categoria)}</div>`:''}</td>
+      <td>${esc(TIPO_INV_LABEL[i.tipo]||i.tipo)}</td>
+      <td class="num"><strong>${esc(fmtQtd(i.quantidade))}</strong> ${esc(i.unidade||'')}${estoqueBaixo(i)?` <span class="badge badge-hoje" title="Mínimo: ${esc(fmtQtd(i.quantidade_minima))}">baixo</span>`:''}</td>
+      <td class="num">${uso?`${esc(fmtQtd(uso))}${uso>Number(i.quantidade||0)?' <span class="badge badge-atraso" title="Separado mais do que tem em estoque">falta</span>':''}`:'—'}</td>
+      <td><span class="badge ${COR_ESTADO_INV[i.estado]||'badge-cinza'}">${esc(ESTADO_INV_LABEL[i.estado]||i.estado)}</span></td>
+      <td>${esc(i.localizacao||'—')}</td><td>${e?`<span class="card-empresa-tag tag-${esc(e.sigla)}">${esc(e.sigla)}</span>`:'—'}</td></tr>`;}).join('')
+    :`<tr><td colspan="8" class="vazio">${q||tp||es||ct||baixo?'Nenhum item com esses filtros.':'Nenhum item cadastrado ainda. Clique em <em>+ Novo item</em>.'}</td></tr>`}</tbody>`;
+  $('tabela-inventario').querySelectorAll('[data-inv]').forEach(tr=>tr.onclick=()=>abrirItemInventario(tr.dataset.inv));
+}
+function abrirItemInventario(id){
+  if(!v30InvOk){avisarMigracaoV30('inv-info');return;}
+  const i=id?itemInvPorId(id):null;invEditandoId=i?i.id:null;
+  preencherSelect($('inv-tipo'),TIPOS_INV);preencherSelect($('inv-estado'),ESTADOS_INV);
+  preencherSelect($('inv-empresa'),todasEmpresas.map(e=>[e.id,`${e.nome} (${e.sigla})`]),'—');
+  $('inv-titulo-modal').textContent=i?`${i.codigo||''} · ${i.nome}`:'Novo item do inventário';
+  $('inv-nome').value=i?i.nome:'';$('inv-tipo').value=i?i.tipo:'equipamento';$('inv-categoria').value=i&&i.categoria||'';
+  $('inv-qtd').value=i?Number(i.quantidade):1;$('inv-unidade').value=i?(i.unidade||''):'un';$('inv-min').value=i&&i.quantidade_minima!=null?Number(i.quantidade_minima):'';
+  $('inv-estado').value=i?i.estado:'bom';$('inv-marca').value=i&&i.marca_modelo||'';$('inv-serie').value=i&&i.numero_serie||'';$('inv-local').value=i&&i.localizacao||'';
+  $('inv-empresa').value=i?(i.empresa_id||''):(empresaAtual!=='todas'?empresaAtual:'');
+  $('inv-valor').value=i&&i.valor_unitario!=null?fmtMoeda(i.valor_unitario):'';$('inv-data').value=i&&i.data_aquisicao||'';$('inv-obs').value=i&&i.observacoes||'';
+  const usos=i?todoInvOS.filter(x=>x.item_id===i.id).map(x=>({x,c:todosCards.find(c=>c.id===x.card_id)})).filter(u=>u.c):[];
+  $('inv-uso').innerHTML=usos.length?`<div class="secao">Separado nestas propostas</div><div class="sub-lista">${usos.map(u=>`<div class="sub-item clicavel" data-inv-card="${esc(u.c.id)}"><span><strong>${esc(numeroProposta(u.c)||'')}</strong> ${esc(u.c.titulo||'')}</span><span>${esc(fmtQtd(u.x.quantidade))} ${esc(i.unidade||'')} · ${esc(ETAPA_LABEL[u.c.etapa]||u.c.etapa)}</span></div>`).join('')}</div>`:'';
+  $('inv-uso').querySelectorAll('[data-inv-card]').forEach(el=>el.onclick=()=>{fecharModal('modal-inventario');abrirModalCard(el.dataset.invCard);});
+  $('inv-btn-desativar').style.display=i&&PERM.invEditar?'':'none';$('inv-btn-desativar').textContent=i&&i.ativo===false?'Reativar':'Desativar';
+  modoLeitura('modal-inventario',!PERM.invEditar);abrirModal('modal-inventario');if(!i)setTimeout(()=>$('inv-nome').focus(),50);
+}
+async function salvarItemInventario(){
+  if(!PERM.invEditar)return;
+  const nome=$('inv-nome').value.trim();if(!nome){alert('Informe o nome do item.');return;}
+  const num=v=>v===''||v==null?null:Math.max(0,n0(v));
+  const dados={nome,tipo:$('inv-tipo').value,categoria:$('inv-categoria').value.trim()||null,quantidade:num($('inv-qtd').value)||0,unidade:$('inv-unidade').value.trim()||null,
+    quantidade_minima:num($('inv-min').value),estado:$('inv-estado').value,marca_modelo:$('inv-marca').value.trim()||null,numero_serie:$('inv-serie').value.trim()||null,
+    localizacao:$('inv-local').value.trim()||null,empresa_id:$('inv-empresa').value||null,valor_unitario:parseMoeda($('inv-valor').value),data_aquisicao:$('inv-data').value||null,
+    observacoes:$('inv-obs').value.trim()||null,atualizado_em:new Date().toISOString()};
+  if(!invEditandoId&&todoInventario.some(i=>norm(i.nome)===norm(nome)&&norm(i.numero_serie)===norm(dados.numero_serie))&&!confirm(`Já existe "${nome}" no inventário. Cadastrar outro mesmo assim?`))return;
+  const r=invEditandoId?await sb.from('inventario_itens').update(dados).eq('id',invEditandoId):await sb.from('inventario_itens').insert({...dados,criado_por:quemSou()});
+  if(erroSB(r.error))return;
+  fecharModal('modal-inventario');await carregarInventario();renderInventario();toast('Item salvo');
+}
+async function alternarItemInventario(){
+  const i=itemInvPorId(invEditandoId);if(!i||!PERM.invEditar)return;
+  const{error}=await sb.from('inventario_itens').update({ativo:i.ativo===false,atualizado_em:new Date().toISOString()}).eq('id',i.id);if(erroSB(error))return;
+  fecharModal('modal-inventario');await carregarInventario();renderInventario();toast(i.ativo===false?'Item reativado':'Item desativado');
+}
+async function exportarInventario(){
+  const linhas=[['Código','Item','Tipo','Categoria','Marca / modelo','Nº de série','Quantidade','Unidade','Estoque mínimo','Em propostas','Estado','Onde está','Empresa','Valor unitário','Aquisição','Observações','Ativo']];
+  todoInventario.forEach(i=>{const e=empresaPorId(i.empresa_id);linhas.push([i.codigo||'',i.nome,TIPO_INV_LABEL[i.tipo]||i.tipo,i.categoria||'',i.marca_modelo||'',i.numero_serie||'',Number(i.quantidade||0),i.unidade||'',i.quantidade_minima!=null?Number(i.quantidade_minima):'',qtdEmPropostas(i.id),ESTADO_INV_LABEL[i.estado]||i.estado,i.localizacao||'',e?e.sigla:'',i.valor_unitario!=null?Number(i.valor_unitario):'',i.data_aquisicao?fmtData(i.data_aquisicao):'',i.observacoes||'',i.ativo===false?'não':'sim']);});
+  const nome='BVK-INVENTARIO-'+hojeISO();
+  try{const X=await carregarXLSX();const wb=X.utils.book_new(),ws=X.utils.aoa_to_sheet(linhas);X.utils.book_append_sheet(wb,ws,'Inventário');X.writeFile(wb,nome+'.xlsx');}
+  catch(e){const csv=v=>{const t=typeof v==='number'?String(v).replace('.',','):String(v??'');return/[;"\n]/.test(t)?'"'+t.replace(/"/g,'""')+'"':t;};baixarArquivo(nome+'.csv','﻿'+linhas.map(r=>r.map(csv).join(';')).join('\r\n'),'text/csv;charset=utf-8');}
+}
+/* no card da proposta: itens separados para a OS */
+async function carregarInventarioCard(cardId){
+  const box=$('card-inv');invCardLocal=[];
+  if(!v30InvOk){box.innerHTML='<div class="dica">Rode a migração v30 no Supabase para separar itens do inventário.</div>';$('card-inv-form').style.display='none';return;}
+  $('card-inv-form').style.display='';
+  const{data,error}=await sb.from('inventario_os').select('*').eq('card_id',cardId).order('criado_em');
+  if(error){box.innerHTML='';console.error(error);return;}
+  invCardLocal=data||[];renderInventarioCard();
+}
+function renderInventarioCard(){
+  const box=$('card-inv');
+  box.innerHTML=invCardLocal.length?`<div class="sub-lista">${invCardLocal.map(x=>{const i=itemInvPorId(x.item_id)||{nome:'(item removido)'};const disp=Number(i.quantidade||0);
+    return`<div class="sub-item"><span><strong>${esc(i.codigo||'')}</strong> ${esc(i.nome)}${i.estado==='manutencao'?' <span class="badge badge-atraso">em manutenção</span>':''}<span class="dica" style="margin:0"> · estoque ${esc(fmtQtd(disp))} ${esc(i.unidade||'')}</span></span>
+      <span style="white-space:nowrap"><strong>${esc(fmtQtd(x.quantidade))}</strong> ${esc(i.unidade||'')}${PERM.funil?` <button class="btn-rm-item" title="Tirar da OS" data-ci-rm="${esc(x.id)}">×</button>`:''}</span></div>`;}).join('')}</div>`
+    :'<div class="dica">Nenhum item do inventário separado para este serviço.</div>';
+  box.querySelectorAll('[data-ci-rm]').forEach(b=>b.onclick=async()=>{const{error}=await sb.from('inventario_os').delete().eq('id',b.dataset.ciRm);if(erroSB(error))return;
+    const rm=invCardLocal.find(x=>x.id===b.dataset.ciRm);invCardLocal=invCardLocal.filter(x=>x!==rm);
+    if(rm)todoInvOS=todoInvOS.filter(x=>!(x.card_id===cardEditandoId&&x.item_id===rm.item_id));renderInventarioCard();});
+}
+async function addInventarioCard(){
+  if(!cardEditandoId||!PERM.funil)return;
+  const i=itemInvPorRotulo($('ci-item').value),q=n0($('ci-qtd').value);
+  if(!i){alert('Escolha um item da lista do inventário (cadastre em Inventário se ainda não existir).');return;}
+  if(!(q>0)){alert('Informe a quantidade.');return;}
+  const ja=invCardLocal.find(x=>x.item_id===i.id);
+  const r=ja?await sb.from('inventario_os').update({quantidade:q}).eq('id',ja.id).select().single()
+    :await sb.from('inventario_os').insert({card_id:cardEditandoId,item_id:i.id,quantidade:q,criado_por:quemSou()}).select().single();
+  if(erroSB(r.error))return;
+  if(ja)Object.assign(ja,r.data);else invCardLocal.push(r.data);
+  todoInvOS=todoInvOS.filter(x=>!(x.card_id===cardEditandoId&&x.item_id===i.id)).concat([{card_id:cardEditandoId,item_id:i.id,quantidade:q}]);
+  if(q>Number(i.quantidade||0))toast(`Atenção: só há ${fmtQtd(i.quantidade)} ${i.unidade||''} em estoque`);
+  $('ci-item').value='';$('ci-qtd').value=1;renderInventarioCard();
+}
+
+/* ================= v30: RH → COMUNICAÇÃO INTERNA ================= */
+// Cada comunicado fica registrado: texto, para quem foi por e-mail (um e-mail por pessoa, pelo
+// Microsoft 365, função "email-comunicado") e quando foi mandado para o grupo do WhatsApp.
+let v30Ok=true,todosComunicados=[],comunicadoEditandoId=null,comDestMarcados=null;
+function avisarMigracaoV30(elId){
+  v30Ok=false;const el=$(elId||'com-info');
+  if(el)el.innerHTML='<strong>Falta atualizar o banco de dados (v30).</strong> No Supabase, abra <em>SQL Editor → New query</em>, cole o conteúdo do arquivo <code>supabase/migracao_crm_v30_comunicados_inventario_assinatura_ponto.sql</code> e clique em <em>Run</em>. Depois recarregue esta página.';
+}
+async function carregarComunicados(){
+  if(!PERM.rhEditar)return;
+  const{data,error}=await sb.from('comunicados').select('*').order('criado_em',{ascending:false}).limit(300);
+  if(error){if(/comunicados|schema cache|does not exist/i.test(error.message||''))avisarMigracaoV30();else console.error(error);todosComunicados=[];return;}
+  v30Ok=true;todosComunicados=data||[];
+}
+const SIT_COM={rascunho:['badge-cinza','rascunho'],enviado:['badge-ok','enviado'],parcial:['badge-hoje','enviado em parte'],erro:['badge-atraso','erro no envio']};
+function renderComunicados(){
+  if(!PERM.rhEditar){$('tabela-comunicados').innerHTML='';$('com-info').textContent='Só Administrador e Administrativo enviam comunicados.';return;}
+  if(!v30Ok){avisarMigracaoV30();$('tabela-comunicados').innerHTML='';return;}
+  const comEmail=todosFuncionarios.filter(f=>f.ativo!==false&&String(f.email||'').includes('@')).length,ativos=todosFuncionarios.filter(f=>f.ativo!==false).length;
+  $('com-info').innerHTML=`Escreva o comunicado e dispare: <strong>📧 e-mail</strong> individual para cada funcionário (sai da caixa do RH no Microsoft 365) e <strong>💬 WhatsApp</strong> com o texto pronto para colar no grupo. Os comunicados enviados também aparecem no login de cada funcionário (CPF), na aba <em>Avisos</em>.<br><strong>${comEmail} de ${ativos}</strong> funcionários ativos têm e-mail na ficha${comEmail<ativos?' — cadastre os que faltam em RH → Funcionários → Dados.':'.'}`;
+  const q=norm($('com-busca').value);
+  const l=todosComunicados.filter(c=>!q||norm(c.titulo+' '+c.mensagem).includes(q));
+  $('tabela-comunicados').innerHTML=`<thead><tr><th>Data</th><th>Comunicado</th><th>Para</th><th>E-mail</th><th>WhatsApp</th><th>Situação</th></tr></thead><tbody>${l.length?l.map(c=>{
+    const e=c.empresa_id&&empresaPorId(c.empresa_id),s=SIT_COM[c.situacao]||SIT_COM.rascunho;
+    return`<tr class="clicavel" data-com="${esc(c.id)}" style="cursor:pointer"><td style="white-space:nowrap">${esc(fmtDataHora(c.email_enviado_em||c.criado_em))}</td>
+      <td><strong>${esc(c.titulo)}</strong><div class="dica" style="margin:0;max-width:420px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(String(c.mensagem||'').slice(0,140))}</div></td>
+      <td>${e?`<span class="card-empresa-tag tag-${esc(e.sigla)}">${esc(e.sigla)}</span>`:'Todos'}</td>
+      <td>${c.email_total?`${c.email_ok} de ${c.email_total}`:'—'}</td>
+      <td>${c.whatsapp_em?`<span class="badge badge-ok">✓</span> <span class="dica" style="margin:0">${esc(fmtDataHora(c.whatsapp_em))}</span>`:'—'}</td>
+      <td><span class="badge ${s[0]}">${s[1]}</span>${c.email_enviado_por?`<div class="dica" style="margin:0">${esc(c.email_enviado_por)}</div>`:''}</td></tr>`;}).join('')
+    :`<tr><td colspan="6" class="vazio">${q?'Nenhum comunicado com essa busca.':'Nenhum comunicado ainda. Clique em <em>+ Novo comunicado</em>.'}</td></tr>`}</tbody>`;
+  $('tabela-comunicados').querySelectorAll('[data-com]').forEach(tr=>tr.onclick=()=>abrirComunicado(tr.dataset.com));
+}
+function abrirComunicado(id){
+  if(!PERM.rhEditar)return;if(!v30Ok){avisarMigracaoV30();return;}
+  const c=id?todosComunicados.find(x=>x.id===id):null;comunicadoEditandoId=c?c.id:null;
+  preencherSelect($('com-empresa'),todasEmpresas.map(e=>[e.id,`Só ${e.nome} (${e.sigla})`]),'Todos os funcionários');
+  $('com-titulo-modal').textContent=c?'Comunicado':'Novo comunicado';
+  $('com-titulo').value=c?c.titulo:'';$('com-mensagem').value=c?c.mensagem:'';$('com-empresa').value=c?(c.empresa_id||''):'';
+  $('com-anexo').value='';$('com-anexo-info').textContent=c&&c.anexo?'Anexo atual: '+c.anexo_nome+' (escolha outro arquivo para trocar)':'';
+  // quem recebe: num reenvio, já vêm marcados só os que ainda não receberam
+  const jaRecebeu=new Set(((c&&c.email_resultado)||[]).filter(r=>r.ok).map(r=>norm(r.email)));
+  comDestMarcados=new Set(todosFuncionarios.filter(f=>f.ativo!==false&&String(f.email||'').includes('@')&&!jaRecebeu.has(norm(f.email))).map(f=>f.id));
+  renderDestinatariosCom();renderResultadoCom(c);
+  $('com-btn-excluir').style.display=c&&PERM.admin?'':'none';
+  $('com-btn-email').textContent=c&&c.email_ok?'📧 Enviar de novo (marcados)':'📧 Enviar por e-mail';
+  abrirModal('modal-comunicado');if(!c)setTimeout(()=>$('com-titulo').focus(),50);
+}
+function destinatariosPossiveis(){const emp=$('com-empresa').value;return todosFuncionarios.filter(f=>f.ativo!==false&&(!emp||f.empresa_id===emp)).sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));}
+function renderDestinatariosCom(){
+  const l=destinatariosPossiveis(),box=$('com-destinatarios');
+  box.innerHTML=l.length?l.map(f=>{const ok=String(f.email||'').includes('@');
+    return`<label class="sub-item" style="cursor:${ok?'pointer':'default'}"><span><input type="checkbox" data-dest="${esc(f.id)}" ${ok&&comDestMarcados.has(f.id)?'checked':''} ${ok?'':'disabled'} style="width:16px;height:16px;vertical-align:middle;margin-right:6px">${esc(f.nome)}${tagEmpresa(f)}</span>
+      <span class="dica" style="margin:0">${ok?esc(f.email):`<span class="badge badge-hoje">sem e-mail</span> <button class="btn-link" data-dest-ficha="${esc(f.id)}">cadastrar</button>`}</span></label>`;}).join('')
+    :'<div class="vazio">Nenhum funcionário ativo nesta seleção.</div>';
+  box.querySelectorAll('[data-dest]').forEach(i=>i.onchange=()=>{if(i.checked)comDestMarcados.add(i.dataset.dest);else comDestMarcados.delete(i.dataset.dest);contarDestCom();});
+  box.querySelectorAll('[data-dest-ficha]').forEach(b=>b.onclick=ev=>{ev.preventDefault();fecharModal('modal-comunicado');abrirFicha(b.dataset.destFicha);});
+  contarDestCom();
+}
+function idsDestCom(){const ok=new Set(destinatariosPossiveis().filter(f=>String(f.email||'').includes('@')).map(f=>f.id));return[...comDestMarcados].filter(id=>ok.has(id));}
+function contarDestCom(){const n=idsDestCom().length,sem=destinatariosPossiveis().filter(f=>!String(f.email||'').includes('@')).length;$('com-dest-cont').textContent=`· ${n} marcado(s)${sem?` · ${sem} sem e-mail`:''}`;}
+function marcarDestCom(v){destinatariosPossiveis().forEach(f=>{if(v&&String(f.email||'').includes('@'))comDestMarcados.add(f.id);else if(!v)comDestMarcados.delete(f.id);});renderDestinatariosCom();}
+function renderResultadoCom(c){
+  const r=(c&&c.email_resultado)||[];
+  $('com-resultado').innerHTML=r.length?`<div class="secao">Último envio por e-mail${c.email_enviado_em?' · '+esc(fmtDataHora(c.email_enviado_em)):''}</div><div class="sub-lista" style="max-height:180px;overflow:auto">${r.map(x=>`<div class="sub-item"><span>${esc(x.nome||'')} <span class="dica" style="margin:0">${esc(x.email||'')}</span></span><span>${x.ok?'<span class="badge badge-ok">recebeu</span>':`<span class="badge badge-atraso" title="${esc(x.erro||'')}">não foi</span> <span class="dica" style="margin:0">${esc(x.erro||'')}</span>`}</span></div>`).join('')}</div>`
+    :(c&&c.whatsapp_em?`<div class="dica">Enviado ao grupo do WhatsApp em ${esc(fmtDataHora(c.whatsapp_em))}${c.whatsapp_por?' por '+esc(c.whatsapp_por):''}.</div>`:'');
+}
+// salva (e sobe o anexo) — devolve o comunicado salvo ou null
+async function salvarComunicado(silencioso){
+  const titulo=$('com-titulo').value.trim(),mensagem=$('com-mensagem').value.trim();
+  if(!titulo||!mensagem){alert('Preencha o título e a mensagem.');return null;}
+  const dados={titulo,mensagem,empresa_id:$('com-empresa').value||null,atualizado_em:new Date().toISOString()};
+  const arq=$('com-anexo').files[0];
+  if(arq){
+    if(arq.size>3*1024*1024){alert('O anexo passa de 3 MB. Use um arquivo menor.');return null;}
+    const caminho=`comunicados/${Date.now()}_${nomeArquivoSeguro(arq.name)}`;
+    const{error}=await sb.storage.from(BUCKET_RH).upload(caminho,arq,{upsert:false,contentType:arq.type||undefined});
+    if(erroSB(error,'Não foi possível guardar o anexo'))return null;
+    Object.assign(dados,{anexo:caminho,anexo_nome:arq.name});
+  }
+  const r=comunicadoEditandoId?await sb.from('comunicados').update(dados).eq('id',comunicadoEditandoId).select().single()
+    :await sb.from('comunicados').insert({...dados,criado_por:quemSou()}).select().single();
+  if(erroSB(r.error))return null;
+  comunicadoEditandoId=r.data.id;$('com-anexo').value='';
+  await carregarComunicados();renderComunicados();
+  $('com-anexo-info').textContent=r.data.anexo?'Anexo atual: '+r.data.anexo_nome:'';
+  if(!silencioso)toast('Comunicado salvo');
+  return r.data;
+}
+async function enviarComunicado(teste){
+  const ids=idsDestCom();
+  if(!teste&&!ids.length){alert('Marque pelo menos um funcionário com e-mail.');return;}
+  if(!teste&&!confirm(`Enviar o comunicado por e-mail para ${ids.length} funcionário(s)? Cada um recebe um e-mail próprio.`))return;
+  const c=await salvarComunicado(true);if(!c)return;
+  const btn=$(teste?'com-btn-teste':'com-btn-email');btn.disabled=true;const txt=btn.textContent;btn.textContent='Enviando…';
+  try{
+    const corpo=teste?{comunicado_id:c.id,teste_para:(meuPerfil&&meuPerfil.email)||(usuario&&usuario.email)}:{comunicado_id:c.id,funcionario_ids:ids};
+    const{data,error}=await sb.functions.invoke('email-comunicado',{body:corpo});
+    if(error||!data||data.erro){
+      let msg=data&&data.erro;if(error&&!msg){try{const b=await error.context.json();msg=b&&b.erro;}catch(e){}msg=msg||error.message;}
+      if(/Failed to send|NOT_FOUND|404/i.test(msg||''))msg='A função "email-comunicado" ainda não foi publicada no Supabase.';
+      alert('Não foi possível enviar:\n'+(msg||'erro desconhecido'));return;
+    }
+    if(teste){toast(data.ok?'Teste enviado para o seu e-mail':'O teste não foi: '+((data.resultado||[])[0]||{}).erro);return;}
+    await carregarComunicados();renderComunicados();
+    const atual=todosComunicados.find(x=>x.id===c.id);renderResultadoCom(atual);
+    toast(`E-mail enviado para ${data.enviados} de ${data.total}`);
+    if(data.enviados<data.total)alert(`${data.total-data.enviados} e-mail(s) não foram. Veja a lista no fim da janela.`);
+  }finally{btn.disabled=false;btn.textContent=txt;}
+}
+function textoWhatsComunicado(c){return`📢 *Comunicado interno — Grupo BVEK*\n*${c.titulo}*\n\n${c.mensagem}${c.anexo?'\n\n📎 O anexo foi enviado por e-mail.':''}`;}
+async function whatsappComunicado(){
+  // abre a janela já no clique (o navegador bloqueia se abrir depois de esperar o banco)
+  const w=window.open('','_blank');
+  const c=await salvarComunicado(true);if(!c){if(w)w.close();return;}
+  const url=`https://wa.me/?text=${encodeURIComponent(textoWhatsComunicado(c))}`;
+  if(w)w.location.href=url;else window.open(url,'_blank','noopener');
+  setTimeout(async()=>{
+    if(!confirm('Mandou o comunicado no grupo do WhatsApp? (OK para registrar)'))return;
+    const{error}=await sb.from('comunicados').update({whatsapp_em:new Date().toISOString(),whatsapp_por:quemSou(),situacao:c.situacao==='rascunho'?'enviado':c.situacao}).eq('id',c.id);
+    if(erroSB(error))return;await carregarComunicados();renderComunicados();renderResultadoCom(todosComunicados.find(x=>x.id===c.id));toast('Registrado: enviado no WhatsApp');
+  },1500);
+}
+async function excluirComunicado(){
+  if(!comunicadoEditandoId||!PERM.admin||!confirm('Excluir este comunicado do registro?'))return;
+  const{error}=await sb.from('comunicados').delete().eq('id',comunicadoEditandoId);if(erroSB(error))return;
+  fecharModal('modal-comunicado');await carregarComunicados();renderComunicados();toast('Excluído');
+}
+
+/* ================= v30: RH → ASSINATURA DO PONTO ================= */
+// O funcionário confere o ponto do mês no login dele (CPF) e assina; aqui o RH vê quem assinou,
+// quem discordou e quem falta, e imprime/salva o espelho assinado.
+let assinaturasMes=[];
+async function renderAssinaturasPonto(){
+  const iso=mesRH(),per=periodoMeuPonto(iso);
+  $('as-info').innerHTML=`Ponto de <strong>${esc(nomeMes(iso))}</strong> (${esc(fmtData(per.ini))} a ${esc(fmtData(somarDias(iso,24)))}). Cada funcionário entra no CRM com o CPF, abre <em>Meu ponto</em>, confere e assina com o dedo. Se discordar, escreve o que está errado e o RH corrige no Secullum e pede para assinar de novo. Clique em <em>ver</em> para imprimir ou salvar em PDF o espelho assinado.`;
+  const{data,error}=await sb.from('ponto_assinaturas').select('id,funcionario_id,competencia,concorda,observacao,nome_digitado,assinado_em,ip,hash').eq('competencia',iso).order('assinado_em',{ascending:false});
+  if(error){if(/ponto_assinaturas|schema cache|does not exist/i.test(error.message||''))avisarMigracaoV30('as-info');else console.error(error);$('tabela-assinaturas').innerHTML='';$('as-kpis').innerHTML='';return;}
+  assinaturasMes=data||[];
+  const ultima=fid=>assinaturasMes.find(a=>a.funcionario_id===fid);
+  // quem bate ponto: ativos, menos sócios (pró-labore) e intermitentes
+  const lista=filtraEmpresa(todosFuncionarios).filter(f=>f.ativo!==false&&!['socio'].includes((rhPorFunc(f.id)||{}).tipo_contrato)&&!(typeof ehIntermitente==='function'&&ehIntermitente(f)))
+    .sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
+  const ass=lista.filter(f=>{const a=ultima(f.id);return a&&a.concorda;}).length,disc=lista.filter(f=>{const a=ultima(f.id);return a&&!a.concorda;}).length;
+  $('as-kpis').innerHTML=[['Assinaram',String(ass),'concordaram com o ponto'],['Discordaram',String(disc),disc?'corrigir e pedir nova assinatura':'—'],['Faltam assinar',String(lista.length-ass-disc),'de '+lista.length+' funcionário(s)']]
+    .map(([r,v,s])=>`<div class="kpi"><div class="rot">${esc(r)}</div><div class="val">${esc(v)}</div><div class="sub">${esc(s)}</div></div>`).join('');
+  $('tabela-assinaturas').innerHTML=`<thead><tr><th>Funcionário</th><th>Situação</th><th>Assinado em</th><th>Observação</th><th></th></tr></thead><tbody>${lista.length?lista.map(f=>{const a=ultima(f.id);
+    return`<tr><td><strong>${esc(f.nome)}</strong>${tagEmpresa(f)}${f.cpf?'':' <span class="badge badge-atraso">sem CPF</span>'}</td>
+      <td>${!a?'<span class="badge badge-cinza">falta assinar</span>':a.concorda?'<span class="badge badge-ok">✓ assinou</span>':'<span class="badge badge-atraso">discordou</span>'}</td>
+      <td>${a?esc(fmtDataHora(a.assinado_em)):'—'}</td><td style="font-size:12px;white-space:normal;max-width:320px">${a&&a.observacao?esc(a.observacao):''}</td>
+      <td>${a?`<button class="btn-link" data-as-ver="${esc(a.id)}">ver</button>`:''}</td></tr>`;}).join('')
+    :'<tr><td colspan="5" class="vazio">Nenhum funcionário ativo.</td></tr>'}</tbody>`;
+  $('tabela-assinaturas').querySelectorAll('[data-as-ver]').forEach(b=>b.onclick=()=>verAssinaturaPonto(b.dataset.asVer));
+}
+async function verAssinaturaPonto(id){
+  const w=window.open('','_blank');if(!w){alert('Permita pop-ups para este site.');return;}
+  w.document.write('<p style="font-family:Arial;padding:30px">Carregando…</p>');
+  const{data:a,error}=await sb.from('ponto_assinaturas').select('*').eq('id',id).single();
+  if(error||!a){w.close();erroSB(error||{message:'não encontrada'});return;}
+  const f=funcPorId(a.funcionario_id)||{},e=empresaPorId(f.empresa_id)||{},d=a.dados||{};
+  const tabela=tabelaPontoHTML(d);
+  w.document.open();w.document.write(`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>Ponto ${esc(String(a.competencia).slice(0,7))} ${esc(f.nome||'')}</title>
+  <style>body{font-family:Arial,sans-serif;font-size:11px;color:#222;margin:24px}h1{font-size:15px;margin:0 0 4px}table{border-collapse:collapse;width:100%;margin-top:10px}th,td{border:1px solid #ccc;padding:4px 6px;text-align:left;white-space:nowrap}th{background:#eef3ee}tr.fds td{color:#888}tr.tot td{font-weight:700;background:#eef3ee}
+  .ass{margin-top:18px;border:1px solid #999;padding:10px;display:flex;gap:20px;align-items:center}.ass img{height:90px;border-bottom:1px solid #222}.meta{font-size:10px;color:#555;line-height:1.5}</style></head><body>
+  <h1>Espelho de ponto — ${esc(nomeMes(a.competencia))}</h1>
+  <div>${esc(f.nome||a.nome_digitado||'')}${f.cpf?' · CPF '+esc(f.cpf):''}${f.cargo?' · '+esc(f.cargo):''}${e.nome?' · '+esc(e.nome):''}<br>Período: ${esc(fmtData(a.periodo_inicio))} a ${esc(fmtData(a.periodo_fim))}</div>
+  ${tabela}
+  <div class="ass"><img src="${esc(a.assinatura||'')}" alt="assinatura"><div><strong>${a.concorda?'Concordo com as marcações e totais deste período.':'NÃO CONCORDO com o ponto deste período.'}</strong>${a.observacao?`<br>Observação: ${esc(a.observacao)}`:''}
+  <div class="meta">Assinado eletronicamente por ${esc(a.nome_digitado||'')} em ${esc(fmtDataHora(a.assinado_em))} (login por CPF no CRM Grupo BVEK)<br>IP: ${esc(a.ip||'—')} · Navegador: ${esc(String(a.user_agent||'').slice(0,90))}<br>Código de conferência (SHA-256 da cópia do ponto): ${esc(a.hash||'')}</div></div></div>
+  </body></html>`);w.document.close();
+}
 
 /* ================= INÍCIO ================= */
 ligarArrastarDoc();

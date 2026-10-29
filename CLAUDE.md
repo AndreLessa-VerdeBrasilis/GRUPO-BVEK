@@ -10,7 +10,7 @@ Sempre responda em português. O dono do sistema é o André Lessa (sócio do Gr
 - Banco: Supabase, projeto https://smusenaszgkqkjjwblyi.supabase.co
 - Tabelas principais: `clientes`, `contatos`, `cards` (funil/kanban), `itens_proposta`, `sequencia_propostas`, `projetos`, `atividades`, `historico_etapas`, `empresas`.
 - Empresas do grupo: **Engekat** (EK, Engekat Construções), **Verde Brasilis** (VB), **BrasiLimp** (BL) e **Kat Corretora** (KS).
-- Outros arquivos: `perfil.html` + `perfil-questionario.js` (formulário de perfil para candidatos) e `supabase/functions/` (funções do Supabase: `email-contabilidade` e `secullum`).
+- Outros arquivos: `perfil.html` + `perfil-questionario.js` (formulário de perfil para candidatos) e `supabase/functions/` (funções do Supabase: `email-contabilidade`, `email-comunicado` e `secullum`).
 
 ## Regras de negócio (NÃO alterar sem pedido explícito do André)
 
@@ -26,7 +26,7 @@ Sempre responda em português. O dono do sistema é o André Lessa (sócio do Gr
 1. **Antes de mexer**, leia o `index.html` atual e as migrações em `supabase/`. Não reescreva o que já funciona; faça a menor mudança que resolve.
 2. **Decisões do André**: se algo exigir regra de negócio, nome, campo novo ou mudança de comportamento visível, pergunte antes de implementar.
 3. **Banco de dados**:
-   - Toda mudança de banco vira um arquivo novo em `supabase/` no formato `migracao_crm_vNN_descricao.sql`, com o próximo número (confira o maior existente; em 29/out/2026 a última era a v29).
+   - Toda mudança de banco vira um arquivo novo em `supabase/` no formato `migracao_crm_vNN_descricao.sql`, com o próximo número (confira o maior existente; em 29/out/2026 a última era a v30).
    - A migração precisa poder rodar mais de uma vez sem duplicar nada (`if not exists`, `where not exists`, `create or replace`, `on conflict do nothing`).
    - Termine o arquivo com um `select` que permita ao André conferir o resultado.
    - O André roda o SQL manualmente no SQL Editor do Supabase. Não execute SQL no banco de produção por conta própria. Quando o código depender da migração, diga claramente: "rode a migração vNN ANTES de testar".
