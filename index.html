@@ -4250,10 +4250,12 @@ async function montarPDF(win){
   const topo=`<div class="topo"><img class="logo" src="${urlLogo(T.sigla,'logo')}" alt="${esc(emp.nome||'')}"><div class="slogan">UMA EMPRESA, TODOS OS SERVIÇOS</div><img class="grupo" src="${urlLogo('BVK','logo')}" alt="Grupo BVEK"></div>`;
   const html=`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>${esc(nomeArquivo)}</title>
   <style>
-    @page{size:A4;margin:14mm 16mm 14mm}
+    /* margem zero na página: assim o navegador não imprime data/hora, título e "about:blank" nas bordas.
+       O espaço das margens fica dentro da proposta (laterais na .pagina; topo/base no cabeçalho e rodapé que repetem em cada folha). */
+    @page{size:A4;margin:0}
     :root{--pri:#${T.principal};--dest:#${T.destaque};--claro:#${T.claro};--zebra:#${T.zebra};--linha:#${T.linha}}
     body{font-family:Calibri,Arial,sans-serif;font-size:12.5px;color:#222;margin:0;line-height:1.45;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-    .pagina{max-width:780px;margin:0 auto;padding:10px 20px}
+    .pagina{max-width:210mm;margin:0 auto;padding:0 16mm;box-sizing:border-box}
     .marca-dagua{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:115mm;z-index:-1;pointer-events:none}
     .topo{display:flex;justify-content:space-between;align-items:center;gap:12px;border-bottom:2px solid var(--dest);padding-bottom:6px;margin-bottom:14px}
     .topo img.logo{height:82px}.topo img.grupo{height:56px}
@@ -4262,6 +4264,7 @@ async function montarPDF(win){
     .rodape .logos{display:flex;justify-content:center;align-items:center;gap:22px;margin:4px 0 3px}.rodape .logos img{height:36px}
     .rodape strong{color:var(--pri)}
     table.moldura{margin:0}table.moldura>thead td,table.moldura>tfoot td,table.moldura>tbody>tr>td{padding:0;border:0;background:transparent}
+    table.moldura>thead td{padding-top:14mm}table.moldura>tfoot td{padding-bottom:12mm}
     .quebra{break-after:page;page-break-after:always}
     h1{font-size:17px;color:var(--pri);margin:0 0 10px;letter-spacing:.02em}
     h2{font-size:13.5px;color:var(--pri);margin:16px 0 6px;padding-bottom:3px;border-bottom:1.5px solid var(--pri);break-after:avoid;letter-spacing:.04em}
@@ -4364,7 +4367,8 @@ async function montarOS(win){
   const html=`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>${esc(nomeArquivo)}</title>
   <style>
     body{font-family:Arial,sans-serif;font-size:11px;color:#222;margin:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-    .pagina{padding:26px 36px;max-width:800px;margin:0 auto}
+    @page{size:A4;margin:0} /* sem data/hora e "about:blank" do navegador */
+    .pagina{padding:14mm 16mm;max-width:210mm;margin:0 auto;box-sizing:border-box}
     .topo{display:flex;justify-content:space-between;align-items:flex-end;padding-bottom:10px;border-bottom:2px solid #${T.destaque};margin-bottom:14px}
     .topo img{height:56px}.topo .os{text-align:right;color:#5F6B7A}.topo .os strong{display:block;font-size:15px;color:#${T.principal}}.topo .os .tit{font-weight:700;letter-spacing:.1em;color:#${T.principal}}
     h2{color:#${T.principal};font-size:12px;margin:16px 0 6px;border-bottom:1.5px solid #${T.principal};padding-bottom:3px;text-transform:uppercase}
