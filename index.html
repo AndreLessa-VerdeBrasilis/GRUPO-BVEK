@@ -823,7 +823,7 @@ tr.doc-vencido td{background:#fff5f5}
         </div>
       </div>
       <div class="filtros">
-        <label class="rot-filtro" title="Mês do fechamento (envio à contabilidade no dia 25)">Fechamento</label>
+        <label class="rot-filtro" title="É o mesmo mês de todas as subabas do RH: mudou aqui, muda lá também">Mês do RH</label>
         <input type="month" id="bn-mes" onchange="mudouCompetencia()">
         <label class="rot-filtro" id="bn-rot-dias">Dias úteis do mês</label>
         <input type="number" id="bn-dias-uteis" min="0" max="31" style="width:80px" onchange="salvarDiasUteis()">
@@ -843,7 +843,7 @@ tr.doc-vencido td{background:#fff5f5}
       <div class="barra-acoes">
         <h2 id="titulo-rh">RH</h2>
         <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-          <label class="rot-filtro">Mês</label>
+          <label class="rot-filtro" title="Vale para todas as subabas do RH, inclusive Benefícios">Mês do RH</label>
           <input type="month" id="rh-mes" onchange="mudouMesRH()" style="padding:8px 10px;border:1.5px solid var(--borda);border-radius:8px;font-family:inherit">
           <button class="btn-sec" id="btn-secullum-rh" onclick="buscarFuncionariosSecullum(this)">🔄 Buscar CPF, PIS e admissão no Secullum</button>
           <button class="btn-novo" id="btn-novo-func-rh" onclick="abrirFicha(null)">+ Novo funcionário</button>
@@ -2923,6 +2923,8 @@ function abrirTab(tab){
   // v34: grupo RH (RH + Benefícios + Currículos) com a mesma barra de subabas
   const grupoRH=['rh','beneficios','curriculos'].includes(tab);
   $('rh-subabas').style.display=grupoRH?'':'none';
+  // v34.2: Benefícios sempre no mesmo mês do RH
+  if(grupoRH&&$('rh-mes').value&&$('bn-mes').value!==$('rh-mes').value){$('bn-mes').value=$('rh-mes').value;carregarCompetenciaAtual().then(()=>{if(tabAtual==='beneficios')renderBeneficios();});}
   if(grupoRH)document.querySelectorAll('#rh-subabas .subaba').forEach(s=>s.classList.toggle('ativo',s.dataset.rh===(tab==='rh'?rhSub:tab)));
   ['painel','documentos','beneficios','rh','curriculos','financeiro','fornecedores','inventario','funil','clientes','projetos','atividades','empresas','usuarios'].forEach(t=>{$('tab-'+t).style.display=t===tab?'block':'none';});
   const marca=grupoRH?'rh':tab==='empresas'?'usuarios':tab;
@@ -4565,7 +4567,8 @@ async function carregarCompetenciaAtual(){
   ]);
   compFuncs=a.data||[];compItens=b.data||[];
 }
-async function mudouCompetencia(){await carregarCompetenciaAtual();renderBeneficios();}
+// v34.2: um mês só para todo o RH — mudou em Benefícios, muda nas outras subabas também
+async function mudouCompetencia(){if($('bn-mes').value)$('rh-mes').value=$('bn-mes').value;await carregarCompetenciaAtual();renderBeneficios();}
 // garante a linha da competência (criada na primeira alteração do mês)
 async function garantirCompetencia(){
   let c=competenciaAtual();if(c)return c;
