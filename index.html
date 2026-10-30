@@ -74,7 +74,8 @@ button{font-family:inherit}
 .empresa-selector label{font-size:12px;opacity:.8;white-space:nowrap}
 .empresa-selector select{background:none;border:none;color:#fff;font-size:14px;font-weight:600;cursor:pointer;outline:none;max-width:220px}
 .empresa-selector select option{color:#000;background:#fff}
-.tabs{background:#fff;border-bottom:2px solid var(--borda);display:flex;padding:0 24px;overflow-x:auto}
+.tabs{background:#fff;border-bottom:2px solid var(--borda);display:flex;padding:0 24px;overflow-x:auto;overflow-y:hidden;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
 .tab{padding:14px 18px;cursor:pointer;font-size:14px;font-weight:500;color:var(--texto2);border-bottom:3px solid transparent;margin-bottom:-2px;transition:all .2s;white-space:nowrap}
 .tab.ativo{color:var(--verde);border-bottom-color:var(--verde)}
 .conteudo{padding:24px;max-width:1500px;margin:0 auto}
@@ -357,6 +358,12 @@ tr.doc-vencido td{background:#fff5f5}
 .gxc-graf .r{font-size:10px;color:var(--texto2)}
 .positivo{color:#1b5e20;font-weight:700}.negativo{color:#c0392b;font-weight:700}
 .mascara{color:var(--texto2);letter-spacing:1px}
+/* v36: tabela com cabeçalho fixo e ordenação clicando no título (como o Explorador do Windows) */
+.tabela-wrap.rolagem{max-height:calc(100vh - 230px);overflow:auto}
+.tabela-wrap.rolagem table.tabela th{position:sticky;top:0;z-index:2;box-shadow:0 1px 0 var(--borda)}
+th[data-ord]{cursor:pointer;user-select:none}th[data-ord]:hover{background:#d6e6f3}
+th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opacity:1}
+.ctf-secao{margin-top:18px}
 .grupo-linha td{background:var(--verde-claro);color:var(--verde-escuro);padding-top:8px;padding-bottom:8px}
 .colinha{background:#fffbe6;border:1.5px dashed #e0b400;border-radius:10px;padding:10px 12px;margin:10px 0;font-size:13px}
 .colinha-tit{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#7a5d00;display:flex;gap:10px;align-items:center}
@@ -424,6 +431,7 @@ tr.doc-vencido td{background:#fff5f5}
   <div class="topbar">
     <div class="topbar-logo">GRUPO-BVEK</div>
     <div class="topbar-right">
+      <button class="btn-topo" id="btn-avisos-cc" style="display:none" onclick="ativarAvisosSistema()" title="Receber avisos no celular (ponto e declarações para assinar)">🔔 Avisos</button>
       <button class="btn-topo" onclick="abrirModalSenha()" title="Trocar minha senha">🔑 Senha</button>
       <button class="btn-sair" onclick="sair()">Sair</button>
     </div>
@@ -536,7 +544,7 @@ tr.doc-vencido td{background:#fff5f5}
         <h3 style="margin:0">💰 Ganhos × Custos <span class="badge badge-cinza">🔒 só administradores</span></h3>
         <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
           <select id="gxc-ano" onchange="renderGanhosCustos()"></select>
-          <button class="btn-sec" onclick="abrirContratosFixos()">📑 Contratos fixos</button>
+          <button class="btn-sec" onclick="abrirTab('funil');setTimeout(()=>$('funil-contratos').scrollIntoView({behavior:'smooth'}),150)">📑 Contratos fixos (no Funil)</button>
         </div>
       </div>
       <div class="gxc-fontes" id="gxc-fontes"></div>
@@ -564,6 +572,18 @@ tr.doc-vencido td{background:#fff5f5}
         <span class="dica" id="funil-dica">Arraste os cards entre as colunas para mudar a etapa.</span>
       </div>
       <div class="funil-container"><div class="funil" id="funil"></div></div>
+      <!-- v36: contratos fixos / recorrentes ficam no funil -->
+      <div class="painel ctf-secao" id="funil-contratos">
+        <div class="barra-acoes" style="margin-bottom:8px">
+          <h3 style="margin:0">📑 Contratos fixos e recorrentes <span class="contagem" id="ctf-cont"></span></h3>
+          <div style="display:flex;gap:8px;flex-wrap:wrap" class="ctf-edita">
+            <button class="btn-sec" onclick="novoContratoPorPdf()" title="Envie o PDF da proposta vigente: o CRM lê e preenche o contrato">⬆️ Subir proposta vigente</button>
+            <button class="btn-novo" onclick="abrirContratosFixos(null)">+ Novo contrato</button>
+          </div>
+        </div>
+        <div class="filtros" style="margin-bottom:8px"><label class="rot-filtro" style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="ctf-encerrados" onchange="renderContratosFunil()"> mostrar encerrados</label></div>
+        <div class="tabela-wrap"><table class="tabela" id="tabela-contratos-funil"></table></div>
+      </div>
     </div>
 
     <!-- CLIENTES -->
@@ -581,14 +601,11 @@ tr.doc-vencido td{background:#fff5f5}
           <option value="semcodigo">Sem código (a conferir)</option>
           <option value="inativos">Inativos / mesclados</option>
         </select>
-        <select id="cli-ordem" onchange="renderClientes()" title="Ordem da lista">
-          <option value="codigo">Ordem: código</option><option value="nome">Ordem: nome (A–Z)</option><option value="fechado">Ordem: mais propostas fechadas</option>
-        </select>
         <!-- v34: ir direto para um cliente, sem rolar a página -->
         <select id="cli-ir" onchange="if(this.value){abrirModalCliente(this.value);this.value='';}" style="min-width:240px"></select>
         <span class="dica" id="cli-contagem"></span>
       </div>
-      <div class="tabela-wrap"><table class="tabela" id="tabela-clientes"></table></div>
+      <div class="tabela-wrap rolagem"><table class="tabela" id="tabela-clientes"></table></div>
     </div>
 
     <!-- PROJETOS -->
@@ -603,12 +620,9 @@ tr.doc-vencido td{background:#fff5f5}
           <option value="">Todos os status</option>
           <option>Em andamento</option><option>Concluído</option><option>Paralisado</option><option>Cancelado</option>
         </select>
-        <select id="proj-ordem" onchange="renderProjetos()" title="Ordenar e agrupar">
-          <option value="codigo">Ordenar: código</option><option value="empresa">Ordenar: empresa</option><option value="cliente">Ordenar: cliente</option>
-        </select>
         <span class="dica" id="proj-proximo"></span>
       </div>
-      <div class="tabela-wrap"><table class="tabela" id="tabela-projetos"></table></div>
+      <div class="tabela-wrap rolagem"><table class="tabela" id="tabela-projetos"></table></div>
     </div>
 
     <!-- FINANCEIRO (v20): pagamentos a autorizar + lembrete no WhatsApp -->
@@ -968,7 +982,7 @@ tr.doc-vencido td{background:#fff5f5}
 
     <!-- USUÁRIOS (só administrador) -->
     <div id="tab-usuarios" style="display:none">
-      <div class="barra-acoes"><h2>Usuários e perfis de acesso</h2><button class="btn-sec" onclick="abrirTab('empresas')">🏢 Empresas do grupo</button></div>
+      <div class="barra-acoes"><h2>Usuários e perfis de acesso</h2><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn-sec" onclick="abrirAuditoria()">🕵️ Registro de alterações</button><button class="btn-sec" onclick="abrirTab('empresas')">🏢 Empresas do grupo</button></div></div>
       <div class="info-box" style="display:block;line-height:1.6">
         <strong>Para dar acesso a um funcionário:</strong> no Supabase, abra <em>Authentication → Users → Add user → Create new user</em>, informe o e-mail e uma senha provisória e marque <em>Auto Confirm User</em>. Ele aparece aqui como <em>Aguardando liberação</em>: escolha o perfil e clique em Salvar. Depois do primeiro acesso, ele troca a senha no botão 🔑 Senha.<br>
         <strong>Intermitente (só contracheque):</strong> crie o usuário no Supabase com o e-mail <code>CPF@funcionario.bvek.com.br</code> (CPF só com números) e escolha aqui o perfil <em>Funcionário (contracheque e ponto)</em>. Ele entra digitando só o CPF e a senha e vê todos os contracheques guardados para aquele CPF — o CPF precisa estar na ficha do funcionário.
@@ -1133,7 +1147,7 @@ tr.doc-vencido td{background:#fff5f5}
       <tbody id="itens-body"></tbody>
     </table>
     </div>
-    <button class="btn-add-item so-edicao" onclick="addItem()">+ Adicionar item</button>
+    <button class="btn-add-item so-edicao so-valores" onclick="addItem()">+ Adicionar item</button>
     <div class="total-box">Total: R$ <span id="total-geral">0,00</span></div>
 
     <div id="card-extras" style="display:none">
@@ -1447,18 +1461,31 @@ tr.doc-vencido td{background:#fff5f5}
   </div>
 </div>
 
+<!-- v36: REGISTRO DE ALTERAÇÕES (auditoria, só administrador) -->
+<div class="modal-overlay" id="modal-auditoria">
+  <div class="modal" style="max-width:1000px">
+    <h2>🕵️ Registro de alterações</h2>
+    <p class="modal-sub">Quem mudou valores de propostas, etapas, pagamentos, saídas, contratos fixos, premiações, salários e perfis de acesso — e o que mudou. Ninguém consegue alterar nem apagar este registro.</p>
+    <div class="filtros"><select id="au-tabela" onchange="carregarAuditoria()"><option value="">Todas as áreas</option><option value="cards">Propostas</option><option value="pagamentos_autorizacao">Pagamentos</option><option value="saidas">Saídas</option><option value="contratos_recorrentes">Contratos fixos</option><option value="premiacoes">Premiações</option><option value="funcionario_rh">Ficha do RH (salário)</option><option value="perfis">Perfis de acesso</option></select></div>
+    <div class="tabela-wrap rolagem"><table class="tabela" id="tabela-auditoria"></table></div>
+    <div class="modal-btns"><button class="btn-cancelar" onclick="fecharModal('modal-auditoria')">Fechar</button></div>
+  </div>
+</div>
+
 <!-- v34: MODAL CONTRATOS FIXOS / RECORRENTES (só administrador) -->
 <div class="modal-overlay" id="modal-contratos">
   <div class="modal" style="max-width:980px">
     <h2>📑 Contratos fixos e recorrentes</h2>
     <p class="dica" style="margin-bottom:10px">Serviços mensais que prestamos (receita) ou que pagamos todo mês (despesa). Eles entram sozinhos em <strong>Ganhos × Custos</strong> em todos os meses entre o início e o fim.</p>
-    <div class="tabela-wrap" style="margin-bottom:14px"><table class="tabela" id="tabela-contratos"></table></div>
+    <div class="caixa-pdf" style="margin-bottom:12px"><div class="dica-drop">📄 Proposta vigente do contrato (PDF)</div>
+      <input type="file" id="ctf-arquivo" accept="application/pdf,.pdf" onchange="lerPdfContrato(this.files[0])">
+      <div class="info" id="ctf-arquivo-info">Envie o PDF da proposta aceita: o CRM lê e preenche os campos (confira os destacados em amarelo).</div></div>
     <div class="secao" id="ctf-titulo">Novo contrato</div>
     <div class="form-grid">
       <div class="campo"><label>Tipo *</label><select id="ctf-tipo" onchange="mudouTipoContrato()"><option value="receita">💚 Receita — serviço que prestamos</option><option value="despesa">🔴 Despesa — custo fixo nosso</option></select></div>
       <div class="campo"><label>Empresa *</label><select id="ctf-empresa"></select></div>
       <div class="campo full"><label>Descrição *</label><input type="text" id="ctf-descricao" placeholder="Ex.: Limpeza mensal — sede"></div>
-      <div class="campo" id="ctf-box-cliente"><label>Cliente</label><input type="text" id="ctf-cliente" list="dl-clientes" placeholder="Código ou nome"></div>
+      <div class="campo" id="ctf-box-cliente"><label>Cliente</label><input type="text" id="ctf-cliente" list="dl-clientes" placeholder="Código ou nome" onchange="opcoesCardContrato()"></div>
       <div class="campo"><label>Fornecedor / favorecido</label><input type="text" id="ctf-fornecedor" placeholder="Para despesas (ex.: aluguel, software)"></div>
       <div class="campo"><label id="ctf-rot-valor">Valor mensal recebido (R$) *</label><input type="text" inputmode="numeric" id="ctf-valor" placeholder="0,00" oninput="mascaraMoeda(this)"></div>
       <div class="campo" id="ctf-box-custo"><label>Custo mensal para executar (R$)</label><input type="text" inputmode="numeric" id="ctf-custo" placeholder="0,00" oninput="mascaraMoeda(this)"><div class="dica">Equipe, material etc. Entra como custo no mesmo mês.</div></div>
@@ -1466,12 +1493,14 @@ tr.doc-vencido td{background:#fff5f5}
       <div class="campo"><label>Fim (vazio = sem prazo)</label><input type="date" id="ctf-fim"></div>
       <div class="campo"><label>Dia do vencimento</label><input type="number" id="ctf-dia" min="1" max="31" placeholder="Ex.: 10"></div>
       <div class="campo"><label>Situação</label><select id="ctf-ativo"><option value="1">Ativo</option><option value="0">Encerrado / pausado</option></select></div>
+      <div class="campo"><label>Proposta do funil (opcional)</label><select id="ctf-card"></select><div class="dica">Ligada aqui, a proposta não é somada de novo em Ganhos × Custos.</div></div>
+      <div class="campo full"><label>Equipe / funcionários alocados</label><input type="text" id="ctf-equipe" placeholder="Ex.: 2 auxiliares de limpeza (João, Maria) + 1 encarregado"></div>
       <div class="campo full"><label>Observações</label><input type="text" id="ctf-obs"></div>
     </div>
     <div class="modal-btns">
       <button class="btn-cancelar" onclick="fecharModal('modal-contratos')">Fechar</button>
       <button class="btn-sec" id="ctf-btn-novo" onclick="editarContratoFixo(null)" style="display:none">+ Novo</button>
-      <button class="btn-salvar" onclick="salvarContratoFixo()">Salvar contrato</button>
+      <button class="btn-salvar ctf-edita" id="ctf-btn-salvar" onclick="salvarContratoFixo()">Salvar contrato</button>
     </div>
   </div>
 </div>
@@ -2352,7 +2381,9 @@ function calcularPermissoes(p){
     // v30: inventário (administrador, comercial e administrativo cadastram; consulta só vê)
     invEditar:adm||com||admv,
     // v34: o comercial não vê valores de propostas nem gera o PDF; custo/lucro (composição, ganhos × custos) só administrador
-    verValores:!com,gerarPDF:!com,verLucro:adm};
+    verValores:!com,gerarPDF:!com,verLucro:adm,
+    // v36: contratos fixos no funil (Comercial e Administrativo preenchem; valores só para quem vê valores)
+    contratosEditar:adm||com||admv};
 }
 const BUCKET_DOCS='documentos';
 const ABERTAS=ETAPAS.filter(e=>!['fechada','concluida','perdida'].includes(e.id)).map(e=>e.id);
@@ -2564,11 +2595,32 @@ async function instalarApp(){
   if(pedidoInstalar){pedidoInstalar.prompt();await pedidoInstalar.userChoice.catch(()=>{});pedidoInstalar=null;$('btn-instalar').style.display='none';return;}
   alert('Para instalar:\n\n• Android (Chrome): menu ⋮ → "Instalar app" ou "Adicionar à tela inicial".\n• iPhone (Safari): botão Compartilhar → "Adicionar à Tela de Início".');
 }
-function mostrarBotaoAvisos(){const b=$('btn-avisos-sistema');if(b)b.style.display=('Notification' in window)&&Notification.permission==='default'?'':'none';}
+function mostrarBotaoAvisos(){['btn-avisos-sistema','btn-avisos-cc'].forEach(id=>{const b=$(id);if(b)b.style.display=('Notification' in window)&&Notification.permission!=='granted'&&Notification.permission!=='denied'?'':'none';});
+  if(('Notification' in window)&&Notification.permission==='granted')inscreverPush(true);}
+/* v37: aviso com o CRM fechado (Web Push) — o aparelho se inscreve e a função "push" manda os lembretes do dia */
+function b64ParaBytes(b){const p='='.repeat((4-b.length%4)%4),r=atob((b+p).replace(/-/g,'+').replace(/_/g,'/'));return Uint8Array.from(r,c=>c.charCodeAt(0));}
+async function inscreverPush(silencioso){
+  try{
+    if(!('serviceWorker' in navigator)||!('PushManager' in window))return false;
+    const reg=swReg||await navigator.serviceWorker.ready;
+    let sub=await reg.pushManager.getSubscription();
+    if(!sub){
+      const{data,error}=await sb.functions.invoke('push',{body:{acao:'chave'}});
+      if(error||!data||!data.chave){if(!silencioso)console.warn('push: função ainda não publicada',error||data);return false;}
+      sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:b64ParaBytes(data.chave)});
+    }
+    const j=sub.toJSON();
+    const{error}=await sb.from('push_inscricoes').upsert({endpoint:j.endpoint,p256dh:j.keys.p256dh,auth:j.keys.auth,user_agent:navigator.userAgent.slice(0,200),user_id:usuario&&usuario.id},{onConflict:'endpoint'});
+    if(error){if(!silencioso)console.warn('push: rode a migração v37',error);return false;}
+    return true;
+  }catch(e){if(!silencioso)console.warn('push',e);return false;}
+}
 async function ativarAvisosSistema(){
   if(!('Notification' in window)){alert('Este aparelho não aceita notificações pelo navegador. No iPhone, instale o CRM na Tela de Início primeiro (Compartilhar → Adicionar à Tela de Início) e abra por lá.');return;}
   const p=await Notification.requestPermission();mostrarBotaoAvisos();
-  if(p==='granted'){toast('Avisos ativados 🔔');avisoSistema('CRM Grupo BVEK','Pronto! Os avisos de tarefas e pagamentos vão aparecer aqui.','teste');}
+  if(p==='granted'){toast('Avisos ativados 🔔');
+    if(await inscreverPush(false))sb.functions.invoke('push',{body:{acao:'teste'}}).catch(()=>{});
+    else avisoSistema('CRM Grupo BVEK','Pronto! Os avisos de tarefas e pagamentos vão aparecer aqui.','teste');}
 }
 function avisoSistema(titulo,corpo,tag){
   try{
@@ -2636,6 +2688,7 @@ async function iniciarContracheques(){
   $('tela-login').style.display='none';$('app').style.display='none';$('tela-cc').style.display='block';
   if(precisaPrimeiroAcesso()){mostrarPrimeiroAcesso();return;}
   $('cc-primeiro').style.display='none';$('cc-conteudo').style.display='';
+  mostrarBotaoAvisos();
   const[n,l]=await Promise.all([sb.rpc('bvek_meu_nome_funcionario'),sb.rpc('bvek_meus_contracheques')]);
   const nome=(n&&n.data)||meuPerfil.nome||'';
   $('cc-nome').dataset.nome=nome||'';
@@ -2878,8 +2931,33 @@ async function carregarClientes(){
   if(error&&/codigo|ativo/.test(error.message||'')){avisarMigracao();const r=await sb.from('clientes').select('*').order('nome');todosClientes=r.data||[];return;}
   todosClientes=data||[];
 }
+/* v36: propostas lidas por funções do banco que tiram os valores de quem não pode ver
+   (antes da migração v36 rodar, lê direto como antes) */
+let v36Ok=null;
+const naoTemFuncao=e=>/function|schema cache|could not find|does not exist/i.test((e&&e.message)||'');
+async function lerCards(params){
+  if(v36Ok!==false){
+    const r=await sb.rpc('bvek_cards',params||{});
+    if(!r.error){v36Ok=true;return{data:r.data||[],error:null};}
+    if(!naoTemFuncao(r.error))return r;
+    v36Ok=false;
+  }
+  let q=sb.from('cards').select('*,clientes(*),empresas(*)');
+  if(params&&params.p_id)q=q.eq('id',params.p_id);
+  if(params&&params.p_raiz)q=q.or(`id.eq.${params.p_raiz},card_pai_id.eq.${params.p_raiz}`);
+  return await q.order('criado_em',{ascending:false});
+}
+async function lerCard(id){const r=await lerCards({p_id:id});if(r.error)return{data:null,error:r.error};return{data:(r.data||[])[0]||null,error:r.data&&r.data.length?null:{message:'atendimento não encontrado'}};}
+async function lerItens(cardId){
+  if(v36Ok!==false){
+    const r=await sb.rpc('bvek_itens_proposta',{p_card:cardId});
+    if(!r.error)return r;
+    if(!naoTemFuncao(r.error))return r;
+  }
+  return await sb.from('itens_proposta').select('*').eq('card_id',cardId).order('ordem');
+}
 async function carregarCards(){
-  const{data,error}=await sb.from('cards').select('*,clientes(id,codigo,nome,razao_social,empresa_cliente),empresas(nome,sigla)').order('criado_em',{ascending:false});
+  const{data,error}=await lerCards();
   if(error){console.error(error);todosCards=[];return;}
   todosCards=data||[];
 }
@@ -3005,12 +3083,14 @@ function renderPainel(){
   renderGanhosCustos();
 }
 /* ================= v34: GANHOS × CUSTOS + CONTRATOS FIXOS (só administrador) ================= */
-let todosContratosFixos=[],contratoFixoId=null,v34ContratosOk=true;
+let todosContratosFixos=[],contratoFixoId=null,v34ContratosOk=true,arquivoContratoNovo=null;
+// v36: contratos ficam no funil; Comercial vê e preenche (sem valores — o banco não manda)
 async function carregarContratosFixos(){
-  if(!PERM.verLucro)return;
-  const{data,error}=await sb.from('contratos_recorrentes').select('*').order('descricao');
-  if(error){v34ContratosOk=false;if(!/contratos_recorrentes|schema cache|does not exist/i.test(error.message||''))console.error(error);todosContratosFixos=[];return;}
-  v34ContratosOk=true;todosContratosFixos=data||[];
+  if(!PERM.comercialVer)return;
+  let r=await sb.rpc('bvek_contratos');
+  if(r.error&&naoTemFuncao(r.error))r=await sb.from('contratos_recorrentes').select('*').order('descricao');
+  if(r.error){v34ContratosOk=false;if(!/contratos_recorrentes|schema cache|does not exist|permission/i.test(r.error.message||''))console.error(r.error);todosContratosFixos=[];return;}
+  v34ContratosOk=true;todosContratosFixos=r.data||[];
 }
 const GXC_FONTES=[['contratos','Contratos fixos'],['propostas','Propostas fechadas'],['saidas','Saídas (cartões e caixa)'],['pagamentos','Pagamentos autorizados'],['folha','Folha (salários cadastrados)']];
 function gxcFontes(){let f={};try{f=JSON.parse(localStorage.getItem('bvek_gxc_fontes')||'{}');}catch(e){}return Object.fromEntries(GXC_FONTES.map(([k])=>[k,f[k]!==false]));}
@@ -3053,47 +3133,119 @@ function renderGanhosCustos(){
   $('gxc-dica').innerHTML=(v34ContratosOk?'':'⚠️ Rode a migração <strong>v34</strong> no Supabase para cadastrar contratos fixos. ')+
     'Propostas entram no mês do fechamento pelo valor total (as ligadas a um contrato fixo não se repetem). Saídas e pagamentos autorizados podem se sobrepor (um boleto pago pode estar nos dois) — desmarque uma das fontes se for o caso. A folha usa o salário cadastrado na ficha (sem encargos).';
 }
-async function abrirContratosFixos(){
-  if(!PERM.verLucro)return;
-  await carregarContratosFixos();
-  if(!v34ContratosOk){alert('Rode antes a migração v34 (supabase/migracao_crm_v34_premiacao_funil_contratos.sql) no Supabase.');return;}
+function renderContratosFunil(){
+  const box=$('funil-contratos');if(!box)return;
+  if(!PERM.comercialVer){box.style.display='none';return;}box.style.display='';
+  document.querySelectorAll('.ctf-edita').forEach(e=>e.style.display=PERM.contratosEditar?'':'none');
+  if(!v34ContratosOk){$('tabela-contratos-funil').innerHTML='<tbody><tr><td class="vazio">Rode as migrações v34 e v36 no Supabase para usar os contratos fixos.</td></tr></tbody>';$('ctf-cont').textContent='';return;}
+  const enc=$('ctf-encerrados').checked;
+  const l=filtraEmpresa(todosContratosFixos).filter(c=>enc||c.ativo!==false).sort((a,b)=>(a.ativo===false)-(b.ativo===false)||String(a.descricao).localeCompare(b.descricao,'pt-BR'));
+  $('ctf-cont').textContent=l.filter(c=>c.ativo!==false).length;
+  const val=v=>PERM.verValores?(v!=null?'R$ '+fmtMoeda(v):'<span class="badge badge-hoje">sem valor</span>'):'<span class="mascara">R$ •••••</span>';
+  $('tabela-contratos-funil').innerHTML=`<thead><tr><th>Tipo</th><th>Contrato</th><th>Empresa</th><th>Cliente / favorecido</th><th>Equipe</th><th class="num">Mensal</th><th>Período</th><th></th></tr></thead><tbody>${l.length?l.map(c=>{const e=empresaPorId(c.empresa_id),cli=c.cliente_id?clientePorId(c.cliente_id):null;
+    return`<tr class="clicavel" data-ctf="${esc(c.id)}" style="${c.ativo===false?'opacity:.55':''}"><td>${c.tipo==='despesa'?'<span class="badge badge-atraso">despesa</span>':'<span class="badge badge-ok">receita</span>'}</td>
+      <td><strong>${esc(c.descricao)}</strong>${c.ativo===false?' <span class="badge badge-cinza">encerrado</span>':''}${c.arquivo?' 📎':''}</td><td>${esc(e?e.sigla||e.nome:'')}</td>
+      <td>${cli?`<span class="cod">${esc(cli.codigo||'')}</span> ${esc(cli.nome)}`:esc(c.fornecedor||'')}</td><td style="font-size:12px;white-space:normal;max-width:220px">${esc(c.equipe||'')}</td>
+      <td class="num">${val(c.valor_mensal)}${PERM.verValores&&c.custo_mensal?`<div class="dica" style="margin:0">custo R$ ${esc(fmtMoeda(c.custo_mensal))}</div>`:''}</td>
+      <td style="font-size:12px">${esc(fmtData(c.inicio))} → ${c.fim?esc(fmtData(c.fim)):'sem prazo'}${c.dia_vencimento?`<div>vence dia ${esc(c.dia_vencimento)}</div>`:''}</td><td><button class="btn-link">${PERM.contratosEditar?'editar':'ver'}</button></td></tr>`;}).join('')
+    :`<tr><td colspan="8" class="vazio">Nenhum contrato fixo${enc?'':' ativo'}. ${PERM.contratosEditar?'Clique em <strong>+ Novo contrato</strong> ou <strong>⬆️ Subir proposta vigente</strong>.':''}</td></tr>`}</tbody>`;
+  $('tabela-contratos-funil').querySelectorAll('[data-ctf]').forEach(tr=>tr.onclick=()=>abrirContratosFixos(tr.dataset.ctf));
+}
+async function abrirContratosFixos(id){
+  if(!PERM.comercialVer)return;
+  if(!v34ContratosOk){alert('Rode antes as migrações v34 e v36 no Supabase.');return;}
   preencherSelect($('ctf-empresa'),todasEmpresas.map(e=>[e.id,e.nome]),'Selecione');
-  renderContratosFixos();editarContratoFixo(null);abrirModal('modal-contratos');
+  editarContratoFixo(id||null);abrirModal('modal-contratos');
 }
-function renderContratosFixos(){
-  const l=todosContratosFixos.slice().sort((a,b)=>(a.ativo===false)-(b.ativo===false)||String(a.descricao).localeCompare(b.descricao,'pt-BR'));
-  $('tabela-contratos').innerHTML=`<thead><tr><th>Tipo</th><th>Descrição</th><th>Empresa</th><th>Cliente / favorecido</th><th class="num">Mensal</th><th>Período</th><th></th></tr></thead><tbody>${l.length?l.map(c=>{const e=empresaPorId(c.empresa_id),cli=c.cliente_id?clientePorId(c.cliente_id):null;
-    return`<tr style="${c.ativo===false?'opacity:.55':''}"><td>${c.tipo==='despesa'?'<span class="badge badge-atraso">despesa</span>':'<span class="badge badge-ok">receita</span>'}</td><td><strong>${esc(c.descricao)}</strong>${c.ativo===false?' <span class="badge badge-cinza">encerrado</span>':''}</td><td>${esc(e?e.sigla||e.nome:'')}</td><td>${cli?`<span class="cod">${esc(cli.codigo||'')}</span> ${esc(cli.nome)}`:esc(c.fornecedor||'')}</td>
-      <td class="num">R$ ${esc(fmtMoeda(c.valor_mensal))}${c.custo_mensal?`<div class="dica" style="margin:0">custo R$ ${esc(fmtMoeda(c.custo_mensal))}</div>`:''}</td><td style="font-size:12px">${esc(fmtData(c.inicio))} → ${c.fim?esc(fmtData(c.fim)):'sem prazo'}${c.dia_vencimento?`<div>vence dia ${esc(c.dia_vencimento)}</div>`:''}</td><td><button class="btn-link" data-ctf="${esc(c.id)}">editar</button></td></tr>`;}).join('')
-    :'<tr><td colspan="7" class="vazio">Nenhum contrato fixo cadastrado.</td></tr>'}</tbody>`;
-  $('tabela-contratos').querySelectorAll('[data-ctf]').forEach(b=>b.onclick=()=>editarContratoFixo(b.dataset.ctf));
+function novoContratoPorPdf(){abrirContratosFixos(null);setTimeout(()=>$('ctf-arquivo').click(),150);}
+function opcoesCardContrato(selecionado){
+  const cli=acharClientePorRotulo($('ctf-cliente').value);
+  const l=todosCards.filter(c=>ganha(c)&&(!cli||c.cliente_id===cli.id));
+  $('ctf-card').innerHTML='<option value="">— nenhuma —</option>'+l.map(c=>`<option value="${esc(c.id)}">${esc(numeroProposta(c)||'')} · ${esc(c.titulo)}</option>`).join('');
+  if(selecionado)$('ctf-card').value=selecionado;
 }
-function mudouTipoContrato(){const d=$('ctf-tipo').value==='despesa';$('ctf-box-custo').style.display=d?'none':'';$('ctf-rot-valor').textContent=d?'Valor mensal pago (R$) *':'Valor mensal recebido (R$) *';}
+function mudouTipoContrato(){const d=$('ctf-tipo').value==='despesa';$('ctf-box-custo').style.display=d?'none':'';$('ctf-rot-valor').textContent=(d?'Valor mensal pago (R$)':'Valor mensal recebido (R$)')+(PERM.verValores?' *':'');}
 function editarContratoFixo(id){
-  contratoFixoId=id;const c=id?todosContratosFixos.find(x=>x.id===id):null;
-  $('ctf-titulo').textContent=c?'Editar contrato':'Novo contrato';$('ctf-btn-novo').style.display=c?'':'none';
+  contratoFixoId=id;arquivoContratoNovo=null;$('ctf-arquivo').value='';
+  const c=id?todosContratosFixos.find(x=>x.id===id):null;
+  document.querySelectorAll('#modal-contratos .campo-preenchido').forEach(e=>e.classList.remove('campo-preenchido'));
+  $('ctf-titulo').textContent=c?'Editar contrato':'Novo contrato';$('ctf-btn-novo').style.display=c&&PERM.contratosEditar?'':'none';
   $('ctf-tipo').value=c?c.tipo||'receita':'receita';$('ctf-empresa').value=c?c.empresa_id||'':(empresaAtual!=='todas'?empresaAtual:'');
   $('ctf-descricao').value=c?c.descricao||'':'';$('ctf-cliente').value=c&&c.cliente_id?rotuloCliente(clientePorId(c.cliente_id)):'';
-  $('ctf-fornecedor').value=c?c.fornecedor||'':'';$('ctf-valor').value=c&&c.valor_mensal!=null?fmtMoeda(c.valor_mensal):'';
-  $('ctf-custo').value=c&&c.custo_mensal!=null?fmtMoeda(c.custo_mensal):'';$('ctf-inicio').value=c?c.inicio||'':hojeISO().slice(0,8)+'01';
+  $('ctf-fornecedor').value=c?c.fornecedor||'':'';
+  $('ctf-valor').value=PERM.verValores?(c&&c.valor_mensal!=null?fmtMoeda(c.valor_mensal):''):'';$('ctf-custo').value=PERM.verValores&&c&&c.custo_mensal!=null?fmtMoeda(c.custo_mensal):'';
+  ['ctf-valor','ctf-custo'].forEach(i=>{$(i).disabled=!PERM.verValores;$(i).placeholder=PERM.verValores?'0,00':'••••• (só administradores)';});
+  $('ctf-inicio').value=c?c.inicio||'':hojeISO().slice(0,8)+'01';
   $('ctf-fim').value=c?c.fim||'':'';$('ctf-dia').value=c&&c.dia_vencimento?c.dia_vencimento:'';$('ctf-ativo').value=c&&c.ativo===false?'0':'1';$('ctf-obs').value=c?c.observacoes||'':'';
-  mudouTipoContrato();
+  $('ctf-equipe').value=c?c.equipe||'':'';opcoesCardContrato(c&&c.card_id);
+  $('ctf-arquivo-info').innerHTML=c&&c.arquivo?(PERM.gerarPDF?`📎 Proposta vigente: <a href="#" onclick="abrirArquivoProposta('${esc(c.arquivo)}');return false">${esc(c.arquivo_nome||'abrir PDF')}</a> · para trocar, escolha outro arquivo.`:`📎 Proposta vigente guardada (${esc(c.arquivo_nome||'PDF')}) — 🔒 só administradores abrem.`)
+    :'Envie o PDF da proposta aceita: o CRM lê e preenche os campos (confira os destacados em amarelo).';
+  mudouTipoContrato();modoLeitura('modal-contratos',!PERM.contratosEditar);
+}
+async function lerPdfContrato(f){
+  arquivoContratoNovo=null;if(!f)return;
+  if(!/\.pdf$/i.test(f.name)&&f.type!=='application/pdf'){alert('Envie um arquivo PDF.');$('ctf-arquivo').value='';return;}
+  if(f.size>20*1024*1024){alert('PDF maior que 20 MB.');$('ctf-arquivo').value='';return;}
+  arquivoContratoNovo=f;const info=$('ctf-arquivo-info');info.textContent='Lendo o PDF…';
+  let d;try{d=extrairDadosProposta(await textoDoPdf(f));}catch(e){console.error(e);info.textContent=`"${f.name}" será guardado ao salvar, mas não consegui ler o texto (PDF escaneado?). Preencha à mão.`;return;}
+  const feitos=[],marca=id=>marcarPreenchido(id);
+  if(d.cliente){$('ctf-cliente').value=rotuloCliente(d.cliente);marca('ctf-cliente');feitos.push('cliente');opcoesCardContrato();
+    const c=todosCards.find(k=>ganha(k)&&k.cliente_id===d.cliente.id&&norm(k.titulo)===norm(d.titulo||''));if(c){$('ctf-card').value=c.id;feitos.push('proposta do funil');if(!$('ctf-empresa').value)$('ctf-empresa').value=c.empresa_id||'';}}
+  if(d.titulo){$('ctf-descricao').value=d.titulo;marca('ctf-descricao');feitos.push('descrição');}
+  let extra='';
+  if(d.valor&&PERM.verValores){
+    const meses=d.prazo&&(d.unid||'meses')==='meses'?Number(d.prazo):0;
+    $('ctf-valor').value=fmtMoeda(d.valor);marca('ctf-valor');feitos.push('valor');
+    if(meses>1)extra=`<br>⚠️ A proposta tem prazo de ${meses} meses e valor de R$ ${esc(fmtMoeda(d.valor))}. Se esse for o <strong>total</strong>, o mensal é R$ ${esc(fmtMoeda(Math.round(d.valor/meses*100)/100))} — <a href="#" onclick="$('ctf-valor').value='${fmtMoeda(Math.round(d.valor/meses*100)/100)}';return false">usar o mensal</a>.`;
+  }
+  if(d.prazo){const ini=$('ctf-inicio').value||hojeISO();$('ctf-fim').value=somarDias(fimPorPrazo(ini,d.prazo,d.unid||'meses'),-1);marca('ctf-fim');feitos.push('fim pelo prazo');}
+  if(d.escopo&&!$('ctf-obs').value){$('ctf-obs').value=String(d.escopo).replace(/\s+/g,' ').slice(0,300);feitos.push('escopo nas observações');}
+  info.innerHTML=`📎 <strong>${esc(f.name)}</strong> será guardado ao salvar.<br>`+(feitos.length?`Preenchido a partir do PDF: ${esc(feitos.join(', '))}. Confira os campos em amarelo.`:'Não encontrei dados no texto do PDF; preencha à mão.')+extra;
 }
 async function salvarContratoFixo(){
+  if(!PERM.contratosEditar)return;
   const desc=$('ctf-descricao').value.trim(),emp=$('ctf-empresa').value,valor=parseMoeda($('ctf-valor').value),ini=$('ctf-inicio').value;
-  if(!desc||!emp||!(valor>0)||!ini){alert('Preencha tipo, empresa, descrição, valor mensal e início.');return;}
+  if(!desc||!emp||!ini){alert('Preencha tipo, empresa, descrição e início.');return;}
+  if(PERM.verValores&&!(valor>0)&&!confirm('O contrato está sem valor mensal. Salvar mesmo assim (um administrador lança depois)?'))return;
   if($('ctf-fim').value&&$('ctf-fim').value<ini){alert('O fim não pode ser antes do início.');return;}
   const cliTxt=$('ctf-cliente').value.trim(),cli=cliTxt?acharClientePorRotulo(cliTxt):null;
   if(cliTxt&&!cli){alert('Cliente não encontrado. Escolha da lista (código ou nome).');return;}
   const desp=$('ctf-tipo').value==='despesa';
   const dados={tipo:$('ctf-tipo').value,empresa_id:emp,descricao:desc,cliente_id:cli?cli.id:null,fornecedor:$('ctf-fornecedor').value.trim()||null,
-    valor_mensal:valor,custo_mensal:desp?null:parseMoeda($('ctf-custo').value),inicio:ini,fim:$('ctf-fim').value||null,
+    inicio:ini,fim:$('ctf-fim').value||null,card_id:$('ctf-card').value||null,
     dia_vencimento:$('ctf-dia').value?Math.min(31,Math.max(1,+$('ctf-dia').value)):null,ativo:$('ctf-ativo').value==='1',observacoes:$('ctf-obs').value.trim()||null,atualizado_em:new Date().toISOString()};
-  const r=contratoFixoId?await sb.from('contratos_recorrentes').update(dados).eq('id',contratoFixoId):await sb.from('contratos_recorrentes').insert({...dados,criado_por:usuario?usuario.email:null});
-  if(erroSB(r.error))return;
-  await carregarContratosFixos();renderContratosFixos();editarContratoFixo(null);renderGanhosCustos();toast('Contrato salvo');
+  if(v36Ok!==false)dados.equipe=$('ctf-equipe').value.trim()||null;
+  if(PERM.verValores){dados.valor_mensal=valor;dados.custo_mensal=desp?null:parseMoeda($('ctf-custo').value);}
+  const btn=$('ctf-btn-salvar');btn.disabled=true;
+  try{
+    let id=contratoFixoId;
+    if(id){const r=await sb.from('contratos_recorrentes').update(dados).eq('id',id);if(erroSB(r.error))return;}
+    else{id=crypto.randomUUID();const r=await sb.from('contratos_recorrentes').insert({...dados,id,criado_por:usuario?usuario.email:null});if(erroSB(r.error))return;}
+    if(arquivoContratoNovo){
+      const limpo=semAcento(arquivoContratoNovo.name).replace(/[^\w.\- ]+/g,'_').replace(/\s+/g,' ').trim(),caminho=`contratos/${id}/${Date.now()}_${limpo}`;
+      const up=await sb.storage.from(BUCKET_PROPOSTAS).upload(caminho,arquivoContratoNovo,{contentType:'application/pdf',upsert:false});
+      if(erroSB(up.error,'O contrato foi salvo, mas o PDF não pôde ser enviado'))return;
+      const r2=await sb.from('contratos_recorrentes').update({arquivo:caminho,arquivo_nome:arquivoContratoNovo.name}).eq('id',id);
+      if(r2.error)console.warn('PDF do contrato não ligado (rode a migração v36)',r2.error);
+    }
+    fecharModal('modal-contratos');await carregarContratosFixos();renderContratosFunil();if(tabAtual==='painel')renderGanhosCustos();toast('Contrato salvo');
+  }finally{btn.disabled=false;}
 }
 
+/* v36: registro de alterações (auditoria) */
+async function abrirAuditoria(){if(!PERM.admin)return;abrirModal('modal-auditoria');carregarAuditoria();}
+async function carregarAuditoria(){
+  const t=$('au-tabela').value;$('tabela-auditoria').innerHTML='<tbody><tr><td class="vazio">Carregando…</td></tr></tbody>';
+  let q=sb.from('auditoria').select('*').order('criado_em',{ascending:false}).limit(300);if(t)q=q.eq('tabela',t);
+  const{data,error}=await q;
+  if(error){$('tabela-auditoria').innerHTML=`<tbody><tr><td class="vazio">${/auditoria|schema cache|does not exist/i.test(error.message||'')?'Rode a migração v36 no Supabase para começar o registro.':esc(error.message)}</td></tr></tbody>`;return;}
+  const NOMES={cards:'Proposta',pagamentos_autorizacao:'Pagamento',saidas:'Saída',contratos_recorrentes:'Contrato fixo',premiacoes:'Premiação',funcionario_rh:'Ficha do RH',perfis:'Perfil de acesso'};
+  const vv=v=>v==null?'—':typeof v==='object'?JSON.stringify(v).slice(0,80):String(v).slice(0,80);
+  $('tabela-auditoria').innerHTML=`<thead><tr><th>Quando</th><th>Quem</th><th>Área</th><th>O quê</th><th>Mudanças</th></tr></thead><tbody>${(data||[]).length?data.map(a=>{const m=a.mudancas||{};
+    return`<tr><td style="white-space:nowrap">${esc(fmtDataHora(a.criado_em))}</td><td>${esc(a.usuario||'sistema')}</td><td>${esc(NOMES[a.tabela]||a.tabela)}</td><td>${a.acao==='INSERT'?'criou':a.acao==='DELETE'?'<span style="color:var(--vermelho)">apagou</span>':'alterou'}</td>
+      <td style="font-size:12px;white-space:normal">${Object.entries(m).slice(0,8).map(([k,[de,para]])=>`<div><strong>${esc(k)}</strong>: ${a.acao==='UPDATE'?esc(vv(de))+' → ':''}${esc(vv(a.acao==='DELETE'?de:para))}</div>`).join('')}</td></tr>`;}).join('')
+    :'<tr><td colspan="5" class="vazio">Nada registrado ainda.</td></tr>'}</tbody>`;
+}
 /* v32: painel dinâmico */
 let pdTfFiltro='todas',pdTfGrupo='',pdTfResp='',painelTimer=null;
 function tarefasPendentesPainel(cards){
@@ -3173,6 +3325,7 @@ function ligarCliques(raiz){
 
 /* ================= FUNIL ================= */
 function renderFunil(){
+  setTimeout(renderContratosFunil,0);
   $('titulo-funil').textContent='Funil de atendimentos — '+nomeEmpresaAtual();
   const busca=norm($('funil-busca').value);
   const resp=$('funil-resp').value;
@@ -3344,7 +3497,7 @@ async function abrirModalCard(id=null){
   preencherSelect($('card-contato'),[],'— escolha o cliente primeiro —');
   renderItens();
   if(id){
-    const{data:card,error}=await sb.from('cards').select('*,clientes(*)').eq('id',id).single();
+    const{data:card,error}=await lerCard(id);
     if(erroSB(error,'Não foi possível abrir'))return;
     cardOriginal=card;
     composicaoLocal=card.composicao||null;resumoComposicaoNoCard();
@@ -3371,7 +3524,7 @@ async function abrirModalCard(id=null){
     $('card-titulo').value=card.titulo||'';
     $('card-responsavel').value=card.responsavel||'';
     $('card-valor').value=card.valor_estimado!=null?fmtMoeda(card.valor_estimado):'';
-    if(!PERM.verValores)$('card-valor').value=card.valor_estimado!=null?'•••••':'';
+    if(!PERM.verValores)$('card-valor').value='•••••';
     $('card-prob').value=card.probabilidade??'';
     $('card-origem').value=card.origem||'';
     $('card-fechamento').value=card.data_fechamento_prevista||'';
@@ -3388,7 +3541,7 @@ async function abrirModalCard(id=null){
     $('card-recorrente').checked=!!card.recorrente;$('card-dias').value=card.dias_recorrencia||'';
     $('campo-recorrencia').style.display=card.recorrente?'block':'none';
     if(card.clientes){$('card-cliente').value=rotuloCliente(card.clientes);await carregarContatosCard(card.cliente_id,card.contato_id);}
-    const{data:itens}=await sb.from('itens_proposta').select('*').eq('card_id',id).order('ordem');
+    const{data:itens}=await lerItens(id);
     itensLocais=(itens||[]).map(i=>({...i}));
     renderItens(false);
     renderAtividadesCard();
@@ -3404,6 +3557,7 @@ async function abrirModalCard(id=null){
   // v34: comercial não vê nem digita valores; composição (custo e lucro) só administrador
   $('card-valor').readOnly=!PERM.verValores;$('card-valor').placeholder=PERM.verValores?'0,00':'•••••';
   document.querySelectorAll('#modal-card .so-lucro').forEach(e=>e.style.display=PERM.verLucro?'':'none');
+  document.querySelectorAll('#modal-card .so-valores').forEach(e=>e.style.display=PERM.verValores?'':'none');
   if(!PERM.verLucro)$('cp-card-resumo').style.display='none';
   abrirModal('modal-card');
 }
@@ -3453,6 +3607,8 @@ function renderItens(sincronizar=true){
       if(inp.dataset.n){item.valor_total=(item.quantidade||0)*(item.valor_unitario||0);tr.querySelector('.tot').textContent=PERM.verValores?fmtMoeda(item.valor_total):'•••••';atualizarTotal(true);}
     });
     tr.querySelector('.btn-rm-item').onclick=()=>{itensLocais.splice(idx,1);renderItens();};
+    // v36: itens com preço só são editados por quem vê valores
+    if(!PERM.verValores){tr.querySelectorAll('input').forEach(i=>i.readOnly=true);tr.querySelector('.btn-rm-item').style.display='none';}
     tbody.appendChild(tr);
   });
   atualizarTotal(sincronizar);
@@ -3514,7 +3670,9 @@ async function salvarCard(){
       motivo_perda_detalhe:etapa==='perdida'?($('card-motivo-detalhe').value||null):null,
       atualizado_em:new Date().toISOString(),
     };
-    if(composicaoLocal)dados.composicao=composicaoLocal;
+    if(composicaoLocal&&PERM.verLucro)dados.composicao=composicaoLocal;
+    // v36: quem não vê valores não grava valor (exceto o lido do PDF que ele mesmo enviou)
+    if(!PERM.verValores&&!$('card-valor').dataset.oculto)delete dados.valor_estimado;
     let savedId=cardEditandoId;
     if(cardEditandoId){
       const{error}=await sb.from('cards').update(dados).eq('id',cardEditandoId);
@@ -3522,12 +3680,13 @@ async function salvarCard(){
     }else{
       dados.numero_proposta=await gerarNumeroProposta(empId,cli.id);dados.versao=1;
       if(!dados.numero_proposta)return;
-      const{data:nc,error}=await sb.from('cards').insert(dados).select().single();
+      const{data:nc,error}=await sb.from('cards').insert(dados).select('id').single();
       if(erroSB(error))return;
       savedId=nc.id;cardEditandoId=savedId;
     }
-    await sb.from('itens_proposta').delete().eq('card_id',savedId);
-    if(itensLocais.length){
+    // v36: os itens (com preços) só são regravados por quem vê valores
+    if(PERM.verValores)await sb.from('itens_proposta').delete().eq('card_id',savedId);
+    if(PERM.verValores&&itensLocais.length){
       const{error}=await sb.from('itens_proposta').insert(itensLocais.map((i,idx)=>({card_id:savedId,ordem:idx,item:i.item||'',codigo:i.codigo||'',descricao:i.descricao||'',unidade:i.unidade||'',quantidade:i.quantidade||0,valor_unitario:i.valor_unitario||0,valor_total:i.valor_total||0})));
       if(erroSB(error,'Erro ao salvar os itens'))return;
     }
@@ -3546,6 +3705,13 @@ async function salvarCard(){
 
 async function criarNovaVersao(){
   if(!cardEditandoId)return;
+  // v36: o banco copia a proposta, os itens e o inventário (valores não passam pelo navegador)
+  if(v36Ok!==false){
+    const r=await sb.rpc('bvek_nova_versao',{p_card:cardEditandoId});
+    if(!r.error){const novo=r.data;fecharModal('modal-card');await carregarCards();renderTabAtual();
+      const n=todosCards.find(c=>c.id===novo);toast('Nova versão criada'+(n?': '+numeroProposta(n):''));setTimeout(()=>abrirModalCard(novo),250);return;}
+    if(!naoTemFuncao(r.error)){erroSB(r.error);return;}
+  }
   const{data:o}=await sb.from('cards').select('*').eq('id',cardEditandoId).single();
   if(!o)return;
   const raiz=o.card_pai_id||o.id;
@@ -3580,7 +3746,7 @@ async function carregarHistorico(id){
 }
 async function carregarVersoes(card){
   const raiz=card.card_pai_id||card.id;
-  const{data}=await sb.from('cards').select('id,versao,etapa,valor_estimado,atualizado_em').or(`id.eq.${raiz},card_pai_id.eq.${raiz}`).order('versao');
+  const{data:l}=await lerCards({p_raiz:raiz});const data=(l||[]).slice().sort((a,b)=>(a.versao||1)-(b.versao||1));
   if(!data||data.length<2){$('card-versoes-box').style.display='none';return;}
   $('card-versoes-box').style.display='block';
   $('card-versoes').innerHTML='<div class="sub-lista">'+data.map(v=>`<div class="sub-item clicavel" data-v="${esc(v.id)}"><span><strong>${esc(card.numero_proposta&&RE_NUM_NOVO.test(card.numero_proposta)?revisao(v.versao):'V'+(v.versao||1))}</strong> ${v.id===card.id?'(esta)':''} · ${esc(ETAPA_LABEL[v.etapa]||v.etapa)}</span><span>${esc(moedaV(v.valor_estimado))}</span></div>`).join('')+'</div>';
@@ -3686,12 +3852,12 @@ function renderClientes(){
     if(busca&&!norm([c.codigo,c.nome,c.razao_social,c.documento,c.empresa_cliente,c.endereco].join(' ')).includes(busca))return false;
     return true;
   });
-  const ordem=$('cli-ordem').value;
-  l.sort(ordem==='nome'?(a,b)=>String(a.nome).localeCompare(b.nome,'pt-BR'):ordem==='fechado'?(a,b)=>((stats[b.id]||{}).fe||0)-((stats[a.id]||{}).fe||0)||String(a.nome).localeCompare(b.nome,'pt-BR')
-    :(a,b)=>(a.codigo?0:1)-(b.codigo?0:1)||String(a.codigo||'').localeCompare(String(b.codigo||''))||String(a.nome).localeCompare(b.nome,'pt-BR'));
+  ordenarPor(l,'cli',{codigo:c=>c.codigo||'',nome:c=>c.nome||'',razao:c=>c.razao_social||'',situacao:c=>c.situacao||'Prospect',empresas:c=>c.empresas_atendidas||'',
+    aberto:c=>(stats[c.id]||{}).ab||0,fechado:c=>(stats[c.id]||{}).fe||0},'codigo');
   $('cli-ir').innerHTML=`<option value="">🔎 Ir para o cliente… (${l.length})</option>`+l.map(c=>`<option value="${esc(c.id)}">${esc(rotuloCliente(c))}</option>`).join('');
   $('cli-contagem').textContent=`${l.length} de ${todosClientes.filter(c=>c.ativo!==false).length} clientes`;
-  $('tabela-clientes').innerHTML=`<thead><tr><th>Código</th><th>Nome</th><th>Razão social / CPF-CNPJ</th><th>Situação</th><th>Empresas</th><th class="num">Em aberto</th><th class="num">Fechado</th></tr></thead><tbody>`+
+  const T=(c,r,k)=>thOrd('cli',c,r,k);
+  $('tabela-clientes').innerHTML=`<thead><tr>${T('codigo','Código')}${T('nome','Nome')}${T('razao','Razão social / CPF-CNPJ')}${T('situacao','Situação')}${T('empresas','Empresas')}${T('aberto','Em aberto','num')}${T('fechado','Fechado','num')}</tr></thead><tbody>`+
     (l.length?l.map(c=>{const s=stats[c.id]||{};return`<tr class="clicavel ${c.ativo===false?'inativo':''}" data-cliente="${esc(c.id)}">
       <td>${c.codigo?`<span class="cod">${esc(c.codigo)}</span>`:'<span class="badge badge-atraso">sem código</span>'}</td>
       <td><strong>${esc(c.nome)}</strong>${c.endereco?`<div style="font-size:12px;color:var(--texto2)">${esc(c.endereco)}</div>`:''}</td>
@@ -3700,7 +3866,21 @@ function renderClientes(){
       <td>${esc(c.empresas_atendidas||'')}</td>
       <td class="num">${s.ab?`${s.ab} · ${esc(curtoV(s.vab))}`:''}</td>
       <td class="num">${s.fe?`${s.fe} · ${esc(curtoV(s.vfe))}`:''}</td></tr>`;}).join(''):'<tr><td colspan="7" class="vazio">Nenhum cliente encontrado.</td></tr>')+'</tbody>';
-  ligarCliques($('tabela-clientes'));
+  ligarCliques($('tabela-clientes'));ligarOrdenacao('tabela-clientes','cli',renderClientes);
+}
+/* v36: ordenação pelo cabeçalho (clicou = ordena; clicou de novo = inverte) */
+const ORD_TAB={};
+try{Object.assign(ORD_TAB,JSON.parse(localStorage.getItem('bvek_ordem_tabelas')||'{}'));}catch(e){}
+function thOrd(tab,col,rot,cls){const o=ORD_TAB[tab]||{};const at=o.col===col;return`<th data-ord="${col}" class="${at?'ord-ativa ':''}${cls||''}" title="Clique para ordenar">${esc(rot)}<span class="seta">${at?(o.dir<0?'▼':'▲'):'↕'}</span></th>`;}
+function ligarOrdenacao(tabelaId,tab,render){
+  $(tabelaId).querySelectorAll('th[data-ord]').forEach(th=>th.onclick=()=>{const o=ORD_TAB[tab]||{};ORD_TAB[tab]={col:th.dataset.ord,dir:o.col===th.dataset.ord?-(o.dir||1):1};
+    try{localStorage.setItem('bvek_ordem_tabelas',JSON.stringify(ORD_TAB));}catch(e){}render();});
+}
+function ordenarPor(lista,tab,chaves,padrao){
+  const o=ORD_TAB[tab]||{col:padrao,dir:1},f=chaves[o.col]||chaves[padrao];
+  const cmp=(a,b)=>{const x=f(a),y=f(b);if(x===y)return 0;if(x===''||x==null)return 1;if(y===''||y==null)return-1;
+    return(typeof x==='number'&&typeof y==='number'?x-y:String(x).localeCompare(String(y),'pt-BR',{numeric:true}))*o.dir;};
+  return lista.sort(cmp),o.col||padrao;
 }
 function checksEmpresas(valor){
   const sel=(valor||'').toUpperCase().split(/[\/,\s]+/).filter(Boolean);
@@ -3857,21 +4037,20 @@ function renderProjetos(){
   const prox=Math.max(0,...todosProjetos.map(p=>p.seq||0))+1;
   $('proj-proximo').textContent=`Próximo número livre da sequência: ${String(prox).padStart(4,'0')}`;
   // v34: ordenar (e agrupar) por empresa ou por cliente
-  const ordem=$('proj-ordem').value,nomeCli=p=>{const c=clientePorId(p.cliente_id);return c?c.nome:'';},sigEmp=p=>{const e=empresaPorId(p.empresa_id);return e?e.sigla||e.nome:'';};
-  const porCod=(a,b)=>String(a.codigo).localeCompare(String(b.codigo));
-  if(ordem==='empresa')l.sort((a,b)=>sigEmp(a).localeCompare(sigEmp(b),'pt-BR')||porCod(a,b));
-  else if(ordem==='cliente')l.sort((a,b)=>nomeCli(a).localeCompare(nomeCli(b),'pt-BR')||porCod(a,b));
-  else l.sort(porCod);
+  const nomeCli=p=>{const c=clientePorId(p.cliente_id);return c?c.nome:'';},sigEmp=p=>{const e=empresaPorId(p.empresa_id);return e?e.sigla||e.nome:'';};
+  l.sort((a,b)=>String(a.codigo).localeCompare(String(b.codigo)));
+  const ordem=ordenarPor(l,'proj',{codigo:p=>p.codigo||'',cliente:nomeCli,nome:p=>p.nome||'',empresa:sigEmp,ano:p=>Number(p.ano)||'',status:p=>p.status||'',pasta:p=>p.pasta_rede||''},'codigo');
   const grupo=p=>ordem==='empresa'?(sigEmp(p)?((empresaPorId(p.empresa_id)||{}).nome||sigEmp(p)):'Sem empresa'):ordem==='cliente'?(rotuloCliente(clientePorId(p.cliente_id))||'Sem cliente'):null;
   let grAnt=null;
-  $('tabela-projetos').innerHTML=`<thead><tr><th>Código</th><th>Cliente</th><th>Projeto</th><th>Empresa</th><th>Ano</th><th>Status</th><th>Pasta na rede</th></tr></thead><tbody>`+
+  const T=(c,r)=>thOrd('proj',c,r);
+  $('tabela-projetos').innerHTML=`<thead><tr>${T('codigo','Código')}${T('cliente','Cliente')}${T('nome','Projeto')}${T('empresa','Empresa')}${T('ano','Ano')}${T('status','Status')}${T('pasta','Pasta na rede')}</tr></thead><tbody>`+
     (l.length?l.map(p=>{const c=clientePorId(p.cliente_id),e=empresaPorId(p.empresa_id),g=grupo(p);
       const cab=g!==null&&g!==grAnt?`<tr class="grupo-linha"><td colspan="7"><strong>${esc(g)}</strong> <span class="dica">${l.filter(x=>grupo(x)===g).length} projeto(s)</span></td></tr>`:'';grAnt=g;
       return cab+`<tr class="clicavel" data-projeto="${esc(p.id)}">
       <td><span class="cod">${esc(p.codigo)}</span></td><td>${c?esc(c.nome):''}</td><td><strong>${esc(p.nome)}</strong>${p.local?`<div style="font-size:12px;color:var(--texto2)">${esc(p.local)}</div>`:''}</td>
       <td>${e?esc(e.sigla):''}</td><td>${esc(p.ano||'')}</td><td><span class="badge ${p.status==='Concluído'?'badge-ok':p.status==='Em andamento'?'badge-hoje':'badge-cinza'}">${esc(p.status)}</span></td>
       <td style="font-size:12px;color:var(--texto2)">${esc(p.pasta_rede||'')}</td></tr>`;}).join(''):'<tr><td colspan="7" class="vazio">Nenhum projeto.</td></tr>')+'</tbody>';
-  ligarCliques($('tabela-projetos'));
+  ligarCliques($('tabela-projetos'));ligarOrdenacao('tabela-projetos','proj',renderProjetos);
 }
 function abrirModalProjeto(id=null,cardId=null,clienteId=null){
   projetoEditandoId=id;projetoCardId=cardId;
@@ -4802,7 +4981,7 @@ let xlsxPronto=null;
 function carregarXLSX(){
   if(window.XLSX)return Promise.resolve(window.XLSX);
   if(xlsxPronto)return xlsxPronto;
-  xlsxPronto=new Promise((ok,falha)=>{const sc=document.createElement('script');sc.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+  xlsxPronto=new Promise((ok,falha)=>{const sc=document.createElement('script');sc.src='/vendor/xlsx-0.18.5.full.min.js';
     sc.onload=()=>ok(window.XLSX);sc.onerror=()=>{xlsxPronto=null;falha(new Error('sem xlsx'));};document.head.appendChild(sc);});
   return xlsxPronto;
 }
@@ -4939,8 +5118,8 @@ function carregarPdfJs(){
   if(pdfjsPronto)return pdfjsPronto;
   pdfjsPronto=new Promise((ok,falha)=>{
     const sc=document.createElement('script');
-    sc.src='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
-    sc.onload=()=>{window.pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';ok(window.pdfjsLib);};
+    sc.src='/vendor/pdfjs-3.11.174.min.js';
+    sc.onload=()=>{window.pdfjsLib.GlobalWorkerOptions.workerSrc='/vendor/pdfjs-3.11.174.worker.min.js';ok(window.pdfjsLib);};
     sc.onerror=()=>{pdfjsPronto=null;falha(new Error('Não foi possível carregar o leitor de PDF.'));};
     document.head.appendChild(sc);
   });
@@ -5183,9 +5362,9 @@ function porExtenso(v){
 function extensoNumero(n){return extInteiro(Math.round(Number(n)||0));}
 function valorComExtenso(v){return`R$ ${fmtMoeda(v)} (${porExtenso(v)})`;}
 async function montarPDF(win){
-  const{data:card,error}=await sb.from('cards').select('*,clientes(*),empresas(*)').eq('id',cardEditandoId).single();
+  const{data:card,error}=await lerCard(cardEditandoId);
   if(error||!card)throw new Error(error?error.message:'atendimento não encontrado');
-  const{data:itens}=await sb.from('itens_proposta').select('*').eq('card_id',cardEditandoId).order('ordem');
+  const{data:itens}=await lerItens(cardEditandoId);
   let contato=null;
   if(card.contato_id){const r=await sb.from('contatos').select('*').eq('id',card.contato_id).maybeSingle();contato=r.data;}
   const emp=card.empresas||{},cli=card.clientes||{},quem=contato||{},cp=card.composicao||null,M=modeloProposta();
@@ -5349,9 +5528,9 @@ async function gerarOS(){
   catch(e){console.error(e);win.close();alert('Não foi possível gerar a ordem de serviço:\n'+(e&&e.message||e));}
 }
 async function montarOS(win){
-  const{data:card,error}=await sb.from('cards').select('*,clientes(*),empresas(*)').eq('id',cardEditandoId).single();
+  const{data:card,error}=await lerCard(cardEditandoId);
   if(error||!card)throw new Error(error?error.message:'atendimento não encontrado');
-  const{data:itens}=await sb.from('itens_proposta').select('*').eq('card_id',cardEditandoId).order('ordem');
+  const{data:itens}=await lerItens(cardEditandoId);
   let contato=null;
   if(card.contato_id){const r=await sb.from('contatos').select('*').eq('id',card.contato_id).maybeSingle();contato=r.data;}
   const emp=card.empresas||{},cli=card.clientes||{},quem=contato||{},cp=card.composicao||null;
@@ -5795,7 +5974,7 @@ let pdfLibPronto=null;
 function carregarPdfLib(){
   if(window.PDFLib)return Promise.resolve(window.PDFLib);
   if(pdfLibPronto)return pdfLibPronto;
-  pdfLibPronto=new Promise((ok,falha)=>{const sc=document.createElement('script');sc.src='https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js';
+  pdfLibPronto=new Promise((ok,falha)=>{const sc=document.createElement('script');sc.src='/vendor/pdf-lib-1.17.1.min.js';
     sc.onload=()=>ok(window.PDFLib);sc.onerror=()=>{pdfLibPronto=null;falha(new Error('Não foi possível carregar o editor de PDF.'));};document.head.appendChild(sc);});
   return pdfLibPronto;
 }

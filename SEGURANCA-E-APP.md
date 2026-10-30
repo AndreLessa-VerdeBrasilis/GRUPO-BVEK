@@ -19,11 +19,12 @@
 5. **Repositório público**: o código é público. Nunca colocar senha, chave `service_role` ou dado bancário em arquivo. Avaliar deixar o repositório **privado** (a Vercel continua funcionando).
 6. Revisar a cada 3 meses a lista de **Usuários** do CRM e desativar quem saiu.
 
-## Próximas etapas sugeridas (fase 2)
+## Fase 2 (v36 e v37) — feita
 
-- **Valores no banco**: hoje o Comercial não vê valores na tela, mas tecnicamente o valor total da proposta ainda chega ao navegador dele. A fase 2 move valor e composição para uma tabela protegida só para administrador (mudança grande no funil — fazer com calma).
-- Trazer as outras bibliotecas (leitor de PDF, Excel, OCR) também para dentro do site.
-- Registro de auditoria (quem alterou o quê) nas tabelas financeiras.
+- **Valores protegidos no banco (v36):** o Comercial não recebe mais os valores das propostas, dos itens nem dos contratos fixos — o banco tira esses campos antes de mandar. A composição de preço (custo e lucro) só chega ao Administrador. Os parâmetros de preço (BDI, lucro) não são mais lidos pelo Comercial.
+- **Registro de alterações (v36):** quem mudou valor ou etapa de proposta, pagamentos, saídas, contratos fixos, premiações, salários (ficha do RH) e perfis de acesso. Só o Administrador vê (Usuários → 🕵️ Registro de alterações); ninguém altera nem apaga.
+- **Bibliotecas dentro do site:** leitor de PDF, gerador de PDF e Excel agora vêm do próprio site (só o leitor de imagem/OCR continua vindo de fora).
+- **Avisos com o app fechado (v37):** ver abaixo.
 
 ## App para Android e iPhone
 
@@ -31,7 +32,7 @@
 - Android (Chrome): botão 📲 *Instalar app* no topo, ou menu ⋮ → *Instalar app*.
 - iPhone (Safari): Compartilhar → *Adicionar à Tela de Início* (notificações exigem iOS 16.4+ e abrir pelo ícone).
 
-**Fase 2 — avisos com o app fechado (Web Push):** chave VAPID nos segredos do Supabase + tabela de inscrições + função que dispara no horário (tarefas do dia, pagamentos a autorizar, documentos vencendo, ponto para assinar). O `sw.js` já está pronto para receber.
+**Avisos com o app fechado (v37):** de segunda a sábado, às 8h40 e às 13h40, cada pessoa recebe no celular as tarefas do dia; o administrador, os pagamentos a autorizar; o funcionário, as declarações para assinar. Para ligar: publicar a função `supabase/functions/push` (Edge Functions → nome `push`, sem segredo novo) e rodar a migração v37. Cada pessoa toca uma vez em 🔔 Ativar avisos no aparelho.
 
 **Fase 3 — publicar nas lojas (opcional):**
 - *Google Play*: empacotar o mesmo site com Bubblewrap/TWA (conta de desenvolvedor Google: US$ 25, pagamento único).

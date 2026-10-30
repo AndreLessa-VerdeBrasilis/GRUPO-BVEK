@@ -29,6 +29,7 @@ Sempre responda em português. O dono do sistema é o André Lessa (sócio do Gr
    - Toda mudança de banco vira um arquivo novo em `supabase/` no formato `migracao_crm_vNN_descricao.sql`, com o próximo número (confira o maior existente; em 29/out/2026 a última era a v31).
    - A migração precisa poder rodar mais de uma vez sem duplicar nada (`if not exists`, `where not exists`, `create or replace`, `on conflict do nothing`).
    - Termine o arquivo com um `select` que permita ao André conferir o resultado.
+   - **Valores protegidos (desde a v36):** o perfil Comercial não recebe `cards.valor_estimado`, `cards.composicao`, `itens_proposta.valor_unitario/valor_total` nem `contratos_recorrentes.valor_mensal/custo_mensal`. O front-end lê propostas, itens e contratos pelas funções `bvek_cards`, `bvek_itens_proposta` e `bvek_contratos` (nunca `select('*')` direto nessas tabelas). Migração que criar coluna nova nessas três tabelas deve terminar com `select public.bvek_proteger_valores();`.
    - O André roda o SQL manualmente no SQL Editor do Supabase. Não execute SQL no banco de produção por conta própria. Quando o código depender da migração, diga claramente: "rode a migração vNN ANTES de testar".
 4. **Nunca apague dados nem colunas** sem aprovação explícita. Prefira adicionar/desativar a remover.
 5. **Segredos**: senhas, service_role key, tokens e credenciais nunca vão para arquivos do repositório nem para mensagens de commit. A chave anon pública do Supabase já usada no front-end pode permanecer como está.

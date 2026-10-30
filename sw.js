@@ -1,7 +1,7 @@
 // CRM Grupo BVEK — service worker (v34)
 // Deixa o CRM instalável como app no Android e no iPhone e mostra os avisos do sistema.
 // Nunca guarda dados do banco: só a casca do site (para abrir rápido) e as imagens.
-const VERSAO = 'bvek-v34';
+const VERSAO = 'bvek-v36';
 const ESTATICOS = ['/', '/index.html', '/manifest.json', '/vendor/supabase-js-2.117.3.js',
   '/img/icone-192.png', '/img/icone-512.png', '/img/apple-touch-icon.png'];
 
