@@ -991,7 +991,7 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
       </div>
       <div class="legenda-perfis">
         <div><strong>Administrador</strong>Tudo: usuários, empresas, exclusões e todas as abas.</div>
-        <div><strong>Comercial</strong>Funil, propostas, clientes, contatos, projetos e atividades. Não exclui atendimentos nem clientes. Documentos só consulta. Não acessa benefícios, ponto nem RH.</div>
+        <div><strong>Comercial</strong>Funil, propostas, clientes, contatos, projetos e atividades. Não exclui atendimentos nem clientes. Documentos só consulta e só os das empresas (não vê documentos de funcionários). Não acessa benefícios, ponto nem RH.</div>
         <div><strong>Administrativo</strong>Documentos e certidões, funcionários, RH (ficha, uniformes, contracheques, vales, adiantamentos, envio à contabilidade), currículos, projetos e atividades. Funil e clientes só consulta.</div>
         <div><strong>Consulta</strong>Vê funil, clientes, projetos e documentos, não altera nada. Não vê benefícios, RH nem currículos.</div>
         <div><strong>Contabilidade</strong>Só funcionários, benefícios, RH (salários, contracheques, vales e adiantamentos) e documentos/certidões, para consulta e exportação. Não vê funil, propostas, clientes nem currículos.</div>
@@ -2383,7 +2383,9 @@ function calcularPermissoes(p){
     // v34: o comercial não vê valores de propostas nem gera o PDF; custo/lucro (composição, ganhos × custos) só administrador
     verValores:!com,gerarPDF:!com,verLucro:adm,
     // v36: contratos fixos no funil (Comercial e Administrativo preenchem; valores só para quem vê valores)
-    contratosEditar:adm||com||admv};
+    contratosEditar:adm||com||admv,
+    // v38: o comercial só vê documentos das empresas, nunca os de funcionários
+    docsFuncionarios:!com};
 }
 const BUCKET_DOCS='documentos';
 const ABERTAS=ETAPAS.filter(e=>!['fechada','concluida','perdida'].includes(e.id)).map(e=>e.id);
@@ -2532,6 +2534,8 @@ async function iniciarApp(){
   $('bn-mes').value=hojeISO().slice(0,7);
   $('rh-mes').value=hojeISO().slice(0,7);
   try{const v=localStorage.getItem('bvek_tarefas_visao');if(v)$('ativ-visao').value=v;}catch(e){}
+  // v38: comercial não tem filtro de documentos de funcionários
+  if(!PERM.docsFuncionarios){$('doc-titular').style.display='none';$('doc-titular').value='';$('doc-busca').placeholder='Buscar por documento, número ou órgão';}
   if(!PERM.comercialVer)abrirTab('documentos');
   // link do lembrete do WhatsApp: …/#financeiro abre direto a aba
   if(/^#(financeiro|pagamentos)/.test(location.hash)&&PERM.financeiro)abrirTab('financeiro');
@@ -2902,14 +2906,16 @@ async function carregarDocsTudo(){
   ]);
   const erro=t.error||f.error||d.error;
   if(erro){console.error(erro);if(/tipos_documento|funcionarios|documentos/.test(erro.message||''))avisarMigracaoV11();todosTipos=[];todosFuncionarios=[];todosDocumentos=[];return;}
-  todosTipos=t.data||[];todosFuncionarios=f.data||[];todosDocumentos=d.data||[];
+  todosTipos=t.data||[];todosFuncionarios=f.data||[];todosDocumentos=docsPermitidos(d.data);
   atualizarBadgeDocs();
 }
 async function carregarDocumentos(){
   const{data,error}=await sb.from('documentos').select('*').order('data_validade',{ascending:true,nullsFirst:false});
-  if(!error)todosDocumentos=data||[];
+  if(!error)todosDocumentos=docsPermitidos(data);
   atualizarBadgeDocs();
 }
+// v38: o banco já bloqueia; aqui garante a tela mesmo antes da migração v38
+function docsPermitidos(l){return(l||[]).filter(d=>PERM.docsFuncionarios||!d.funcionario_id);}
 function avisarMigracaoV11(){
   v11Ok=false;
   const a=$('aviso-migracao');a.style.display='block';
