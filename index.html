@@ -937,7 +937,7 @@ tr.doc-vencido td{background:#fff5f5}
 
       <!-- v30: assinatura eletrônica do ponto pelos funcionários -->
       <div class="painel-rh" id="rh-p-assinaturas">
-        <div class="barra-acoes" style="margin-bottom:10px"><span></span><button class="btn-sec" id="as-btn-termos" onclick="gerarTermosAdesao()" title="Preenche o termo de adesão com os dados da empresa e de cada funcionário que usa o ponto eletrônico e guarda em Documentos">📄 Gerar termos de adesão preenchidos</button></div>
+        <div class="barra-acoes" style="margin-bottom:10px"><span></span><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn-sec" id="as-btn-assrep" onclick="$('as-assrep-arq').click()" title="Imagem da assinatura do representante da empresa (André). Ela sai automaticamente nos termos de adesão e nas declarações de premiação">✍️ Assinatura do representante</button><input type="file" id="as-assrep-arq" accept="image/png,image/jpeg" style="display:none" onchange="enviarAssinaturaRep(this.files[0]);this.value=''"><button class="btn-sec" id="as-btn-termos" onclick="gerarTermosAdesao()" title="Preenche o termo de adesão com os dados da empresa e de cada funcionário que usa o ponto eletrônico e guarda em Documentos">📄 Gerar termos de adesão preenchidos</button></div></div>
         <div class="info-box" id="as-info" style="display:block;line-height:1.5"></div>
         <div class="kpis" id="as-kpis"></div>
         <div class="tabela-wrap"><table class="tabela" id="tabela-assinaturas"></table></div>
@@ -8710,7 +8710,9 @@ async function pdfDocTimbrado(t,f,assinaturaEletronica){
   const hoje=new Date(),ms=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
   par([[assinaturaEletronica?`Rio de Janeiro, ${fmtData(String(assinaturaEletronica.assinado_em).slice(0,10))}.`:`Rio de Janeiro, ${hoje.getDate()} de ${ms[hoje.getMonth()]} de ${hoje.getFullYear()}.`,false]],{alinhar:'centro',depois:6});
   if(y<RODAPE+70)novaPg();
-  y-=34;const colW=(larg-30)/2,E=TERMO_EMPREGADORA;
+  y-=42;const colW=(larg-30)/2,E=TERMO_EMPREGADORA;
+  const repPng=await bytesAssinaturaRep();
+  if(repPng){try{const img=await doc.embedPng(repPng);const h=40,w=Math.min(colW*.8,img.width*h/img.height);pg.drawImage(img,{x:M+colW+30+(colW-w)/2,y:y+1,width:w,height:h});}catch(e){console.warn('assinatura',e);}}
   if(assinaturaEletronica&&assinaturaEletronica.assinatura){try{const img=await doc.embedPng(assinaturaEletronica.assinatura);const h=40,w=Math.min(colW,img.width*h/img.height);pg.drawImage(img,{x:M+(colW-w)/2,y:y+2,width:w,height:h});}catch(e){}}
   [[M,['EMPREGADO(A)','Nome: '+String(f.nome||'').toUpperCase(),'CPF: '+(f.cpf?fmtCPF(f.cpf):'')]],[M+colW+30,[E.razao,'Representante: '+E.representante,'Cargo: '+E.cargo]]].forEach(([x0,ls])=>{
     pg.drawLine({start:{x:x0,y},end:{x:x0+colW,y},thickness:.7,color:cor});
@@ -8798,6 +8800,8 @@ let assinaturasMes=[];
 async function renderAssinaturasPonto(){
   const iso=mesRH(),per=periodoMeuPonto(iso);
   $('as-btn-termos').style.display=PERM.docs&&PERM.rhEditar?'':'none';
+  $('as-btn-assrep').style.display=PERM.docs&&PERM.rhEditar?'':'none';
+  bytesAssinaturaRep().then(b=>{$('as-btn-assrep').textContent=b?'✍️ Assinatura do representante ✓':'✍️ Enviar assinatura do representante';});
   $('as-info').innerHTML=`Ponto de <strong>${esc(nomeMes(iso))}</strong> (${esc(fmtData(per.ini))} a ${esc(fmtData(somarDias(iso,24)))}). Cada funcionário entra no CRM com o CPF, abre <em>Meu ponto</em>, confere e assina com o dedo. Se discordar, escreve o que está errado e o RH corrige no Secullum e pede para assinar de novo. Clique em <em>ver</em> para imprimir ou salvar em PDF o espelho assinado.`;
   const campos='id,funcionario_id,competencia,concorda,observacao,nome_digitado,assinado_em,ip,hash';
   let{data,error}=await sb.from('ponto_assinaturas').select(campos+',copia_enviada_em,copia_enviada_para').eq('competencia',iso).order('assinado_em',{ascending:false});
@@ -8891,8 +8895,11 @@ async function pdfTermoAdesao(f){
   par([['E, por estarem de acordo, assinam o presente termo em 2 (duas) vias de igual teor.',false]],{depois:10});
   par([['Rio de Janeiro, ____ de ______________________ de ________.',false]],{alinhar:'centro',depois:6});
   // assinaturas lado a lado (não deixa o bloco quebrar entre páginas)
-  if(y<RODAPE+58)novaPg();
-  y-=28;const colW=(larg-30)/2;
+  // v34.1: assinatura do representante da empresa (imagem guardada no CRM) já sai no termo
+  const repPng=await bytesAssinaturaRep();
+  if(y<RODAPE+(repPng?72:58))novaPg();
+  y-=repPng?42:28;const colW=(larg-30)/2;
+  if(repPng){try{const img=await doc.embedPng(repPng);const h=40,w=Math.min(colW*.8,img.width*h/img.height);pg.drawImage(img,{x:M+colW+30+(colW-w)/2,y:y+1,width:w,height:h});}catch(e){console.warn('assinatura',e);}}
   [[M,['EMPREGADO(A)','Nome: '+String(f.nome||'').toUpperCase(),'CPF: '+(f.cpf?fmtCPF(f.cpf):'')]],
    [M+colW+30,[E.razao,'Representante: '+E.representante,'Cargo: '+E.cargo]]].forEach(([x0,ls])=>{
     pg.drawLine({start:{x:x0,y},end:{x:x0+colW,y},thickness:.7,color:cor});
@@ -8901,7 +8908,34 @@ async function pdfTermoAdesao(f){
   });
   return doc.save();
 }
-async function gerarTermosAdesao(){
+/* v34.1: assinatura do representante (PNG com fundo transparente), guardada na pasta protegida do RH */
+const CAMINHO_ASS_REP='assinaturas/representante.png';
+let assRepBytes;   // undefined = ainda não buscou · null = não tem
+async function bytesAssinaturaRep(){
+  if(assRepBytes!==undefined)return assRepBytes;
+  try{const{data,error}=await sb.storage.from(BUCKET_RH).download(CAMINHO_ASS_REP);assRepBytes=error||!data?null:new Uint8Array(await data.arrayBuffer());}catch(e){assRepBytes=null;}
+  return assRepBytes;
+}
+async function enviarAssinaturaRep(arq){
+  if(!arq)return;if(!PERM.docs||!PERM.rhEditar){alert('Seu perfil não pode alterar a assinatura.');return;}
+  if(!/^image\/(png|jpeg)$/.test(arq.type)){alert('Envie uma imagem PNG ou JPG da assinatura.');return;}
+  // tira o fundo branco, recorta e deixa a tinta em cinza-escuro
+  const img=await new Promise((ok,falha)=>{const i=new Image();i.onload=()=>ok(i);i.onerror=falha;i.src=URL.createObjectURL(arq);});
+  const c=document.createElement('canvas');c.width=img.naturalWidth;c.height=img.naturalHeight;const x=c.getContext('2d');x.drawImage(img,0,0);
+  const d=x.getImageData(0,0,c.width,c.height),p=d.data;let x0=c.width,y0=c.height,x1=-1,y1=-1;
+  for(let i=0;i<p.length;i+=4){const l=(p[i]+p[i+1]+p[i+2])/3,a=l>235?0:Math.min(255,Math.round((235-l)*255/175));p[i]=40;p[i+1]=40;p[i+2]=60;p[i+3]=a;
+    if(a>20){const k=i/4,px=k%c.width,py=Math.floor(k/c.width);if(px<x0)x0=px;if(px>x1)x1=px;if(py<y0)y0=py;if(py>y1)y1=py;}}
+  if(x1<0){alert('Não encontrei a assinatura na imagem. Use uma foto com fundo branco.');return;}
+  x.putImageData(d,0,0);
+  const c2=document.createElement('canvas');c2.width=x1-x0+1;c2.height=y1-y0+1;c2.getContext('2d').drawImage(c,x0,y0,c2.width,c2.height,0,0,c2.width,c2.height);
+  const blob=await new Promise(ok=>c2.toBlob(ok,'image/png'));
+  const up=await sb.storage.from(BUCKET_RH).upload(CAMINHO_ASS_REP,blob,{contentType:'image/png',upsert:true});
+  if(erroSB(up.error,'Não foi possível guardar a assinatura'))return;
+  assRepBytes=new Uint8Array(await blob.arrayBuffer());
+  $('as-btn-assrep').textContent='✍️ Assinatura do representante ✓';
+  if(confirm('Assinatura guardada ✅\n\nGerar agora os termos de adesão de TODOS os funcionários já com a assinatura?'))gerarTermosAdesao(true);
+}
+async function gerarTermosAdesao(todosSemPerguntar){
   if(!PERM.docs||!PERM.rhEditar){alert('Seu perfil não pode gerar documentos.');return;}
   const tipo=tipoTermo();
   if(!tipo){alert('Rode antes a migração v32 (supabase/migracao_crm_v32_manoella_aviso_pagamentos_termo.sql) no Supabase: ela cria o tipo de documento do termo.');return;}
@@ -8909,7 +8943,8 @@ async function gerarTermosAdesao(){
   if(!todos.length){alert('Nenhum funcionário ativo que use o ponto eletrônico.');return;}
   const jaTem=todos.filter(f=>termoDocDoFunc(f.id));
   let lista=todos.filter(f=>!termoDocDoFunc(f.id));
-  if(jaTem.length&&confirm(`${jaTem.length} funcionário(s) já têm o termo preenchido em Documentos.\n\nOK = gerar de novo para TODOS (o anterior vai para o histórico)\nCancelar = gerar só para quem ainda não tem (${lista.length})`))lista=todos;
+  if(todosSemPerguntar===true)lista=todos;
+  else if(jaTem.length&&confirm(`${jaTem.length} funcionário(s) já têm o termo preenchido em Documentos.\n\nOK = gerar de novo para TODOS (o anterior vai para o histórico)\nCancelar = gerar só para quem ainda não tem (${lista.length})`))lista=todos;
   if(!lista.length){toast('Todos já têm o termo preenchido');return;}
   const semDados=lista.filter(f=>!f.cpf||!f.cargo||!f.data_admissao);
   if(!confirm(`Gerar o termo de adesão preenchido para ${lista.length} funcionário(s)?\n\nEle fica guardado em Documentos (documento do funcionário).${semDados.length?`\n\nAtenção: ${semDados.length} sem CPF, função ou admissão na ficha — esses campos saem em branco para preencher à mão:\n• `+semDados.slice(0,10).map(f=>f.nome).join('\n• '):''}`))return;
