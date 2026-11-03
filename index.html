@@ -7320,7 +7320,12 @@ const CRONO_CORES=['#2E6DB4','#2E7D32','#E67E22','#8E44AD','#C0392B','#16A085','
 function mesCrono(){return($('crg-mes').value||hojeISO().slice(0,7))+'-01';}
 function mudarMesCrono(n){const d=new Date(mesCrono()+'T00:00:00');d.setMonth(d.getMonth()+n);$('crg-mes').value=isoLocal(d).slice(0,7);abrirCronograma();}
 // mensagem de erro de uma função do Supabase (o corpo da resposta traz { erro })
-async function erroDaFuncao(error,data){let m=(data&&data.erro)||'';if(!m&&error){try{const j=await error.context.json();m=j.erro||'';}catch(e){}m=m||error.message||'erro';}return m;}
+async function erroDaFuncao(error,data){let m=(data&&data.erro)||'',st=0,cod='';if(!m&&error){try{st=error.context&&error.context.status||0;const j=await error.context.json();m=j.erro||'';cod=j.code||j.message||'';}catch(e){}m=m||error.message||'erro';}
+  // v43.1: traduz os erros "técnicos" do Supabase (para o motivo aparecer claro no Cronograma)
+  if(st===404||/NOT_FOUND|not found/i.test(cod))return'A função "outlook-agenda" não está publicada no Supabase (Edge Functions → Deploy new function, com o conteúdo de supabase/functions/outlook-agenda/index.ts).';
+  if(/Failed to send|FunctionsFetchError|FunctionsRelayError/i.test(m))return'O CRM não conseguiu falar com a função "outlook-agenda" no Supabase (não publicada ou fora do ar).';
+  if(st===401&&!/Sess/i.test(m))return'Sessão expirada. Saia e entre de novo no CRM.';
+  return m;}
 function contaDiaCrono(l,d){const w=new Date(d+'T00:00:00').getDay();return w===6?!!l.sabado:w===0?!!l.domingo:true;}
 function diasDaAlocacao(l,ini,fim){const r=[];const a=ini&&ini>l.data_inicio?ini:l.data_inicio,b=fim&&fim<l.data_fim?fim:l.data_fim;for(let d=a;d<=b;d=somarDias(d,1))if(contaDiaCrono(l,d))r.push(d);return r;}
 function diasCronoFunc(fid,ini,fim){const s=new Set();cronoLinhas.filter(l=>l.situacao==='ativo'&&(l.funcionarios||[]).includes(fid)&&l.data_inicio<=fim&&l.data_fim>=ini).forEach(l=>diasDaAlocacao(l,ini,fim).forEach(d=>s.add(d)));return s;}
@@ -7359,7 +7364,7 @@ function renderCronograma(){
   }
   const ini=mesCrono(),fim=fimDoMes(ini),hoje=hojeISO();
   $('crg-info').innerHTML=`${crgVisao==='projeto'?'Cada linha é um <strong>projeto</strong> (agrupado por cliente); o bloco mostra quem trabalhou no dia (iniciais, ou quantas pessoas — passe o mouse para ver os nomes). Clique num dia vazio para alocar a equipe naquele projeto':'Clique num dia vazio para alocar o funcionário'}, ou num bloco colorido para abrir a alocação. Cada alocação vira um evento na <strong>sua agenda do Outlook</strong> (e-mail do seu login); para os <strong>intermitentes</strong>, os dias do mês (de 1 a ${fim.slice(8)}) entram sozinhos na <strong>folha de ${esc(nomeMes(ini))}</strong>.`;
-  $('crg-outlook').innerHTML=cronoOutlook.ok===true?`🟢 Outlook ligado${cronoOutlook.caixa?' — agenda de '+esc(cronoOutlook.caixa):''}`:cronoOutlook.ok===false?`<span title="${esc(cronoOutlook.msg)}">⚪ Outlook não ligado (o cronograma funciona igual)</span>`:'';
+  $('crg-outlook').innerHTML=cronoOutlook.ok===true?`🟢 Outlook ligado${cronoOutlook.caixa?' — agenda de '+esc(cronoOutlook.caixa):''}`:cronoOutlook.ok===false?`⚪ Outlook não ligado (o cronograma funciona igual)${cronoOutlook.msg?`<br><span style="color:var(--vermelho)">Motivo: ${esc(cronoOutlook.msg)}</span>`:''}`:'';
   // v42: filtros de projeto e de funcionário valem para as duas visões
   $('crg-visao').value=crgVisao;$('crg-projmodo').value=crgProjModo;
   $('crg-btn-projsel').textContent=`🏗️ Escolher projetos${crgProjSel.size?' ('+crgProjSel.size+')':''}`;
@@ -7596,7 +7601,7 @@ async function enviarAlocacaoOutlook(id){
   try{
     const{data,error}=await sb.functions.invoke('outlook-agenda',{body:{acao:'enviar',id}});
     if(error||!data||!data.ok){const m=await erroDaFuncao(error,data);console.warn('Outlook',m);
-      if(/permiss|segredo|Failed to send|not found|404|FunctionsFetchError|FunctionsRelayError/i.test(m))cronoOutlook={ok:false,msg:m};
+      if(/permiss|segredo|publicad|conseguiu falar|Failed to send|not found|404|FunctionsFetchError|FunctionsRelayError/i.test(m))cronoOutlook={ok:false,msg:m};
       toast('Alocação salva — ⚠️ não foi para o Outlook: '+m.slice(0,90));return;}
     cronoOutlook={ok:true,msg:'',caixa:data.caixa||cronoOutlook.caixa||''};
     toast(data.feito==='apagado'?'Alocação cancelada e retirada do Outlook':'Alocação salva e enviada à sua agenda do Outlook');
