@@ -1,0 +1,329 @@
+// =====================================================================
+// CRM Grupo BVEK — função "outlook-agenda" (Supabase Edge Function) · v41
+// Liga o CRONOGRAMA do CRM a um calendário do Outlook (ida e volta), pelo
+// Microsoft Graph, com os MESMOS segredos do e-mail:
+//   MS_TENANT_ID, MS_CLIENT_ID, MS_CLIENT_SECRET, MS_REMETENTE
+// Opcional: OUTLOOK_AGENDA = caixa cujo calendário recebe o cronograma
+//           (sem ele, usa a MS_REMETENTE — a mesma caixa do envio de e-mails).
+//
+// O aplicativo do Azure precisa da permissão de APLICATIVO "Calendars.ReadWrite"
+// com consentimento do administrador (veja LEIA-ME.md).
+//
+// Pedidos (POST com JSON):
+//   { acao: "status" }                 → a integração está ligada?
+//   { acao: "enviar", id }             → manda uma alocação do CRM para o Outlook
+//                                        (cria, atualiza ou apaga o evento)
+//   { acao: "sincronizar", inicio, fim } → ida e volta no período (datas AAAA-MM-DD):
+//        • eventos novos no Outlook com funcionário convidado (e-mail do cadastro)
+//          ou com o nome do funcionário no assunto viram alocações no CRM;
+//        • evento alterado/apagado no Outlook altera/cancela a alocação;
+//        • alocação nova/alterada/cancelada no CRM vai para o Outlook.
+//
+// Só Administrador e Administrativo.
+// =====================================================================
+import { createClient, SupabaseClient } from "npm:@supabase/supabase-js@2";
+
+const CORS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+};
+const json = (b: unknown, s = 200) =>
+  new Response(JSON.stringify(b), { status: s, headers: { ...CORS, "Content-Type": "application/json" } });
+
+const FUSO = "E. South America Standard Time"; // horário de Brasília
+const PROP = "String {00020329-0000-0000-C000-000000000046} Name BvekCronogramaId";
+const GRAPH = "https://graph.microsoft.com/v1.0";
+
+type Linha = Record<string, any>;
+
+let cacheToken: { v: string; ate: number } | null = null;
+async function tokenM365(): Promise<string> {
+  if (cacheToken && cacheToken.ate > Date.now()) return cacheToken.v;
+  const tenant = Deno.env.get("MS_TENANT_ID"), clientId = Deno.env.get("MS_CLIENT_ID"), segredo = Deno.env.get("MS_CLIENT_SECRET");
+  if (!tenant || !clientId || !segredo) throw new Error("Falta configurar os segredos do Microsoft 365 (MS_TENANT_ID, MS_CLIENT_ID, MS_CLIENT_SECRET).");
+  const r = await fetch(`https://login.microsoftonline.com/${encodeURIComponent(tenant)}/oauth2/v2.0/token`, {
+    method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({ grant_type: "client_credentials", client_id: clientId, client_secret: segredo, scope: "https://graph.microsoft.com/.default" }),
+  });
+  const b = await r.json();
+  if (!r.ok || !b.access_token) throw new Error("Microsoft 365 recusou o acesso: " + (b.error_description || b.error || r.status));
+  cacheToken = { v: b.access_token, ate: Date.now() + 50 * 60 * 1000 };
+  return b.access_token;
+}
+function caixa(): string {
+  const c = Deno.env.get("OUTLOOK_AGENDA") || Deno.env.get("MS_REMETENTE");
+  if (!c) throw new Error("Falta informar a caixa do calendário (segredo OUTLOOK_AGENDA ou MS_REMETENTE).");
+  return c;
+}
+async function graph(metodo: string, caminho: string, corpo?: unknown): Promise<{ ok: boolean; status: number; b: any }> {
+  const tok = await tokenM365();
+  const r = await fetch(caminho.startsWith("http") ? caminho : GRAPH + caminho, {
+    method: metodo,
+    headers: {
+      Authorization: "Bearer " + tok, "Content-Type": "application/json",
+      Prefer: `outlook.timezone="${FUSO}"`,
+    },
+    body: corpo === undefined ? undefined : JSON.stringify(corpo),
+  });
+  const txt = await r.text();
+  let b: any = null;
+  try { b = txt ? JSON.parse(txt) : null; } catch { b = txt; }
+  if (r.status === 401 || r.status === 403) {
+    throw new Error("O aplicativo do Microsoft 365 ainda não tem permissão no calendário (Calendars.ReadWrite). Peça ao administrador do Microsoft 365 para liberar. " + (b?.error?.message || ""));
+  }
+  return { ok: r.ok, status: r.status, b };
+}
+
+// ---------- datas ----------
+const somaDias = (iso: string, n: number) => {
+  const d = new Date(iso + "T12:00:00Z"); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10);
+};
+const mesesEntre = (a: string, b: string) => {
+  const r: string[] = []; let m = a.slice(0, 7) + "-01";
+  while (m <= b) { r.push(m); const d = new Date(m + "T12:00:00Z"); d.setUTCMonth(d.getUTCMonth() + 1); m = d.toISOString().slice(0, 10); }
+  return r;
+};
+function datasDoEvento(ev: any): { ini: string; fim: string } {
+  const ini = String(ev.start?.dateTime || "").slice(0, 10);
+  let fim = String(ev.end?.dateTime || "").slice(0, 10);
+  const horaFim = String(ev.end?.dateTime || "").slice(11, 19);
+  if (fim > ini && (ev.isAllDay || horaFim === "00:00:00")) fim = somaDias(fim, -1); // fim do Outlook é "exclusivo"
+  if (!fim || fim < ini) fim = ini;
+  return { ini, fim };
+}
+const semAcento = (s: string) => String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "");
+const norm = (s: string) => " " + semAcento(s).toLowerCase().replace(/[^a-z0-9]+/g, " ").trim() + " ";
+
+// ---------- montagem do evento ----------
+function assunto(l: Linha, proj: Linha | null, cli: Linha | null, nomes: string[]): string {
+  const cod = proj?.codigo || cli?.codigo || "";
+  const tit = l.titulo || proj?.nome || cli?.nome || "Alocação";
+  const curtos = nomes.map((n) => { const p = n.trim().split(/\s+/); return p.length > 1 ? p[0] + " " + p[p.length - 1] : p[0]; });
+  return `[Cronograma] ${cod ? cod + " " : ""}${tit}${curtos.length ? " — " + curtos.join(", ") : ""}`.slice(0, 250);
+}
+const escH = (s: unknown) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]!));
+function corpoEvento(l: Linha, proj: Linha | null, cli: Linha | null, nomes: string[]): string {
+  const dias = ["Segunda a sexta", l.sabado ? "sábado" : "", l.domingo ? "domingo" : ""].filter(Boolean).join(", ");
+  return `<p><strong>Cronograma do Grupo BVEK</strong></p>
+<p>${proj ? `Projeto: <strong>${escH(proj.codigo)}</strong> ${escH(proj.nome)}<br>` : ""}${cli ? `Cliente: ${escH(cli.codigo || "")} ${escH(cli.nome)}<br>` : ""}${l.local ? `Local: ${escH(l.local)}<br>` : ""}Dias de trabalho: ${escH(dias)}<br>Equipe: ${escH(nomes.join(", ") || "—")}</p>
+${l.observacoes ? `<p>${escH(l.observacoes)}</p>` : ""}
+<p style="color:#888;font-size:11px">Gerado pelo CRM Grupo BVEK. Pode mudar datas e convidados aqui: o CRM traz a mudança na próxima sincronização.</p>`;
+}
+
+async function carregarApoio(adm: SupabaseClient) {
+  const [f, p, c] = await Promise.all([
+    adm.from("funcionarios").select("id,nome,email,ativo"),
+    adm.from("projetos").select("id,codigo,nome,cliente_id,local"),
+    adm.from("clientes").select("id,codigo,nome"),
+  ]);
+  return { funcs: (f.data || []) as Linha[], projs: (p.data || []) as Linha[], clis: (c.data || []) as Linha[] };
+}
+
+// envia uma alocação para o Outlook (cria / atualiza / apaga)
+async function enviarLinha(adm: SupabaseClient, l: Linha, apoio: Awaited<ReturnType<typeof carregarApoio>>): Promise<string> {
+  const cx = encodeURIComponent(caixa());
+  if (l.situacao === "cancelado") {
+    if (l.outlook_id) {
+      const r = await graph("DELETE", `/users/${cx}/events/${encodeURIComponent(l.outlook_id)}`);
+      if (!r.ok && r.status !== 404) throw new Error("Outlook não apagou o evento: " + (r.b?.error?.message || r.status));
+    }
+    await adm.from("cronograma").update({ outlook_id: null, outlook_sync_em: new Date().toISOString(), outlook_erro: null }).eq("id", l.id);
+    return "apagado";
+  }
+  const proj = apoio.projs.find((x) => x.id === l.projeto_id) || null;
+  const cli = apoio.clis.find((x) => x.id === (l.cliente_id || proj?.cliente_id)) || null;
+  const fs = (l.funcionarios || []).map((id: string) => apoio.funcs.find((x) => x.id === id)).filter(Boolean) as Linha[];
+  const nomes = fs.map((x) => x.nome);
+  const ev: Record<string, unknown> = {
+    subject: assunto(l, proj, cli, nomes),
+    body: { contentType: "HTML", content: corpoEvento(l, proj, cli, nomes) },
+    start: { dateTime: l.data_inicio + "T00:00:00", timeZone: FUSO },
+    end: { dateTime: somaDias(l.data_fim, 1) + "T00:00:00", timeZone: FUSO },
+    isAllDay: true, showAs: "free", isReminderOn: false,
+    location: { displayName: l.local || proj?.local || "" },
+    attendees: fs.filter((x) => x.email).map((x) => ({ emailAddress: { address: String(x.email).trim(), name: x.nome }, type: "required" })),
+    categories: ["Cronograma"],
+    singleValueExtendedProperties: [{ id: PROP, value: l.id }],
+  };
+  let r = l.outlook_id ? await graph("PATCH", `/users/${cx}/events/${encodeURIComponent(l.outlook_id)}`, ev) : null;
+  if (r && r.status === 404) r = null; // apagado no Outlook: cria de novo
+  if (!r) r = await graph("POST", `/users/${cx}/events`, ev);
+  if (!r.ok) {
+    const msg = r.b?.error?.message || String(r.status);
+    await adm.from("cronograma").update({ outlook_erro: msg.slice(0, 300) }).eq("id", l.id);
+    throw new Error("Outlook recusou o evento: " + msg);
+  }
+  await adm.from("cronograma").update({
+    outlook_id: r.b.id, outlook_alterado_em: r.b.lastModifiedDateTime || new Date().toISOString(),
+    outlook_sync_em: new Date().toISOString(), outlook_erro: null,
+  }).eq("id", l.id);
+  return l.outlook_id ? "atualizado" : "criado";
+}
+
+// lê do evento o que importa para o CRM
+function lerEvento(ev: any, apoio: Awaited<ReturnType<typeof carregarApoio>>) {
+  const { ini, fim } = datasDoEvento(ev);
+  const emails = new Set((ev.attendees || []).map((a: any) => String(a.emailAddress?.address || "").toLowerCase().trim()));
+  const texto = norm((ev.subject || "") + " " + (ev.bodyPreview || ""));
+  const funcs = apoio.funcs.filter((f) => {
+    if (f.ativo === false) return false;
+    if (f.email && emails.has(String(f.email).toLowerCase().trim())) return true;
+    const p = norm(f.nome).trim().split(" ");
+    if (p.length < 2) return false;
+    return texto.includes(" " + p.join(" ") + " ") || texto.includes(" " + p[0] + " " + p[p.length - 1] + " ");
+  }).map((f) => f.id as string);
+  const mp = String((ev.subject || "") + " " + (ev.bodyPreview || "")).match(/\bC\d{3}-\d{4}\b/i);
+  const proj = mp ? apoio.projs.find((x) => String(x.codigo).toUpperCase() === mp[0].toUpperCase()) || null : null;
+  const mc = String(ev.subject || "").match(/\bC\d{3}\b/i);
+  const cli = proj ? null : mc ? apoio.clis.find((x) => String(x.codigo || "").toUpperCase() === mc[0].toUpperCase()) || null : null;
+  const fimDeSemana = (d: string) => [0, 6].includes(new Date(d + "T12:00:00Z").getUTCDay());
+  // evento só no fim de semana: conta o sábado/domingo; senão, só dias úteis
+  let sab = false, dom = false;
+  if (fimDeSemana(ini) && fimDeSemana(fim) && somaDias(ini, 1) >= fim) {
+    for (let d = ini; d <= fim; d = somaDias(d, 1)) { const w = new Date(d + "T12:00:00Z").getUTCDay(); if (w === 6) sab = true; if (w === 0) dom = true; }
+  }
+  return {
+    ini, fim, funcs, projeto_id: proj?.id || null, cliente_id: cli?.id || null,
+    local: ev.location?.displayName || null, sab, dom,
+    titulo: String(ev.subject || "").replace(/^\[Cronograma\]\s*/i, "").slice(0, 200) || null,
+  };
+}
+
+async function sincronizar(adm: SupabaseClient, inicio: string, fim: string) {
+  const apoio = await carregarApoio(adm);
+  const cx = encodeURIComponent(caixa());
+  const res = { importados: 0, atualizados_no_crm: 0, cancelados_no_crm: 0, enviados: 0, erros: [] as string[], meses: new Set<string>() };
+  const marcaMeses = (a: string, b: string) => mesesEntre(a, b).forEach((m) => res.meses.add(m));
+
+  // 1. eventos do Outlook no período
+  const eventos: any[] = [];
+  let url: string | null = `/users/${cx}/calendar/calendarView?startDateTime=${inicio}T00:00:00-03:00&endDateTime=${somaDias(fim, 1)}T00:00:00-03:00` +
+    `&$top=200&$select=id,subject,start,end,isAllDay,attendees,lastModifiedDateTime,isCancelled,location,bodyPreview,type` +
+    `&$expand=${encodeURIComponent(`singleValueExtendedProperties($filter=id eq '${PROP}')`)}`;
+  while (url) {
+    const r = await graph("GET", url);
+    if (!r.ok) throw new Error("Não consegui ler o calendário do Outlook: " + (r.b?.error?.message || r.status));
+    eventos.push(...(r.b.value || []));
+    url = r.b["@odata.nextLink"] || null;
+    if (eventos.length > 3000) break;
+  }
+
+  // 2. alocações do CRM no período (+ as ligadas a eventos encontrados)
+  const { data: linhasPer } = await adm.from("cronograma").select("*").lte("data_inicio", fim).gte("data_fim", inicio);
+  const idsEv = eventos.map((e) => e.id);
+  const { data: linhasEv } = idsEv.length ? await adm.from("cronograma").select("*").in("outlook_id", idsEv.slice(0, 500)) : { data: [] };
+  const linhas = new Map<string, Linha>();
+  [...(linhasPer || []), ...(linhasEv || [])].forEach((l: Linha) => linhas.set(l.id, l));
+  const porOutlook = new Map<string, Linha>();
+  linhas.forEach((l) => { if (l.outlook_id) porOutlook.set(l.outlook_id, l); });
+  const vistos = new Set<string>();
+
+  for (const ev of eventos) {
+    try {
+      const idCrm = (ev.singleValueExtendedProperties || [])[0]?.value || null;
+      let l = porOutlook.get(ev.id) || (idCrm ? linhas.get(idCrm) : undefined);
+      if (!l && idCrm) { const { data } = await adm.from("cronograma").select("*").eq("id", idCrm).maybeSingle(); l = data || undefined; }
+      if (ev.isCancelled) continue; // cancelado = tratado como apagado (abaixo)
+      const e = lerEvento(ev, apoio);
+      if (l) {
+        vistos.add(l.id);
+        if (!l.outlook_id || l.outlook_id !== ev.id) await adm.from("cronograma").update({ outlook_id: ev.id }).eq("id", l.id);
+        if (l.situacao === "cancelado") continue; // será apagado no passo 4
+        const mudouOutlook = new Date(ev.lastModifiedDateTime).getTime() > new Date(l.outlook_alterado_em || 0).getTime() + 2000;
+        const mudouCrm = !l.outlook_sync_em || new Date(l.atualizado_em).getTime() > new Date(l.outlook_sync_em).getTime() + 2000;
+        const outlookMaisNovo = new Date(ev.lastModifiedDateTime).getTime() > new Date(l.atualizado_em).getTime();
+        if (mudouOutlook && (!mudouCrm || outlookMaisNovo)) {
+          const dados: Linha = { outlook_alterado_em: ev.lastModifiedDateTime, outlook_sync_em: new Date().toISOString(), outlook_erro: null };
+          const novo: Linha = { data_inicio: e.ini, data_fim: e.fim };
+          if (e.funcs.length) novo.funcionarios = e.funcs;
+          if (e.local && e.local !== l.local) novo.local = e.local;
+          if (e.projeto_id && e.projeto_id !== l.projeto_id) novo.projeto_id = e.projeto_id;
+          const difere = novo.data_inicio !== l.data_inicio || novo.data_fim !== l.data_fim || ("local" in novo) || ("projeto_id" in novo) ||
+            (novo.funcionarios && [...novo.funcionarios].sort().join() !== [...(l.funcionarios || [])].sort().join());
+          if (difere) { Object.assign(dados, novo); res.atualizados_no_crm++; marcaMeses(l.data_inicio, l.data_fim); marcaMeses(e.ini, e.fim); }
+          await adm.from("cronograma").update(dados).eq("id", l.id);
+        } else if (mudouCrm) {
+          await enviarLinha(adm, { ...l, outlook_id: ev.id }, apoio); res.enviados++;
+        }
+        continue;
+      }
+      // evento novo no Outlook: só vira alocação se tiver funcionário
+      if (!e.funcs.length || !e.ini) continue;
+      const { data: ins, error } = await adm.from("cronograma").insert({
+        titulo: e.titulo, projeto_id: e.projeto_id, cliente_id: e.cliente_id, local: e.local,
+        data_inicio: e.ini, data_fim: e.fim, sabado: e.sab, domingo: e.dom, funcionarios: e.funcs,
+        origem: "outlook", outlook_id: ev.id, outlook_alterado_em: ev.lastModifiedDateTime,
+        outlook_sync_em: new Date().toISOString(), criado_por: "Outlook",
+      }).select().single();
+      if (error) { if (!/duplicate/i.test(error.message)) res.erros.push(error.message); continue; }
+      vistos.add(ins.id); res.importados++; marcaMeses(e.ini, e.fim);
+    } catch (err) { res.erros.push(String((err as Error).message || err)); }
+  }
+
+  // 3. ligadas ao Outlook que não apareceram: apagadas, canceladas ou mudaram de período
+  for (const l of linhas.values()) {
+    if (vistos.has(l.id) || !l.outlook_id || l.situacao !== "ativo") continue;
+    try {
+      const r = await graph("GET", `/users/${cx}/events/${encodeURIComponent(l.outlook_id)}?$select=id,isCancelled,start,end,isAllDay,lastModifiedDateTime`);
+      if (r.status === 404 || (r.ok && r.b.isCancelled)) {
+        await adm.from("cronograma").update({ situacao: "cancelado", outlook_id: null, outlook_erro: "apagado no Outlook", outlook_sync_em: new Date().toISOString() }).eq("id", l.id);
+        res.cancelados_no_crm++; marcaMeses(l.data_inicio, l.data_fim);
+      } else if (r.ok && new Date(r.b.lastModifiedDateTime).getTime() > new Date(l.outlook_alterado_em || 0).getTime() + 2000) {
+        const { ini, fim: f } = datasDoEvento(r.b);
+        await adm.from("cronograma").update({ data_inicio: ini, data_fim: f, outlook_alterado_em: r.b.lastModifiedDateTime, outlook_sync_em: new Date().toISOString() }).eq("id", l.id);
+        res.atualizados_no_crm++; marcaMeses(l.data_inicio, l.data_fim); marcaMeses(ini, f);
+      }
+    } catch (err) { res.erros.push(String((err as Error).message || err)); }
+  }
+
+  // 4. CRM → Outlook: novas (sem evento), alteradas e canceladas
+  const { data: pend } = await adm.from("cronograma").select("*").lte("data_inicio", fim).gte("data_fim", inicio);
+  for (const l of (pend || []) as Linha[]) {
+    if (vistos.has(l.id) && l.situacao === "ativo") continue; // já tratadas no passo 2
+    const precisa = l.situacao === "cancelado" ? !!l.outlook_id
+      : !l.outlook_id || !l.outlook_sync_em || new Date(l.atualizado_em).getTime() > new Date(l.outlook_sync_em).getTime() + 2000;
+    if (!precisa) continue;
+    try { await enviarLinha(adm, l, apoio); res.enviados++; } catch (err) { res.erros.push(String((err as Error).message || err)); }
+  }
+  return { ...res, meses: [...res.meses].sort() };
+}
+
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
+  if (req.method !== "POST") return json({ erro: "Use POST." }, 405);
+  const adm = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+  try {
+    const jwt = (req.headers.get("Authorization") || "").replace(/^Bearer\s+/i, "");
+    const { data: { user }, error: eu } = await adm.auth.getUser(jwt);
+    if (eu || !user) return json({ erro: "Sessão inválida. Saia e entre de novo no CRM." }, 401);
+    const { data: perfil } = await adm.from("perfis").select("perfil,ativo").eq("id", user.id).maybeSingle();
+    if (!perfil || perfil.ativo === false || !["administrador", "administrativo"].includes(perfil.perfil)) return json({ erro: "Sem permissão." }, 403);
+
+    const p = await req.json().catch(() => ({}));
+    const acao = String(p.acao || "");
+    if (acao === "status") {
+      try {
+        const r = await graph("GET", `/users/${encodeURIComponent(caixa())}/calendar?$select=id,name`);
+        if (!r.ok) return json({ ok: false, erro: r.b?.error?.message || String(r.status) });
+        return json({ ok: true, caixa: caixa(), calendario: r.b.name });
+      } catch (e) { return json({ ok: false, erro: String((e as Error).message || e) }); }
+    }
+    if (acao === "enviar") {
+      const { data: l } = await adm.from("cronograma").select("*").eq("id", String(p.id || "")).maybeSingle();
+      if (!l) return json({ erro: "Alocação não encontrada." }, 404);
+      const apoio = await carregarApoio(adm);
+      const feito = await enviarLinha(adm, l, apoio);
+      return json({ ok: true, feito });
+    }
+    if (acao === "sincronizar") {
+      const ok = (s: unknown) => /^\d{4}-\d{2}-\d{2}$/.test(String(s || ""));
+      if (!ok(p.inicio) || !ok(p.fim) || p.fim < p.inicio) return json({ erro: "Período inválido." }, 400);
+      if (mesesEntre(p.inicio, p.fim).length > 4) return json({ erro: "Sincronize no máximo 3 meses por vez." }, 400);
+      return json({ ok: true, ...(await sincronizar(adm, p.inicio, p.fim)) });
+    }
+    return json({ erro: "Ação desconhecida." }, 400);
+  } catch (e) {
+    return json({ ok: false, erro: String((e as Error).message || e) }, 500);
+  }
+});
