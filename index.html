@@ -85,20 +85,26 @@ button{font-family:inherit}
 .cc-pol .cc-pol-txt{padding:0 16px 14px;font-size:14px;line-height:1.6}
 .cc-pol .cc-sub{font-size:12px;color:var(--texto2);margin-top:8px}
 .topbar{background:var(--verde);color:#fff;padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:56px;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.15);gap:12px}
-.topbar-logo{font-weight:700;font-size:18px;letter-spacing:1px;white-space:nowrap}
+.topbar-logo{font-weight:700;font-size:18px;letter-spacing:1px;white-space:nowrap;display:flex;align-items:center;gap:10px}
+.topbar-logo img{width:34px;height:34px;background:#fff;border-radius:8px;padding:3px;box-sizing:border-box;flex-shrink:0}
+#app .topbar-logo{cursor:pointer}#app .topbar-logo:hover{opacity:.85}
 .topbar-right{display:flex;align-items:center;gap:16px}
 .btn-sair{background:rgba(255,255,255,.15);border:none;color:#fff;padding:6px 14px;border-radius:6px;cursor:pointer;font-size:13px}
 .empresa-selector{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.15);padding:6px 12px;border-radius:8px}
 .empresa-selector label{font-size:12px;opacity:.8;white-space:nowrap}
 .empresa-selector select{background:none;border:none;color:#fff;font-size:14px;font-weight:600;cursor:pointer;outline:none;max-width:220px}
 .empresa-selector select option{color:#000;background:#fff}
-.tabs{background:#fff;border-bottom:2px solid var(--borda);display:flex;padding:0 24px;overflow-x:auto;overflow-y:hidden;scrollbar-width:none}
+.tabs{background:#fff;border-bottom:2px solid var(--borda);display:flex;padding:0 24px;position:sticky;top:var(--alt-topbar,56px);z-index:99;overflow-x:auto;overflow-y:hidden;scrollbar-width:none}
 .tabs::-webkit-scrollbar{display:none}
 .tab{padding:14px 18px;cursor:pointer;font-size:14px;font-weight:500;color:var(--texto2);border-bottom:3px solid transparent;margin-bottom:-2px;transition:all .2s;white-space:nowrap}
 .tab.ativo{color:var(--verde);border-bottom-color:var(--verde)}
 .conteudo{padding:24px;max-width:1500px;margin:0 auto}
 .barra-acoes{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:12px}
 .barra-acoes h2{font-size:18px;font-weight:600}
+/* v44: o título de cada tela fica fixo abaixo das abas ao rolar */
+.conteudo>[id^="tab-"]>.barra-acoes:first-child{position:sticky;top:var(--alt-topo,104px);z-index:50;background:var(--cinza);margin:0 -24px 16px;padding:10px 24px;box-shadow:0 1px 0 var(--borda)}
+@media(max-width:700px){.conteudo>[id^="tab-"]>.barra-acoes:first-child{margin:0 -12px 12px;padding:8px 12px}}
+@media(max-width:480px){.topbar .btn-topo{white-space:nowrap;padding:6px 8px}.topbar .empresa-selector select{max-width:100%;width:100%;min-width:0}.topbar .topbar-right{gap:8px}#app .topbar-logo{font-size:13px;letter-spacing:.5px}}
 .filtros{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px}
 .filtros input,.filtros select{padding:8px 12px;border:1.5px solid var(--borda);border-radius:8px;font-size:13px;font-family:inherit;background:#fff;outline:none}
 .filtros input:focus,.filtros select:focus{border-color:var(--verde)}
@@ -446,7 +452,7 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
 @media(max-width:700px){.linha-benef{grid-template-columns:1fr 1fr}.dim-linha{grid-template-columns:120px 1fr 60px}}
 @media(max-width:700px){
   .form-grid{grid-template-columns:1fr}.conteudo{padding:12px}.modal{padding:18px}.modal-cab{margin:-18px -18px 10px;padding:16px 56px 10px 18px}.modal-x{top:10px;right:10px}.topbar{padding:0 12px}
-  .topbar-logo{font-size:15px}.empresa-selector label{display:none}#user-nome{display:none}.empresa-selector{padding:6px 8px;min-width:0}.empresa-selector select{max-width:150px;font-size:13px}.topbar{gap:8px}.btn-sair{padding:6px 10px}
+  .topbar-logo{font-size:15px;gap:7px}.topbar-logo img{width:28px;height:28px}.empresa-selector label{display:none}#user-nome{display:none}.empresa-selector{padding:6px 8px;min-width:0}.empresa-selector select{max-width:150px;font-size:13px}.topbar{gap:8px}.btn-sair{padding:6px 10px}
   .ativ-form{grid-template-columns:1fr}.barra-linha{grid-template-columns:90px 1fr 90px}
   .filtros input[type=search]{min-width:0;width:100%}
 }
@@ -470,7 +476,7 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
 <!-- v17: perfil Funcionário — só os próprios contracheques -->
 <div id="tela-cc">
   <div class="topbar">
-    <div class="topbar-logo">GRUPO-BVEK</div>
+    <div class="topbar-logo"><img src="img/icone-192.png" alt="">GRUPO-BVEK</div>
     <div class="topbar-right">
       <button class="btn-topo" id="btn-avisos-cc" style="display:none" onclick="ativarAvisosSistema()" title="Receber avisos no celular (ponto e declarações para assinar)">🔔 Avisos</button>
       <button class="btn-topo" onclick="abrirModalSenha()" title="Trocar minha senha">🔑 Senha</button>
@@ -548,7 +554,7 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
 
 <div id="app">
   <div class="topbar">
-    <div class="topbar-logo">GRUPO-BVEK</div>
+    <div class="topbar-logo" onclick="irParaPainel()" title="Ir para o Painel" role="link"><img src="img/icone-192.png" alt="">GRUPO-BVEK</div>
     <div class="empresa-selector">
       <label>Empresa:</label>
       <select id="select-empresa" onchange="trocarEmpresa()"><option value="todas">— Todas as empresas —</option></select>
@@ -2708,6 +2714,9 @@ function clientePorId(id){return todosClientes.find(c=>c.id===id);}
 function empresaPorId(id){return todasEmpresas.find(e=>e.id===id);}
 function pastaCliente(c){return c&&c.codigo?`Grupo BVEK/03_CLIENTES/${c.codigo}_${semAcento(c.nome).toUpperCase()}`:'';}
 function filtraEmpresa(lista){return empresaAtual==='todas'?lista:lista.filter(x=>x.empresa_id===empresaAtual);}
+// v44: documento do Grupo BVEK (sem empresa e sem funcionário) vale para todas as empresas
+function docDoGrupo(d){return!d.empresa_id&&!d.funcionario_id;}
+function filtraEmpresaDocs(lista){return empresaAtual==='todas'?lista:lista.filter(x=>x.empresa_id===empresaAtual||docDoGrupo(x));}
 function preencherSelect(sel,opcoes,vazio){sel.innerHTML=(vazio!==undefined?`<option value="">${esc(vazio)}</option>`:'')+opcoes.map(([v,t])=>`<option value="${esc(v)}">${esc(t)}</option>`).join('');}
 const pad2=n=>String(n).padStart(2,'0');
 function isoLocal(d){return d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate());}
@@ -3282,6 +3291,16 @@ function fimDoDia(){const d=new Date();d.setHours(23,59,59,999);return d;}
 function inicioDoDia(){const d=new Date();d.setHours(0,0,0,0);return d;}
 
 /* ================= NAVEGAÇÃO ================= */
+// v44: clicar em GRUPO-BVEK (topo) leva ao Painel
+function irParaPainel(){abrirTab('painel');window.scrollTo({top:0,behavior:'smooth'});}
+// v44: mede a barra do topo e as abas para o título da tela ficar fixo logo abaixo
+function medirTopoFixo(){
+  const tb=document.querySelector('#app .topbar'),ab=$('tabs');if(!tb||!ab)return;
+  const h1=tb.offsetHeight,h2=ab.offsetParent?ab.offsetHeight:0,r=document.documentElement.style;
+  r.setProperty('--alt-topbar',h1+'px');r.setProperty('--alt-topo',(h1+h2)+'px');
+}
+window.addEventListener('resize',medirTopoFixo);
+if(window.ResizeObserver)document.addEventListener('DOMContentLoaded',()=>{const ro=new ResizeObserver(medirTopoFixo);['tabs'].forEach(i=>$(i)&&ro.observe($(i)));const tb=document.querySelector('#app .topbar');if(tb)ro.observe(tb);});
 function abrirTab(tab){
   if(tab==='usuarios'&&!PERM.admin)tab='painel';
   if(tab==='beneficios'&&!PERM.rh)tab='painel';
@@ -3292,7 +3311,7 @@ function abrirTab(tab){
   if(tab==='cronograma'&&!PERM.cronograma)tab='painel';
   if(tab==='funil'&&!PERM.funilVer)tab='painel';
   if(!PERM.comercialVer&&['painel','funil','clientes','projetos','fornecedores','inventario','atividades','empresas'].includes(tab))tab='documentos';
-  tabAtual=tab;
+  tabAtual=tab;medirTopoFixo();
   // v34: grupo RH (RH + Benefícios + Currículos) com a mesma barra de subabas
   const grupoRH=['rh','beneficios','curriculos'].includes(tab);
   $('rh-subabas').style.display=grupoRH?'':'none';
@@ -4442,12 +4461,13 @@ async function registrarCobranca(id,doModal){
 }
 
 /* ================= DOCUMENTOS E CERTIDÕES ================= */
+const EMP_GRUPO='grupo'; // v44: opção "Grupo BVEK" no campo Empresa (gravada sem empresa)
 function tipoPorId(id){return todosTipos.find(t=>t.id===id);}
 function funcPorId(id){return todosFuncionarios.find(f=>f.id===id);}
 function nomeDoc(d){const t=tipoPorId(d.tipo_id);return(t?t.nome:'Documento')+(d.descricao?' — '+d.descricao:'');}
 function titularDoc(d){
   if(d.funcionario_id){const f=funcPorId(d.funcionario_id);return'👷 '+(f?f.nome:'(funcionário)');}
-  const e=empresaPorId(d.empresa_id);return e?'🏢 '+e.nome:'🏢 —';
+  const e=empresaPorId(d.empresa_id);return e?'🏢 '+e.nome:'🏢 Grupo BVEK (todas)';
 }
 function statusDoc(d){
   if(d.situacao&&d.situacao!=='vigente')return{k:d.situacao,txt:d.situacao==='substituido'?'Renovado':'Arquivado',cls:'badge-cinza',ord:9};
@@ -4458,7 +4478,7 @@ function statusDoc(d){
   if(n<=av)return{k:'aviso',txt:`Vence em ${n} dia${n===1?'':'s'}`,cls:'badge-hoje',ord:1,n};
   return{k:'ok',txt:`Em dia · ${n} dias`,cls:'badge-ok',ord:3,n};
 }
-function docsVigentes(){return filtraEmpresa(todosDocumentos.filter(d=>(d.situacao||'vigente')==='vigente'));}
+function docsVigentes(){return filtraEmpresaDocs(todosDocumentos.filter(d=>(d.situacao||'vigente')==='vigente'));}
 function docsAtencao(){return docsVigentes().map(d=>({d,s:statusDoc(d)})).filter(x=>x.s.k==='vencido'||x.s.k==='aviso').sort((a,b)=>a.s.n-b.s.n);}
 function atualizarBadgeDocs(){
   const l=docsAtencao(),venc=l.filter(x=>x.s.k==='vencido').length;
@@ -4496,7 +4516,7 @@ function renderAvisosPainel(){
 function renderDocumentos(){
   $('titulo-docs').textContent='Documentos e certidões — '+nomeEmpresaAtual();
   const busca=norm($('doc-busca').value),tit=$('doc-titular').value,stf=$('doc-status').value,sit=$('doc-situacao').value;
-  const base=filtraEmpresa(todosDocumentos.filter(d=>(d.situacao||'vigente')===sit));
+  const base=filtraEmpresaDocs(todosDocumentos.filter(d=>(d.situacao||'vigente')===sit));
   // resumo (sempre dos atuais)
   const vig=docsVigentes().map(statusDoc);
   const cont=k=>vig.filter(s=>s.k===k).length;
@@ -4564,7 +4584,7 @@ function abrirModalDocumento(id=null){
   ['md-desc','md-orgao','md-numero','md-emissao','md-validade','md-resp','md-link','md-obs'].forEach(i=>$(i).value='');
   $('md-arquivo').value='';arquivoDocNovo=null;$('md-aviso').value=30;$('md-sem-validade').checked=false;$('md-validade').disabled=false;
   document.querySelectorAll('#modal-documento .campo-preenchido').forEach(e=>e.classList.remove('campo-preenchido'));
-  preencherSelect($('md-empresa'),todasEmpresas.map(e=>[e.id,`${e.nome} (${e.sigla})`]),'Selecione a empresa');
+  preencherSelect($('md-empresa'),[[EMP_GRUPO,'Grupo BVEK (comum a todas as empresas)'],...todasEmpresas.map(e=>[e.id,`${e.nome} (${e.sigla})`])],'Selecione a empresa');
   $('md-status').style.display='none';$('md-historico-box').style.display='none';
   ['md-btn-excluir','md-btn-arquivar','md-btn-renovar'].forEach(b=>$(b).style.display='none');
   $('md-arquivo-info').textContent='O arquivo fica guardado no CRM junto com o documento.';
@@ -4580,7 +4600,7 @@ function abrirModalDocumento(id=null){
     $('md-sub').textContent=titularDoc(d).replace(/^\S+\s/,'');
     $('md-status').style.display='flex';
     $('md-status').innerHTML=`<span class="badge ${s.cls}">${esc(s.txt)}</span>${d.situacao==='vigente'&&(s.k==='vencido'||s.k==='aviso')&&PERM.docs?'<span>Já tirou a certidão nova? Clique em <strong>🔄 Renovar</strong> para lançar a nova validade (a atual vai para o histórico).</span>':''}`;
-    $('md-empresa').value=d.empresa_id||'';
+    $('md-empresa').value=d.empresa_id||(docDoGrupo(d)?EMP_GRUPO:'');
     $('md-tipo').value=d.tipo_id||'';
     $('md-desc').value=d.descricao||'';$('md-orgao').value=d.orgao||'';$('md-numero').value=d.numero||'';
     $('md-emissao').value=d.data_emissao||'';$('md-validade').value=d.data_validade||'';
@@ -4641,7 +4661,8 @@ async function salvarDocumento(){
   const cat=titularSelecionado();
   const tipoId=$('md-tipo').value,funcId=cat==='funcionario'?$('md-func').value:null;
   let empId=cat==='empresa'?$('md-empresa').value:null;
-  if(cat==='empresa'&&!empId){alert('Escolha a empresa.');return;}
+  if(cat==='empresa'&&!empId){alert('Escolha a empresa (ou "Grupo BVEK", se o documento é comum a todas).');return;}
+  if(empId===EMP_GRUPO)empId=null;
   if(cat==='funcionario'){if(!funcId){alert('Escolha o funcionário (ou cadastre em "+ cadastrar").');return;}const f=funcPorId(funcId);empId=f?f.empresa_id||null:null;}
   if(!tipoId){alert('Escolha o tipo de documento.');return;}
   const semVal=$('md-sem-validade').checked,val=$('md-validade').value;
@@ -4999,7 +5020,7 @@ async function alternarTipo(id){
 function chaveAvisos(){return'bvek_avisos_'+(usuario?usuario.id:'')+'_'+hojeISO();}
 function mostrarAvisosDoDia(){
   try{if(localStorage.getItem(chaveAvisos()))return;}catch(e){}
-  const docs=filtraEmpresa(todosDocumentos.filter(d=>(d.situacao||'vigente')==='vigente')).map(d=>({d,s:statusDoc(d)})).filter(x=>x.s.k==='vencido'||x.s.k==='aviso').sort((a,b)=>a.s.n-b.s.n);
+  const docs=filtraEmpresaDocs(todosDocumentos.filter(d=>(d.situacao||'vigente')==='vigente')).map(d=>({d,s:statusDoc(d)})).filter(x=>x.s.k==='vencido'||x.s.k==='aviso').sort((a,b)=>a.s.n-b.s.n);
   const cobr=PERM.funil?cobrancasDoDia():[];
   const rhPend=pendenciasRH();
   if(!docs.length&&!cobr.length&&!rhPend.length)return;
