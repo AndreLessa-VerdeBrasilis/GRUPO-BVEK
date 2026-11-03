@@ -182,6 +182,21 @@ table.tabela td{padding:9px 12px;border-bottom:1px solid #eee;vertical-align:top
 table.tabela tr.clicavel{cursor:pointer}
 table.tabela tr.clicavel:hover td{background:#fafafa}
 table.tabela td.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+/* v41: cronograma (grade funcionário × dia) */
+.crg-grade{border-collapse:separate;border-spacing:0;font-size:12px;min-width:100%}
+.crg-grade th,.crg-grade td{border-bottom:1px solid #eee;border-right:1px solid #f1f1f1;padding:0;text-align:center;height:30px;min-width:30px}
+.crg-grade th{background:var(--verde-claro);color:var(--verde);font-size:11px;font-weight:700;padding:4px 2px;position:sticky;top:0;z-index:1}
+.crg-grade th.fds,.crg-grade td.fds{background:#f6f6f6}
+.crg-grade th.hoje{background:var(--verde);color:#fff}
+.crg-grade .crg-nome{position:sticky;left:0;background:#fff;text-align:left;padding:4px 10px;min-width:180px;max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;z-index:2;font-weight:600}
+.crg-grade th.crg-nome{background:var(--verde-claro);z-index:3}
+.crg-grade td.crg-livre{cursor:pointer}.crg-grade td.crg-livre:hover{background:#eef6ee}
+.crg-bloco{display:block;margin:2px 1px;border-radius:4px;color:#fff;font-size:10px;font-weight:700;line-height:24px;cursor:pointer;overflow:hidden;white-space:nowrap}
+.crg-bloco.crg-dupla{outline:2px solid #c0392b}
+.crg-cor{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:middle;margin-right:6px}
+.crg-equipe{max-height:220px;overflow-y:auto;border:1.5px solid var(--borda);border-radius:10px;padding:6px 10px}
+.crg-equipe label{display:flex;align-items:center;gap:8px;padding:4px 0;font-size:13px;cursor:pointer}
+.crg-equipe input{width:16px;height:16px;accent-color:var(--verde)}
 .inativo td{opacity:.5}
 /* MODAL */
 .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto}
@@ -487,6 +502,7 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
     <div class="tab" data-tab="funil" data-comercial>Funil de Propostas</div>
     <div class="tab" data-tab="clientes" data-comercial>Clientes</div>
     <div class="tab" data-tab="projetos" data-comercial>Projetos</div>
+    <div class="tab" data-tab="cronograma" id="tab-btn-cronograma" style="display:none">Cronograma</div>
     <div class="tab" data-tab="fornecedores" data-comercial>Fornecedores</div>
     <div class="tab" data-tab="inventario" data-comercial>Inventário <span id="tab-inv-badge"></span></div>
     <div class="tab" data-tab="documentos">Documentos <span id="tab-docs-badge"></span></div>
@@ -623,6 +639,35 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
         <span class="dica" id="proj-proximo"></span>
       </div>
       <div class="tabela-wrap rolagem"><table class="tabela" id="tabela-projetos"></table></div>
+    </div>
+
+    <!-- CRONOGRAMA (v41): funcionários alocados por projeto/cliente, ligado ao Outlook e à folha do mês -->
+    <div id="tab-cronograma" style="display:none">
+      <div class="barra-acoes">
+        <h2>Cronograma de funcionários</h2>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn-sec" id="crg-btn-sync" onclick="sincronizarOutlook(false)">🔄 Sincronizar com Outlook</button>
+          <button class="btn-novo" id="crg-btn-novo" onclick="abrirAlocacao()">+ Nova alocação</button>
+        </div>
+      </div>
+      <div class="info-box" id="crg-info" style="display:block;line-height:1.5"></div>
+      <div class="filtros">
+        <button class="btn-sec" onclick="mudarMesCrono(-1)" title="Mês anterior">◀</button>
+        <input type="month" id="crg-mes" onchange="abrirCronograma()">
+        <button class="btn-sec" onclick="mudarMesCrono(1)" title="Próximo mês">▶</button>
+        <input type="search" id="crg-busca" placeholder="Buscar funcionário ou projeto" oninput="renderCronograma()">
+        <select id="crg-quem" onchange="renderCronograma()">
+          <option value="">Todos os funcionários</option>
+          <option value="alocados">Só quem tem alocação no mês</option>
+          <option value="intermitentes">Só intermitentes</option>
+        </select>
+        <span class="dica" id="crg-outlook" style="margin:0"></span>
+      </div>
+      <div class="tabela-wrap rolagem" style="margin-bottom:16px"><table class="crg-grade" id="crg-grade"></table></div>
+      <div class="barra-acoes" style="margin-top:6px"><h2 style="font-size:16px">Intermitentes no mês → folha</h2></div>
+      <div class="tabela-wrap" style="margin-bottom:16px"><table class="tabela" id="crg-intermitentes"></table></div>
+      <div class="barra-acoes" style="margin-top:6px"><h2 style="font-size:16px">Alocações do mês</h2></div>
+      <div class="tabela-wrap"><table class="tabela" id="crg-lista"></table></div>
     </div>
 
     <!-- FINANCEIRO (v20): pagamentos a autorizar + lembrete no WhatsApp -->
@@ -2121,6 +2166,37 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
   </div>
 </div>
 
+<!-- MODAL ALOCAÇÃO DO CRONOGRAMA (v41) -->
+<div class="modal-overlay" id="modal-alocacao">
+  <div class="modal">
+    <h2 id="crg-titulo-modal">Nova alocação</h2>
+    <p class="modal-sub" id="crg-sub">Escolha o projeto (ou cliente), o período e a equipe. Vira um evento no Outlook e, para os intermitentes, os dias entram sozinhos na folha do mês.</p>
+    <div class="aviso-leitura">🔒 Seu perfil só consulta o cronograma.</div>
+    <div class="info-box" id="crg-status" style="display:none;line-height:1.5"></div>
+    <div class="form-grid">
+      <div class="campo full"><label>Projeto</label><select id="crg-projeto" onchange="mudouProjetoCrono()"></select></div>
+      <div class="campo"><label>Cliente (se não houver projeto)</label><select id="crg-cliente"></select></div>
+      <div class="campo"><label>Local</label><input type="text" id="crg-local" placeholder="Ex.: unidade Duque de Caxias"></div>
+      <div class="campo full"><label>Serviço / título (opcional)</label><input type="text" id="crg-titulo" placeholder="Ex.: roçada da área norte"></div>
+      <div class="campo"><label>De *</label><input type="date" id="crg-ini" onchange="if(!$('crg-fim').value||$('crg-fim').value<this.value)$('crg-fim').value=this.value;contarDiasCrono()"></div>
+      <div class="campo"><label>Até *</label><input type="date" id="crg-fim" onchange="contarDiasCrono()"></div>
+      <div class="campo full" style="display:flex;gap:22px;flex-wrap:wrap">
+        <div class="campo-check"><input type="checkbox" id="crg-sab" onchange="contarDiasCrono()"><label for="crg-sab">Trabalha sábado</label></div>
+        <div class="campo-check"><input type="checkbox" id="crg-dom" onchange="contarDiasCrono()"><label for="crg-dom">Trabalha domingo</label></div>
+        <span class="dica" id="crg-dias" style="margin:auto 0"></span>
+      </div>
+      <div class="campo full"><label>Equipe * <span class="dica" style="display:inline;margin:0">(✉️ = tem e-mail no cadastro: recebe o convite do Outlook)</span></label>
+        <input type="search" id="crg-equipe-busca" placeholder="Buscar funcionário" oninput="renderEquipeCrono()" style="margin-bottom:6px">
+        <div class="crg-equipe" id="crg-equipe"></div></div>
+      <div class="campo full"><label>Observações</label><textarea id="crg-obs" rows="2"></textarea></div>
+    </div>
+    <div class="modal-btns">
+      <button class="btn-excluir so-edicao" id="crg-btn-cancelar-aloc" style="display:none" onclick="cancelarAlocacao()">Cancelar alocação</button>
+      <button class="btn-cancelar" onclick="fecharModal('modal-alocacao')">Fechar</button>
+      <button class="btn-salvar so-edicao" id="crg-btn-salvar" onclick="salvarAlocacao()">Salvar</button>
+    </div>
+  </div>
+</div>
 <div class="modal-overlay" id="modal-pagamento">
   <div class="modal modal-sm">
     <h2 id="pg-titulo">Pagamento a autorizar</h2>
@@ -2399,7 +2475,9 @@ function calcularPermissoes(p){
     // v34: o comercial não vê valores de propostas nem gera o PDF; custo/lucro (composição, ganhos × custos) só administrador
     verValores:!com,gerarPDF:!com,verLucro:adm,
     // v36: contratos fixos no funil (Comercial e Administrativo preenchem; valores só para quem vê valores)
-    contratosEditar:adm||com||admv};
+    contratosEditar:adm||com||admv,
+    // v41: cronograma de funcionários (liga ao Outlook e à folha do mês)
+    cronograma:adm||admv};
 }
 const BUCKET_DOCS='documentos';
 const ABERTAS=ETAPAS.filter(e=>!['fechada','concluida','perdida'].includes(e.id)).map(e=>e.id);
@@ -2878,6 +2956,7 @@ function aplicarPermissoes(){
   mostra('rh-sub-beneficios',PERM.rh);
   mostra('rh-sub-curriculos',PERM.curriculos);
   mostra('tab-btn-financeiro',PERM.financeiro);
+  mostra('tab-btn-cronograma',PERM.cronograma);
   mostra('fin-sub-pagamentos',PERM.pagamentos);
   mostra('pg-btn-config',PERM.admin);
   mostra('btn-tipos-benef',PERM.rhEditar);
@@ -3016,6 +3095,7 @@ function abrirTab(tab){
   if(tab==='empresas'&&!PERM.admin)tab='painel';
   if(tab==='curriculos'&&!PERM.curriculos)tab='painel';
   if(tab==='financeiro'&&!PERM.financeiro)tab='painel';
+  if(tab==='cronograma'&&!PERM.cronograma)tab='painel';
   if(!PERM.comercialVer&&['painel','funil','clientes','projetos','fornecedores','inventario','atividades','empresas'].includes(tab))tab='documentos';
   tabAtual=tab;
   // v34: grupo RH (RH + Benefícios + Currículos) com a mesma barra de subabas
@@ -3024,13 +3104,13 @@ function abrirTab(tab){
   // v34.2: Benefícios sempre no mesmo mês do RH
   if(grupoRH&&$('rh-mes').value&&$('bn-mes').value!==$('rh-mes').value){$('bn-mes').value=$('rh-mes').value;carregarCompetenciaAtual().then(()=>{if(tabAtual==='beneficios')renderBeneficios();});}
   if(grupoRH)document.querySelectorAll('#rh-subabas .subaba').forEach(s=>s.classList.toggle('ativo',s.dataset.rh===(tab==='rh'?rhSub:tab)));
-  ['painel','documentos','beneficios','rh','curriculos','financeiro','fornecedores','inventario','funil','clientes','projetos','atividades','empresas','usuarios'].forEach(t=>{$('tab-'+t).style.display=t===tab?'block':'none';});
+  ['painel','documentos','beneficios','rh','curriculos','financeiro','fornecedores','inventario','funil','clientes','projetos','cronograma','atividades','empresas','usuarios'].forEach(t=>{$('tab-'+t).style.display=t===tab?'block':'none';});
   const marca=grupoRH?'rh':tab==='empresas'?'usuarios':tab;
   document.querySelectorAll('#tabs .tab').forEach(el=>el.classList.toggle('ativo',el.dataset.tab===marca));
   renderTabAtual();
 }
 function renderTabAtual(){
-  ({painel:renderPainel,documentos:renderDocumentos,beneficios:renderBeneficios,rh:renderRH,curriculos:renderCurriculos,financeiro:renderFinanceiro,fornecedores:renderFornecedoresTab,inventario:renderInventario,funil:renderFunil,clientes:renderClientes,projetos:renderProjetos,atividades:renderAtividades,empresas:renderEmpresas,usuarios:renderUsuarios}[tabAtual]||(()=>{}))();
+  ({painel:renderPainel,documentos:renderDocumentos,beneficios:renderBeneficios,rh:renderRH,curriculos:renderCurriculos,financeiro:renderFinanceiro,fornecedores:renderFornecedoresTab,inventario:renderInventario,funil:renderFunil,clientes:renderClientes,projetos:renderProjetos,cronograma:abrirCronograma,atividades:renderAtividades,empresas:renderEmpresas,usuarios:renderUsuarios}[tabAtual]||(()=>{}))();
 }
 function trocarEmpresa(){
   empresaAtual=$('select-empresa').value;
@@ -6940,12 +7020,17 @@ function resumoFolha(){
 }
 function linkNome(f){return`<button class="link-nome" data-link-func="${esc(f.id)}" title="Abrir a ficha do funcionário">${esc(f.nome)}</button>`;}
 function ligarLinksNome(raiz){raiz.querySelectorAll('[data-link-func]').forEach(b=>b.onclick=()=>{const id=b.dataset.linkFunc;if(PERM.rhPessoal)abrirFicha(id);else abrirBenefFunc(id);});}
-function abrirFolha(){
+async function abrirFolha(){
   if(!v14Ok){avisarMigracaoV14();return;}
+  // v41: antes de mostrar, o banco confere o cronograma (intermitentes alocados no mês)
+  if(PERM.rhEditar&&v41Ok&&competenciaAtual()&&competenciaAtual().situacao!=='fechada'){
+    const{data:n,error}=await sb.rpc('bvek_cronograma_folha',{p_comp:compISO()});
+    if(error)console.warn('cronograma → folha',error);else if(n)await carregarCompetenciaAtual();
+  }
   const c=competenciaAtual(),fechada=c&&c.situacao==='fechada',iso=compISO();
   folhaEdit={iso,fechada,linhas:filtraEmpresa(todosFuncionarios.filter(f=>f.ativo!==false)).map(f=>{
     const cf=compFuncs.find(x=>x.funcionario_id===f.id),inter=ehIntermitente(f);
-    return{f,inter,inter0:inter,na:naFolha(f),na0:naFolha(f),dias:cf&&cf.dias_trabalhados!=null?cf.dias_trabalhados:'',dias0:cf&&cf.dias_trabalhados!=null?cf.dias_trabalhados:''};
+    return{f,inter,inter0:inter,na:naFolha(f),na0:naFolha(f),dias:cf&&cf.dias_trabalhados!=null?cf.dias_trabalhados:'',dias0:cf&&cf.dias_trabalhados!=null?cf.dias_trabalhados:'',crono:cf&&cf.dias_cronograma!=null?cf.dias_cronograma:null};
   }).sort((a,b)=>(a.inter-b.inter)||a.f.nome.localeCompare(b.f.nome,'pt-BR'))};
   $('mfo-titulo').textContent='Folha de '+nomeMes(iso);
   $('mfo-busca').value='';
@@ -6958,13 +7043,13 @@ function renderFolha(){
   const l=F.linhas.filter(x=>!busca||norm(x.f.nome).includes(busca));
   const dentro=F.linhas.filter(x=>x.na).length,inter=F.linhas.filter(x=>x.inter);
   $('mfo-sub').innerHTML=F.fechada?`🔒 ${esc(nomeMes(F.iso))} está fechada: a folha só pode ser consultada (reabra em Benefícios para mudar).`
-    :`<strong>${dentro}</strong> de ${F.linhas.length} funcionários ativos na folha · ${inter.filter(x=>x.na).length} de ${inter.length} intermitente(s) incluído(s). CLT e sócios entram sozinhos todo mês; <strong>intermitentes</strong> só quando você marcar aqui, informando os dias convocados (é sobre eles que VR/VA e VT são calculados).`;
+    :`<strong>${dentro}</strong> de ${F.linhas.length} funcionários ativos na folha · ${inter.filter(x=>x.na).length} de ${inter.length} intermitente(s) incluído(s). CLT e sócios entram sozinhos todo mês; <strong>intermitentes</strong> só quando você marcar aqui, informando os dias convocados (é sobre eles que VR/VA e VT são calculados). Quem foi alocado na aba <strong>Cronograma</strong> entra sozinho, com os dias do mês (📅).`;
   const d=edita?'':'disabled';
   $('mfo-tabela').innerHTML='<thead><tr><th>Funcionário</th><th>Intermitente?</th><th>Na folha deste mês</th><th class="num">Dias convocados</th></tr></thead><tbody>'+
     (l.length?l.map(x=>{const i=F.linhas.indexOf(x);return`<tr ${x.na?'':'class="inativo"'}><td><strong>${esc(x.f.nome)}</strong>${tagEmpresa(x.f)}${x.f.cargo?`<div style="font-size:12px;color:var(--texto2)">${esc(x.f.cargo)}</div>`:''}</td>
       <td><input type="checkbox" data-fo-inter="${i}" ${x.inter?'checked':''} ${d} style="width:17px;height:17px;accent-color:var(--verde)"></td>
       <td><input type="checkbox" data-fo-na="${i}" ${x.na?'checked':''} ${d} style="width:17px;height:17px;accent-color:var(--verde)"></td>
-      <td class="num">${x.inter&&x.na?`<input type="number" min="0" max="31" value="${esc(x.dias)}" placeholder="dias" data-fo-dias="${i}" ${d} style="width:70px">${x.dias===''?' <span class="badge badge-hoje">informe</span>':''}`:'<span class="dica">—</span>'}</td></tr>`;}).join('')
+      <td class="num">${x.inter&&x.na?`<input type="number" min="0" max="31" value="${esc(x.dias)}" placeholder="dias" data-fo-dias="${i}" ${d} style="width:70px">${x.dias===''?' <span class="badge badge-hoje">informe</span>':''}${x.crono!=null?` <span class="badge badge-ok" title="Dias vindos do Cronograma (atualiza sozinho quando o cronograma muda)">📅 cronograma${String(x.dias)!==String(x.crono)?' ('+x.crono+')':''}</span>`:''}`:'<span class="dica">—</span>'}</td></tr>`;}).join('')
     :'<tr><td colspan="4" class="vazio">Nenhum funcionário encontrado.</td></tr>')+'</tbody>';
   const t=$('mfo-tabela');
   t.querySelectorAll('[data-fo-inter]').forEach(c=>c.onchange=()=>{const x=F.linhas[+c.dataset.foInter];x.inter=c.checked;
@@ -7000,6 +7085,225 @@ async function salvarFolha(){
     fecharModal('modal-folha');renderTabAtual();
     if(erros)alert(`${erros} alteração(ões) não foram gravadas.`);else toast(`Folha de ${nomeMes(F.iso)} salva`);
   }finally{btn.disabled=false;}
+}
+
+/* ================= CRONOGRAMA (v41): funcionários por projeto/cliente + Outlook + folha do mês ================= */
+// Cada alocação = equipe num projeto/cliente de uma data a outra (sábado/domingo só se marcados).
+// Vira evento no Outlook (função "outlook-agenda") e, para INTERMITENTES, o banco põe os dias na folha do mês sozinho.
+let cronoLinhas=[],cronoMesCarregado=null,cronoEditId=null,cronoEquipe=new Set(),v41Ok=true,cronoOutlook={ok:null,msg:''};
+const cronoSincronizados=new Set();
+const CRONO_CORES=['#2E6DB4','#2E7D32','#E67E22','#8E44AD','#C0392B','#16A085','#B9770E','#5D6D7E','#1F618D','#AF601A'];
+function mesCrono(){return($('crg-mes').value||hojeISO().slice(0,7))+'-01';}
+function mudarMesCrono(n){const d=new Date(mesCrono()+'T00:00:00');d.setMonth(d.getMonth()+n);$('crg-mes').value=isoLocal(d).slice(0,7);abrirCronograma();}
+// mensagem de erro de uma função do Supabase (o corpo da resposta traz { erro })
+async function erroDaFuncao(error,data){let m=(data&&data.erro)||'';if(!m&&error){try{const j=await error.context.json();m=j.erro||'';}catch(e){}m=m||error.message||'erro';}return m;}
+function contaDiaCrono(l,d){const w=new Date(d+'T00:00:00').getDay();return w===6?!!l.sabado:w===0?!!l.domingo:true;}
+function diasDaAlocacao(l,ini,fim){const r=[];const a=ini&&ini>l.data_inicio?ini:l.data_inicio,b=fim&&fim<l.data_fim?fim:l.data_fim;for(let d=a;d<=b;d=somarDias(d,1))if(contaDiaCrono(l,d))r.push(d);return r;}
+function diasCronoFunc(fid,ini,fim){const s=new Set();cronoLinhas.filter(l=>l.situacao==='ativo'&&(l.funcionarios||[]).includes(fid)&&l.data_inicio<=fim&&l.data_fim>=ini).forEach(l=>diasDaAlocacao(l,ini,fim).forEach(d=>s.add(d)));return s;}
+function projDaAloc(l){return l.projeto_id?todosProjetos.find(p=>p.id===l.projeto_id):null;}
+function cliDaAloc(l){const p=projDaAloc(l);return clientePorId(l.cliente_id||(p&&p.cliente_id))||null;}
+function rotuloAloc(l){const p=projDaAloc(l),c=cliDaAloc(l);return[p?p.codigo:(c&&c.codigo)||'',l.titulo||(p&&p.nome)||(c&&c.nome)||'Alocação'].filter(Boolean).join(' · ');}
+function curtoAloc(l){const p=projDaAloc(l),c=cliDaAloc(l);if(p)return String(p.codigo).slice(-4);if(c&&c.codigo)return c.codigo;return(l.titulo||'•').slice(0,3).toUpperCase();}
+function corAloc(l){const k=String(l.projeto_id||l.cliente_id||l.titulo||l.id);let h=0;for(const ch of k)h=(h*31+ch.charCodeAt(0))>>>0;return CRONO_CORES[h%CRONO_CORES.length];}
+function statusOutlookAloc(l){
+  if(l.situacao==='cancelado')return l.outlook_erro==='apagado no Outlook'?'🗑️ apagado no Outlook':'—';
+  if(l.outlook_erro)return`<span style="color:var(--vermelho)" title="${esc(l.outlook_erro)}">⚠️ não foi</span>`;
+  if(l.outlook_id&&l.outlook_sync_em&&new Date(l.atualizado_em)<=new Date(new Date(l.outlook_sync_em).getTime()+2000))return'✅ no Outlook';
+  return cronoOutlook.ok===false?'<span class="dica" style="margin:0">Outlook desligado</span>':'⏳ a enviar';
+}
+async function carregarCronograma(){
+  if(!PERM.cronograma)return;
+  const ini=mesCrono(),fim=fimDoMes(ini);
+  const{data,error}=await sb.from('cronograma').select('*').lte('data_inicio',fim).gte('data_fim',ini).order('data_inicio');
+  if(error){console.warn(error);if(/cronograma/.test(error.message||'')){v41Ok=false;}cronoLinhas=[];cronoMesCarregado=null;return;}
+  v41Ok=true;cronoLinhas=data||[];cronoMesCarregado=ini;
+}
+async function abrirCronograma(){
+  if(!$('crg-mes').value)$('crg-mes').value=hojeISO().slice(0,7);
+  if(cronoMesCarregado!==mesCrono())await carregarCronograma();
+  renderCronograma();
+  // sincroniza com o Outlook uma vez por mês visto (e no botão)
+  if(v41Ok&&!cronoSincronizados.has(mesCrono())){cronoSincronizados.add(mesCrono());sincronizarOutlook(true);}
+}
+function renderCronograma(){
+  if(tabAtual!=='cronograma')return;
+  const ed=PERM.cronograma;
+  $('crg-btn-novo').style.display=ed&&v41Ok?'':'none';$('crg-btn-sync').style.display=ed&&v41Ok?'':'none';
+  if(!v41Ok){
+    $('crg-info').innerHTML='<strong>Falta atualizar o banco de dados (v41).</strong> No Supabase, abra <em>SQL Editor → New query</em>, cole o conteúdo do arquivo <code>supabase/migracao_crm_v41_cronograma_outlook.sql</code> e clique em <em>Run</em>. Depois recarregue esta página.';
+    ['crg-grade','crg-intermitentes','crg-lista'].forEach(id=>$(id).innerHTML='');return;
+  }
+  const ini=mesCrono(),fim=fimDoMes(ini),hoje=hojeISO();
+  $('crg-info').innerHTML=`Clique num dia vazio para alocar o funcionário, ou num bloco colorido para abrir a alocação. Cada alocação vira um evento no Outlook; para os <strong>intermitentes</strong>, os dias do mês (de 1 a ${fim.slice(8)}) entram sozinhos na <strong>folha de ${esc(nomeMes(ini))}</strong>.`;
+  $('crg-outlook').innerHTML=cronoOutlook.ok===true?'🟢 Outlook ligado':cronoOutlook.ok===false?`<span title="${esc(cronoOutlook.msg)}">⚪ Outlook não ligado (o cronograma funciona igual)</span>`:'';
+  const ativas=cronoLinhas.filter(l=>l.situacao==='ativo');
+  const busca=norm($('crg-busca').value),quem=$('crg-quem').value;
+  const dias=[];for(let d=ini;d<=fim;d=somarDias(d,1))dias.push(d);
+  const SEM=['D','S','T','Q','Q','S','S'];
+  let funcs=todosFuncionarios.filter(f=>f.ativo!==false||ativas.some(l=>(l.funcionarios||[]).includes(f.id)));
+  const alocados=new Set(ativas.flatMap(l=>l.funcionarios||[]));
+  funcs=funcs.filter(f=>{
+    if(quem==='alocados'&&!alocados.has(f.id))return false;
+    if(quem==='intermitentes'&&!ehIntermitente(f))return false;
+    if(busca){const txt=norm([f.nome,...ativas.filter(l=>(l.funcionarios||[]).includes(f.id)).map(rotuloAloc)].join(' '));if(!txt.includes(busca))return false;}
+    return true;
+  }).sort((a,b)=>(alocados.has(b.id)-alocados.has(a.id))||(ehIntermitente(b)-ehIntermitente(a))||a.nome.localeCompare(b.nome,'pt-BR'));
+  $('crg-grade').innerHTML=`<thead><tr><th class="crg-nome">Funcionário</th>${dias.map(d=>{const w=new Date(d+'T00:00:00').getDay();return`<th class="${w===0||w===6?'fds':''} ${d===hoje?'hoje':''}">${SEM[w]}<br>${Number(d.slice(8))}</th>`;}).join('')}<th>Dias</th></tr></thead><tbody>`+
+    (funcs.length?funcs.map(f=>{
+      const minhas=ativas.filter(l=>(l.funcionarios||[]).includes(f.id));
+      const tot=diasCronoFunc(f.id,ini,fim).size;
+      return`<tr><td class="crg-nome" title="${esc(f.nome)}">${esc(f.nome)}${ehIntermitente(f)?' <span class="badge badge-cinza" style="font-size:9px">int.</span>':''}</td>${dias.map(d=>{
+        const w=new Date(d+'T00:00:00').getDay(),fds=w===0||w===6;
+        const aqui=minhas.filter(l=>l.data_inicio<=d&&l.data_fim>=d&&contaDiaCrono(l,d));
+        if(!aqui.length)return`<td class="${fds?'fds':''} ${ed?'crg-livre':''}" ${ed?`data-crg-novo="${esc(f.id)}|${d}"`:''}></td>`;
+        const l=aqui[0];
+        return`<td class="${fds?'fds':''}"><span class="crg-bloco ${aqui.length>1?'crg-dupla':''}" style="background:${corAloc(l)}" data-crg-abrir="${esc(l.id)}" title="${esc(aqui.map(rotuloAloc).join(' + '))}${aqui.length>1?' (⚠️ alocado em dois lugares no mesmo dia)':''}">${esc(curtoAloc(l))}</span></td>`;
+      }).join('')}<td class="num"><strong>${tot||''}</strong></td></tr>`;}).join('')
+    :`<tr><td class="vazio" colspan="${dias.length+2}">Nenhum funcionário com estes filtros.</td></tr>`)+'</tbody>';
+  const g=$('crg-grade');
+  g.querySelectorAll('[data-crg-novo]').forEach(td=>td.onclick=()=>{const[fid,d]=td.dataset.crgNovo.split('|');abrirAlocacao(null,{fid,d});});
+  g.querySelectorAll('[data-crg-abrir]').forEach(b=>b.onclick=()=>abrirAlocacao(b.dataset.crgAbrir));
+  // intermitentes → folha
+  const inter=todosFuncionarios.filter(f=>ehIntermitente(f)&&(f.ativo!==false||alocados.has(f.id)));
+  $('crg-intermitentes').innerHTML='<thead><tr><th>Intermitente</th><th class="num">Dias no mês</th><th>Onde (projeto / cliente)</th><th>Folha de '+esc(nomeMes(ini))+'</th></tr></thead><tbody>'+
+    (inter.length?inter.map(f=>{
+      const tot=diasCronoFunc(f.id,ini,fim).size;
+      const porAloc=ativas.filter(l=>(l.funcionarios||[]).includes(f.id)).map(l=>[l,diasDaAlocacao(l,ini,fim).length]).filter(x=>x[1]);
+      return`<tr ${tot?'':'class="inativo"'}><td><strong>${esc(f.nome)}</strong>${tagEmpresa(f)}</td><td class="num"><strong>${tot}</strong></td>
+        <td>${porAloc.length?porAloc.map(([l,n])=>`<span class="crg-cor" style="background:${corAloc(l)}"></span>${esc(rotuloAloc(l))} — ${n} dia${n>1?'s':''}`).join('<br>'):'<span class="dica" style="margin:0">não foi convocado(a) neste mês</span>'}</td>
+        <td>${tot?`✅ entra com ${tot} dia${tot>1?'s':''} convocado${tot>1?'s':''}`:'— fica fora da folha'}</td></tr>`;}).join('')
+    :'<tr><td colspan="4" class="vazio">Nenhum funcionário marcado como intermitente (RH → ficha → tipo de contrato).</td></tr>')+'</tbody>';
+  // lista
+  const todasMes=cronoLinhas.slice().sort((a,b)=>(a.situacao!==b.situacao?(a.situacao==='ativo'?-1:1):0)||a.data_inicio.localeCompare(b.data_inicio));
+  $('crg-lista').innerHTML='<thead><tr><th>Período</th><th>Projeto / cliente</th><th>Equipe</th><th class="num">Dias</th><th>Origem</th><th>Outlook</th></tr></thead><tbody>'+
+    (todasMes.length?todasMes.map(l=>{const eq=(l.funcionarios||[]).map(id=>(funcPorId(id)||{}).nome||'(funcionário)');const n=diasDaAlocacao(l,ini,fim).length;
+      return`<tr class="clicavel ${l.situacao==='cancelado'?'inativo':''}" data-crg-linha="${esc(l.id)}"><td style="white-space:nowrap">${esc(fmtData(l.data_inicio))}${l.data_fim!==l.data_inicio?' a '+esc(fmtData(l.data_fim)):''}${l.sabado||l.domingo?`<div class="dica" style="margin:0">${[l.sabado?'com sábado':'',l.domingo?'com domingo':''].filter(Boolean).join(', ')}</div>`:''}</td>
+      <td><span class="crg-cor" style="background:${corAloc(l)}"></span><strong>${esc(rotuloAloc(l))}</strong>${l.local?`<div class="dica" style="margin:0">${esc(l.local)}</div>`:''}${l.situacao==='cancelado'?' <span class="badge badge-cinza">cancelada</span>':''}</td>
+      <td>${esc(eq.join(', '))}</td><td class="num">${l.situacao==='ativo'?n:''}</td><td>${l.origem==='outlook'?'📅 Outlook':'CRM'}</td><td>${statusOutlookAloc(l)}</td></tr>`;}).join('')
+    :'<tr><td colspan="6" class="vazio">Nenhuma alocação neste mês.</td></tr>')+'</tbody>';
+  $('crg-lista').querySelectorAll('[data-crg-linha]').forEach(tr=>tr.onclick=()=>abrirAlocacao(tr.dataset.crgLinha));
+}
+function abrirAlocacao(id=null,pre=null){
+  if(!PERM.cronograma||!v41Ok)return;
+  const l=id?cronoLinhas.find(x=>x.id===id):null;cronoEditId=l?l.id:null;
+  const projs=todosProjetos.filter(p=>p.status==='Em andamento'||(l&&p.id===l.projeto_id));
+  preencherSelect($('crg-projeto'),projs.map(p=>{const c=clientePorId(p.cliente_id);return[p.id,`${p.codigo} — ${p.nome}${c?' ('+c.nome+')':''}`];}),'— sem projeto —');
+  preencherSelect($('crg-cliente'),todosClientes.filter(c=>c.ativo!==false||(l&&c.id===l.cliente_id)).map(c=>[c.id,rotuloCliente(c)]),'—');
+  $('crg-titulo-modal').textContent=l?'Alocação':'Nova alocação';
+  $('crg-projeto').value=l?(l.projeto_id||''):'';$('crg-cliente').value=l?(l.cliente_id||''):'';
+  $('crg-titulo').value=l?(l.titulo||''):'';$('crg-local').value=l?(l.local||''):'';
+  $('crg-ini').value=l?l.data_inicio:(pre&&pre.d)||'';$('crg-fim').value=l?l.data_fim:(pre&&pre.d)||'';
+  $('crg-sab').checked=l?!!l.sabado:false;$('crg-dom').checked=l?!!l.domingo:false;
+  $('crg-obs').value=l?(l.observacoes||''):'';
+  cronoEquipe=new Set(l?(l.funcionarios||[]):(pre&&pre.fid?[pre.fid]:[]));
+  $('crg-equipe-busca').value='';renderEquipeCrono();contarDiasCrono();
+  const st=$('crg-status');
+  if(l){st.style.display='block';st.innerHTML=`${l.situacao==='cancelado'?'🚫 <strong>Alocação cancelada</strong>'+(l.outlook_erro==='apagado no Outlook'?' (o evento foi apagado no Outlook)':'')+'. Salve para reativar.':''}${l.situacao==='cancelado'?'<br>':''}Origem: ${l.origem==='outlook'?'📅 criada no Outlook':'CRM'}${l.criado_por&&l.criado_por!=='Outlook'?' por '+esc(l.criado_por):''} · Outlook: ${statusOutlookAloc(l)}${l.outlook_erro&&l.situacao==='ativo'?'<br><span style="color:var(--vermelho)">'+esc(l.outlook_erro)+'</span>':''}`;}
+  else st.style.display='none';
+  $('crg-btn-cancelar-aloc').style.display=l&&l.situacao==='ativo'?'':'none';
+  $('crg-btn-salvar').textContent=l&&l.situacao==='cancelado'?'Reativar e salvar':'Salvar';
+  modoLeitura('modal-alocacao',!PERM.cronograma);
+  abrirModal('modal-alocacao');
+}
+function mudouProjetoCrono(){const p=todosProjetos.find(x=>x.id===$('crg-projeto').value);if(!p)return;$('crg-cliente').value=p.cliente_id||'';if(!$('crg-local').value&&p.local)$('crg-local').value=p.local;}
+function renderEquipeCrono(){
+  const busca=norm($('crg-equipe-busca').value);
+  const lista=todosFuncionarios.filter(f=>(f.ativo!==false||cronoEquipe.has(f.id))&&(!busca||norm(f.nome).includes(busca)))
+    .sort((a,b)=>(cronoEquipe.has(b.id)-cronoEquipe.has(a.id))||a.nome.localeCompare(b.nome,'pt-BR'));
+  $('crg-equipe').innerHTML=lista.length?lista.map(f=>`<label><input type="checkbox" data-crg-f="${esc(f.id)}" ${cronoEquipe.has(f.id)?'checked':''}>${esc(f.nome)}${ehIntermitente(f)?' <span class="badge badge-cinza" style="font-size:10px">intermitente</span>':''}${f.email?' <span title="'+esc(f.email)+'">✉️</span>':''}${f.cargo?` <span class="dica" style="margin:0">${esc(f.cargo)}</span>`:''}</label>`).join(''):'<p class="vazio">Nenhum funcionário encontrado.</p>';
+  $('crg-equipe').querySelectorAll('[data-crg-f]').forEach(c=>c.onchange=()=>{c.checked?cronoEquipe.add(c.dataset.crgF):cronoEquipe.delete(c.dataset.crgF);contarDiasCrono();});
+}
+function contarDiasCrono(){
+  const a=$('crg-ini').value,b=$('crg-fim').value;
+  if(!a||!b||b<a){$('crg-dias').textContent='';return;}
+  const n=diasDaAlocacao({data_inicio:a,data_fim:b,sabado:$('crg-sab').checked,domingo:$('crg-dom').checked}).length;
+  $('crg-dias').textContent=`${n} dia${n===1?'':'s'} de trabalho por pessoa${cronoEquipe.size?` · ${cronoEquipe.size} pessoa${cronoEquipe.size>1?'s':''}`:''}`;
+}
+// v41: abre a competência do mês (se ainda não existir) para o banco pôr os intermitentes na folha
+async function garantirCompetenciaMes(iso){
+  let c=todasCompetencias.find(x=>x.competencia===iso);if(c)return c;
+  const{data,error}=await sb.from('competencias_beneficios').insert({competencia:iso,dias_uteis:diasUteisPadrao(iso)}).select().single();
+  if(error){const r=await sb.from('competencias_beneficios').select('*').eq('competencia',iso).maybeSingle();if(r.data)todasCompetencias.unshift(r.data);return r.data||null;}
+  todasCompetencias.unshift(data);return data;
+}
+async function abrirCompetenciasDoCronograma(meses,funcIds){
+  if(!PERM.rhEditar)return;
+  const temInter=(funcIds==null)||funcIds.some(id=>{const f=funcPorId(id);return f&&ehIntermitente(f);});
+  if(!temInter)return;
+  for(const m of meses)await garantirCompetenciaMes(m);
+}
+function mesesDoPeriodo(a,b){const r=[];let m=a.slice(0,7)+'-01';while(m<=b){r.push(m);const d=new Date(m+'T00:00:00');d.setMonth(d.getMonth()+1);m=isoLocal(d);}return r;}
+async function salvarAlocacao(){
+  if(!PERM.cronograma)return;
+  const ini=$('crg-ini').value,fim=$('crg-fim').value,proj=$('crg-projeto').value||null;
+  let cli=$('crg-cliente').value||null;
+  if(!ini||!fim){alert('Informe o período (de / até).');return;}
+  if(fim<ini){alert('A data final está antes da inicial.');return;}
+  if(mesesDoPeriodo(ini,fim).length>3){alert('Período longo demais: lance no máximo 3 meses por alocação.');return;}
+  if(!cronoEquipe.size){alert('Marque pelo menos um funcionário na equipe.');return;}
+  if(!proj&&!cli&&!$('crg-titulo').value.trim()){alert('Escolha o projeto ou o cliente (ou escreva o serviço).');return;}
+  const p=proj?todosProjetos.find(x=>x.id===proj):null;if(p&&!cli)cli=p.cliente_id||null;
+  const dados={projeto_id:proj,cliente_id:cli,titulo:$('crg-titulo').value.trim()||null,local:$('crg-local').value.trim()||null,
+    data_inicio:ini,data_fim:fim,sabado:$('crg-sab').checked,domingo:$('crg-dom').checked,funcionarios:[...cronoEquipe],
+    observacoes:$('crg-obs').value.trim()||null,situacao:'ativo',atualizado_em:new Date().toISOString()};
+  // conflito: mesma pessoa em outro lugar no mesmo dia
+  const{data:outras}=await sb.from('cronograma').select('*').eq('situacao','ativo').lte('data_inicio',fim).gte('data_fim',ini).overlaps('funcionarios',dados.funcionarios);
+  const conf=[];(outras||[]).filter(o=>o.id!==cronoEditId).forEach(o=>{const dd=new Set(diasDaAlocacao(o,ini,fim));const comuns=diasDaAlocacao(dados).filter(d=>dd.has(d));if(!comuns.length)return;
+    (o.funcionarios||[]).filter(id=>cronoEquipe.has(id)).forEach(id=>conf.push(`• ${(funcPorId(id)||{}).nome||'?'}: ${rotuloAloc(o)} (${comuns.slice(0,4).map(d=>fmtData(d).slice(0,5)).join(', ')}${comuns.length>4?'…':''})`));});
+  if(conf.length&&!confirm(`Atenção: já alocado(s) em outro lugar nos mesmos dias:\n${conf.join('\n')}\n\nNa folha, o mesmo dia conta uma vez só. Salvar mesmo assim?`))return;
+  const btn=$('crg-btn-salvar');btn.disabled=true;
+  try{
+    const ant=cronoEditId?cronoLinhas.find(x=>x.id===cronoEditId):null;
+    let id=cronoEditId;
+    if(id){const{error}=await sb.from('cronograma').update(dados).eq('id',id);if(erroSB(error))return;}
+    else{dados.criado_por=usuario?usuario.email:null;dados.origem='crm';const{data,error}=await sb.from('cronograma').insert(dados).select().single();if(erroSB(error))return;id=data.id;}
+    const meses=new Set(mesesDoPeriodo(ini,fim));if(ant)mesesDoPeriodo(ant.data_inicio,ant.data_fim).forEach(m=>meses.add(m));
+    await abrirCompetenciasDoCronograma([...meses],[...new Set([...dados.funcionarios,...(ant?ant.funcionarios||[]:[])])]);
+    fecharModal('modal-alocacao');
+    await enviarAlocacaoOutlook(id);
+    await Promise.all([carregarCronograma(),carregarCompetenciaAtual()]);renderTabAtual();
+  }finally{btn.disabled=false;}
+}
+async function cancelarAlocacao(){
+  const l=cronoLinhas.find(x=>x.id===cronoEditId);if(!l||!PERM.cronograma)return;
+  if(!confirm('Cancelar esta alocação? Ela sai do Outlook e os dias deixam de contar na folha dos intermitentes. Nada é apagado (dá para reativar).'))return;
+  const{error}=await sb.from('cronograma').update({situacao:'cancelado',atualizado_em:new Date().toISOString()}).eq('id',l.id);if(erroSB(error))return;
+  fecharModal('modal-alocacao');
+  await enviarAlocacaoOutlook(l.id);
+  await Promise.all([carregarCronograma(),carregarCompetenciaAtual()]);renderTabAtual();
+}
+async function enviarAlocacaoOutlook(id){
+  if(cronoOutlook.ok===false){toast('Alocação salva (Outlook não ligado)');return;}
+  try{
+    const{data,error}=await sb.functions.invoke('outlook-agenda',{body:{acao:'enviar',id}});
+    if(error||!data||!data.ok){const m=await erroDaFuncao(error,data);console.warn('Outlook',m);
+      if(/permiss|segredo|Failed to send|not found|404|FunctionsFetchError|FunctionsRelayError/i.test(m))cronoOutlook={ok:false,msg:m};
+      toast('Alocação salva — ⚠️ não foi para o Outlook: '+m.slice(0,90));return;}
+    cronoOutlook={ok:true,msg:''};
+    toast(data.feito==='apagado'?'Alocação cancelada e retirada do Outlook':'Alocação salva e enviada ao Outlook');
+  }catch(e){console.warn(e);toast('Alocação salva — ⚠️ não foi para o Outlook');}
+}
+let cronoSincronizando=false;
+async function sincronizarOutlook(silencioso){
+  if(!PERM.cronograma||!v41Ok||cronoSincronizando)return;
+  const ini=mesCrono(),fim=fimDoMes(ini);
+  cronoSincronizando=true;const b=$('crg-btn-sync');b.disabled=true;b.textContent='🔄 Sincronizando…';
+  try{
+    const{data,error}=await sb.functions.invoke('outlook-agenda',{body:{acao:'sincronizar',inicio:ini,fim}});
+    if(error||!data||!data.ok){
+      const m=await erroDaFuncao(error,data);
+      cronoOutlook={ok:false,msg:m};
+      if(!silencioso)alert('Não foi possível sincronizar com o Outlook:\n'+m+'\n\nO cronograma continua funcionando no CRM. Para ligar o Outlook, veja supabase/functions/outlook-agenda/LEIA-ME.md.');
+      return;
+    }
+    cronoOutlook={ok:true,msg:''};
+    if((data.meses||[]).length)await abrirCompetenciasDoCronograma(data.meses,null);
+    const mud=data.importados+data.atualizados_no_crm+data.cancelados_no_crm+data.enviados;
+    if(mud||!silencioso)toast(`Outlook: ${data.importados} novo(s) do Outlook · ${data.atualizados_no_crm} alterado(s) · ${data.cancelados_no_crm} cancelado(s) · ${data.enviados} enviado(s)${(data.erros||[]).length?' · ⚠️ '+data.erros.length+' erro(s)':''}`);
+    if((data.erros||[]).length)console.warn('Outlook',data.erros);
+    if(mud)await Promise.all([carregarCronograma(),carregarCompetenciaAtual()]);
+  }catch(e){console.warn(e);cronoOutlook={ok:false,msg:String(e.message||e)};}
+  finally{cronoSincronizando=false;b.disabled=false;b.textContent='🔄 Sincronizar com Outlook';renderCronograma();}
 }
 
 /* ================= FINANCEIRO (v20): PAGAMENTOS A AUTORIZAR + WHATSAPP ================= */
