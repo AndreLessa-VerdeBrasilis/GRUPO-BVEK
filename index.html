@@ -526,6 +526,7 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
         <div class="campo"><label for="den-quando">Quando? (opcional)</label><input type="text" id="den-quando" placeholder="Ex.: semana passada, todo dia de manhã"></div>
         <div class="campo"><label for="den-env">Quem está envolvido? (opcional)</label><input type="text" id="den-env" placeholder="Nomes, funções ou testemunhas"></div>
         <p style="font-size:12px;color:var(--texto2);margin-top:10px;line-height:1.5">Para continuar anônimo, não escreva seu nome nem detalhes que mostrem quem você é. Se quiser ser procurado(a) pelo RH, pode se identificar no texto.</p>
+        <div id="den-erro" style="display:none;margin-top:10px;padding:10px 12px;border-radius:8px;background:#fdecea;color:#a12622;font-size:13px;line-height:1.5"></div>
         <button class="cc-btn-ass" id="den-btn" onclick="enviarDenuncia()">Enviar denúncia ao RH</button>
       </div>
       <div class="cc-ola" id="den-ok" style="display:none">
@@ -3085,16 +3086,21 @@ async function carregarMinhasPoliticas(){
 }
 // v42: canal de denúncias — nada que identifique quem enviou vai junto (só o texto)
 async function enviarDenuncia(){
-  const desc=$('den-desc').value.trim();
-  if(desc.length<10){alert('Conte o que aconteceu (pelo menos algumas palavras).');return;}
-  if(!confirm('Enviar a denúncia ao RH? Depois de enviada ela não pode ser alterada.'))return;
-  const btn=$('den-btn');btn.disabled=true;
+  const desc=$('den-desc').value.trim(),erro=$('den-erro');
+  const mostraErro=m=>{erro.innerHTML=m;erro.style.display='';};
+  erro.style.display='none';
+  if(desc.length<10){mostraErro('Conte o que aconteceu (pelo menos algumas palavras).');return;}
+  const btn=$('den-btn');btn.disabled=true;btn.textContent='Enviando…';
   try{
     const{data,error}=await sb.rpc('bvek_denuncia_enviar',{p_categoria:$('den-cat').value,p_descricao:desc,p_local:$('den-local').value.trim()||null,p_quando:$('den-quando').value.trim()||null,p_envolvidos:$('den-env').value.trim()||null});
-    if(error||!data){console.error(error);alert(/function|schema cache/i.test((error&&error.message)||'')?'O canal de denúncias ainda está sendo liberado. Tente de novo mais tarde.':'Não foi possível enviar: '+((error&&error.message)||'tente de novo.'));return;}
+    if(error||!data){console.error(error);const m=(error&&error.message)||'';
+      mostraErro(/function|schema cache|does not exist|could not find/i.test(m)
+        ?'⚠️ O canal de denúncias ainda não foi ligado no sistema. Avise o RH (falta atualizar o banco — migração v42).'
+        :'⚠️ Não foi possível enviar. Tente de novo em instantes.'+(m?'<br><small>Motivo: '+esc(m)+'</small>':''));return;}
     ['den-desc','den-local','den-quando','den-env'].forEach(i=>$(i).value='');
     $('den-prot').textContent=data;$('den-form').style.display='none';$('den-ok').style.display='';
-  }finally{btn.disabled=false;}
+  }catch(e){console.error(e);mostraErro('⚠️ Sem conexão com o sistema. Confira a internet e tente de novo.');}
+  finally{btn.disabled=false;btn.textContent='Enviar denúncia ao RH';}
 }
 function novaDenuncia(){$('den-ok').style.display='none';$('den-form').style.display='';$('den-prot').textContent='';}
 function copiarProtocolo(){const t=$('den-prot').textContent;try{navigator.clipboard.writeText(t).then(()=>toast('Protocolo copiado'),()=>prompt('Copie o protocolo:',t));}catch(e){prompt('Copie o protocolo:',t);}}
