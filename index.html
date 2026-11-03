@@ -987,6 +987,7 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
         <strong>Para dar acesso a um funcionário:</strong> no Supabase, abra <em>Authentication → Users → Add user → Create new user</em>, informe o e-mail e uma senha provisória e marque <em>Auto Confirm User</em>. Ele aparece aqui como <em>Aguardando liberação</em>: escolha o perfil e clique em Salvar. Depois do primeiro acesso, ele troca a senha no botão 🔑 Senha.<br>
         <strong>Intermitente (só contracheque):</strong> crie o usuário no Supabase com o e-mail <code>CPF@funcionario.bvek.com.br</code> (CPF só com números) e escolha aqui o perfil <em>Funcionário (contracheque e ponto)</em>. Ele entra digitando só o CPF e a senha e vê todos os contracheques guardados para aquele CPF — o CPF precisa estar na ficha do funcionário.
         <span style="display:inline-flex;gap:6px;align-items:center;margin-left:4px">CPF: <input type="text" id="u-cpf" placeholder="000.000.000-00" style="width:140px;padding:4px 8px;border:1.5px solid var(--borda);border-radius:6px" oninput="mostrarEmailCPF()"> <code id="u-cpf-email"></code></span><br>
+        <strong>Esqueceu a senha?</strong> Em <em>Todos os logins</em>, clique em <em>🔑 Redefinir senha</em> na linha da pessoa e passe a ela a senha provisória nova.<br>
         <strong>Funcionário saiu?</strong> Desmarque "Ativo" — o login para de funcionar no CRM e o histórico continua guardado.
       </div>
       <div class="legenda-perfis">
@@ -1965,6 +1966,20 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
   </div>
 </div>
 
+<!-- v38: MODAL REDEFINIR SENHA (administrador, qualquer login) -->
+<div class="modal-overlay" id="modal-redefinir-senha">
+  <div class="modal modal-sm">
+    <h2>🔑 Redefinir senha</h2>
+    <p class="modal-sub" id="mrs-sub"></p>
+    <div class="campo"><label>Nova senha provisória</label><input type="text" id="mrs-senha" autocomplete="off" spellcheck="false" placeholder="mínimo 8 caracteres" onkeydown="if(event.key==='Enter')salvarRedefinirSenha()"></div>
+    <p class="dica">A senha antiga deixa de valer na hora (ninguém vê a senha antiga, ela é só substituída). Passe a nova senha à pessoa — ela já entra direto com essa senha.</p>
+    <div class="modal-btns">
+      <button class="btn-cancelar" onclick="fecharModal('modal-redefinir-senha')">Cancelar</button>
+      <button class="btn-salvar" id="mrs-btn" onclick="salvarRedefinirSenha()">Redefinir senha</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL TROCAR SENHA -->
 <div class="modal-overlay" id="modal-senha">
   <div class="modal modal-sm">
@@ -2145,8 +2160,8 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
       <div class="campo"><label>Categoria *</label><select id="sd-m-categoria"></select></div>
       <div class="campo"><label>Fornecedor / loja</label><input type="text" id="sd-m-fornecedor" list="dl-fornecedores" placeholder="Ex.: Leroy Merlin"></div>
       <div class="campo full"><label>Para que foi a compra? *</label><input type="text" id="sd-m-descricao" placeholder="Ex.: cimento e areia para a obra da Vibra"></div>
-      <div class="campo"><label>Cliente</label><input type="text" id="sd-m-cliente" list="dl-clientes" placeholder="C091 · Vibra" onchange="mudouClienteSaida()"></div>
-      <div class="campo"><label>Projeto</label><select id="sd-m-projeto"></select></div>
+      <div class="campo"><label>Cliente *</label><input type="text" id="sd-m-cliente" list="dl-clientes-saida" placeholder="C091 · Vibra ou 🏢 Escritório" onchange="mudouClienteSaida()"><div class="dica">Compra para o escritório? Escolha <strong>🏢 Escritório</strong> (aí o projeto não é preciso).</div></div>
+      <div class="campo"><label>Projeto *</label><select id="sd-m-projeto" onchange="mudouProjetoSaida()"></select></div>
       <div class="campo"><label>Empresa</label><select id="sd-m-empresa"></select></div>
       <div class="campo"><label>Quem comprou</label><input type="text" id="sd-m-comprador" list="dl-responsaveis"></div>
       <div class="campo full"><label>Foto ou PDF da nota</label><input type="file" id="sd-m-arquivo" accept="image/*,application/pdf"><div class="dica" id="sd-m-nota-atual"></div></div>
@@ -2325,6 +2340,7 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
 </div>
 
 <datalist id="dl-clientes"></datalist>
+<datalist id="dl-clientes-saida"></datalist>
 <datalist id="dl-responsaveis"></datalist>
 <div class="toast" id="toast"></div>
 
@@ -5068,6 +5084,27 @@ async function salvarAcessoFunc(){
   await carregarPerfis();renderUsuarios();
   toast(novaSenha?'Senha alterada — passe a nova senha ao funcionário':'Acesso liberado — o funcionário entra com o CPF e a senha');
 }
+/* v38: administrador redefine a senha de qualquer login (não mostra a senha antiga) */
+let redefinirSenhaId=null;
+function abrirRedefinirSenha(id){
+  if(!PERM.admin)return;const p=todosPerfis.find(x=>x.id===id);if(!p)return;
+  redefinirSenhaId=id;
+  $('mrs-sub').textContent=`${p.nome||''}${p.nome?' · ':''}login: ${p.perfil==='funcionario'&&/@funcionario\.bvek\.com\.br$/i.test(p.email||'')?'CPF '+fmtCPFLogin(String(p.email).split('@')[0]):(p.email||'')}`;
+  $('mrs-senha').value='';abrirModal('modal-redefinir-senha');setTimeout(()=>$('mrs-senha').focus(),50);
+}
+async function salvarRedefinirSenha(){
+  if(!redefinirSenhaId)return;const senha=$('mrs-senha').value;
+  if(senha.length<8){alert('A senha provisória precisa ter pelo menos 8 caracteres.');return;}
+  $('mrs-btn').disabled=true;
+  const{error}=await sb.rpc('bvek_redefinir_senha_usuario',{p_usuario:redefinirSenhaId,p_senha:senha});
+  $('mrs-btn').disabled=false;
+  if(error){console.error(error);alert(/function|schema cache/i.test(error.message||'')
+    ?'Falta rodar no Supabase a migração supabase/migracao_crm_v38_redefinir_senha_escritorio.sql.'
+    :'Não foi possível: '+(error.message||error));return;}
+  fecharModal('modal-redefinir-senha');redefinirSenhaId=null;
+  await carregarPerfis();renderUsuarios();
+  toast('Senha redefinida — passe a nova senha à pessoa');
+}
 function renderUsuarios(){
   if(!PERM.admin)return;
   renderAcessosFunc();
@@ -5078,7 +5115,8 @@ function renderUsuarios(){
       <td>${esc(p.email||'')}${p.id===usuario.id?' <span class="badge badge-ok">você</span>':''}${p.perfil==='funcionario'?(()=>{const fs=funcionarioDoLogin(p.email);return fs===null?'<div class="dica" style="color:var(--vermelho)">⚠ Para este perfil o e-mail precisa ser CPF@funcionario.bvek.com.br</div>':fs.length?`<div class="dica">Contracheques de: ${esc(fs.map(f=>f.nome).join(', '))}</div>`:'<div class="dica" style="color:var(--vermelho)">⚠ Nenhum funcionário com este CPF — cadastre o CPF na ficha</div>';})():''}</td>
       <td><select data-campo="perfil">${PERFIS.map(([v,t])=>`<option value="${v}" ${p.perfil===v?'selected':''}>${t}</option>`).join('')}</select>${p.perfil==='pendente'?' <span class="badge badge-hoje">novo</span>':''}</td>
       <td><input type="checkbox" data-campo="ativo" ${p.ativo?'checked':''} style="width:17px;height:17px;accent-color:var(--verde)"></td>
-      <td><button class="btn-sec" data-salvar-u>Salvar</button></td></tr>`).join(''):'<tr><td colspan="5" class="vazio">Nenhum usuário encontrado. Rode a migração v11.</td></tr>')+'</tbody>';
+      <td style="white-space:nowrap"><button class="btn-sec" data-salvar-u>Salvar</button>${p.id!==usuario.id?` <button class="btn-sec" data-senha-u title="Colocar uma senha provisória nova">🔑 Redefinir senha</button>`:''}</td></tr>`).join(''):'<tr><td colspan="5" class="vazio">Nenhum usuário encontrado. Rode a migração v11.</td></tr>')+'</tbody>';
+  $('tabela-usuarios').querySelectorAll('[data-senha-u]').forEach(b=>b.onclick=()=>abrirRedefinirSenha(b.closest('tr').dataset.u));
   $('tabela-usuarios').querySelectorAll('[data-salvar-u]').forEach(b=>b.onclick=async()=>{
     const tr=b.closest('tr'),id=tr.dataset.u;
     const dados={nome:tr.querySelector('[data-campo=nome]').value.trim()||null,perfil:tr.querySelector('[data-campo=perfil]').value,ativo:tr.querySelector('[data-campo=ativo]').checked};
@@ -7173,7 +7211,9 @@ function saidasPendentesMinhas(){
   const meus=new Set(todosCartoes.filter(c=>c.usuario_id===(usuario&&usuario.id)).map(c=>c.id));
   return todasSaidas.filter(s=>s.situacao==='pendente'&&(meus.has(s.cartao_id)||(!s.cartao_id&&s.criado_por_id===(usuario&&usuario.id))));
 }
-function situacaoAuto(d,atual){if(atual==='conferida')return'conferida';return d.categoria&&d.descricao?'justificada':'pendente';}
+// v38: justificada = categoria + para que foi + (escritório ou cliente e projeto)
+function destinoSaidaOk(d){return!!(d.escritorio||(d.cliente_id&&d.projeto_id));}
+function situacaoAuto(d,atual){if(atual==='conferida')return'conferida';return d.categoria&&d.descricao&&destinoSaidaOk(d)?'justificada':'pendente';}
 function filtrosSaidasIniciais(){
   if($('sd-mes').value)return;
   $('sd-mes').value=hojeISO().slice(0,7);
@@ -7213,7 +7253,7 @@ function renderSaidas(){
   $('sd-categorias').innerHTML=cats.length?`<div class="painel" style="margin-bottom:16px"><h3 style="font-size:14px;margin-bottom:10px">Por categoria</h3>${cats.map(([n,v])=>`<div class="barra-linha"><span class="nome" title="${esc(n)}">${esc(n)}</span><div class="barra-trilho"><div class="barra-cheia" style="width:${Math.round(v/max*100)}%"></div></div><span class="num">${esc(fmtCurto(v))}</span></div>`).join('')}</div>`:'';
   $('sd-info').innerHTML=PERM.saidasTodas
     ?'<strong>Como funciona:</strong> 1) no fim do mês (ou quando quiser), baixe a fatura/extrato do cartão no Itaú Empresas (OFX, Excel ou PDF) e clique em <em>⬆️ Importar fatura</em> — o que já foi importado é ignorado e o que a pessoa lançou na hora é juntado; 2) quem comprou completa a justificativa; 3) o financeiro clica em <em>✔️ Conferir</em>.'
-    :'<strong>Suas compras:</strong> as compras dos seus cartões aparecem aqui quando o financeiro importa a fatura. Clique em <em>justificar</em> e diga a categoria, para que foi e o cliente/projeto (e anexe a foto da nota). Se preferir, lance na hora da compra em <em>+ Lançar compra</em> — quando a fatura chegar, o sistema junta sozinho.';
+    :'<strong>Suas compras:</strong> as compras dos seus cartões aparecem aqui quando o financeiro importa a fatura. Clique em <em>justificar</em> e diga a categoria, para que foi e o cliente/projeto — ou <em>🏢 Escritório</em> (e anexe a foto da nota). Se preferir, lance na hora da compra em <em>+ Lançar compra</em> — quando a fatura chegar, o sistema junta sozinho.';
   const linha=s=>{
     const c=cartaoPorId(s.cartao_id),cli=clientePorId(s.cliente_id),pj=todosProjetos.find(p=>p.id===s.projeto_id);
     const sit=s.situacao==='pendente'?'<span class="badge badge-atraso">sem justificativa</span>':s.situacao==='justificada'?'<span class="badge badge-hoje">justificada</span>':'<span class="badge badge-ok">conferida</span>';
@@ -7224,7 +7264,7 @@ function renderSaidas(){
         ${s.descricao||s.fornecedor?`<div class="dica" style="margin:0">${esc([s.descricao_extrato&&s.fornecedor?s.fornecedor:'',s.descricao].filter(Boolean).join(' · '))}</div>`:''}</td>
       <td class="num" style="white-space:nowrap"><strong class="${Number(s.valor)<0?'menos':''}">R$ ${esc(fmtMoeda(s.valor))}</strong></td>
       <td>${esc(s.categoria||'—')}</td>
-      <td style="font-size:12px">${cli?esc(rotuloCliente(cli)):''}${pj?`<div class="cod">${esc(pj.codigo)}</div>`:''}</td>
+      <td style="font-size:12px">${s.escritorio?'🏢 Escritório':cli?esc(rotuloCliente(cli)):''}${pj?`<div class="cod">${esc(pj.codigo)}</div>`:''}</td>
       <td>${s.nota_path?`<button class="btn-link" data-sd-nota="${esc(s.id)}" title="Ver a nota">📎</button>`:'<span style="color:#bbb">—</span>'}</td>
       <td>${sit}</td>
       <td style="white-space:nowrap">${pode?`<button class="btn-link" data-sd-ed="${esc(s.id)}">${s.situacao==='pendente'?'justificar':'editar'}</button>`:`<button class="btn-link" data-sd-ed="${esc(s.id)}">ver</button>`}
@@ -7239,11 +7279,25 @@ function renderSaidas(){
   t.querySelectorAll('[data-sd-nota]').forEach(b=>b.onclick=()=>abrirNotaSaida(b.dataset.sdNota));
 }
 /* lançar / justificar */
+// v38: "🏢 Escritório" no cliente ou no projeto = compra do escritório (sem cliente/projeto)
+const ROT_ESCRITORIO='🏢 Escritório',PJ_ESCRITORIO='__escritorio';
+function ehEscritorioTxt(t){return norm(t)==='ESCRITORIO';}
 function mudouClienteSaida(){
-  const c=acharClientePorRotulo($('sd-m-cliente').value);
-  const pjs=todosProjetos.filter(p=>!c||p.cliente_id===c.id);
-  const v=$('sd-m-projeto').value;preencherSelect($('sd-m-projeto'),pjs.map(p=>[p.id,`${p.codigo} · ${p.nome}`]),'—');
-  if(pjs.some(p=>p.id===v))$('sd-m-projeto').value=v;
+  const esc_=ehEscritorioTxt($('sd-m-cliente').value);
+  if(esc_)$('sd-m-cliente').value=ROT_ESCRITORIO;
+  const c=esc_?null:acharClientePorRotulo($('sd-m-cliente').value);
+  const pjs=esc_?[]:todosProjetos.filter(p=>!c||p.cliente_id===c.id);
+  const v=$('sd-m-projeto').value;
+  preencherSelect($('sd-m-projeto'),[[PJ_ESCRITORIO,ROT_ESCRITORIO],...pjs.map(p=>[p.id,`${p.codigo} · ${p.nome}`])],esc_?undefined:'Selecione');
+  if(esc_)$('sd-m-projeto').value=PJ_ESCRITORIO;
+  else if(pjs.some(p=>p.id===v))$('sd-m-projeto').value=v;
+}
+function mudouProjetoSaida(){
+  const v=$('sd-m-projeto').value;
+  if(v===PJ_ESCRITORIO){if(!ehEscritorioTxt($('sd-m-cliente').value)){$('sd-m-cliente').value=ROT_ESCRITORIO;mudouClienteSaida();}return;}
+  // projeto escolhido sem cliente: preenche o cliente do projeto
+  const pj=todosProjetos.find(p=>p.id===v);
+  if(pj&&(!$('sd-m-cliente').value.trim()||ehEscritorioTxt($('sd-m-cliente').value))){const c=clientePorId(pj.cliente_id);if(c){$('sd-m-cliente').value=rotuloCliente(c);mudouClienteSaida();$('sd-m-projeto').value=pj.id;}}
 }
 function mudouFormaSaida(){const cartao=$('sd-m-forma').value==='cartao';$('sd-m-linha-cartao').style.display=cartao?'':'none';}
 function abrirSaida(id){
@@ -7265,8 +7319,9 @@ function abrirSaida(id){
   $('sd-m-categoria').value=s?(s.categoria||''):'';
   if(s&&s.categoria&&!CATEGORIAS_SAIDA.includes(s.categoria))$('sd-m-categoria').insertAdjacentHTML('beforeend',`<option value="${esc(s.categoria)}" selected>${esc(s.categoria)}</option>`);
   $('sd-m-fornecedor').value=s?(s.fornecedor||''):'';$('sd-m-descricao').value=s?(s.descricao||''):'';
-  const cli=s&&s.cliente_id?clientePorId(s.cliente_id):null;$('sd-m-cliente').value=cli?rotuloCliente(cli):'';
-  mudouClienteSaida();$('sd-m-projeto').value=s?(s.projeto_id||''):'';
+  $('dl-clientes-saida').innerHTML=`<option value="${esc(ROT_ESCRITORIO)}">`+$('dl-clientes').innerHTML;
+  const cli=s&&s.cliente_id?clientePorId(s.cliente_id):null;$('sd-m-cliente').value=s&&s.escritorio?ROT_ESCRITORIO:cli?rotuloCliente(cli):'';
+  mudouClienteSaida();if(!(s&&s.escritorio))$('sd-m-projeto').value=s?(s.projeto_id||''):'';
   $('sd-m-empresa').value=s?(s.empresa_id||''):(empresaAtual!=='todas'?empresaAtual:'');
   $('sd-m-comprador').value=s?(s.comprador||''):(quemSou()||'');$('sd-m-obs').value=s?(s.observacoes||''):'';
   $('sd-m-arquivo').value='';
@@ -7295,21 +7350,28 @@ async function salvarSaida(conferir){
   if(forma==='cartao'&&!cartao){alert('Escolha o cartão.');return;}
   const valor=parseMoeda($('sd-m-valor').value);if(valor==null||!$('sd-m-data').value){alert('Informe a data e o valor.');return;}
   if($('sd-m-base-mat').value.trim()&&!(qtdBR($('sd-m-base-qtd').value)>0)){alert('Para levar à base de preços, informe a quantidade comprada (ou apague o material).');return;}
-  const cliTxt=$('sd-m-cliente').value.trim(),cli=acharClientePorRotulo(cliTxt);
-  if(cliTxt&&!cli){alert('Cliente não encontrado. Escolha da lista (ou deixe em branco).');return;}
+  const cliTxt=$('sd-m-cliente').value.trim(),pjSel=$('sd-m-projeto').value;
+  const escritorio=ehEscritorioTxt(cliTxt)||pjSel===PJ_ESCRITORIO,cli=escritorio?null:acharClientePorRotulo(cliTxt);
+  if(cliTxt&&!escritorio&&!cli){alert('Cliente não encontrado. Escolha da lista ou "🏢 Escritório".');return;}
   const atual=saidaEditandoId?todasSaidas.find(x=>x.id===saidaEditandoId):null;
+  // v38: cliente e projeto obrigatórios (ou escritório). Só "reabrir conferência" não cobra.
+  if(conferir!=='reabrir'&&!escritorio){
+    if(!cli){alert('Informe o cliente da compra — ou escolha "🏢 Escritório" se foi para o escritório.');$('sd-m-cliente').focus();return;}
+    if(!pjSel){alert('Escolha o projeto da compra — ou "🏢 Escritório" se foi para o escritório.\nSe o cliente ainda não tem projeto, crie o projeto antes em Projetos.');$('sd-m-projeto').focus();return;}
+  }
   const dados={forma,cartao_id:cartao||null,data:$('sd-m-data').value,valor,categoria:$('sd-m-categoria').value||null,fornecedor:$('sd-m-fornecedor').value.trim()||null,
-    descricao:$('sd-m-descricao').value.trim()||null,cliente_id:cli?cli.id:null,projeto_id:$('sd-m-projeto').value||null,empresa_id:$('sd-m-empresa').value||null,
+    descricao:$('sd-m-descricao').value.trim()||null,cliente_id:cli?cli.id:null,projeto_id:escritorio?null:(pjSel||null),escritorio,empresa_id:$('sd-m-empresa').value||null,
     comprador:$('sd-m-comprador').value.trim()||null,observacoes:$('sd-m-obs').value.trim()||null};
   dados.situacao=situacaoAuto(dados,atual&&atual.situacao);
-  if(conferir===true){if(!dados.categoria||!dados.descricao){alert('Para conferir, preencha a categoria e para que foi a compra.');return;}dados.situacao='conferida';dados.conferido_por=quemSou();dados.conferido_em=new Date().toISOString();}
+  if(conferir===true){if(!dados.categoria||!dados.descricao||!destinoSaidaOk(dados)){alert('Para conferir, preencha a categoria, para que foi a compra e o cliente/projeto (ou escritório).');return;}dados.situacao='conferida';dados.conferido_por=quemSou();dados.conferido_em=new Date().toISOString();}
   if(conferir==='reabrir'){dados.situacao=situacaoAuto(dados);dados.conferido_por=null;dados.conferido_em=null;}
   if(atual&&atual.origem==='extrato'&&!PERM.saidasTodas){delete dados.forma;delete dados.cartao_id;delete dados.data;delete dados.valor;}
   const btn=$('sd-m-salvar');btn.disabled=true;
   try{
     let id=saidaEditandoId;
-    if(id){const{error}=await sb.from('saidas').update(dados).eq('id',id);if(erroSB(error))return;}
-    else{const{data,error}=await sb.from('saidas').insert({...dados,origem:'manual',criado_por:quemSou()}).select().single();if(erroSB(error))return;id=data.id;}
+    const faltaV38=e=>e&&/escritorio/i.test(e.message||'')&&(alert('Falta rodar no Supabase a migração supabase/migracao_crm_v38_redefinir_senha_escritorio.sql.'),true);
+    if(id){const{error}=await sb.from('saidas').update(dados).eq('id',id);if(faltaV38(error)||erroSB(error))return;}
+    else{const{data,error}=await sb.from('saidas').insert({...dados,origem:'manual',criado_por:quemSou()}).select().single();if(faltaV38(error)||erroSB(error))return;id=data.id;}
     const f=$('sd-m-arquivo').files[0];
     if(f){
       const caminho=`saidas/${id}/${Date.now()}_${nomeArquivoSeguro(f.name)}`;
