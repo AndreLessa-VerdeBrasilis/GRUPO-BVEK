@@ -60,7 +60,7 @@ returns text
 language plpgsql volatile security definer set search_path = public as $$
 declare prot text; tent integer := 0;
 begin
-  if not public.bvek_ativo() then raise exception 'Sem acesso.'; end if;
+  if public.bvek_perfil() is null then raise exception 'Sem acesso.'; end if;
   if coalesce(trim(p_descricao), '') = '' or length(trim(p_descricao)) < 10 then raise exception 'Descreva o que aconteceu.'; end if;
   loop
     tent := tent + 1;
@@ -79,7 +79,7 @@ returns table (protocolo text, categoria text, recebida_em date, situacao text, 
 language sql stable security definer set search_path = public as $$
   select d.protocolo, d.categoria, d.recebida_em, d.situacao, d.resposta, d.respondida_em
     from public.denuncias d
-   where public.bvek_ativo()
+   where public.bvek_perfil() is not null
      and d.protocolo = upper(trim(p_protocolo))
 $$;
 
@@ -118,7 +118,7 @@ returns table (id uuid, titulo text, conteudo text, link text, atualizado_em tim
 language sql stable security definer set search_path = public as $$
   select p.id, p.titulo, p.conteudo, p.link, p.atualizado_em
     from public.politicas p
-   where public.bvek_ativo() and p.publicada
+   where public.bvek_perfil() is not null and p.publicada
    order by p.ordem, p.titulo
 $$;
 revoke all on function public.bvek_politicas_publicadas() from public, anon;
