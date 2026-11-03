@@ -1,10 +1,13 @@
 // =====================================================================
-// CRM Grupo BVEK — função "outlook-agenda" (Supabase Edge Function) · v41
-// Liga o CRONOGRAMA do CRM a um calendário do Outlook (ida e volta), pelo
+// CRM Grupo BVEK — função "outlook-agenda" (Supabase Edge Function) · v42
+// Liga o CRONOGRAMA do CRM ao calendário do Outlook (ida e volta), pelo
 // Microsoft Graph, com os MESMOS segredos do e-mail:
-//   MS_TENANT_ID, MS_CLIENT_ID, MS_CLIENT_SECRET, MS_REMETENTE
-// Opcional: OUTLOOK_AGENDA = caixa cujo calendário recebe o cronograma
-//           (sem ele, usa a MS_REMETENTE — a mesma caixa do envio de e-mails).
+//   MS_TENANT_ID, MS_CLIENT_ID, MS_CLIENT_SECRET
+// v42: cada evento vai pela agenda de QUEM está usando o CRM (o e-mail do
+//      login), e não mais por uma caixa fixa. A caixa fica gravada na alocação
+//      (outlook_caixa) para alterar/apagar o evento no lugar certo depois.
+//      Eventos antigos (v41, sem caixa gravada) estavam na caixa OUTLOOK_AGENDA
+//      ou MS_REMETENTE: ao serem alterados, passam para a agenda de quem alterou.
 //
 // O aplicativo do Azure precisa da permissão de APLICATIVO "Calendars.ReadWrite"
 // com consentimento do administrador (veja LEIA-ME.md).
@@ -51,11 +54,15 @@ async function tokenM365(): Promise<string> {
   cacheToken = { v: b.access_token, ate: Date.now() + 50 * 60 * 1000 };
   return b.access_token;
 }
-function caixa(): string {
-  const c = Deno.env.get("OUTLOOK_AGENDA") || Deno.env.get("MS_REMETENTE");
-  if (!c) throw new Error("Falta informar a caixa do calendário (segredo OUTLOOK_AGENDA ou MS_REMETENTE).");
-  return c;
+// caixa usada na v41 (só para achar eventos antigos, sem caixa gravada)
+function caixaLegada(): string | null {
+  return Deno.env.get("OUTLOOK_AGENDA") || Deno.env.get("MS_REMETENTE") || null;
 }
+// caixa onde está o evento de uma alocação
+function caixaDaLinha(l: Linha): string | null {
+  return l.outlook_caixa || (l.outlook_id ? caixaLegada() : null);
+}
+const mesmaCaixa = (a: string | null, b: string | null) => !!a && !!b && a.toLowerCase().trim() === b.toLowerCase().trim();
 async function graph(metodo: string, caminho: string, corpo?: unknown): Promise<{ ok: boolean; status: number; b: any }> {
   const tok = await tokenM365();
   const r = await fetch(caminho.startsWith("http") ? caminho : GRAPH + caminho, {
@@ -70,7 +77,10 @@ async function graph(metodo: string, caminho: string, corpo?: unknown): Promise<
   let b: any = null;
   try { b = txt ? JSON.parse(txt) : null; } catch { b = txt; }
   if (r.status === 401 || r.status === 403) {
-    throw new Error("O aplicativo do Microsoft 365 ainda não tem permissão no calendário (Calendars.ReadWrite). Peça ao administrador do Microsoft 365 para liberar. " + (b?.error?.message || ""));
+    throw new Error("O aplicativo do Microsoft 365 ainda não tem permissão neste calendário (Calendars.ReadWrite). Peça ao administrador do Microsoft 365 para liberar. " + (b?.error?.message || ""));
+  }
+  if (r.status === 404 && /MailboxNotEnabledForRESTAPI|ResourceNotFound|ErrorInvalidUser|MailboxNotFound/i.test(String(b?.error?.code || "")) && /\/users\/[^/]+\/(calendar|calendar\/calendarView|events)(\?|$)/.test(caminho)) {
+    throw new Error("Não achei a agenda do Outlook do seu login no Microsoft 365. O e-mail do seu login no CRM precisa ser o mesmo da sua caixa do Microsoft 365.");
   }
   return { ok: r.ok, status: r.status, b };
 }
@@ -121,16 +131,20 @@ async function carregarApoio(adm: SupabaseClient) {
 }
 
 // envia uma alocação para o Outlook (cria / atualiza / apaga)
-async function enviarLinha(adm: SupabaseClient, l: Linha, apoio: Awaited<ReturnType<typeof carregarApoio>>): Promise<string> {
-  const cx = encodeURIComponent(caixa());
+async function apagarEvento(caixaEv: string | null, idEv: string) {
+  if (!caixaEv) return;
+  const r = await graph("DELETE", `/users/${encodeURIComponent(caixaEv)}/events/${encodeURIComponent(idEv)}`);
+  if (!r.ok && r.status !== 404) throw new Error("Outlook não apagou o evento: " + (r.b?.error?.message || r.status));
+}
+async function enviarLinha(adm: SupabaseClient, l: Linha, apoio: Awaited<ReturnType<typeof carregarApoio>>, minhaCaixa: string): Promise<string> {
+  const caixaEv = caixaDaLinha(l);
   if (l.situacao === "cancelado") {
-    if (l.outlook_id) {
-      const r = await graph("DELETE", `/users/${cx}/events/${encodeURIComponent(l.outlook_id)}`);
-      if (!r.ok && r.status !== 404) throw new Error("Outlook não apagou o evento: " + (r.b?.error?.message || r.status));
-    }
-    await adm.from("cronograma").update({ outlook_id: null, outlook_sync_em: new Date().toISOString(), outlook_erro: null }).eq("id", l.id);
+    if (l.outlook_id) await apagarEvento(caixaEv, l.outlook_id);
+    await adm.from("cronograma").update({ outlook_id: null, outlook_icaluid: null, outlook_sync_em: new Date().toISOString(), outlook_erro: null }).eq("id", l.id);
     return "apagado";
   }
+  // evento antigo (v41) na caixa fixa: passa para a agenda de quem está alterando
+  const legado = !!l.outlook_id && !l.outlook_caixa && !mesmaCaixa(caixaEv, minhaCaixa);
   const proj = apoio.projs.find((x) => x.id === l.projeto_id) || null;
   const cli = apoio.clis.find((x) => x.id === (l.cliente_id || proj?.cliente_id)) || null;
   const fs = (l.funcionarios || []).map((id: string) => apoio.funcs.find((x) => x.id === id)).filter(Boolean) as Linha[];
@@ -146,19 +160,24 @@ async function enviarLinha(adm: SupabaseClient, l: Linha, apoio: Awaited<ReturnT
     categories: ["Cronograma"],
     singleValueExtendedProperties: [{ id: PROP, value: l.id }],
   };
-  let r = l.outlook_id ? await graph("PATCH", `/users/${cx}/events/${encodeURIComponent(l.outlook_id)}`, ev) : null;
-  if (r && r.status === 404) r = null; // apagado no Outlook: cria de novo
-  if (!r) r = await graph("POST", `/users/${cx}/events`, ev);
+  let r = l.outlook_id && !legado ? await graph("PATCH", `/users/${cx}/events/${encodeURIComponent(l.outlook_id)}`, ev) : null;
+  let caixaFinal = l.outlook_id && !legado ? (caixaEv || minhaCaixa) : minhaCaixa;
+  if (r && r.status === 404) { r = null; caixaFinal = minhaCaixa; } // apagado no Outlook: cria de novo na agenda de quem enviou
+  if (!r) r = await graph("POST", `/users/${encodeURIComponent(caixaFinal)}/events`, ev);
   if (!r.ok) {
     const msg = r.b?.error?.message || String(r.status);
     await adm.from("cronograma").update({ outlook_erro: msg.slice(0, 300) }).eq("id", l.id);
     throw new Error("Outlook recusou o evento: " + msg);
   }
+  if (legado && l.outlook_id) {
+    try { await apagarEvento(caixaEv, l.outlook_id); } catch (_) { /* o evento antigo fica; o CRM já aponta para o novo */ }
+  }
   await adm.from("cronograma").update({
-    outlook_id: r.b.id, outlook_alterado_em: r.b.lastModifiedDateTime || new Date().toISOString(),
+    outlook_id: r.b.id, outlook_caixa: caixaFinal, outlook_icaluid: r.b.iCalUId || null,
+    outlook_alterado_em: r.b.lastModifiedDateTime || new Date().toISOString(),
     outlook_sync_em: new Date().toISOString(), outlook_erro: null,
   }).eq("id", l.id);
-  return l.outlook_id ? "atualizado" : "criado";
+  return l.outlook_id && !legado ? "atualizado" : "criado";
 }
 
 // lê do evento o que importa para o CRM
@@ -190,16 +209,16 @@ function lerEvento(ev: any, apoio: Awaited<ReturnType<typeof carregarApoio>>) {
   };
 }
 
-async function sincronizar(adm: SupabaseClient, inicio: string, fim: string) {
+async function sincronizar(adm: SupabaseClient, inicio: string, fim: string, minhaCaixa: string) {
   const apoio = await carregarApoio(adm);
-  const cx = encodeURIComponent(caixa());
+  const cx = encodeURIComponent(minhaCaixa);
   const res = { importados: 0, atualizados_no_crm: 0, cancelados_no_crm: 0, enviados: 0, erros: [] as string[], meses: new Set<string>() };
   const marcaMeses = (a: string, b: string) => mesesEntre(a, b).forEach((m) => res.meses.add(m));
 
   // 1. eventos do Outlook no período
   const eventos: any[] = [];
   let url: string | null = `/users/${cx}/calendar/calendarView?startDateTime=${inicio}T00:00:00-03:00&endDateTime=${somaDias(fim, 1)}T00:00:00-03:00` +
-    `&$top=200&$select=id,subject,start,end,isAllDay,attendees,lastModifiedDateTime,isCancelled,location,bodyPreview,type` +
+    `&$top=200&$select=id,iCalUId,isOrganizer,subject,start,end,isAllDay,attendees,lastModifiedDateTime,isCancelled,location,bodyPreview,type` +
     `&$expand=${encodeURIComponent(`singleValueExtendedProperties($filter=id eq '${PROP}')`)}`;
   while (url) {
     const r = await graph("GET", url);
@@ -217,6 +236,10 @@ async function sincronizar(adm: SupabaseClient, inicio: string, fim: string) {
   [...(linhasPer || []), ...(linhasEv || [])].forEach((l: Linha) => linhas.set(l.id, l));
   const porOutlook = new Map<string, Linha>();
   linhas.forEach((l) => { if (l.outlook_id) porOutlook.set(l.outlook_id, l); });
+  // eventos que já são de uma alocação (mesmo evento visto na agenda de outra pessoa)
+  const uids = [...new Set(eventos.map((e) => e.iCalUId).filter(Boolean))] as string[];
+  const { data: linhasUid } = uids.length ? await adm.from("cronograma").select("id,outlook_icaluid").in("outlook_icaluid", uids.slice(0, 500)) : { data: [] };
+  const uidConhecido = new Set((linhasUid || []).map((x: Linha) => x.outlook_icaluid));
   const vistos = new Set<string>();
 
   for (const ev of eventos) {
@@ -224,11 +247,16 @@ async function sincronizar(adm: SupabaseClient, inicio: string, fim: string) {
       const idCrm = (ev.singleValueExtendedProperties || [])[0]?.value || null;
       let l = porOutlook.get(ev.id) || (idCrm ? linhas.get(idCrm) : undefined);
       if (!l && idCrm) { const { data } = await adm.from("cronograma").select("*").eq("id", idCrm).maybeSingle(); l = data || undefined; }
+      // evento de uma alocação, mas guardado na agenda de outra pessoa: quem cuida é a dona do evento
+      if (l && l.outlook_id && l.outlook_id !== ev.id && !mesmaCaixa(caixaDaLinha(l), minhaCaixa)) { vistos.add(l.id); continue; }
       if (ev.isCancelled) continue; // cancelado = tratado como apagado (abaixo)
       const e = lerEvento(ev, apoio);
       if (l) {
         vistos.add(l.id);
-        if (!l.outlook_id || l.outlook_id !== ev.id) await adm.from("cronograma").update({ outlook_id: ev.id }).eq("id", l.id);
+        if (!l.outlook_id || l.outlook_id !== ev.id || !l.outlook_caixa) {
+          await adm.from("cronograma").update({ outlook_id: ev.id, outlook_caixa: minhaCaixa, outlook_icaluid: ev.iCalUId || null }).eq("id", l.id);
+          l = { ...l, outlook_id: ev.id, outlook_caixa: minhaCaixa };
+        }
         if (l.situacao === "cancelado") continue; // será apagado no passo 4
         const mudouOutlook = new Date(ev.lastModifiedDateTime).getTime() > new Date(l.outlook_alterado_em || 0).getTime() + 2000;
         const mudouCrm = !l.outlook_sync_em || new Date(l.atualizado_em).getTime() > new Date(l.outlook_sync_em).getTime() + 2000;
@@ -244,16 +272,19 @@ async function sincronizar(adm: SupabaseClient, inicio: string, fim: string) {
           if (difere) { Object.assign(dados, novo); res.atualizados_no_crm++; marcaMeses(l.data_inicio, l.data_fim); marcaMeses(e.ini, e.fim); }
           await adm.from("cronograma").update(dados).eq("id", l.id);
         } else if (mudouCrm) {
-          await enviarLinha(adm, { ...l, outlook_id: ev.id }, apoio); res.enviados++;
+          await enviarLinha(adm, { ...l, outlook_id: ev.id }, apoio, minhaCaixa); res.enviados++;
         }
         continue;
       }
-      // evento novo no Outlook: só vira alocação se tiver funcionário
+      // evento novo no Outlook: só vira alocação se tiver funcionário, se quem sincroniza
+      // for o organizador (convite recebido não conta) e se ainda não for de outra alocação
       if (!e.funcs.length || !e.ini) continue;
+      if (ev.isOrganizer === false) continue;
+      if (ev.iCalUId && uidConhecido.has(ev.iCalUId)) continue;
       const { data: ins, error } = await adm.from("cronograma").insert({
         titulo: e.titulo, projeto_id: e.projeto_id, cliente_id: e.cliente_id, local: e.local,
         data_inicio: e.ini, data_fim: e.fim, sabado: e.sab, domingo: e.dom, funcionarios: e.funcs,
-        origem: "outlook", outlook_id: ev.id, outlook_alterado_em: ev.lastModifiedDateTime,
+        origem: "outlook", outlook_id: ev.id, outlook_caixa: minhaCaixa, outlook_icaluid: ev.iCalUId || null, outlook_alterado_em: ev.lastModifiedDateTime,
         outlook_sync_em: new Date().toISOString(), criado_por: "Outlook",
       }).select().single();
       if (error) { if (!/duplicate/i.test(error.message)) res.erros.push(error.message); continue; }
@@ -264,8 +295,10 @@ async function sincronizar(adm: SupabaseClient, inicio: string, fim: string) {
   // 3. ligadas ao Outlook que não apareceram: apagadas, canceladas ou mudaram de período
   for (const l of linhas.values()) {
     if (vistos.has(l.id) || !l.outlook_id || l.situacao !== "ativo") continue;
+    const cxl = caixaDaLinha(l);
+    if (!cxl) continue;
     try {
-      const r = await graph("GET", `/users/${cx}/events/${encodeURIComponent(l.outlook_id)}?$select=id,isCancelled,start,end,isAllDay,lastModifiedDateTime`);
+      const r = await graph("GET", `/users/${encodeURIComponent(cxl)}/events/${encodeURIComponent(l.outlook_id)}?$select=id,isCancelled,start,end,isAllDay,lastModifiedDateTime`);
       if (r.status === 404 || (r.ok && r.b.isCancelled)) {
         await adm.from("cronograma").update({ situacao: "cancelado", outlook_id: null, outlook_erro: "apagado no Outlook", outlook_sync_em: new Date().toISOString() }).eq("id", l.id);
         res.cancelados_no_crm++; marcaMeses(l.data_inicio, l.data_fim);
@@ -284,7 +317,7 @@ async function sincronizar(adm: SupabaseClient, inicio: string, fim: string) {
     const precisa = l.situacao === "cancelado" ? !!l.outlook_id
       : !l.outlook_id || !l.outlook_sync_em || new Date(l.atualizado_em).getTime() > new Date(l.outlook_sync_em).getTime() + 2000;
     if (!precisa) continue;
-    try { await enviarLinha(adm, l, apoio); res.enviados++; } catch (err) { res.erros.push(String((err as Error).message || err)); }
+    try { await enviarLinha(adm, l, apoio, minhaCaixa); res.enviados++; } catch (err) { res.erros.push(String((err as Error).message || err)); }
   }
   return { ...res, meses: [...res.meses].sort() };
 }
@@ -299,28 +332,31 @@ Deno.serve(async (req) => {
     if (eu || !user) return json({ erro: "Sessão inválida. Saia e entre de novo no CRM." }, 401);
     const { data: perfil } = await adm.from("perfis").select("perfil,ativo").eq("id", user.id).maybeSingle();
     if (!perfil || perfil.ativo === false || !["administrador", "administrativo"].includes(perfil.perfil)) return json({ erro: "Sem permissão." }, 403);
+    // v42: a agenda usada é a do próprio usuário (e-mail do login)
+    const minhaCaixa = String(user.email || "").trim();
+    if (!minhaCaixa || /@funcionario\.bvek\.com\.br$/i.test(minhaCaixa)) return json({ ok: false, erro: "Seu login não tem e-mail do Microsoft 365 para a agenda." }, 400);
 
     const p = await req.json().catch(() => ({}));
     const acao = String(p.acao || "");
     if (acao === "status") {
       try {
-        const r = await graph("GET", `/users/${encodeURIComponent(caixa())}/calendar?$select=id,name`);
+        const r = await graph("GET", `/users/${encodeURIComponent(minhaCaixa)}/calendar?$select=id,name`);
         if (!r.ok) return json({ ok: false, erro: r.b?.error?.message || String(r.status) });
-        return json({ ok: true, caixa: caixa(), calendario: r.b.name });
+        return json({ ok: true, caixa: minhaCaixa, calendario: r.b.name });
       } catch (e) { return json({ ok: false, erro: String((e as Error).message || e) }); }
     }
     if (acao === "enviar") {
       const { data: l } = await adm.from("cronograma").select("*").eq("id", String(p.id || "")).maybeSingle();
       if (!l) return json({ erro: "Alocação não encontrada." }, 404);
       const apoio = await carregarApoio(adm);
-      const feito = await enviarLinha(adm, l, apoio);
-      return json({ ok: true, feito });
+      const feito = await enviarLinha(adm, l, apoio, minhaCaixa);
+      return json({ ok: true, feito, caixa: minhaCaixa });
     }
     if (acao === "sincronizar") {
       const ok = (s: unknown) => /^\d{4}-\d{2}-\d{2}$/.test(String(s || ""));
       if (!ok(p.inicio) || !ok(p.fim) || p.fim < p.inicio) return json({ erro: "Período inválido." }, 400);
       if (mesesEntre(p.inicio, p.fim).length > 4) return json({ erro: "Sincronize no máximo 3 meses por vez." }, 400);
-      return json({ ok: true, ...(await sincronizar(adm, p.inicio, p.fim)) });
+      return json({ ok: true, caixa: minhaCaixa, ...(await sincronizar(adm, p.inicio, p.fim, minhaCaixa)) });
     }
     return json({ erro: "Ação desconhecida." }, 400);
   } catch (e) {

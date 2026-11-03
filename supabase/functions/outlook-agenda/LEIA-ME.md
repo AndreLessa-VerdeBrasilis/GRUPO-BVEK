@@ -14,8 +14,19 @@ nos dois sentidos:
 A sincronização roda ao abrir a aba Cronograma, ao trocar de mês e no botão
 **🔄 Sincronizar com Outlook**. Cada alocação salva no CRM vai na hora para o Outlook.
 
-Calendário usado: o da caixa `MS_REMETENTE` (a mesma do envio de e-mails).
-Para usar outra caixa, crie o segredo `OUTLOOK_AGENDA` com o e-mail dela.
+**Agenda usada (v42): a de quem está usando o CRM.** Cada alocação vira evento na agenda
+do Outlook do e-mail do login de quem lançou (o convite aos funcionários sai em nome dessa
+pessoa). A caixa fica gravada na alocação; se outra pessoa alterar a alocação depois, o
+evento continua na agenda de quem criou. A sincronização lê a agenda de quem clicou em
+**🔄 Sincronizar** — só eventos em que essa pessoa é a organizadora viram alocação (convite
+recebido não duplica).
+
+O e-mail do login no CRM precisa ser o mesmo da caixa do Microsoft 365. Eventos antigos
+(da v41, que ficavam na caixa `OUTLOOK_AGENDA`/`MS_REMETENTE`) passam para a agenda de
+quem os alterar.
+
+Se o administrador do Microsoft 365 tiver limitado o aplicativo a algumas caixas
+(*Application Access Policy*), inclua as caixas de quem usa o Cronograma.
 
 ## Como ligar (uma vez só)
 
