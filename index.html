@@ -2129,7 +2129,7 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
       <div class="campo full"><label>Favorecido / fornecedor *</label><input type="text" id="pg-favorecido" placeholder="Ex.: Leroy Merlin" list="dl-fornecedores"></div>
       <div class="campo"><label>Valor (R$)</label><input type="text" inputmode="numeric" id="pg-valor" oninput="mascaraMoeda(this)" placeholder="0,00"></div>
       <div class="campo"><label>Vencimento</label><input type="date" id="pg-vencimento"></div>
-      <div class="campo"><label>Banco</label><input type="text" id="pg-banco" list="dl-bancos" placeholder="Itaú Empresas"></div>
+      <div class="campo"><label>Banco</label><select id="pg-banco"></select></div>
       <div class="campo"><label>Empresa</label><select id="pg-empresa"></select></div>
       <div class="campo full" id="pg-linha-periodo"><label>Prazo de aviso — alertar o André (deixe em branco para avisar sempre)</label>
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="dica" style="margin:0">de</span><input type="date" id="pg-aviso-ini" style="flex:1;min-width:140px"><span class="dica" style="margin:0">até</span><input type="date" id="pg-aviso-fim" style="flex:1;min-width:140px"></div>
@@ -2296,7 +2296,7 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
 <datalist id="dl-materiais"></datalist>
 <datalist id="dl-unidades"><option value="un"><option value="m"><option value="m²"><option value="m³"><option value="kg"><option value="t"><option value="L"><option value="saco"><option value="caixa"><option value="pç"><option value="rolo"><option value="galão"><option value="h"><option value="diária"><option value="mês"><option value="vb"><option value="viagem"><option value="muda"></datalist>
 
-<datalist id="dl-bancos"><option value="Itaú Empresas"><option value="Inter"><option value="Bradesco"><option value="Banco do Brasil"><option value="Caixa"><option value="Santander"></datalist>
+<datalist id="dl-bancos"><option value="Itaú Empresas"><option value="Asaas"><option value="Inter"><option value="Bradesco"><option value="Banco do Brasil"><option value="Caixa"><option value="Santander"></datalist>
 
 <!-- MODAL CONFIGURAÇÃO DO WHATSAPP (v20, só administrador) -->
 <div class="modal-overlay" id="modal-whatsapp">
@@ -4343,6 +4343,22 @@ function renovarDocumento(){
   $('md-emissao').value=hojeISO();sugerirValidadeDoc();
   $('md-validade').focus();
 }
+// v40: o mesmo documento (mesmo tipo, mesmo titular e mesma descrição) só tem UMA versão valendo.
+// Ao salvar outra, a anterior vai para o histórico (o banco faz o mesmo, mesmo se duas pessoas salvarem juntas).
+function chaveDoc(d){return[d.tipo_id,d.funcionario_id?'f:'+d.funcionario_id:'e:'+(d.empresa_id||''),norm(d.descricao||'')].join('|');}
+async function outrasVersoesVigentes(dados,ignorarIds){
+  let q=sb.from('documentos').select('*').eq('situacao','vigente').eq('tipo_id',dados.tipo_id);
+  q=dados.funcionario_id?q.eq('funcionario_id',dados.funcionario_id):(dados.empresa_id?q.is('funcionario_id',null).eq('empresa_id',dados.empresa_id):q.is('funcionario_id',null).is('empresa_id',null));
+  const{data,error}=await q;if(error){console.warn(error);return[];}
+  const k=chaveDoc(dados),ign=[].concat(ignorarIds||[]);
+  return(data||[]).filter(x=>!ign.includes(x.id)&&chaveDoc(x)===k);
+}
+function descrVersoesDoc(l){return l.map(x=>`• válido até ${x.data_validade?fmtData(x.data_validade):'(sem vencimento)'}${x.numero?' · nº '+x.numero:''} — lançado ${x.criado_por?'por '+x.criado_por+' ':''}em ${fmtDataHora(x.atualizado_em||x.criado_em)}`).join('\n');}
+async function substituirVersoesDoc(l,novoId){
+  if(!l.length)return;
+  const{error}=await sb.from('documentos').update({situacao:'substituido',substituido_por:novoId,atualizado_em:new Date().toISOString()}).in('id',l.map(x=>x.id)).eq('situacao','vigente');
+  if(error)console.warn('versões anteriores',error);
+}
 async function salvarDocumento(){
   if(!PERM.docs)return;
   const cat=titularSelecionado();
@@ -4366,14 +4382,24 @@ async function salvarDocumento(){
   const btn=$('md-btn-salvar');btn.disabled=true;
   try{
     let id=docEditandoId;
-    if(id){const{error}=await sb.from('documentos').update(dados).eq('id',id);if(erroSB(error))return;}
+    // v40: confere no banco (na hora) se já há outra versão valendo deste mesmo documento
+    const docAtual=id?todosDocumentos.find(x=>x.id===id):null;
+    const outras=(!id||(docAtual&&(docAtual.situacao||'vigente')==='vigente'))?await outrasVersoesVigentes(dados,[id,docRenovandoDe].filter(Boolean)):[];
+    if(outras.length){
+      const msg=docRenovandoDe
+        ?`Este documento já foi atualizado por outra pessoa:\n${descrVersoesDoc(outras)}\n\nSe continuar, a SUA versão passa a valer e a outra vai para o histórico (não fica duplicado).\n\nOK = salvar a minha · Cancelar = não salvar`
+        :`Já existe este mesmo documento valendo (${nomeDoc(dados)}):\n${descrVersoesDoc(outras)}\n\nSe continuar, ${outras.length>1?'eles vão':'ele vai'} para o histórico e fica só esta versão (o aviso ${outras.length>1?'deles':'dele'} some).\n\nOK = salvar e substituir · Cancelar = não salvar`;
+      if(!confirm(msg))return;
+    }
+    if(id){const{error}=await sb.from('documentos').update(dados).eq('id',id);if(erroSB(error))return;await substituirVersoesDoc(outras,id);}
     else{
       dados.situacao='vigente';dados.criado_por=usuario?usuario.email:null;
       const{data,error}=await sb.from('documentos').insert(dados).select().single();if(erroSB(error))return;id=data.id;
       if(docRenovandoDe){
-        const{error:e2}=await sb.from('documentos').update({situacao:'substituido',substituido_por:id,atualizado_em:new Date().toISOString()}).eq('id',docRenovandoDe);
+        const{error:e2}=await sb.from('documentos').update({situacao:'substituido',substituido_por:id,atualizado_em:new Date().toISOString()}).eq('id',docRenovandoDe).eq('situacao','vigente');
         if(erroSB(e2,'A versão nova foi salva, mas a antiga não foi para o histórico'))return;
       }
+      await substituirVersoesDoc(outras,id);
     }
     if(arq){
       const emp=empresaPorId(empId);
@@ -4389,7 +4415,7 @@ async function salvarDocumento(){
     }
     fecharModal('modal-documento');
     await carregarDocumentos();atualizarDatalists();renderTabAtual();
-    toast(docRenovandoDe?'Renovação registrada — a versão anterior foi para o histórico':'Documento salvo');
+    toast(docRenovandoDe||outras.length?'Documento atualizado — a versão anterior foi para o histórico':'Documento salvo');
     docRenovandoDe=null;arquivoDocNovo=null;
   }finally{btn.disabled=false;}
 }
@@ -4397,8 +4423,11 @@ async function arquivarDocumento(){
   const d=todosDocumentos.find(x=>x.id===docEditandoId);if(!d||!PERM.docs)return;
   const reativar=d.situacao==='arquivado';
   if(!reativar&&!confirm('Arquivar este documento? Ele deixa de gerar avisos (use quando a empresa não precisa mais dele). Nada é apagado.'))return;
+  const outras=reativar?await outrasVersoesVigentes(d,d.id):[];
+  if(outras.length&&!confirm(`Já existe outra versão deste documento valendo:\n${descrVersoesDoc(outras)}\n\nAo reativar este, a outra vai para o histórico (não fica duplicado). Continuar?`))return;
   const{error}=await sb.from('documentos').update({situacao:reativar?'vigente':'arquivado',atualizado_em:new Date().toISOString()}).eq('id',d.id);
   if(erroSB(error))return;
+  await substituirVersoesDoc(outras,d.id);
   fecharModal('modal-documento');await carregarDocumentos();renderTabAtual();toast(reativar?'Documento reativado':'Documento arquivado');
 }
 async function excluirDocumento(){
@@ -6975,6 +7004,7 @@ async function salvarFolha(){
 
 /* ================= FINANCEIRO (v20): PAGAMENTOS A AUTORIZAR + WHATSAPP ================= */
 let todosPagamentos=[],pagamentoEditandoId=null,finSub='pagamentos',v20Ok=true,waConfig=null;
+const BANCOS_PAGAMENTO=['Itaú Empresas','Asaas','Inter'];
 const SITUACAO_PG={pendente:'Aguardando autorização',autorizado:'Autorizado',cancelado:'Cancelado'};
 function avisarMigracaoV20(){
   v20Ok=false;
@@ -7060,7 +7090,10 @@ function abrirPagamento(id){
   preencherSelect($('pg-empresa'),todasEmpresas.map(e=>[e.id,`${e.nome} (${e.sigla})`]),'—');
   $('pg-titulo').textContent=p?'Pagamento a autorizar':'Novo pagamento a autorizar';
   $('pg-favorecido').value=p?p.favorecido:'';$('pg-valor').value=p&&p.valor!=null?fmtMoeda(p.valor):'';
-  $('pg-vencimento').value=p&&p.vencimento?p.vencimento:'';$('pg-banco').value=p?(p.banco||''):'Itaú Empresas';
+  $('pg-vencimento').value=p&&p.vencimento?p.vencimento:'';
+  // v40: banco escolhido numa lista (Itaú Empresas, Asaas, Inter); um banco antigo diferente continua aparecendo
+  const bancoAtual=p?(p.banco||''):'Itaú Empresas',bancos=BANCOS_PAGAMENTO.concat(bancoAtual&&!BANCOS_PAGAMENTO.includes(bancoAtual)?[bancoAtual]:[]);
+  $('pg-banco').innerHTML=(bancoAtual?'':'<option value="">—</option>')+bancos.map(b=>`<option value="${esc(b)}">${esc(b)}</option>`).join('');$('pg-banco').value=bancoAtual;
   $('pg-empresa').value=p?(p.empresa_id||''):(empresaAtual!=='todas'?empresaAtual:'');
   $('pg-descricao').value=p?(p.descricao||''):'';$('pg-obs').value=p?(p.observacoes||''):'';
   $('pg-linha-periodo').style.display=v32PagOk?'':'none';
