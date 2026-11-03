@@ -29,8 +29,6 @@ begin
      set encrypted_password = extensions.crypt(p_senha, extensions.gen_salt('bf')),
          updated_at = now()
    where id = p_usuario;
-  -- volta a ser "senha provisória": o funcionário (CPF) cria a dele no próximo acesso
-  update public.perfis set senha_definida_em = null where id = p_usuario;
   return v_email;
 end $$;
 
