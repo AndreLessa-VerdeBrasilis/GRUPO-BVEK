@@ -50,8 +50,8 @@ button{font-family:inherit}
 .cc-btns{display:flex;gap:8px}
 .cc-btns button{padding:9px 14px;border-radius:8px;border:1.5px solid var(--verde);background:#fff;color:var(--verde);font-weight:600;font-size:13px;cursor:pointer}
 .cc-btns button.cc-prim{background:var(--verde);color:#fff}
-.cc-abas{display:flex;gap:8px;margin-bottom:12px}
-.cc-abas button{flex:1;padding:10px;border-radius:10px;border:1.5px solid var(--verde);background:#fff;color:var(--verde);font-weight:600;font-size:14px;cursor:pointer}
+.cc-abas{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+.cc-abas button{flex:1 1 30%;min-width:0;padding:10px;border-radius:10px;border:1.5px solid var(--verde);background:#fff;color:var(--verde);font-weight:600;font-size:14px;cursor:pointer}
 .cc-abas button.ativo{background:var(--verde);color:#fff}
 .cc-ponto-tab{background:#fff;border-radius:12px;box-shadow:0 1px 4px rgba(0,0,0,.06);overflow-x:auto}
 .cc-ponto-tab table{border-collapse:collapse;width:100%;font-size:13px;font-variant-numeric:tabular-nums}
@@ -66,6 +66,24 @@ button{font-family:inherit}
 .cc-aviso{background:#fff;border-radius:12px;padding:14px 16px;box-shadow:0 1px 4px rgba(0,0,0,.06);border-left:4px solid var(--verde)}.cc-aviso strong{font-size:15px}.cc-aviso p{font-size:14px;margin-top:6px;line-height:1.5}
 .cc-termo{max-height:220px;overflow:auto;border:1px solid var(--borda);border-radius:8px;padding:10px 12px;font-size:12.5px;line-height:1.5;color:var(--texto2);background:#fafafa}.cc-termo p{margin:0 0 6px}
 .cc-vazio{background:#fff;border-radius:12px;padding:28px 20px;text-align:center;color:var(--texto2);font-size:14px;line-height:1.6}
+/* v42: canal de denúncias e políticas da empresa (acesso por CPF) */
+.den-hero{background:linear-gradient(135deg,#f3f7fb,#eef6ee);border:1px solid var(--borda);border-radius:14px;padding:22px 20px;margin-bottom:14px;text-align:center}
+.den-hero .den-ico{font-size:40px;line-height:1}
+.den-hero h2{font-size:20px;color:var(--verde);margin:8px 0 6px}
+.den-hero p{font-size:14px;color:var(--texto);line-height:1.55}
+.den-garantias{list-style:none;text-align:left;margin:14px auto 0;max-width:460px;font-size:13px;line-height:1.5;padding:0}
+.den-garantias li{background:#fff;border-radius:8px;padding:8px 10px;margin-top:6px}
+.den-form .campo{margin-top:12px}.den-form .campo:first-child{margin-top:0}
+.den-form label{font-size:13px;font-weight:600;display:block;margin-bottom:4px}
+.den-form input,.den-form select,.den-form textarea{width:100%;padding:10px;border:1.5px solid var(--borda);border-radius:8px;font-size:14px;font-family:inherit}
+.den-prot{font-size:24px;font-weight:800;letter-spacing:2px;color:var(--verde);text-align:center;background:var(--verde-claro);border-radius:10px;padding:12px;margin:10px 0;user-select:all}
+.cc-pol{background:#fff;border-radius:12px;box-shadow:0 1px 4px rgba(0,0,0,.06);border-left:4px solid var(--verde)}
+.cc-pol summary{padding:14px 16px;font-weight:700;font-size:15px;cursor:pointer;list-style:none}
+.cc-pol summary::-webkit-details-marker{display:none}
+.cc-pol summary::after{content:'▾';float:right;color:var(--texto2)}
+.cc-pol[open] summary::after{content:'▴'}
+.cc-pol .cc-pol-txt{padding:0 16px 14px;font-size:14px;line-height:1.6}
+.cc-pol .cc-sub{font-size:12px;color:var(--texto2);margin-top:8px}
 .topbar{background:var(--verde);color:#fff;padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:56px;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.15);gap:12px}
 .topbar-logo{font-weight:700;font-size:18px;letter-spacing:1px;white-space:nowrap}
 .topbar-right{display:flex;align-items:center;gap:16px}
@@ -197,6 +215,14 @@ table.tabela td.num{text-align:right;font-variant-numeric:tabular-nums;white-spa
 .crg-equipe{max-height:220px;overflow-y:auto;border:1.5px solid var(--borda);border-radius:10px;padding:6px 10px}
 .crg-equipe label{display:flex;align-items:center;gap:8px;padding:4px 0;font-size:13px;cursor:pointer}
 .crg-equipe input{width:16px;height:16px;accent-color:var(--verde)}
+/* v42: cronograma por projeto / cliente */
+.crg-grade tr.crg-cli td{background:#f3f7fb;text-align:left;padding:6px 10px;font-weight:700;color:var(--verde);font-size:12px;position:sticky;left:0}
+.crg-grade .crg-proj{font-weight:600;padding-left:22px}
+.crg-grade .crg-proj small{display:block;font-weight:400;color:var(--texto2);font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.crg-equipe .crg-grupo{font-weight:700;color:var(--verde);margin-top:6px;border-top:1px solid #eee;padding-top:6px}
+.crg-equipe .crg-grupo:first-child{border-top:0;margin-top:0}
+.crg-equipe label.crg-sub{padding-left:22px}
+.crg-dias-lista{font-size:12px;color:var(--texto2)}
 .inativo td{opacity:.5}
 /* MODAL */
 .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto}
@@ -468,7 +494,7 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
     </div>
     <div id="cc-conteudo">
     <div class="cc-ola"><h2 id="cc-nome">Meus contracheques</h2><p id="cc-dica">Toque em <strong>Abrir</strong> para ver o contracheque do mês ou em <strong>Baixar</strong> para salvar o PDF.</p></div>
-    <div class="cc-abas"><button id="cc-aba-cc" class="ativo" onclick="ccAba('cc')">📄 Contracheques</button><button id="cc-aba-ponto" onclick="ccAba('ponto')">🕒 Meu ponto</button><button id="cc-aba-avisos" onclick="ccAba('avisos')">📢 Avisos</button><button id="cc-aba-premios" onclick="ccAba('premios')">🏆 Premiações</button></div>
+    <div class="cc-abas"><button id="cc-aba-cc" class="ativo" onclick="ccAba('cc')">📄 Contracheques</button><button id="cc-aba-ponto" onclick="ccAba('ponto')">🕒 Meu ponto</button><button id="cc-aba-avisos" onclick="ccAba('avisos')">📢 Avisos</button><button id="cc-aba-premios" onclick="ccAba('premios')">🏆 Premiações</button><button id="cc-aba-politicas" onclick="ccAba('politicas')">📘 Políticas</button><button id="cc-aba-denuncia" onclick="ccAba('denuncia')">🛡️ Denúncias</button></div>
     <div class="cc-lista" id="cc-lista"><div class="cc-vazio">Carregando…</div></div>
     <div id="cc-ponto" style="display:none">
       <div class="cc-ola" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><label for="cc-ponto-mes" style="font-size:13px;font-weight:600">Mês</label><select id="cc-ponto-mes" onchange="carregarMeuPonto()" style="padding:8px;border:1.5px solid var(--borda);border-radius:8px;font-size:14px"></select><span id="cc-ponto-per" style="font-size:12px;color:var(--texto2)"></span></div>
@@ -477,6 +503,44 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
     </div>
     <div id="cc-avisos" class="cc-lista" style="display:none"></div>
     <div id="cc-premios" class="cc-lista" style="display:none"></div>
+    <!-- v42: políticas da empresa (o RH edita na aba RH → Políticas) -->
+    <div id="cc-politicas" class="cc-lista" style="display:none"></div>
+    <!-- v42: canal de denúncias anônimo -->
+    <div id="cc-denuncia" style="display:none">
+      <div class="den-hero">
+        <div class="den-ico">🛡️</div>
+        <h2>Canal de denúncias</h2>
+        <p>Um espaço seguro para relatar assédio, discriminação, desrespeito, risco à segurança, fraude ou qualquer conduta errada no trabalho. A denúncia vai direto para o <strong>RH</strong> e é <strong>anônima</strong>.</p>
+        <ul class="den-garantias">
+          <li>🔒 Não guardamos seu nome, CPF, login nem o horário do envio — só a data.</li>
+          <li>🧾 Você recebe um <strong>protocolo</strong> para acompanhar a resposta do RH.</li>
+          <li>🤝 Nenhuma pessoa pode ser punida por denunciar de boa-fé.</li>
+        </ul>
+      </div>
+      <div class="cc-ola den-form" id="den-form">
+        <div class="campo"><label for="den-cat">Sobre o que é?</label><select id="den-cat">
+          <option>Assédio moral</option><option>Assédio sexual</option><option>Discriminação ou preconceito</option><option>Segurança do trabalho / risco de acidente</option>
+          <option>Fraude, desvio ou corrupção</option><option>Conduta de colega ou chefia</option><option>Uso indevido de bens da empresa</option><option>Outro</option></select></div>
+        <div class="campo"><label for="den-desc">O que aconteceu? *</label><textarea id="den-desc" rows="6" placeholder="Conte com o máximo de detalhes que puder: o que aconteceu, como, se se repete..."></textarea></div>
+        <div class="campo"><label for="den-local">Onde? (opcional)</label><input type="text" id="den-local" placeholder="Ex.: obra, escritório, cliente"></div>
+        <div class="campo"><label for="den-quando">Quando? (opcional)</label><input type="text" id="den-quando" placeholder="Ex.: semana passada, todo dia de manhã"></div>
+        <div class="campo"><label for="den-env">Quem está envolvido? (opcional)</label><input type="text" id="den-env" placeholder="Nomes, funções ou testemunhas"></div>
+        <p style="font-size:12px;color:var(--texto2);margin-top:10px;line-height:1.5">Para continuar anônimo, não escreva seu nome nem detalhes que mostrem quem você é. Se quiser ser procurado(a) pelo RH, pode se identificar no texto.</p>
+        <button class="cc-btn-ass" id="den-btn" onclick="enviarDenuncia()">Enviar denúncia ao RH</button>
+      </div>
+      <div class="cc-ola" id="den-ok" style="display:none">
+        <h2 style="font-size:17px;color:var(--verde)">✅ Denúncia enviada ao RH</h2>
+        <p>Anote ou copie o seu protocolo. Ele é a única forma de acompanhar a resposta — o CRM não guarda quem enviou.</p>
+        <div class="den-prot" id="den-prot"></div>
+        <button class="cc-btn-ass" style="background:#fff;color:var(--verde);border:1.5px solid var(--verde)" onclick="copiarProtocolo()">📋 Copiar protocolo</button>
+        <button class="cc-btn-ass" onclick="novaDenuncia()">Fazer outra denúncia</button>
+      </div>
+      <div class="cc-ola den-form">
+        <div class="campo"><label for="den-cons">Acompanhar uma denúncia</label><input type="text" id="den-cons" placeholder="Protocolo (ex.: DEN-1A2B3C4D)" style="text-transform:uppercase"></div>
+        <button class="cc-btn-ass" style="background:#fff;color:var(--verde);border:1.5px solid var(--verde)" onclick="consultarDenuncia()">🔎 Consultar</button>
+        <div id="den-cons-res"></div>
+      </div>
+    </div>
     </div>
   </div>
 </div>
@@ -499,7 +563,7 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
   <div class="tabs" id="tabs">
     <div class="tab ativo" data-tab="painel" data-comercial>Painel</div>
     <div class="tab" data-tab="atividades" data-comercial>Tarefas <span id="tab-ativ-badge"></span></div>
-    <div class="tab" data-tab="funil" data-comercial>Funil de Propostas</div>
+    <div class="tab" data-tab="funil" data-comercial id="tab-btn-funil">Funil de Propostas</div>
     <div class="tab" data-tab="clientes" data-comercial>Clientes</div>
     <div class="tab" data-tab="projetos" data-comercial>Projetos</div>
     <div class="tab" data-tab="cronograma" id="tab-btn-cronograma" style="display:none">Cronograma</div>
@@ -547,7 +611,7 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
         <div class="painel" id="pa-docs"><h3>📄 Documentos e certidões <span class="contagem" id="pa-docs-cont"></span></h3><div id="p-docs-resumo" class="resumo-docs"></div><div id="p-docs" class="lista-mini"></div></div>
         <div class="painel" id="pa-cobr" style="display:none"><h3>📞 Cobrar retorno de propostas <span class="contagem" id="pa-cobr-cont"></span></h3><div id="p-cobr" class="lista-mini"></div></div>
       </div>
-      <div class="paineis">
+      <div class="paineis" id="pa-funil-paineis">
         <div class="painel"><h3>Funil — propostas em aberto por etapa</h3><div id="p-funil"></div></div>
         <div class="painel"><h3>Fechamentos por mês</h3><div id="p-meses"></div></div>
         <div class="painel"><h3>Propostas paradas há mais de 15 dias</h3><div id="p-parados" class="lista-mini"></div></div>
@@ -644,7 +708,7 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
     <!-- CRONOGRAMA (v41): funcionários alocados por projeto/cliente, ligado ao Outlook e à folha do mês -->
     <div id="tab-cronograma" style="display:none">
       <div class="barra-acoes">
-        <h2>Cronograma de funcionários</h2>
+        <h2>Cronograma de projetos e equipes</h2>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
           <button class="btn-sec" id="crg-btn-sync" onclick="sincronizarOutlook(false)">🔄 Sincronizar com Outlook</button>
           <button class="btn-novo" id="crg-btn-novo" onclick="abrirAlocacao()">+ Nova alocação</button>
@@ -655,7 +719,18 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
         <button class="btn-sec" onclick="mudarMesCrono(-1)" title="Mês anterior">◀</button>
         <input type="month" id="crg-mes" onchange="abrirCronograma()">
         <button class="btn-sec" onclick="mudarMesCrono(1)" title="Próximo mês">▶</button>
-        <input type="search" id="crg-busca" placeholder="Buscar funcionário ou projeto" oninput="renderCronograma()">
+        <select id="crg-visao" onchange="crgVisao=this.value;salvarFiltrosCrono();renderCronograma()" title="Como ver o calendário">
+          <option value="projeto">🏗️ Por projeto / cliente</option>
+          <option value="funcionario">👷 Por funcionário</option>
+        </select>
+        <select id="crg-projmodo" onchange="crgProjModo=this.value;salvarFiltrosCrono();renderCronograma()" title="Quais projetos / clientes aparecem">
+          <option value="ativos">Projetos ativos</option>
+          <option value="alocados">Só com alocação no mês</option>
+          <option value="selecionados">Só os que eu selecionar</option>
+        </select>
+        <button class="btn-sec" id="crg-btn-projsel" onclick="abrirFiltroCrono('proj')">🏗️ Escolher projetos</button>
+        <button class="btn-sec" id="crg-btn-funcsel" onclick="abrirFiltroCrono('func')">👷 Escolher funcionários</button>
+        <input type="search" id="crg-busca" placeholder="Buscar funcionário, cliente ou projeto" oninput="renderCronograma()">
         <select id="crg-quem" onchange="renderCronograma()">
           <option value="">Todos os funcionários</option>
           <option value="alocados">Só quem tem alocação no mês</option>
@@ -664,6 +739,8 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
         <span class="dica" id="crg-outlook" style="margin:0"></span>
       </div>
       <div class="tabela-wrap rolagem" style="margin-bottom:16px"><table class="crg-grade" id="crg-grade"></table></div>
+      <div class="barra-acoes" style="margin-top:6px"><h2 style="font-size:16px">Quem trabalhou onde (e em que dias)</h2></div>
+      <div class="tabela-wrap" style="margin-bottom:16px"><table class="tabela" id="crg-onde"></table></div>
       <div class="barra-acoes" style="margin-top:6px"><h2 style="font-size:16px">Intermitentes no mês → folha</h2></div>
       <div class="tabela-wrap" style="margin-bottom:16px"><table class="tabela" id="crg-intermitentes"></table></div>
       <div class="barra-acoes" style="margin-top:6px"><h2 style="font-size:16px">Alocações do mês</h2></div>
@@ -868,6 +945,8 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
       <div class="subaba" data-rh="envio">📧 Envio à contabilidade</div>
       <div class="subaba" data-rh="comunicacao" id="rh-sub-comunicacao">📢 Comunicação interna</div>
       <div class="subaba" data-rh="assinaturas">✍️ Assinaturas</div>
+      <div class="subaba" data-rh="politicas" id="rh-sub-politicas">📘 Políticas</div>
+      <div class="subaba" data-rh="denuncias" id="rh-sub-denuncias">🛡️ Denúncias <span id="rh-den-badge"></span></div>
       <div class="subaba" data-rh="curriculos" id="rh-sub-curriculos">📋 Currículos</div>
     </div>
 
@@ -992,6 +1071,23 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
         </div>
         <div class="info-box" id="com-info" style="display:block;line-height:1.5"></div>
         <div class="tabela-wrap"><table class="tabela" id="tabela-comunicados"></table></div>
+      </div>
+
+      <!-- v42: políticas da empresa (aparecem no acesso por CPF) -->
+      <div class="painel-rh" id="rh-p-politicas">
+        <div class="filtros"><button class="btn-novo" onclick="abrirPolitica(null)">+ Nova política</button></div>
+        <div class="info-box" id="pol-info" style="display:block;line-height:1.5"></div>
+        <div class="tabela-wrap"><table class="tabela" id="tabela-politicas"></table></div>
+      </div>
+      <!-- v42: canal de denúncias (anônimo) -->
+      <div class="painel-rh" id="rh-p-denuncias">
+        <div class="filtros">
+          <select id="den-filtro" onchange="renderDenunciasRH()">
+            <option value="abertas">Novas e em análise</option><option value="nova">Só novas</option><option value="concluida">Concluídas</option><option value="arquivada">Arquivadas</option><option value="">Todas</option>
+          </select>
+        </div>
+        <div class="info-box" id="den-info" style="display:block;line-height:1.5"></div>
+        <div class="tabela-wrap"><table class="tabela" id="tabela-denuncias"></table></div>
       </div>
 
       <!-- v30: assinatura eletrônica do ponto pelos funcionários -->
@@ -1329,7 +1425,7 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
     <div id="mc-extras" style="display:none">
       <div class="secao">Contatos <button class="btn-sec so-edicao" onclick="editarContato()">+ Contato</button></div>
       <div id="mc-contatos"></div>
-      <div class="secao">Propostas / atendimentos</div>
+      <div class="secao" id="mc-cards-tit">Propostas / atendimentos</div>
       <div id="mc-cards"></div>
       <div class="secao">Projetos <button class="btn-sec so-edicao" id="mc-btn-proj">+ Projeto</button></div>
       <div id="mc-projetos"></div>
@@ -1435,7 +1531,7 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
       <div class="campo"><label>Prazo</label><input type="datetime-local" id="tf-m-prazo"></div>
       <div class="campo"><label>Tipo</label><select id="tf-m-tipo"></select></div>
       <div class="campo"><label>Cliente</label><input type="text" id="tf-m-cliente" list="dl-clientes" placeholder="Opcional" onchange="mudouClienteTarefa()"></div>
-      <div class="campo"><label>Proposta (funil) <button class="btn-link" onclick="abrirPropostaDaTarefa()">abrir</button></label><select id="tf-m-card" onchange="mudouCardTarefa()"></select></div>
+      <div class="campo" id="tf-m-card-campo"><label>Proposta (funil) <button class="btn-link" onclick="abrirPropostaDaTarefa()">abrir</button></label><select id="tf-m-card" onchange="mudouCardTarefa()"></select></div>
       <div class="campo"><label>Projeto</label><select id="tf-m-projeto"></select></div>
       <div class="campo full"><label>Etiquetas</label><div id="tf-m-etiquetas" class="chips-cat"></div>
         <div class="linha-flex so-edicao" style="margin-top:6px;max-width:420px"><input type="text" id="tf-m-et-nova" placeholder="Nova etiqueta…" onkeydown="if(event.key==='Enter')addEtiquetaTarefa()"><button class="btn-sec" style="flex:0 0 auto" onclick="addEtiquetaTarefa()">+</button></div></div>
@@ -2066,6 +2162,43 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
   </div>
 </div>
 
+<!-- v42: política da empresa -->
+<div class="modal-overlay" id="modal-politica">
+  <div class="modal">
+    <h2 id="pol-titulo-modal">Nova política</h2>
+    <p class="modal-sub">Escreva a política como o funcionário vai ler no acesso por CPF. Só aparece para ele quando estiver marcada como <strong>publicada</strong>.</p>
+    <div class="form-grid">
+      <div class="campo full"><label>Título *</label><input type="text" id="pol-titulo" maxlength="150" placeholder="Ex.: Código de conduta"></div>
+      <div class="campo full"><label>Texto *</label><textarea id="pol-conteudo" rows="14" placeholder="Escreva o texto da política..."></textarea></div>
+      <div class="campo full"><label>Link do documento completo (opcional)</label><input type="url" id="pol-link" placeholder="https://... (SharePoint, PDF)"></div>
+      <div class="campo"><label>Ordem na lista</label><input type="number" id="pol-ordem" min="0" value="0"></div>
+      <div class="campo" style="display:flex;align-items:flex-end"><div class="campo-check"><input type="checkbox" id="pol-publicada"><label for="pol-publicada">Publicada (funcionários veem)</label></div></div>
+    </div>
+    <div class="modal-btns">
+      <button class="btn-excluir" id="pol-btn-excluir" style="display:none" onclick="excluirPolitica()">Excluir</button>
+      <button class="btn-cancelar" onclick="fecharModal('modal-politica')">Fechar</button>
+      <button class="btn-salvar" onclick="salvarPolitica()">Salvar</button>
+    </div>
+  </div>
+</div>
+<!-- v42: denúncia recebida -->
+<div class="modal-overlay" id="modal-denuncia">
+  <div class="modal">
+    <h2 id="dn-titulo">Denúncia</h2>
+    <p class="modal-sub">Denúncia anônima: o CRM não guarda quem enviou. A <strong>resposta</strong> aparece para quem denunciou ao consultar o protocolo; as <strong>anotações do RH</strong> ficam só aqui.</p>
+    <div class="info-box" id="dn-detalhe" style="display:block;line-height:1.6;white-space:pre-wrap"></div>
+    <div class="form-grid">
+      <div class="campo"><label>Situação</label><select id="dn-situacao"><option value="nova">Nova</option><option value="em_analise">Em análise</option><option value="concluida">Concluída</option><option value="arquivada">Arquivada</option></select></div>
+      <div class="campo full"><label>Resposta para quem denunciou</label><textarea id="dn-resposta" rows="4" placeholder="Ex.: Recebemos e estamos apurando. Obrigado por avisar."></textarea></div>
+      <div class="campo full"><label>Anotações internas do RH</label><textarea id="dn-notas" rows="4"></textarea></div>
+    </div>
+    <div class="modal-btns">
+      <button class="btn-cancelar" onclick="fecharModal('modal-denuncia')">Fechar</button>
+      <button class="btn-salvar" onclick="salvarDenunciaRH()">Salvar</button>
+    </div>
+  </div>
+</div>
+
 <!-- v30: item do inventário -->
 <div class="modal-overlay" id="modal-inventario">
   <div class="modal modal-sm">
@@ -2166,6 +2299,19 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
   </div>
 </div>
 
+<!-- v42: escolher projetos / funcionários do cronograma -->
+<div class="modal-overlay" id="modal-crg-filtro">
+  <div class="modal" style="max-width:560px">
+    <h2 id="crf-titulo">Escolher</h2>
+    <p class="modal-sub" id="crf-sub"></p>
+    <input type="search" id="crf-busca" placeholder="Buscar" oninput="renderFiltroCrono()" style="margin-bottom:8px;width:100%;padding:9px 12px;border:1.5px solid var(--borda);border-radius:8px;font-size:14px">
+    <div class="crg-equipe" id="crf-lista" style="max-height:52vh"></div>
+    <div class="modal-btns">
+      <button class="btn-cancelar" onclick="limparFiltroCrono()">Limpar (mostrar todos)</button>
+      <button class="btn-salvar" onclick="aplicarFiltroCrono()">Aplicar</button>
+    </div>
+  </div>
+</div>
 <!-- MODAL ALOCAÇÃO DO CRONOGRAMA (v41) -->
 <div class="modal-overlay" id="modal-alocacao">
   <div class="modal">
@@ -2460,7 +2606,8 @@ function calcularPermissoes(p){
   const adm=p==='administrador',com=p==='comercial',admv=p==='administrativo',cont=p==='contabilidade';
   // comercialVer: vê funil, clientes, projetos, atividades e empresas (a contabilidade não vê)
   // rh: vê benefícios e ponto (v28: o comercial não acessa o RH) · rhEditar: altera benefícios
-  return{admin:adm,funil:adm||com,clientes:adm||com,projetos:adm||com||admv,ativ:adm||com||admv,docs:adm||admv,excluir:adm,
+  // v42: o Comercial não vê mais o funil de propostas (nem os valores do painel); só o administrador altera o funil
+  return{admin:adm,funil:adm,funilVer:!com&&!cont,clientes:adm||com,projetos:adm||com||admv,ativ:adm||com||admv,docs:adm||admv,excluir:adm,
     comercialVer:!cont,rh:adm||admv||cont,rhEditar:adm||admv,
     // v14: rhPessoal = salário, contracheques, vales, uniformes, envio à contabilidade · curriculos = banco de currículos
     rhPessoal:adm||admv||cont,curriculos:adm||admv,
@@ -2475,7 +2622,7 @@ function calcularPermissoes(p){
     // v34: o comercial não vê valores de propostas nem gera o PDF; custo/lucro (composição, ganhos × custos) só administrador
     verValores:!com,gerarPDF:!com,verLucro:adm,
     // v36: contratos fixos no funil (Comercial e Administrativo preenchem; valores só para quem vê valores)
-    contratosEditar:adm||com||admv,
+    contratosEditar:adm||admv,
     // v41: cronograma de funcionários (liga ao Outlook e à folha do mês)
     cronograma:adm||admv};
 }
@@ -2805,10 +2952,12 @@ async function iniciarContracheques(){
 // v28: o funcionário também vê as próprias marcações do ponto (Secullum), período de 26 a 25
 // v30: 3 abas (contracheques, ponto com assinatura do mês, avisos/comunicados)
 function ccAba(a){
-  ['cc','ponto','avisos','premios'].forEach(k=>$('cc-aba-'+k).classList.toggle('ativo',k===a));
+  ['cc','ponto','avisos','premios','politicas','denuncia'].forEach(k=>$('cc-aba-'+k).classList.toggle('ativo',k===a));
   $('cc-lista').style.display=a==='cc'?'':'none';$('cc-ponto').style.display=a==='ponto'?'':'none';$('cc-avisos').style.display=a==='avisos'?'':'none';$('cc-premios').style.display=a==='premios'?'':'none';
+  $('cc-politicas').style.display=a==='politicas'?'':'none';$('cc-denuncia').style.display=a==='denuncia'?'':'none';
   if(a==='premios')carregarMinhasPremiacoes();
-  $('cc-dica').innerHTML=a==='premios'?'Premiações e valores extras que você recebeu. Confira e <strong>assine a declaração</strong> de recebimento.':a==='ponto'?'Suas marcações de entrada e saída, como estão no ponto (Secullum). O mês vai do dia 26 do mês anterior ao dia 25. Confira e <strong>assine</strong> no fim da página. Se algo estiver errado, marque “não concordo” e explique.'
+  if(a==='politicas')carregarMinhasPoliticas();
+  $('cc-dica').innerHTML=a==='politicas'?'As políticas e regras da empresa. Toque no título para ler.':a==='denuncia'?'Canal anônimo: o que você escrever aqui vai direto para o RH, sem o seu nome.':a==='premios'?'Premiações e valores extras que você recebeu. Confira e <strong>assine a declaração</strong> de recebimento.':a==='ponto'?'Suas marcações de entrada e saída, como estão no ponto (Secullum). O mês vai do dia 26 do mês anterior ao dia 25. Confira e <strong>assine</strong> no fim da página. Se algo estiver errado, marque “não concordo” e explique.'
     :a==='avisos'?'Comunicados do RH para a equipe.'
     :'Toque em <strong>Abrir</strong> para ver o contracheque do mês ou em <strong>Baixar</strong> para salvar o PDF.';
   if(a==='ponto'&&!$('cc-ponto-mes').options.length){
@@ -2925,6 +3074,40 @@ async function carregarMeusAvisos(){
   box.innerHTML=(data||[]).length?data.map(c=>`<div class="cc-aviso"><div class="cc-sub">${esc(fmtDataHora(c.enviado_em))}</div><strong>${esc(c.titulo)}</strong><p>${esc(c.mensagem).replace(/\n/g,'<br>')}</p></div>`).join('')
     :'<div class="cc-vazio">Nenhum aviso por enquanto.</div>';
 }
+// v42: políticas publicadas pelo RH
+async function carregarMinhasPoliticas(){
+  const box=$('cc-politicas');box.innerHTML='<div class="cc-vazio">Carregando…</div>';
+  const{data,error}=await sb.rpc('bvek_politicas_publicadas');
+  if(error){console.error(error);box.innerHTML='<div class="cc-vazio">As políticas ainda estão sendo liberadas. Tente de novo mais tarde.</div>';return;}
+  box.innerHTML=(data||[]).length?data.map(p=>`<details class="cc-pol"><summary>${esc(p.titulo)}</summary><div class="cc-pol-txt">${esc(p.conteudo||'').replace(/\n/g,'<br>')}
+    ${p.link&&/^https?:\/\//i.test(p.link)?`<p style="margin-top:10px"><a href="${esc(p.link)}" target="_blank" rel="noopener">📎 Ver o documento completo</a></p>`:''}<div class="cc-sub">Atualizada em ${esc(fmtData(p.atualizado_em))}</div></div></details>`).join('')
+    :'<div class="cc-vazio">Nenhuma política publicada ainda.</div>';
+}
+// v42: canal de denúncias — nada que identifique quem enviou vai junto (só o texto)
+async function enviarDenuncia(){
+  const desc=$('den-desc').value.trim();
+  if(desc.length<10){alert('Conte o que aconteceu (pelo menos algumas palavras).');return;}
+  if(!confirm('Enviar a denúncia ao RH? Depois de enviada ela não pode ser alterada.'))return;
+  const btn=$('den-btn');btn.disabled=true;
+  try{
+    const{data,error}=await sb.rpc('bvek_denuncia_enviar',{p_categoria:$('den-cat').value,p_descricao:desc,p_local:$('den-local').value.trim()||null,p_quando:$('den-quando').value.trim()||null,p_envolvidos:$('den-env').value.trim()||null});
+    if(error||!data){console.error(error);alert(/function|schema cache/i.test((error&&error.message)||'')?'O canal de denúncias ainda está sendo liberado. Tente de novo mais tarde.':'Não foi possível enviar: '+((error&&error.message)||'tente de novo.'));return;}
+    ['den-desc','den-local','den-quando','den-env'].forEach(i=>$(i).value='');
+    $('den-prot').textContent=data;$('den-form').style.display='none';$('den-ok').style.display='';
+  }finally{btn.disabled=false;}
+}
+function novaDenuncia(){$('den-ok').style.display='none';$('den-form').style.display='';$('den-prot').textContent='';}
+function copiarProtocolo(){const t=$('den-prot').textContent;try{navigator.clipboard.writeText(t).then(()=>toast('Protocolo copiado'),()=>prompt('Copie o protocolo:',t));}catch(e){prompt('Copie o protocolo:',t);}}
+const SITUACAO_DEN={nova:'Recebida — aguardando o RH',em_analise:'Em análise pelo RH',concluida:'Concluída',arquivada:'Arquivada'};
+async function consultarDenuncia(){
+  const p=$('den-cons').value.trim().toUpperCase(),box=$('den-cons-res');
+  if(!/^DEN-[A-Z0-9]{6,}$/.test(p)){box.innerHTML='<p style="font-size:13px;color:var(--vermelho);margin-top:8px">Digite o protocolo completo (DEN-…).</p>';return;}
+  const{data,error}=await sb.rpc('bvek_denuncia_consultar',{p_protocolo:p});
+  const d=Array.isArray(data)?data[0]:data;
+  if(error||!d){box.innerHTML='<p style="font-size:13px;margin-top:8px">Protocolo não encontrado. Confira as letras e números.</p>';return;}
+  box.innerHTML=`<div class="cc-ass ${d.situacao==='concluida'?'ok':''}" style="margin-top:10px"><strong>${esc(d.protocolo)}</strong> · ${esc(d.categoria)}<br><span>Enviada em ${esc(fmtData(d.recebida_em))}</span><br>Situação: <strong>${esc(SITUACAO_DEN[d.situacao]||d.situacao)}</strong>
+    ${d.resposta?`<p style="margin-top:8px"><strong>Resposta do RH${d.respondida_em?' ('+esc(fmtData(d.respondida_em))+')':''}:</strong><br>${esc(d.resposta).replace(/\n/g,'<br>')}</p>`:''}</div>`;
+}
 async function abrirMeuCC(i,baixar){
   const c=meusCC[i];if(!c)return;
   const nomeArq=`Contracheque ${String(c.competencia).slice(0,7)}.pdf`;
@@ -2961,6 +3144,9 @@ function aplicarPermissoes(){
   mostra('pg-btn-config',PERM.admin);
   mostra('btn-tipos-benef',PERM.rhEditar);
   document.querySelectorAll('#tabs [data-comercial]').forEach(t=>t.style.display=PERM.comercialVer?'':'none');
+  // v42: funil de propostas fora do perfil Comercial
+  mostra('tab-btn-funil',PERM.funilVer);mostra('pa-funil-paineis',PERM.funilVer);mostra('painel-ano',PERM.funilVer);
+  mostra('mc-cards-tit',PERM.funilVer);mostra('mc-cards',PERM.funilVer);mostra('tf-m-card-campo',PERM.funilVer);
   if(!PERM.funil)$('pa-cobr').style.display='none';
   $('funil-dica').textContent=PERM.funil?'Arraste os cards entre as colunas para mudar a etapa.':'🔒 Seu perfil só consulta o funil.';
 }
@@ -2978,7 +3164,7 @@ async function trocarSenha(){
 /* ================= CARGA DE DADOS ================= */
 async function carregarTudo(){
   await carregarEmpresas();
-  await Promise.all([carregarClientes(),carregarCards(),carregarAtividades(),carregarProjetos(),carregarPerfis(),carregarDocsTudo(),carregarBeneficiosTudo(),carregarRH(),carregarCurriculos(),carregarFinanceiro(),carregarSaidas(),carregarContratosFixos(),carregarPremiacoes(),carregarFornecedores(),carregarPrecoCfg(),carregarComunicados(),carregarInventario()]);
+  await Promise.all([carregarClientes(),carregarCards(),carregarAtividades(),carregarProjetos(),carregarPerfis(),carregarDocsTudo(),carregarBeneficiosTudo(),carregarRH(),carregarCurriculos(),carregarFinanceiro(),carregarSaidas(),carregarContratosFixos(),carregarPremiacoes(),carregarFornecedores(),carregarPrecoCfg(),carregarComunicados(),carregarInventario(),carregarPoliticasDenuncias()]);
   atualizarBadgeRH();
   await verificarV24();
   await verificarV34();
@@ -3056,6 +3242,8 @@ async function lerItens(cardId){
   return await sb.from('itens_proposta').select('*').eq('card_id',cardId).order('ordem');
 }
 async function carregarCards(){
+  // v42: quem não vê o funil (Comercial) nem carrega as propostas
+  if(!PERM.funilVer){todosCards=[];return;}
   const{data,error}=await lerCards();
   if(error){console.error(error);todosCards=[];return;}
   todosCards=data||[];
@@ -3096,6 +3284,7 @@ function abrirTab(tab){
   if(tab==='curriculos'&&!PERM.curriculos)tab='painel';
   if(tab==='financeiro'&&!PERM.financeiro)tab='painel';
   if(tab==='cronograma'&&!PERM.cronograma)tab='painel';
+  if(tab==='funil'&&!PERM.funilVer)tab='painel';
   if(!PERM.comercialVer&&['painel','funil','clientes','projetos','fornecedores','inventario','atividades','empresas'].includes(tab))tab='documentos';
   tabAtual=tab;
   // v34: grupo RH (RH + Benefícios + Currículos) com a mesma barra de subabas
@@ -3145,7 +3334,7 @@ function renderPainel(){
     ['Fechado',curtoV(soma(fechados)),`${fechados.length} proposta(s) · ${rotAno}`,'#1565c0','🏆',()=>abrirTab('funil')],
     ['Taxa de conversão',conv==null?'—':conv+'%',`${fechados.length} fechadas × ${perdidos.length} perdidas`,'#e67e22','📈',()=>abrirTab('funil')],
     ['Ticket médio fechado',fechados.length?curtoV(soma(fechados)/fechados.length):'—',rotAno,'#00838f','💰',()=>abrirTab('funil')],
-  ].filter((k,i)=>i===0?PERM.ativ||tfPend.length:PERM.comercialVer);
+  ].filter((k,i)=>i===0?PERM.ativ||tfPend.length:PERM.comercialVer&&PERM.funilVer);
   $('kpis').innerHTML=kpis.map(([r,v,s,cor,ico],i)=>`<div class="kpi" data-kpi="${i}" style="--kpi-cor:${cor}" title="Clique para ver"><span class="ico">${ico}</span><div class="rot">${esc(r)}</div><div class="val" data-contar="${esc(v)}">${esc(v)}</div><div class="sub">${esc(s)}</div></div>`).join('');
   $('kpis').querySelectorAll('[data-kpi]').forEach(el=>el.onclick=()=>kpis[+el.dataset.kpi][5]());
   animarNumeros($('kpis'));
@@ -3186,7 +3375,7 @@ function renderPainel(){
 let todosContratosFixos=[],contratoFixoId=null,v34ContratosOk=true,arquivoContratoNovo=null;
 // v36: contratos ficam no funil; Comercial vê e preenche (sem valores — o banco não manda)
 async function carregarContratosFixos(){
-  if(!PERM.comercialVer)return;
+  if(!PERM.comercialVer||!PERM.funilVer)return;
   let r=await sb.rpc('bvek_contratos');
   if(r.error&&naoTemFuncao(r.error))r=await sb.from('contratos_recorrentes').select('*').order('descricao');
   if(r.error){v34ContratosOk=false;if(!/contratos_recorrentes|schema cache|does not exist|permission/i.test(r.error.message||''))console.error(r.error);todosContratosFixos=[];return;}
@@ -3579,6 +3768,7 @@ async function gerarNumeroProposta(empresaId,clienteId){
 
 /* ================= MODAL ATENDIMENTO ================= */
 async function abrirModalCard(id=null){
+  if(!PERM.funilVer){toast('Seu perfil não acessa o funil de propostas');return;}
   cardEditandoId=id;cardOriginal=null;itensLocais=[];contatosDoCliente=[];composicaoLocal=null;$('cp-card-resumo').style.display='none';
   ['card-cliente','card-titulo','card-responsavel','card-valor','card-fechamento','card-prazo','card-escopo','card-pagamento','card-obs','card-nota1','card-nota2','card-dias','nct-nome','nct-cargo','nct-tel','nct-email','card-motivo-detalhe','ca-desc','ca-data'].forEach(i=>{$(i).value='';});
   $('card-validade').value='30';$('card-pct-mao').value='30';$('card-pct-ins').value='70';
@@ -3957,15 +4147,16 @@ function renderClientes(){
   $('cli-ir').innerHTML=`<option value="">🔎 Ir para o cliente… (${l.length})</option>`+l.map(c=>`<option value="${esc(c.id)}">${esc(rotuloCliente(c))}</option>`).join('');
   $('cli-contagem').textContent=`${l.length} de ${todosClientes.filter(c=>c.ativo!==false).length} clientes`;
   const T=(c,r,k)=>thOrd('cli',c,r,k);
-  $('tabela-clientes').innerHTML=`<thead><tr>${T('codigo','Código')}${T('nome','Nome')}${T('razao','Razão social / CPF-CNPJ')}${T('situacao','Situação')}${T('empresas','Empresas')}${T('aberto','Em aberto','num')}${T('fechado','Fechado','num')}</tr></thead><tbody>`+
+  const fv=PERM.funilVer;
+  $('tabela-clientes').innerHTML=`<thead><tr>${T('codigo','Código')}${T('nome','Nome')}${T('razao','Razão social / CPF-CNPJ')}${T('situacao','Situação')}${T('empresas','Empresas')}${fv?T('aberto','Em aberto','num')+T('fechado','Fechado','num'):''}</tr></thead><tbody>`+
     (l.length?l.map(c=>{const s=stats[c.id]||{};return`<tr class="clicavel ${c.ativo===false?'inativo':''}" data-cliente="${esc(c.id)}">
       <td>${c.codigo?`<span class="cod">${esc(c.codigo)}</span>`:'<span class="badge badge-atraso">sem código</span>'}</td>
       <td><strong>${esc(c.nome)}</strong>${c.endereco?`<div style="font-size:12px;color:var(--texto2)">${esc(c.endereco)}</div>`:''}</td>
       <td>${esc(c.razao_social||'')}${c.documento?`<div style="font-size:12px;color:var(--texto2)">${esc(c.documento)}</div>`:''}</td>
       <td><span class="badge ${c.situacao==='Cliente'?'badge-ok':'badge-cinza'}">${esc(c.situacao||'Prospect')}</span>${c.ativo===false?' <span class="badge badge-cinza">inativo</span>':''}</td>
       <td>${esc(c.empresas_atendidas||'')}</td>
-      <td class="num">${s.ab?`${s.ab} · ${esc(curtoV(s.vab))}`:''}</td>
-      <td class="num">${s.fe?`${s.fe} · ${esc(curtoV(s.vfe))}`:''}</td></tr>`;}).join(''):'<tr><td colspan="7" class="vazio">Nenhum cliente encontrado.</td></tr>')+'</tbody>';
+      ${fv?`<td class="num">${s.ab?`${s.ab} · ${esc(curtoV(s.vab))}`:''}</td>
+      <td class="num">${s.fe?`${s.fe} · ${esc(curtoV(s.vfe))}`:''}</td>`:''}</tr>`;}).join(''):`<tr><td colspan="${fv?7:5}" class="vazio">Nenhum cliente encontrado.</td></tr>`)+'</tbody>';
   ligarCliques($('tabela-clientes'));ligarOrdenacao('tabela-clientes','cli',renderClientes);
 }
 /* v36: ordenação pelo cabeçalho (clicou = ordena; clicou de novo = inverte) */
@@ -5874,7 +6065,11 @@ function ligarDrop(zonaId,cb){
 
 /* pendências do RH (pop-up do dia e aviso no alto da aba) */
 function pendenciasRH(){
-  const p=[];if(!PERM.rhEditar||!v14Ok)return p;
+  const p=[];if(!PERM.rhEditar)return p;
+  // v42: denúncias novas no canal
+  const nDen=todasDenuncias.filter(d=>d.situacao==='nova').length;
+  if(nDen)p.push({ir:'denuncias',atraso:true,txt:`🛡️ ${nDen} denúncia${nDen>1?'s':''} nova${nDen>1?'s':''} no canal de denúncias`});
+  if(!v14Ok)return p;
   const dia=new Date().getDate(),iso=hojeISO().slice(0,8)+'01';
   const enviado=todosEnvios.some(e=>e.competencia===iso&&e.situacao==='enviado');
   const falta=diasAte(dataEnvioMes(iso));
@@ -5910,12 +6105,12 @@ function renderRH(){
   $('btn-novo-func-rh').classList.toggle('oculto',!PERM.rhEditar);
   $('btn-secullum-rh').classList.toggle('oculto',!PERM.docs);
   document.querySelectorAll('#rh-subabas .subaba').forEach(s=>s.classList.toggle('ativo',s.dataset.rh===rhSub));
-  if(rhSub==='comunicacao'&&!PERM.rhEditar)rhSub='funcionarios';
-  $('rh-sub-comunicacao').style.display=PERM.rhEditar?'':'none';
+  if(['comunicacao','politicas','denuncias'].includes(rhSub)&&!PERM.rhEditar)rhSub='funcionarios';
+  ['rh-sub-comunicacao','rh-sub-politicas','rh-sub-denuncias'].forEach(id=>$(id).style.display=PERM.rhEditar?'':'none');
   document.querySelectorAll('#rh-subabas .subaba').forEach(s=>s.classList.toggle('ativo',s.dataset.rh===rhSub));
-  ['funcionarios','vales','contracheques','envio','comunicacao','assinaturas'].forEach(p=>$('rh-p-'+p).classList.toggle('ativo',p===rhSub));
+  ['funcionarios','vales','contracheques','envio','comunicacao','assinaturas','politicas','denuncias'].forEach(p=>$('rh-p-'+p).classList.toggle('ativo',p===rhSub));
   renderAvisosRH();
-  ({funcionarios:renderRHFuncionarios,vales:renderRHVales,contracheques:renderRHContracheques,envio:renderRHEnvio,comunicacao:renderComunicados,assinaturas:renderAssinaturasPonto}[rhSub]||(()=>{}))();
+  ({funcionarios:renderRHFuncionarios,vales:renderRHVales,contracheques:renderRHContracheques,envio:renderRHEnvio,comunicacao:renderComunicados,assinaturas:renderAssinaturasPonto,politicas:renderPoliticasRH,denuncias:renderDenunciasRH}[rhSub]||(()=>{}))();
 }
 function tagEmpresa(f){const e=empresaPorId(f.empresa_id);return e?` <span class="card-empresa-tag tag-${esc(e.sigla)}">${esc(e.sigla)}</span>`:'';}
 function renderRHFuncionarios(){
@@ -7092,6 +7287,29 @@ async function salvarFolha(){
 // Vira evento no Outlook (função "outlook-agenda") e, para INTERMITENTES, o banco põe os dias na folha do mês sozinho.
 let cronoLinhas=[],cronoMesCarregado=null,cronoEditId=null,cronoEquipe=new Set(),v41Ok=true,cronoOutlook={ok:null,msg:''};
 const cronoSincronizados=new Set();
+// v42: visão por projeto/cliente (padrão) ou por funcionário + filtros guardados neste navegador
+let crgVisao='projeto',crgProjModo='ativos',crgProjSel=new Set(),crgFuncSel=new Set(),crfTipo=null,crfSel=new Set();
+try{crgVisao=localStorage.getItem('bvek_crg_visao')||'projeto';crgProjModo=localStorage.getItem('bvek_crg_projmodo')||'ativos';
+  crgProjSel=new Set(JSON.parse(localStorage.getItem('bvek_crg_proj')||'[]'));crgFuncSel=new Set(JSON.parse(localStorage.getItem('bvek_crg_func')||'[]'));}catch(e){}
+function salvarFiltrosCrono(){try{localStorage.setItem('bvek_crg_visao',crgVisao);localStorage.setItem('bvek_crg_projmodo',crgProjModo);
+  localStorage.setItem('bvek_crg_proj',JSON.stringify([...crgProjSel]));localStorage.setItem('bvek_crg_func',JSON.stringify([...crgFuncSel]));}catch(e){}}
+// "frente" = linha do calendário por projeto: o projeto; sem projeto, o cliente; sem cliente, o serviço escrito
+function chaveAloc(l){if(l.projeto_id)return'p:'+l.projeto_id;const c=cliDaAloc(l);if(c)return'c:'+c.id;return't:'+norm(l.titulo||'');}
+function frenteDeChave(k,l){
+  if(k.startsWith('p:')){const p=todosProjetos.find(x=>x.id===k.slice(2));const c=p?clientePorId(p.cliente_id):null;return{k,cli:c||null,rot:p?p.codigo:'(projeto)',sub:p?p.nome:'',ativo:!!p&&p.status==='Em andamento',ord:p?p.codigo:'~'};}
+  if(k.startsWith('c:')){const c=clientePorId(k.slice(2));return{k,cli:c||null,rot:'Sem projeto',sub:l&&l.titulo?l.titulo:'',ativo:false,ord:'~'};}
+  return{k,cli:null,rot:(l&&l.titulo)||'Sem projeto',sub:'',ativo:false,ord:'~'};
+}
+function frentesCrono(ativas){
+  const m=new Map();
+  todosProjetos.filter(p=>p.status==='Em andamento').forEach(p=>m.set('p:'+p.id,frenteDeChave('p:'+p.id)));
+  ativas.forEach(l=>{const k=chaveAloc(l);if(!m.has(k))m.set(k,frenteDeChave(k,l));});
+  return[...m.values()];
+}
+const cliOrd=c=>c?(c.codigo||'~')+' '+c.nome:'~~';
+function funcsVisiveis(l){return(l.funcionarios||[]).filter(id=>!crgFuncSel.size||crgFuncSel.has(id));}
+function nomeCurtoFunc(id){const n=String((funcPorId(id)||{}).nome||'?').trim().split(/\s+/);return n.length>1?n[0]+' '+n[n.length-1]:n[0];}
+function iniciaisFunc(id){const n=String((funcPorId(id)||{}).nome||'?').trim().split(/\s+/);return(n[0][0]+(n.length>1?n[n.length-1][0]:'')).toUpperCase();}
 const CRONO_CORES=['#2E6DB4','#2E7D32','#E67E22','#8E44AD','#C0392B','#16A085','#B9770E','#5D6D7E','#1F618D','#AF601A'];
 function mesCrono(){return($('crg-mes').value||hojeISO().slice(0,7))+'-01';}
 function mudarMesCrono(n){const d=new Date(mesCrono()+'T00:00:00');d.setMonth(d.getMonth()+n);$('crg-mes').value=isoLocal(d).slice(0,7);abrirCronograma();}
@@ -7108,7 +7326,7 @@ function corAloc(l){const k=String(l.projeto_id||l.cliente_id||l.titulo||l.id);l
 function statusOutlookAloc(l){
   if(l.situacao==='cancelado')return l.outlook_erro==='apagado no Outlook'?'🗑️ apagado no Outlook':'—';
   if(l.outlook_erro)return`<span style="color:var(--vermelho)" title="${esc(l.outlook_erro)}">⚠️ não foi</span>`;
-  if(l.outlook_id&&l.outlook_sync_em&&new Date(l.atualizado_em)<=new Date(new Date(l.outlook_sync_em).getTime()+2000))return'✅ no Outlook';
+  if(l.outlook_id&&l.outlook_sync_em&&new Date(l.atualizado_em)<=new Date(new Date(l.outlook_sync_em).getTime()+2000))return`<span title="${esc(l.outlook_caixa?'Na agenda de '+l.outlook_caixa:'')}">✅ no Outlook${l.outlook_caixa?' · '+esc(String(l.outlook_caixa).split('@')[0]):''}</span>`;
   return cronoOutlook.ok===false?'<span class="dica" style="margin:0">Outlook desligado</span>':'⏳ a enviar';
 }
 async function carregarCronograma(){
@@ -7134,23 +7352,31 @@ function renderCronograma(){
     ['crg-grade','crg-intermitentes','crg-lista'].forEach(id=>$(id).innerHTML='');return;
   }
   const ini=mesCrono(),fim=fimDoMes(ini),hoje=hojeISO();
-  $('crg-info').innerHTML=`Clique num dia vazio para alocar o funcionário, ou num bloco colorido para abrir a alocação. Cada alocação vira um evento no Outlook; para os <strong>intermitentes</strong>, os dias do mês (de 1 a ${fim.slice(8)}) entram sozinhos na <strong>folha de ${esc(nomeMes(ini))}</strong>.`;
-  $('crg-outlook').innerHTML=cronoOutlook.ok===true?'🟢 Outlook ligado':cronoOutlook.ok===false?`<span title="${esc(cronoOutlook.msg)}">⚪ Outlook não ligado (o cronograma funciona igual)</span>`:'';
-  const ativas=cronoLinhas.filter(l=>l.situacao==='ativo');
+  $('crg-info').innerHTML=`${crgVisao==='projeto'?'Cada linha é um <strong>projeto</strong> (agrupado por cliente); o bloco mostra quem trabalhou no dia (iniciais, ou quantas pessoas — passe o mouse para ver os nomes). Clique num dia vazio para alocar a equipe naquele projeto':'Clique num dia vazio para alocar o funcionário'}, ou num bloco colorido para abrir a alocação. Cada alocação vira um evento na <strong>sua agenda do Outlook</strong> (e-mail do seu login); para os <strong>intermitentes</strong>, os dias do mês (de 1 a ${fim.slice(8)}) entram sozinhos na <strong>folha de ${esc(nomeMes(ini))}</strong>.`;
+  $('crg-outlook').innerHTML=cronoOutlook.ok===true?`🟢 Outlook ligado${cronoOutlook.caixa?' — agenda de '+esc(cronoOutlook.caixa):''}`:cronoOutlook.ok===false?`<span title="${esc(cronoOutlook.msg)}">⚪ Outlook não ligado (o cronograma funciona igual)</span>`:'';
+  // v42: filtros de projeto e de funcionário valem para as duas visões
+  $('crg-visao').value=crgVisao;$('crg-projmodo').value=crgProjModo;
+  $('crg-btn-projsel').textContent=`🏗️ Escolher projetos${crgProjSel.size?' ('+crgProjSel.size+')':''}`;
+  $('crg-btn-funcsel').textContent=`👷 Escolher funcionários${crgFuncSel.size?' ('+crgFuncSel.size+')':''}`;
+  $('crg-quem').style.display=crgVisao==='funcionario'?'':'none';
+  const ativas=cronoLinhas.filter(l=>l.situacao==='ativo'&&(crgProjModo!=='selecionados'||crgProjSel.has(chaveAloc(l)))&&funcsVisiveis(l).length);
   const busca=norm($('crg-busca').value),quem=$('crg-quem').value;
   const dias=[];for(let d=ini;d<=fim;d=somarDias(d,1))dias.push(d);
   const SEM=['D','S','T','Q','Q','S','S'];
+  const alocados=new Set(ativas.flatMap(funcsVisiveis));
+  renderOndeCrono(ativas,ini,fim,busca);
+  if(crgVisao==='projeto'){renderGradeProjetos(ativas,dias,busca,ed);}else{
   let funcs=todosFuncionarios.filter(f=>f.ativo!==false||ativas.some(l=>(l.funcionarios||[]).includes(f.id)));
-  const alocados=new Set(ativas.flatMap(l=>l.funcionarios||[]));
   funcs=funcs.filter(f=>{
-    if(quem==='alocados'&&!alocados.has(f.id))return false;
+    if(crgFuncSel.size&&!crgFuncSel.has(f.id))return false;
+    if((quem==='alocados'||crgProjModo==='selecionados')&&!alocados.has(f.id))return false;
     if(quem==='intermitentes'&&!ehIntermitente(f))return false;
     if(busca){const txt=norm([f.nome,...ativas.filter(l=>(l.funcionarios||[]).includes(f.id)).map(rotuloAloc)].join(' '));if(!txt.includes(busca))return false;}
     return true;
   }).sort((a,b)=>(alocados.has(b.id)-alocados.has(a.id))||(ehIntermitente(b)-ehIntermitente(a))||a.nome.localeCompare(b.nome,'pt-BR'));
   $('crg-grade').innerHTML=`<thead><tr><th class="crg-nome">Funcionário</th>${dias.map(d=>{const w=new Date(d+'T00:00:00').getDay();return`<th class="${w===0||w===6?'fds':''} ${d===hoje?'hoje':''}">${SEM[w]}<br>${Number(d.slice(8))}</th>`;}).join('')}<th>Dias</th></tr></thead><tbody>`+
     (funcs.length?funcs.map(f=>{
-      const minhas=ativas.filter(l=>(l.funcionarios||[]).includes(f.id));
+      const minhas=ativas.filter(l=>funcsVisiveis(l).includes(f.id));
       const tot=diasCronoFunc(f.id,ini,fim).size;
       return`<tr><td class="crg-nome" title="${esc(f.nome)}">${esc(f.nome)}${ehIntermitente(f)?' <span class="badge badge-cinza" style="font-size:9px">int.</span>':''}</td>${dias.map(d=>{
         const w=new Date(d+'T00:00:00').getDay(),fds=w===0||w===6;
@@ -7163,6 +7389,7 @@ function renderCronograma(){
   const g=$('crg-grade');
   g.querySelectorAll('[data-crg-novo]').forEach(td=>td.onclick=()=>{const[fid,d]=td.dataset.crgNovo.split('|');abrirAlocacao(null,{fid,d});});
   g.querySelectorAll('[data-crg-abrir]').forEach(b=>b.onclick=()=>abrirAlocacao(b.dataset.crgAbrir));
+  }
   // intermitentes → folha
   const inter=todosFuncionarios.filter(f=>ehIntermitente(f)&&(f.ativo!==false||alocados.has(f.id)));
   $('crg-intermitentes').innerHTML='<thead><tr><th>Intermitente</th><th class="num">Dias no mês</th><th>Onde (projeto / cliente)</th><th>Folha de '+esc(nomeMes(ini))+'</th></tr></thead><tbody>'+
@@ -7183,15 +7410,101 @@ function renderCronograma(){
     :'<tr><td colspan="6" class="vazio">Nenhuma alocação neste mês.</td></tr>')+'</tbody>';
   $('crg-lista').querySelectorAll('[data-crg-linha]').forEach(tr=>tr.onclick=()=>abrirAlocacao(tr.dataset.crgLinha));
 }
+// v42: calendário com os PROJETOS / CLIENTES nas linhas (agrupados por cliente) e a equipe de cada dia
+function renderGradeProjetos(ativas,dias,busca,ed){
+  const hoje=hojeISO(),SEM=['D','S','T','Q','Q','S','S'];
+  const porK=new Map();ativas.forEach(l=>{const k=chaveAloc(l);if(!porK.has(k))porK.set(k,[]);porK.get(k).push(l);});
+  let fr=frentesCrono(ativas).filter(f=>{
+    if(crgProjModo==='selecionados'&&!crgProjSel.has(f.k))return false;
+    if(crgProjModo==='alocados'&&!porK.has(f.k))return false;
+    if(crgFuncSel.size&&!porK.has(f.k))return false;
+    if(busca){const ls=porK.get(f.k)||[];const txt=norm([f.rot,f.sub,f.cli&&f.cli.nome,f.cli&&f.cli.codigo,...ls.flatMap(l=>funcsVisiveis(l).map(id=>(funcPorId(id)||{}).nome))].join(' '));if(!txt.includes(busca))return false;}
+    return true;
+  });
+  fr.sort((a,b)=>cliOrd(a.cli).localeCompare(cliOrd(b.cli),'pt-BR',{numeric:true})||String(a.ord).localeCompare(String(b.ord),'pt-BR',{numeric:true})||a.rot.localeCompare(b.rot,'pt-BR'));
+  const cab=`<thead><tr><th class="crg-nome">Cliente / projeto</th>${dias.map(d=>{const w=new Date(d+'T00:00:00').getDay();return`<th class="${w===0||w===6?'fds':''} ${d===hoje?'hoje':''}">${SEM[w]}<br>${Number(d.slice(8))}</th>`;}).join('')}<th title="Soma de pessoas × dias no mês">Pessoas·dia</th></tr></thead><tbody>`;
+  let corpo='',cliAnt=null;
+  fr.forEach(f=>{
+    const ck=f.cli?f.cli.id:'_';
+    if(ck!==cliAnt){cliAnt=ck;corpo+=`<tr class="crg-cli"><td colspan="${dias.length+2}">${f.cli?`<span class="cod">${esc(f.cli.codigo||'')}</span> ${esc(f.cli.nome)}`:'Sem cliente'}</td></tr>`;}
+    const ls=porK.get(f.k)||[];let tot=0;
+    const cel=dias.map(d=>{
+      const w=new Date(d+'T00:00:00').getDay(),fds=w===0||w===6;
+      const aqui=ls.filter(l=>l.data_inicio<=d&&l.data_fim>=d&&contaDiaCrono(l,d));
+      const pessoas=[...new Set(aqui.flatMap(funcsVisiveis))];tot+=pessoas.length;
+      if(!pessoas.length)return`<td class="${fds?'fds':''} ${ed?'crg-livre':''}" ${ed?`data-crg-novop="${esc(f.k)}|${d}"`:''}></td>`;
+      const txt=pessoas.length===1?iniciaisFunc(pessoas[0]):String(pessoas.length);
+      return`<td class="${fds?'fds':''}"><span class="crg-bloco" style="background:${corAloc(aqui[0])}" data-crg-abrir="${esc(aqui[0].id)}" title="${esc(fmtData(d))} — ${esc(pessoas.map(id=>(funcPorId(id)||{}).nome||'?').join(', '))}">${esc(txt)}</span></td>`;
+    }).join('');
+    corpo+=`<tr><td class="crg-nome crg-proj" title="${esc([f.rot,f.sub].filter(Boolean).join(' — '))}">${esc(f.rot)}${f.sub?`<small>${esc(f.sub)}</small>`:''}</td>${cel}<td class="num"><strong>${tot||''}</strong></td></tr>`;
+  });
+  $('crg-grade').innerHTML=cab+(fr.length?corpo:`<tr><td class="vazio" colspan="${dias.length+2}">Nenhum projeto com estes filtros.${crgProjModo==='selecionados'&&!crgProjSel.size?' Clique em <strong>🏗️ Escolher projetos</strong>.':''}</td></tr>`)+'</tbody>';
+  const g=$('crg-grade');
+  g.querySelectorAll('[data-crg-novop]').forEach(td=>td.onclick=()=>{const[k,d]=td.dataset.crgNovop.split('|');abrirAlocacao(null,{k,d});});
+  g.querySelectorAll('[data-crg-abrir]').forEach(b=>b.onclick=()=>abrirAlocacao(b.dataset.crgAbrir));
+}
+// v42: quem trabalhou onde — cliente / projeto × funcionário, com os dias do mês
+function renderOndeCrono(ativas,ini,fim,busca){
+  const m=new Map();
+  ativas.forEach(l=>{const k=chaveAloc(l);diasDaAlocacao(l,ini,fim).forEach(d=>funcsVisiveis(l).forEach(id=>{const kk=k+'|'+id;if(!m.has(kk))m.set(kk,{k,l,id,dias:new Set()});m.get(kk).dias.add(d);}));});
+  let ls=[...m.values()].map(x=>({...x,f:frenteDeChave(x.k,x.l),nome:(funcPorId(x.id)||{}).nome||'(funcionário)'}));
+  if(busca)ls=ls.filter(x=>norm([x.nome,x.f.rot,x.f.sub,x.f.cli&&x.f.cli.nome,x.f.cli&&x.f.cli.codigo].join(' ')).includes(busca));
+  const porFunc=crgVisao==='funcionario';
+  ls.sort((a,b)=>porFunc?(a.nome.localeCompare(b.nome,'pt-BR')||cliOrd(a.f.cli).localeCompare(cliOrd(b.f.cli),'pt-BR',{numeric:true})):
+    (cliOrd(a.f.cli).localeCompare(cliOrd(b.f.cli),'pt-BR',{numeric:true})||String(a.f.ord).localeCompare(String(b.f.ord),'pt-BR',{numeric:true})||a.nome.localeCompare(b.nome,'pt-BR')));
+  const onde=x=>`<span class="crg-cor" style="background:${corAloc(x.l)}"></span>${x.f.cli?`<span class="cod">${esc(x.f.cli.codigo||'')}</span> ${esc(x.f.cli.nome)} · `:''}<strong>${esc(x.f.rot)}</strong>${x.f.sub?` <span class="dica" style="margin:0;display:inline">${esc(x.f.sub)}</span>`:''}`;
+  const diasTxt=x=>[...x.dias].sort().map(d=>d.slice(8)).join(', ')+'/'+ini.slice(5,7);
+  $('crg-onde').innerHTML=`<thead><tr>${porFunc?'<th>Funcionário</th><th>Onde (cliente / projeto)</th>':'<th>Onde (cliente / projeto)</th><th>Funcionário</th>'}<th>Dias</th><th class="num">Total</th></tr></thead><tbody>`+
+    (ls.length?ls.map(x=>`<tr class="clicavel" data-crg-linha="${esc(x.l.id)}">${porFunc?`<td><strong>${esc(x.nome)}</strong></td><td>${onde(x)}</td>`:`<td>${onde(x)}</td><td><strong>${esc(x.nome)}</strong></td>`}<td class="crg-dias-lista">${esc(diasTxt(x))}</td><td class="num"><strong>${x.dias.size}</strong></td></tr>`).join('')
+    :'<tr><td colspan="4" class="vazio">Ninguém alocado neste mês com estes filtros.</td></tr>')+'</tbody>';
+  $('crg-onde').querySelectorAll('[data-crg-linha]').forEach(tr=>tr.onclick=()=>abrirAlocacao(tr.dataset.crgLinha));
+}
+// v42: janela para escolher projetos ou funcionários
+function abrirFiltroCrono(tipo){
+  crfTipo=tipo;crfSel=new Set(tipo==='proj'?crgProjSel:crgFuncSel);
+  $('crf-titulo').textContent=tipo==='proj'?'Escolher projetos / clientes':'Escolher funcionários';
+  $('crf-sub').textContent=tipo==='proj'?'Aparecem os projetos em andamento e o que tiver alocação no mês. Marque o cliente para pegar todos os projetos dele.':'Só as alocações destes funcionários aparecem no calendário. Sem nenhum marcado, aparecem todos.';
+  $('crf-busca').value='';renderFiltroCrono();abrirModal('modal-crg-filtro');
+}
+function renderFiltroCrono(){
+  const busca=norm($('crf-busca').value),box=$('crf-lista');
+  if(crfTipo==='func'){
+    const lista=todosFuncionarios.filter(f=>(f.ativo!==false||crfSel.has(f.id))&&(!busca||norm(f.nome).includes(busca))).sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
+    box.innerHTML=lista.length?lista.map(f=>`<label><input type="checkbox" data-crf="${esc(f.id)}" ${crfSel.has(f.id)?'checked':''}>${esc(f.nome)}${f.cargo?` <span class="dica" style="margin:0">${esc(f.cargo)}</span>`:''}</label>`).join(''):'<p class="vazio">Nenhum funcionário encontrado.</p>';
+  }else{
+    const ativasMes=cronoLinhas.filter(l=>l.situacao==='ativo');
+    const fr=frentesCrono(ativasMes).filter(f=>!busca||norm([f.rot,f.sub,f.cli&&f.cli.nome,f.cli&&f.cli.codigo].join(' ')).includes(busca));
+    crgProjSel.forEach(k=>{if(!fr.some(f=>f.k===k)&&!busca)fr.push(frenteDeChave(k));});
+    const grupos=new Map();fr.forEach(f=>{const ck=f.cli?f.cli.id:'_';if(!grupos.has(ck))grupos.set(ck,{cli:f.cli,fr:[]});grupos.get(ck).fr.push(f);});
+    const gs=[...grupos.values()].sort((a,b)=>cliOrd(a.cli).localeCompare(cliOrd(b.cli),'pt-BR',{numeric:true}));
+    box.innerHTML=gs.length?gs.map(g=>{const ks=g.fr.map(f=>f.k),todos=ks.every(k=>crfSel.has(k));
+      return`<label class="crg-grupo"><input type="checkbox" data-crf-grupo="${esc(ks.join(','))}" ${todos?'checked':''}>${g.cli?`<span class="cod">${esc(g.cli.codigo||'')}</span> ${esc(g.cli.nome)}`:'Sem cliente'}</label>`+
+        g.fr.sort((a,b)=>String(a.ord).localeCompare(String(b.ord),'pt-BR',{numeric:true})).map(f=>`<label class="crg-sub"><input type="checkbox" data-crf="${esc(f.k)}" ${crfSel.has(f.k)?'checked':''}>${esc(f.rot)}${f.sub?` <span class="dica" style="margin:0">${esc(f.sub)}</span>`:''}${f.ativo?'':' <span class="badge badge-cinza" style="font-size:10px">só alocação</span>'}</label>`).join('');}).join('')
+      :'<p class="vazio">Nada encontrado.</p>';
+    box.querySelectorAll('[data-crf-grupo]').forEach(c=>c.onchange=()=>{c.dataset.crfGrupo.split(',').forEach(k=>c.checked?crfSel.add(k):crfSel.delete(k));renderFiltroCrono();});
+  }
+  box.querySelectorAll('[data-crf]').forEach(c=>c.onchange=()=>{c.checked?crfSel.add(c.dataset.crf):crfSel.delete(c.dataset.crf);if(crfTipo==='proj')renderFiltroCrono();});
+}
+function aplicarFiltroCrono(){
+  if(crfTipo==='proj'){crgProjSel=new Set(crfSel);crgProjModo=crgProjSel.size?'selecionados':(crgProjModo==='selecionados'?'ativos':crgProjModo);}
+  else crgFuncSel=new Set(crfSel);
+  salvarFiltrosCrono();fecharModal('modal-crg-filtro');renderCronograma();
+}
+function limparFiltroCrono(){crfSel=new Set();aplicarFiltroCrono();}
 function abrirAlocacao(id=null,pre=null){
   if(!PERM.cronograma||!v41Ok)return;
   const l=id?cronoLinhas.find(x=>x.id===id):null;cronoEditId=l?l.id:null;
-  const projs=todosProjetos.filter(p=>p.status==='Em andamento'||(l&&p.id===l.projeto_id));
+  const projs=todosProjetos.filter(p=>p.status==='Em andamento'||(l&&p.id===l.projeto_id)||(pre&&pre.k==='p:'+p.id));
   preencherSelect($('crg-projeto'),projs.map(p=>{const c=clientePorId(p.cliente_id);return[p.id,`${p.codigo} — ${p.nome}${c?' ('+c.nome+')':''}`];}),'— sem projeto —');
   preencherSelect($('crg-cliente'),todosClientes.filter(c=>c.ativo!==false||(l&&c.id===l.cliente_id)).map(c=>[c.id,rotuloCliente(c)]),'—');
   $('crg-titulo-modal').textContent=l?'Alocação':'Nova alocação';
   $('crg-projeto').value=l?(l.projeto_id||''):'';$('crg-cliente').value=l?(l.cliente_id||''):'';
   $('crg-titulo').value=l?(l.titulo||''):'';$('crg-local').value=l?(l.local||''):'';
+  // v42: clicou num dia vazio de um projeto/cliente → já vem preenchido
+  if(!l&&pre&&pre.k){
+    if(pre.k.startsWith('p:')){$('crg-projeto').value=pre.k.slice(2);mudouProjetoCrono();}
+    else if(pre.k.startsWith('c:'))$('crg-cliente').value=pre.k.slice(2);
+  }
   $('crg-ini').value=l?l.data_inicio:(pre&&pre.d)||'';$('crg-fim').value=l?l.data_fim:(pre&&pre.d)||'';
   $('crg-sab').checked=l?!!l.sabado:false;$('crg-dom').checked=l?!!l.domingo:false;
   $('crg-obs').value=l?(l.observacoes||''):'';
@@ -7279,8 +7592,8 @@ async function enviarAlocacaoOutlook(id){
     if(error||!data||!data.ok){const m=await erroDaFuncao(error,data);console.warn('Outlook',m);
       if(/permiss|segredo|Failed to send|not found|404|FunctionsFetchError|FunctionsRelayError/i.test(m))cronoOutlook={ok:false,msg:m};
       toast('Alocação salva — ⚠️ não foi para o Outlook: '+m.slice(0,90));return;}
-    cronoOutlook={ok:true,msg:''};
-    toast(data.feito==='apagado'?'Alocação cancelada e retirada do Outlook':'Alocação salva e enviada ao Outlook');
+    cronoOutlook={ok:true,msg:'',caixa:data.caixa||cronoOutlook.caixa||''};
+    toast(data.feito==='apagado'?'Alocação cancelada e retirada do Outlook':'Alocação salva e enviada à sua agenda do Outlook');
   }catch(e){console.warn(e);toast('Alocação salva — ⚠️ não foi para o Outlook');}
 }
 let cronoSincronizando=false;
@@ -7296,7 +7609,7 @@ async function sincronizarOutlook(silencioso){
       if(!silencioso)alert('Não foi possível sincronizar com o Outlook:\n'+m+'\n\nO cronograma continua funcionando no CRM. Para ligar o Outlook, veja supabase/functions/outlook-agenda/LEIA-ME.md.');
       return;
     }
-    cronoOutlook={ok:true,msg:''};
+    cronoOutlook={ok:true,msg:'',caixa:data.caixa||''};
     if((data.meses||[]).length)await abrirCompetenciasDoCronograma(data.meses,null);
     const mud=data.importados+data.atualizados_no_crm+data.cancelados_no_crm+data.enviados;
     if(mud||!silencioso)toast(`Outlook: ${data.importados} novo(s) do Outlook · ${data.atualizados_no_crm} alterado(s) · ${data.cancelados_no_crm} cancelado(s) · ${data.enviados} enviado(s)${(data.erros||[]).length?' · ⚠️ '+data.erros.length+' erro(s)':''}`);
@@ -7304,6 +7617,77 @@ async function sincronizarOutlook(silencioso){
     if(mud)await Promise.all([carregarCronograma(),carregarCompetenciaAtual()]);
   }catch(e){console.warn(e);cronoOutlook={ok:false,msg:String(e.message||e)};}
   finally{cronoSincronizando=false;b.disabled=false;b.textContent='🔄 Sincronizar com Outlook';renderCronograma();}
+}
+
+/* ================= v42: POLÍTICAS DA EMPRESA + CANAL DE DENÚNCIAS (RH) ================= */
+let todasPoliticas=[],todasDenuncias=[],v42Ok=true,politicaEditId=null,denunciaEditId=null;
+const avisoV42='<strong>Falta atualizar o banco de dados (v42).</strong> No Supabase, abra <em>SQL Editor → New query</em>, cole o conteúdo do arquivo <code>supabase/migracao_crm_v42_cronograma_projetos_denuncias_politicas.sql</code> e clique em <em>Run</em>. Depois recarregue esta página.';
+async function carregarPoliticasDenuncias(){
+  if(!PERM.rhEditar)return;
+  const[p,d]=await Promise.all([sb.from('politicas').select('*').order('ordem').order('titulo'),sb.from('denuncias').select('*').order('recebida_em',{ascending:false})]);
+  if(p.error||d.error){const e=p.error||d.error;if(/politicas|denuncias|schema cache|does not exist/i.test(e.message||''))v42Ok=false;else console.error(e);todasPoliticas=[];todasDenuncias=[];atualizarBadgeDenuncias();return;}
+  v42Ok=true;todasPoliticas=p.data||[];todasDenuncias=d.data||[];atualizarBadgeDenuncias();
+}
+function atualizarBadgeDenuncias(){const n=todasDenuncias.filter(d=>d.situacao==='nova').length;const b=$('rh-den-badge');if(b)b.innerHTML=n?`<span class="badge badge-atraso">${n}</span>`:'';}
+function renderPoliticasRH(){
+  if(!v42Ok){$('pol-info').innerHTML=avisoV42;$('tabela-politicas').innerHTML='';return;}
+  $('pol-info').innerHTML='Estas políticas aparecem para os funcionários no <strong>acesso por CPF</strong> (aba 📘 Políticas) quando estão <strong>publicadas</strong>. Clique numa linha para editar.';
+  $('tabela-politicas').innerHTML='<thead><tr><th class="num">Ordem</th><th>Política</th><th>Situação</th><th>Atualizada</th></tr></thead><tbody>'+
+    (todasPoliticas.length?todasPoliticas.map(p=>`<tr class="clicavel ${p.publicada?'':'inativo'}" data-pol="${esc(p.id)}"><td class="num">${esc(p.ordem)}</td><td><strong>${esc(p.titulo)}</strong><div class="dica" style="margin:0">${esc(String(p.conteudo||'').slice(0,140))}${String(p.conteudo||'').length>140?'…':''}</div></td>
+      <td>${p.publicada?'<span class="badge badge-ok">publicada</span>':'<span class="badge badge-cinza">rascunho</span>'}</td><td style="font-size:12px">${esc(fmtDataHora(p.atualizado_em))}${p.atualizado_por?'<br>'+esc(p.atualizado_por):''}</td></tr>`).join('')
+    :'<tr><td colspan="4" class="vazio">Nenhuma política ainda. Clique em <strong>+ Nova política</strong>.</td></tr>')+'</tbody>';
+  $('tabela-politicas').querySelectorAll('[data-pol]').forEach(tr=>tr.onclick=()=>abrirPolitica(tr.dataset.pol));
+}
+function abrirPolitica(id){
+  if(!PERM.rhEditar)return;if(!v42Ok){alert('Rode a migração v42 antes.');return;}
+  const p=id?todasPoliticas.find(x=>x.id===id):null;politicaEditId=p?p.id:null;
+  $('pol-titulo-modal').textContent=p?'Editar política':'Nova política';
+  $('pol-titulo').value=p?p.titulo:'';$('pol-conteudo').value=p?(p.conteudo||''):'';$('pol-link').value=p?(p.link||''):'';
+  $('pol-ordem').value=p?p.ordem:(todasPoliticas.length?Math.max(...todasPoliticas.map(x=>x.ordem||0))+1:1);$('pol-publicada').checked=p?!!p.publicada:false;
+  $('pol-btn-excluir').style.display=p&&PERM.admin?'':'none';
+  abrirModal('modal-politica');
+}
+async function salvarPolitica(){
+  const titulo=$('pol-titulo').value.trim(),conteudo=$('pol-conteudo').value.trim(),link=$('pol-link').value.trim();
+  if(!titulo||!conteudo){alert('Preencha o título e o texto.');return;}
+  if(link&&!/^https?:\/\//i.test(link)){alert('O link precisa começar com https://');return;}
+  const dados={titulo,conteudo,link:link||null,ordem:Number($('pol-ordem').value)||0,publicada:$('pol-publicada').checked,atualizado_em:new Date().toISOString(),atualizado_por:(meuPerfil&&meuPerfil.nome)||(usuario&&usuario.email)||null};
+  const r=politicaEditId?await sb.from('politicas').update(dados).eq('id',politicaEditId):await sb.from('politicas').insert(dados);
+  if(erroSB(r.error))return;
+  fecharModal('modal-politica');await carregarPoliticasDenuncias();renderRH();toast(dados.publicada?'Política salva e publicada':'Política salva (rascunho)');
+}
+async function excluirPolitica(){
+  if(!politicaEditId||!PERM.admin)return;
+  if(!confirm('Excluir esta política? Para só tirar do ar, desmarque "Publicada" e salve.'))return;
+  const{error}=await sb.from('politicas').delete().eq('id',politicaEditId);if(erroSB(error))return;
+  fecharModal('modal-politica');await carregarPoliticasDenuncias();renderRH();toast('Política excluída');
+}
+const SIT_DEN_RH={nova:['Nova','badge-atraso'],em_analise:['Em análise','badge-hoje'],concluida:['Concluída','badge-ok'],arquivada:['Arquivada','badge-cinza']};
+function renderDenunciasRH(){
+  if(!v42Ok){$('den-info').innerHTML=avisoV42;$('tabela-denuncias').innerHTML='';return;}
+  const f=$('den-filtro').value;
+  const l=todasDenuncias.filter(d=>f==='abertas'?['nova','em_analise'].includes(d.situacao):!f||d.situacao===f);
+  $('den-info').innerHTML='Denúncias enviadas pelos funcionários no <strong>acesso por CPF</strong>. São <strong>anônimas</strong>: o CRM não guarda quem enviou. A <strong>resposta</strong> que você escrever aparece para quem denunciou ao consultar o protocolo. Nada é apagado (use “Arquivada”).';
+  $('tabela-denuncias').innerHTML='<thead><tr><th>Recebida</th><th>Protocolo</th><th>Assunto</th><th>Relato</th><th>Situação</th></tr></thead><tbody>'+
+    (l.length?l.map(d=>{const st=SIT_DEN_RH[d.situacao]||[d.situacao,'badge-cinza'];return`<tr class="clicavel" data-den="${esc(d.id)}"><td style="white-space:nowrap">${esc(fmtData(d.recebida_em))}</td><td><span class="cod">${esc(d.protocolo)}</span></td><td>${esc(d.categoria)}</td>
+      <td style="font-size:12px">${esc(String(d.descricao||'').slice(0,160))}${String(d.descricao||'').length>160?'…':''}</td><td><span class="badge ${st[1]}">${esc(st[0])}</span>${d.resposta?'<div class="dica" style="margin:0">respondida</div>':''}</td></tr>`;}).join('')
+    :'<tr><td colspan="5" class="vazio">Nenhuma denúncia com este filtro.</td></tr>')+'</tbody>';
+  $('tabela-denuncias').querySelectorAll('[data-den]').forEach(tr=>tr.onclick=()=>abrirDenunciaRH(tr.dataset.den));
+}
+function abrirDenunciaRH(id){
+  const d=todasDenuncias.find(x=>x.id===id);if(!d)return;denunciaEditId=d.id;
+  $('dn-titulo').textContent=`Denúncia ${d.protocolo}`;
+  $('dn-detalhe').innerHTML=`<strong>Assunto:</strong> ${esc(d.categoria)} · <strong>recebida em</strong> ${esc(fmtData(d.recebida_em))}\n<strong>O que aconteceu:</strong>\n${esc(d.descricao)}${d.local?`\n<strong>Onde:</strong> ${esc(d.local)}`:''}${d.quando?`\n<strong>Quando:</strong> ${esc(d.quando)}`:''}${d.envolvidos?`\n<strong>Envolvidos:</strong> ${esc(d.envolvidos)}`:''}`;
+  $('dn-situacao').value=d.situacao==='nova'?'em_analise':d.situacao;$('dn-resposta').value=d.resposta||'';$('dn-notas').value=d.anotacoes_rh||'';
+  abrirModal('modal-denuncia');
+}
+async function salvarDenunciaRH(){
+  const d=todasDenuncias.find(x=>x.id===denunciaEditId);if(!d)return;
+  const resp=$('dn-resposta').value.trim()||null;
+  const dados={situacao:$('dn-situacao').value,resposta:resp,anotacoes_rh:$('dn-notas').value.trim()||null,atualizado_em:new Date().toISOString()};
+  if(resp&&resp!==d.resposta)dados.respondida_em=hojeISO();
+  const{error}=await sb.from('denuncias').update(dados).eq('id',d.id);if(erroSB(error))return;
+  fecharModal('modal-denuncia');await carregarPoliticasDenuncias();atualizarBadgeRH();renderRH();toast('Denúncia atualizada');
 }
 
 /* ================= FINANCEIRO (v20): PAGAMENTOS A AUTORIZAR + WHATSAPP ================= */
