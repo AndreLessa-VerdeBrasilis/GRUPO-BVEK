@@ -1957,7 +1957,7 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
   <div class="modal modal-sm">
     <h2 id="maf-titulo">Criar acesso ao contracheque</h2>
     <p class="modal-sub" id="maf-sub"></p>
-    <div class="campo"><label>Senha provisória</label><input type="text" id="maf-senha" autocomplete="off" spellcheck="false" placeholder="mínimo 8 caracteres" onkeydown="if(event.key==='Enter')salvarAcessoFunc()"></div>
+    <div class="campo"><label>Senha provisória</label><input type="text" id="maf-senha" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="mínimo 8 caracteres" onkeydown="if(event.key==='Enter')salvarAcessoFunc()"></div>
     <p class="dica">Passe ao funcionário o CPF e esta senha. No primeiro acesso, ele troca a senha no botão 🔑 Senha.</p>
     <div class="modal-btns">
       <button class="btn-cancelar" onclick="fecharModal('modal-acesso-func')">Cancelar</button>
@@ -1971,7 +1971,7 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
   <div class="modal modal-sm">
     <h2>🔑 Redefinir senha</h2>
     <p class="modal-sub" id="mrs-sub"></p>
-    <div class="campo"><label>Nova senha provisória</label><input type="text" id="mrs-senha" autocomplete="off" spellcheck="false" placeholder="mínimo 8 caracteres" onkeydown="if(event.key==='Enter')salvarRedefinirSenha()"></div>
+    <div class="campo"><label>Nova senha provisória</label><input type="text" id="mrs-senha" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="mínimo 8 caracteres" onkeydown="if(event.key==='Enter')salvarRedefinirSenha()"></div>
     <p class="dica">A senha antiga deixa de valer na hora (ninguém vê a senha antiga, ela é só substituída). Passe a nova senha à pessoa — ela já entra direto com essa senha.</p>
     <div class="modal-btns">
       <button class="btn-cancelar" onclick="fecharModal('modal-redefinir-senha')">Cancelar</button>
@@ -2510,7 +2510,11 @@ async function fazerLogin(){
     email=cpf+'@'+DOMINIO_FUNC;
   }
   const{error}=await sb.auth.signInWithPassword({email,password:senha});
-  if(error){$('login-erro').textContent='E-mail ou senha incorretos.';return;}
+  if(error){const m=String(error.message||'');
+    $('login-erro').textContent=/confirm/i.test(m)?'Este login ainda não foi confirmado. Peça ao administrador para redefinir a senha.'
+      :/banned/i.test(m)?'Este login está bloqueado no Supabase. Avise o administrador.'
+      :/invalid login/i.test(m)?'E-mail ou senha incorretos.'
+      :'Não foi possível entrar: '+m;return;}
   iniciarApp();
 }
 async function sair(){$('btn-montador').style.display='none';await sb.auth.signOut();$('app').style.display='none';$('tela-cc').style.display='none';$('tela-login').style.display='flex';}
@@ -5093,17 +5097,18 @@ function abrirRedefinirSenha(id){
   $('mrs-senha').value='';abrirModal('modal-redefinir-senha');setTimeout(()=>$('mrs-senha').focus(),50);
 }
 async function salvarRedefinirSenha(){
-  if(!redefinirSenhaId)return;const senha=$('mrs-senha').value;
+  if(!redefinirSenhaId)return;const senha=$('mrs-senha').value.trim();$('mrs-senha').value=senha;
   if(senha.length<8){alert('A senha provisória precisa ter pelo menos 8 caracteres.');return;}
   $('mrs-btn').disabled=true;
-  const{error}=await sb.rpc('bvek_redefinir_senha_usuario',{p_usuario:redefinirSenhaId,p_senha:senha});
+  const{data,error}=await sb.rpc('bvek_redefinir_senha_usuario',{p_usuario:redefinirSenhaId,p_senha:senha});
   $('mrs-btn').disabled=false;
   if(error){console.error(error);alert(/function|schema cache/i.test(error.message||'')
     ?'Falta rodar no Supabase a migração supabase/migracao_crm_v38_redefinir_senha_escritorio.sql.'
     :'Não foi possível: '+(error.message||error));return;}
   fecharModal('modal-redefinir-senha');redefinirSenhaId=null;
   await carregarPerfis();renderUsuarios();
-  toast('Senha redefinida — passe a nova senha à pessoa');
+  // mostra exatamente o que foi gravado (maiúsculas/minúsculas contam)
+  alert('Senha redefinida.\n\nLogin: '+(data||'')+'\nSenha nova: '+senha+'\n\nAtenção: maiúsculas e minúsculas fazem diferença. Peça para a pessoa digitar exatamente assim (sem usar senha salva no navegador).');
 }
 function renderUsuarios(){
   if(!PERM.admin)return;
