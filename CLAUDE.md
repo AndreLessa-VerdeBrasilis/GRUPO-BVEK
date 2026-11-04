@@ -83,3 +83,4 @@ Boa parte disto já foi implementada nas versões v11 a v18 (acessos, documentos
 
 **Currículos**
 - Banco de currículos (inclui freelas) com análise de perfil e formulário de perfil emocional para candidatos, com parecer do RH.
+- Divulgação de vagas (v49): botão "📣 Divulgar vaga" em Currículos, com modelos por função na tabela `vagas_modelos` (salário conforme CCT, atividades, benefícios, requisitos) e texto padrão "Como se candidatar" em `rh_config.vaga_como_candidatar`. Gera texto para WhatsApp/redes, texto simples para sites de emprego e PDF com a identidade visual da empresa.
