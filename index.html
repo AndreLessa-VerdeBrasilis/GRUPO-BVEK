@@ -725,6 +725,7 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
         <h2>Cronograma de projetos e equipes</h2>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
           <button class="btn-sec" id="crg-btn-sync" onclick="sincronizarOutlook(false)">🔄 Sincronizar com Outlook</button>
+          <button class="btn-sec" id="crg-btn-wa" onclick="abrirConfigConvocacao()" style="display:none" title="WhatsApp da convocação (só administrador)">⚙️ WhatsApp</button>
           <button class="btn-sec" id="crg-btn-esc" onclick="abrirEventoEscritorio()">🏢 + Evento do escritório</button>
           <button class="btn-novo" id="crg-btn-novo" onclick="abrirAlocacao()">+ Nova alocação</button>
         </div>
@@ -2364,6 +2365,29 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
     </div>
   </div>
 </div>
+<!-- v48: WHATSAPP DA CONVOCAÇÃO (Cronograma, só administrador) — separado do lembrete de pagamentos do Financeiro -->
+<div class="modal-overlay" id="modal-wa-conv">
+  <div class="modal">
+    <h2>⚙️ WhatsApp da convocação</h2>
+    <p class="modal-sub">Quando uma alocação é salva, cada funcionário da equipe recebe a convocação no celular cadastrado na ficha (RH → ficha → Dados), pela <strong>API oficial do WhatsApp (Meta)</strong>, e também por e-mail. Esta configuração é só do Cronograma: o lembrete de pagamentos continua em Financeiro → ⚙️ WhatsApp. Os dados ficam guardados só no banco (só o Administrador vê).</p>
+    <div class="form-grid">
+      <div class="campo full campo-check"><input type="checkbox" id="wc-ativo"><label for="wc-ativo">Mandar a convocação pelo WhatsApp (desligado = só por e-mail)</label></div>
+      <div class="campo"><label>Token de acesso *</label><input type="password" id="wc-token" autocomplete="off"></div>
+      <div class="campo"><label>ID do número (Phone number ID) *</label><input type="text" id="wc-phone"></div>
+      <div class="campo"><label>Nome do modelo aprovado</label><input type="text" id="wc-modelo" placeholder="ex.: convocacao_cronograma"></div>
+      <div class="campo"><label>Idioma do modelo</label><input type="text" id="wc-idioma" placeholder="pt_BR"></div>
+      <div class="campo full"><div class="info-box" style="display:block;line-height:1.6">Crie na Meta um modelo da categoria <strong>Utilidade</strong> com 7 variáveis, por exemplo:<br>
+        <code>Grupo BVEK — {{1}}<br>Olá, {{2}}!<br>Data: {{3}}<br>Horário: {{4}}<br>Local: {{5}}<br>Serviço: {{6}}<br>Observações: {{7}}<br>Em caso de dúvida, fale com o escritório.</code><br>
+        Sem modelo aprovado, a Meta só entrega a mensagem a quem mandou mensagem para o número da empresa nas últimas 24 horas.</div></div>
+      <div class="campo"><label>Celular para o teste</label><input type="tel" id="wc-teste" placeholder="(21) 99999-9999" oninput="mascaraTel(this)"></div>
+    </div>
+    <div class="modal-btns">
+      <button class="btn-cancelar" onclick="fecharModal('modal-wa-conv')">Fechar</button>
+      <button class="btn-sec" onclick="testarConfigConvocacao()">📲 Enviar teste</button>
+      <button class="btn-salvar" onclick="salvarConfigConvocacao()">Salvar</button>
+    </div>
+  </div>
+</div>
 <!-- v45: EVENTO DA AGENDA DO ESCRITÓRIO -->
 <div class="modal-overlay" id="modal-escritorio">
   <div class="modal">
@@ -2583,7 +2607,7 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
     <div class="form-grid">
       <div class="campo full campo-check"><input type="checkbox" id="wa-ativo"><label for="wa-ativo">Lembrete automático ligado</label></div>
       <div class="campo"><label>WhatsApp do André (com DDD) *</label><input type="text" id="wa-telefone" placeholder="(21) 99999-9999" oninput="mascaraTel(this)"></div>
-      <div class="campo"><label>Serviço do lembrete de pagamentos</label><select id="wa-provedor" onchange="mudouProvedorWA()"><option value="callmebot">CallMeBot (gratuito)</option><option value="meta">API oficial do WhatsApp (Meta, pago por mensagem)</option></select></div>
+      <div class="campo"><label>Serviço de envio</label><select id="wa-provedor" onchange="mudouProvedorWA()"><option value="callmebot">CallMeBot (gratuito)</option><option value="meta">API oficial do WhatsApp (Meta, pago por mensagem)</option></select></div>
       <div class="campo full" id="wa-box-callmebot">
         <div class="info-box" style="display:block;line-height:1.6">
           <strong>Como ativar o CallMeBot (uma vez só, pelo celular do André):</strong><br>
@@ -2594,17 +2618,12 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
         <label style="font-size:13px;font-weight:600">apikey do CallMeBot *</label><input type="text" id="wa-apikey" autocomplete="off" style="width:100%;padding:10px 12px;border:1.5px solid var(--borda);border-radius:8px;margin-top:6px">
       </div>
       <div class="campo full oculto" id="wa-box-meta">
-        <div class="secao" style="margin-top:0">API oficial da Meta <span class="dica" style="display:inline;margin:0">— usada sempre na convocação do Cronograma, mesmo com o lembrete no CallMeBot</span></div>
         <div class="info-box" style="display:block;line-height:1.6">Exige conta no <strong>Meta Business</strong>, um número exclusivo para a API e um <strong>modelo de mensagem aprovado</strong> com uma variável (<code>{{1}}</code>), onde entra a lista de pagamentos. Sem modelo, a Meta só entrega se o André tiver mandado mensagem para esse número nas últimas 24h.</div>
         <div class="form-grid">
           <div class="campo"><label>Token de acesso</label><input type="password" id="wa-meta-token" autocomplete="off"></div>
           <div class="campo"><label>ID do número (Phone number ID)</label><input type="text" id="wa-meta-phone"></div>
-          <div class="campo"><label>Modelo aprovado do lembrete de pagamentos (só se usar a Meta no lembrete)</label><input type="text" id="wa-meta-modelo" placeholder="ex.: lembrete_pagamentos"></div>
+          <div class="campo"><label>Nome do modelo aprovado</label><input type="text" id="wa-meta-modelo" placeholder="ex.: lembrete_pagamentos"></div>
           <div class="campo"><label>Idioma do modelo</label><input type="text" id="wa-meta-idioma" placeholder="pt_BR"></div>
-          <div class="campo full"><label>Modelo aprovado da CONVOCAÇÃO (Cronograma)</label><input type="text" id="wa-meta-modelo-conv" placeholder="ex.: convocacao_cronograma">
-            <div class="dica">A convocação vai para o celular de cada funcionário (ficha → Dados) usando o token e o número acima. Crie na Meta um modelo da categoria <strong>Utilidade</strong> com 7 variáveis, por exemplo:<br>
-            <code>Grupo BVEK — {{1}}<br>Olá, {{2}}!<br>Data: {{3}}<br>Horário: {{4}}<br>Local: {{5}}<br>Serviço: {{6}}<br>Observações: {{7}}<br>Em caso de dúvida, fale com o escritório.</code><br>
-            Sem modelo, a Meta só entrega a mensagem a quem mandou mensagem para o número da empresa nas últimas 24 horas.</div></div>
         </div>
       </div>
       <div class="campo"><label>Repetir a cada (minutos)</label><input type="number" id="wa-intervalo" min="15" max="1440" step="5"></div>
@@ -7462,7 +7481,7 @@ async function abrirCronograma(){
 function renderCronograma(){
   if(tabAtual!=='cronograma')return;
   const ed=PERM.cronograma;
-  $('crg-btn-novo').style.display=ed&&v41Ok?'':'none';$('crg-btn-sync').style.display=ed&&v41Ok?'':'none';$('crg-btn-esc').style.display=ed&&v45Ok?'':'none';
+  $('crg-btn-novo').style.display=ed&&v41Ok?'':'none';$('crg-btn-sync').style.display=ed&&v41Ok?'':'none';$('crg-btn-esc').style.display=ed&&v45Ok?'':'none';$('crg-btn-wa').style.display=PERM.admin&&v41Ok?'':'none';
   $('crg-quem-inter').hidden=!PERM.rhPessoal;
   if(!v41Ok){
     $('crg-info').innerHTML='<strong>Falta atualizar o banco de dados (v41).</strong> No Supabase, abra <em>SQL Editor → New query</em>, cole o conteúdo do arquivo <code>supabase/migracao_crm_v41_cronograma_outlook.sql</code> e clique em <em>Run</em>. Depois recarregue esta página.';
@@ -7745,7 +7764,7 @@ async function avisarConvocacao(id,reenviar=false){
     const TIPO={convocacao:'convocação',alteracao:'alteração',cancelamento:'cancelamento'};
     if(!falhas.length&&!r.some(x=>/^erro/.test(x.whatsapp+'')||/^erro/.test(x.email+'')))toast(`📲 Equipe avisada: ${r.map(x=>`${nomeCurtoTxt(x.nome)} (${TIPO[x.tipo]||x.tipo})`).join(', ')}`);
     else alert(`Avisos da convocação — ${data.enviados} de ${data.total} pessoa(s) receberam:\n\n`+r.map(x=>`• ${x.nome} (${TIPO[x.tipo]||x.tipo})\n   WhatsApp: ${x.whatsapp}\n   E-mail: ${x.email}`).join('\n')+(falhas.length?'\n\nQuem ficou sem aviso: cadastre o celular/e-mail em RH → ficha → Dados e use “📲 Reenviar aviso” na alocação.':''));
-    if(data.sem_modelo)console.warn('Convocação: sem modelo aprovado na Meta, a mensagem só chega para quem falou com o número da empresa nas últimas 24h (Financeiro → ⚙️ WhatsApp).');
+    if(data.sem_modelo)console.warn('Convocação: sem modelo aprovado na Meta, a mensagem só chega para quem falou com o número da empresa nas últimas 24h (Cronograma → ⚙️ WhatsApp).');
   }catch(e){console.warn(e);alert('A alocação foi salva, mas não foi possível avisar a equipe.');}
 }
 function nomeCurtoTxt(n){const p=String(n||'').trim().split(/\s+/);return p.length>1?p[0]+' '+p[p.length-1]:p[0];}
@@ -7766,6 +7785,39 @@ async function renderAvisosConvocacao(id){
     const ult=av[0],canais=['whatsapp','email'].map(c=>{const a=av.find(x=>x.canal===c&&x.enviado_em===ult.enviado_em)||av.find(x=>x.canal===c);if(!a)return'';
       return a.ok?`<span class="badge badge-ok" title="${esc(TIPO[a.tipo]||a.tipo)} em ${esc(fmtDataHora(a.enviado_em))}">${c==='whatsapp'?'📱 WhatsApp':'✉️ e-mail'} ✓</span>`:`<span class="badge badge-atraso" title="${esc(a.erro||'')}">${c==='whatsapp'?'📱 WhatsApp':'✉️ e-mail'}: erro</span>`;}).join(' ');
     return`<div class="sub-item"><span><strong>${esc((funcPorId(fid)||{}).nome||'?')}</strong> · ${esc(TIPO[ult.tipo]||ult.tipo)} · ${esc(fmtDataHora(ult.enviado_em))}${ult.enviado_por?' por '+esc(ult.enviado_por):''}</span><span>${canais}</span></div>`;}).join('')+'</div>';
+}
+/* v48: configuração do WhatsApp da convocação (tabela whatsapp_convocacao_config, só administrador) */
+let waConvConfig=null;
+async function abrirConfigConvocacao(){
+  if(!PERM.admin)return;
+  const{data,error}=await sb.from('whatsapp_convocacao_config').select('*').eq('id',1).maybeSingle();
+  if(error){alert(/whatsapp_convocacao_config|schema cache|does not exist/i.test(error.message||'')?'Falta atualizar o banco de dados: rode no Supabase as migrações v47 e v48 (supabase/migracao_crm_v48_whatsapp_convocacao_separado.sql).':error.message);return;}
+  const c=waConvConfig=data||{};
+  $('wc-ativo').checked=c.ativo!==false;$('wc-token').value=c.meta_token||'';$('wc-phone').value=c.meta_phone_id||'';
+  $('wc-modelo').value=c.meta_modelo||'';$('wc-idioma').value=c.meta_idioma||'pt_BR';$('wc-teste').value='';
+  abrirModal('modal-wa-conv');
+}
+async function salvarConfigConvocacao(silencioso){
+  if(!PERM.admin)return false;
+  const dados={ativo:$('wc-ativo').checked,meta_token:$('wc-token').value.trim()||null,meta_phone_id:$('wc-phone').value.trim()||null,
+    meta_modelo:$('wc-modelo').value.trim()||null,meta_idioma:$('wc-idioma').value.trim()||'pt_BR',atualizado_em:new Date().toISOString()};
+  if(dados.ativo&&(!dados.meta_token||!dados.meta_phone_id)){alert('Para mandar pelo WhatsApp, preencha o token e o ID do número da Meta.');return false;}
+  const{error}=await sb.from('whatsapp_convocacao_config').update(dados).eq('id',1);
+  if(erroSB(error))return false;
+  waConvConfig=Object.assign(waConvConfig||{},dados);if(!silencioso){toast('Configuração do WhatsApp da convocação salva');fecharModal('modal-wa-conv');}
+  return true;
+}
+async function testarConfigConvocacao(){
+  const fone=$('wc-teste').value.replace(/\D/g,'');
+  if(!(fone.length===10||fone.length===11)){alert('Informe o celular para o teste, com DDD.');return;}
+  if(!await salvarConfigConvocacao(true))return;
+  try{
+    const{data,error}=await sb.functions.invoke('convocacao',{body:{teste_fone:fone}});
+    if(error||!data||!data.ok){let m=(data&&data.erro)||'';if(!m&&error){try{const j=await error.context.json();m=j.erro||'';}catch(e){}m=m||error.message||'erro';}
+      if(/Failed to send|FunctionsFetchError|FunctionsRelayError|not found/i.test(m))m='a função "convocacao" não está publicada no Supabase.';
+      alert('O teste não foi enviado:\n'+m);return;}
+    alert('Teste enviado. Confira o WhatsApp.'+(data.sem_modelo?'\n\nAtenção: sem modelo aprovado, a mensagem só chega se esse número mandou mensagem para o número da empresa nas últimas 24 horas.':''));
+  }catch(e){console.warn(e);alert('Não foi possível enviar o teste.');}
 }
 let cronoSincronizando=false;
 async function sincronizarOutlook(silencioso){
@@ -8255,8 +8307,7 @@ async function carregarConfigWhatsApp(){
   if(error){console.error(error);waConfig=null;return null;}
   waConfig=data||{};return waConfig;
 }
-// v47: os campos da Meta ficam sempre visíveis (a convocação do Cronograma usa a Meta mesmo com o lembrete no CallMeBot)
-function mudouProvedorWA(){const m=$('wa-provedor').value==='meta';$('wa-box-meta').classList.remove('oculto');$('wa-box-callmebot').classList.toggle('oculto',m);}
+function mudouProvedorWA(){const m=$('wa-provedor').value==='meta';$('wa-box-meta').classList.toggle('oculto',!m);$('wa-box-callmebot').classList.toggle('oculto',m);}
 async function abrirConfigWhatsApp(){
   if(!PERM.admin)return;
   if(!v20Ok){avisarMigracaoV20();return;}
@@ -8264,7 +8315,7 @@ async function abrirConfigWhatsApp(){
   $('wa-ativo').checked=!!c.ativo;$('wa-provedor').value=c.provedor||'callmebot';
   const tel=String(c.telefone||'').replace(/^55/,'');$('wa-telefone').value=tel?fmtTel(tel):'';
   $('wa-apikey').value=c.callmebot_apikey||'';$('wa-meta-token').value=c.meta_token||'';$('wa-meta-phone').value=c.meta_phone_id||'';
-  $('wa-meta-modelo').value=c.meta_modelo||'';$('wa-meta-modelo-conv').value=c.meta_modelo_convocacao||'';$('wa-meta-idioma').value=c.meta_idioma||'pt_BR';
+  $('wa-meta-modelo').value=c.meta_modelo||'';$('wa-meta-idioma').value=c.meta_idioma||'pt_BR';
   $('wa-intervalo').value=c.intervalo_min||60;$('wa-hora-ini').value=c.hora_inicio??8;$('wa-hora-fim').value=c.hora_fim??18;$('wa-fds').checked=!!c.fim_de_semana;
   mudouProvedorWA();abrirModal('modal-whatsapp');renderEnviosWA();
 }
@@ -8288,10 +8339,6 @@ async function salvarConfigWhatsApp(silencioso){
     meta_token:$('wa-meta-token').value.trim()||null,meta_phone_id:$('wa-meta-phone').value.trim()||null,meta_modelo:$('wa-meta-modelo').value.trim()||null,
     meta_idioma:$('wa-meta-idioma').value.trim()||'pt_BR',intervalo_min:Math.max(15,Math.round(Number($('wa-intervalo').value)||60)),
     hora_inicio:hi,hora_fim:hf,fim_de_semana:$('wa-fds').checked,atualizado_em:new Date().toISOString()};
-  // v47: modelo da convocação (só grava se a migração v47 já criou a coluna)
-  const mConv=$('wa-meta-modelo-conv').value.trim();
-  if(waConfig&&('meta_modelo_convocacao' in waConfig))dados.meta_modelo_convocacao=mConv||null;
-  else if(mConv){alert('Para guardar o modelo da convocação, rode antes a migração v47 no Supabase.');return false;}
   const{error}=await sb.from('whatsapp_config').update(dados).eq('id',1);
   if(erroSB(error))return false;
   waConfig=Object.assign(waConfig||{},dados);if(!silencioso)toast('Configuração salva');return true;

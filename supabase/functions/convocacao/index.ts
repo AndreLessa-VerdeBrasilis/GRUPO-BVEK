@@ -1,7 +1,8 @@
 // =====================================================================
 // CRM Grupo BVEK — função "convocacao" (Supabase Edge Function) — v47
 // Cronograma → avisa cada funcionário da equipe pelo WhatsApp (API oficial
-// da Meta, a mesma configurada em Financeiro → ⚙️ WhatsApp) e pelo e-mail
+// da Meta, configurada em Cronograma → ⚙️ WhatsApp — tabela
+// whatsapp_convocacao_config, v48, separada do lembrete de pagamentos) e pelo e-mail
 // (Microsoft 365, mesmos segredos da "email-comunicado":
 //   MS_TENANT_ID, MS_CLIENT_ID, MS_CLIENT_SECRET, MS_REMETENTE).
 //
@@ -11,6 +12,7 @@
 //        • quem já foi avisado e algo mudou (data, horário, local…) → ALTERAÇÃO
 //        • quem saiu da equipe, ou alocação cancelada → CANCELAMENTO
 //   { cronograma_id: "...", reenviar: true }  → manda de novo a todos da equipe
+//   { teste_fone: "21999999999" }             → (só Administrador) manda uma convocação de exemplo
 //
 // Quem pode: Administrador, Comercial, Administrativo e Contabilidade.
 // Cada envio fica gravado em "cronograma_avisos".
@@ -118,7 +120,7 @@ const param = (t: string) => ({ type: "text", text: (String(t || "").replace(/\s
 
 // ------------------------------------------------------------------ envios
 async function enviarWhats(cfg: Linha, fone: string, tipo: Tipo, nome: string, d: Det): Promise<string | null> {
-  const modelo = String(cfg.meta_modelo_convocacao || "").trim();
+  const modelo = String(cfg.meta_modelo || "").trim();
   const corpo = modelo
     ? {
       messaging_product: "whatsapp", to: fone, type: "template",
@@ -181,6 +183,24 @@ Deno.serve(async (req) => {
     if (!perfil || !perfil.ativo || !PERFIS.includes(perfil.perfil)) return json({ erro: "Seu perfil não pode enviar convocações." }, 403);
     const quem = perfil.nome || perfil.email || user.email || "";
     const p = await req.json().catch(() => ({}));
+    const lerConfig = async () => {
+      const { data, error } = await adm.from("whatsapp_convocacao_config").select("*").eq("id", 1).maybeSingle();
+      if (error) throw new Error(/whatsapp_convocacao_config/.test(error.message) ? "Falta rodar a migração v48 no Supabase." : error.message);
+      return (data || {}) as Linha;
+    };
+
+    // teste: uma convocação de exemplo para o número informado
+    if (p.teste_fone) {
+      if (perfil.perfil !== "administrador") return json({ erro: "Só o Administrador faz o teste." }, 403);
+      const cfg = await lerConfig();
+      if (!String(cfg.meta_token || "").trim() || !String(cfg.meta_phone_id || "").trim()) return json({ erro: "Preencha o token e o ID do número da Meta e salve." }, 400);
+      const fone = foneMeta(p.teste_fone);
+      if (!fone) return json({ erro: "Número inválido: informe com DDD." }, 400);
+      const hoje = hojeBrasilia();
+      const d = detalhes({ data_inicio: hoje, data_fim: hoje, hora_inicio: "07:00", hora_fim: "17:00", local: "Local de exemplo", titulo: "TESTE da convocação", observacoes: "Mensagem de teste do CRM — pode ignorar." }, null, null, [nomeCurto(perfil.nome || "Equipe")]);
+      const erro = await enviarWhats(cfg, fone, "convocacao", primeiroNome(perfil.nome || ""), d);
+      return erro ? json({ erro: "A Meta recusou: " + erro }, 400) : json({ ok: true, sem_modelo: !String(cfg.meta_modelo || "").trim() });
+    }
 
     // 2. a alocação e o que já foi avisado
     const { data: l } = await adm.from("cronograma").select("*").eq("id", String(p.cronograma_id || "")).maybeSingle();
@@ -195,16 +215,15 @@ Deno.serve(async (req) => {
 
     const equipeIds: string[] = l.situacao === "ativo" ? (l.funcionarios || []) : [];
     const ids = [...new Set([...(l.funcionarios || []), ...ultimo.keys()])];
-    const [rf, rp, rw] = await Promise.all([
+    const [rf, rp, cfg] = await Promise.all([
       adm.from("funcionarios").select("id,nome,email,celular,ativo").in("id", ids.length ? ids : ["00000000-0000-0000-0000-000000000000"]),
       l.projeto_id ? adm.from("projetos").select("id,codigo,nome,cliente_id,local").eq("id", l.projeto_id).maybeSingle() : Promise.resolve({ data: null }),
-      adm.from("whatsapp_config").select("*").eq("id", 1).maybeSingle(),
+      lerConfig(),
     ]);
     const funcs = (rf.data || []) as Linha[];
     const proj = (rp.data || null) as Linha | null;
     const cliId = l.cliente_id || proj?.cliente_id;
     const cli = cliId ? ((await adm.from("clientes").select("id,codigo,nome").eq("id", cliId).maybeSingle()).data as Linha | null) : null;
-    const cfg = (rw.data || {}) as Linha;
 
     const equipeNomes = equipeIds.map((id) => funcs.find((f) => f.id === id)).filter(Boolean).map((f) => nomeCurto(f!.nome));
     const d = detalhes(l, proj, cli, equipeNomes);
@@ -226,7 +245,7 @@ Deno.serve(async (req) => {
     if (!plano.length) return json({ ok: true, pulado: "Todos já estavam avisados (nada mudou).", resultado: [] });
 
     // 4. canais disponíveis
-    const temWhats = !!(String(cfg.meta_token || "").trim() && String(cfg.meta_phone_id || "").trim());
+    const temWhats = cfg.ativo !== false && !!(String(cfg.meta_token || "").trim() && String(cfg.meta_phone_id || "").trim());
     const tenant = Deno.env.get("MS_TENANT_ID"), clientId = Deno.env.get("MS_CLIENT_ID");
     const segredo = Deno.env.get("MS_CLIENT_SECRET"), remetente = Deno.env.get("MS_REMETENTE");
     let tokenMs = "", erroMs = "";
@@ -242,7 +261,7 @@ Deno.serve(async (req) => {
       const fone = foneMeta(f.celular), email = String(f.email || "").trim();
       const r: Linha = { nome: f.nome, tipo, whatsapp: "", email: "" };
       if (!fone) r.whatsapp = "sem celular na ficha";
-      else if (!temWhats) r.whatsapp = "WhatsApp (Meta) não configurado";
+      else if (!temWhats) r.whatsapp = cfg.ativo === false ? "WhatsApp da convocação desligado" : "WhatsApp (Meta) não configurado";
       else {
         let erro: string | null;
         try { erro = await enviarWhats(cfg, fone, tipo, nome, d); } catch (e) { erro = String((e as Error).message || e).slice(0, 300); }
@@ -264,7 +283,7 @@ Deno.serve(async (req) => {
       if (error) console.warn("cronograma_avisos", error.message);
     }
     const enviados = resultado.filter((r) => r.whatsapp === "ok" || r.email === "ok").length;
-    return json({ ok: true, enviados, total: resultado.length, resultado, sem_modelo: temWhats && !String(cfg.meta_modelo_convocacao || "").trim() });
+    return json({ ok: true, enviados, total: resultado.length, resultado, sem_modelo: temWhats && !String(cfg.meta_modelo || "").trim() });
   } catch (e) {
     return json({ erro: String((e as Error)?.message || e) }, 500);
   }
