@@ -50,6 +50,9 @@ Boa parte disto já foi implementada nas versões v11 a v18 (acessos, documentos
 - Contabilidade: vê só RH e documentos (ponto, VA, VT, academia, odonto etc.).
 - "Funcionário (contracheque e ponto)": login por CPF + senha, vê todos os contracheques do CPF e as próprias marcações do ponto (Secullum, ação `meu_ponto`).
 - Objetivo: abrir o CRM deve ser o primeiro movimento dos funcionários ao chegar no escritório.
+- Painel completo (funil, valores, contratos, ganhos × custos) só para o Administrador (v45). Os outros perfis veem o "Painel da equipe": tarefas, agenda do escritório, quem está onde hoje e documentos — nunca propostas, valores ou contratos.
+- Cronograma (v45): todos os perfis do escritório veem, criam e alteram alocações (só o administrador apaga). Quem não é do RH vê só o nome dos funcionários. Só os intermitentes entram na folha pelo cronograma.
+- Agenda do escritório (v45): caixa `agenda@bvek.com.br` no Microsoft 365, tabela `agenda_escritorio`, linha "🏢 Escritório" no Cronograma. Eventos do escritório não entram na folha.
 
 **Funil / propostas**
 - Cobrança de retorno das propostas enviadas é feita com colunas no funil atual (não em aba ou funil separado).

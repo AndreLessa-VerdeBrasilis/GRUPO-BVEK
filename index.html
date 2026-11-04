@@ -218,6 +218,9 @@ table.tabela td.num{text-align:right;font-variant-numeric:tabular-nums;white-spa
 .crg-bloco{display:block;margin:2px 1px;border-radius:4px;color:#fff;font-size:10px;font-weight:700;line-height:24px;cursor:pointer;overflow:hidden;white-space:nowrap}
 .crg-bloco.crg-dupla{outline:2px solid #c0392b}
 .crg-cor{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:middle;margin-right:6px}
+.crg-grade tr.crg-esc td{background:#f6f4fb}.crg-grade tr.crg-esc td.crg-nome{background:#efeaf8;color:#4a3b78;font-weight:700}
+.crg-bloco.esc{background:#6c5ba7}
+.esc-hora{display:inline-block;min-width:64px;font-weight:700;color:#4a3b78}
 .crg-equipe{max-height:220px;overflow-y:auto;border:1.5px solid var(--borda);border-radius:10px;padding:6px 10px}
 .crg-equipe label{display:flex;align-items:center;gap:8px;padding:4px 0;font-size:13px;cursor:pointer}
 .crg-equipe input{width:16px;height:16px;accent-color:var(--verde)}
@@ -615,6 +618,10 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
           <div id="p-tf-resp"></div>
           <div id="p-ativ" class="lista-mini"></div>
         </div>
+        <!-- v45: agenda do escritório e quem está em campo -->
+        <div class="painel" id="pa-agenda" style="display:none"><h3>🏢 Agenda do escritório <span class="contagem" id="pa-ag-cont"></span></h3><div id="p-agenda" class="lista-mini"></div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="btn-sec" onclick="abrirEventoEscritorio()">+ Evento do escritório</button><button class="btn-link" onclick="abrirTab('cronograma')">ver no Cronograma →</button></div></div>
+        <div class="painel" id="pa-campo" style="display:none"><h3>👷 Quem está onde hoje <span class="contagem" id="pa-campo-cont"></span></h3><div id="p-campo" class="lista-mini"></div></div>
         <div class="painel" id="pa-docs"><h3>📄 Documentos e certidões <span class="contagem" id="pa-docs-cont"></span></h3><div id="p-docs-resumo" class="resumo-docs"></div><div id="p-docs" class="lista-mini"></div></div>
         <div class="painel" id="pa-cobr" style="display:none"><h3>📞 Cobrar retorno de propostas <span class="contagem" id="pa-cobr-cont"></span></h3><div id="p-cobr" class="lista-mini"></div></div>
       </div>
@@ -718,6 +725,7 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
         <h2>Cronograma de projetos e equipes</h2>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
           <button class="btn-sec" id="crg-btn-sync" onclick="sincronizarOutlook(false)">🔄 Sincronizar com Outlook</button>
+          <button class="btn-sec" id="crg-btn-esc" onclick="abrirEventoEscritorio()">🏢 + Evento do escritório</button>
           <button class="btn-novo" id="crg-btn-novo" onclick="abrirAlocacao()">+ Nova alocação</button>
         </div>
       </div>
@@ -741,15 +749,17 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
         <select id="crg-quem" onchange="renderCronograma()">
           <option value="">Todos os funcionários</option>
           <option value="alocados">Só quem tem alocação no mês</option>
-          <option value="intermitentes">Só intermitentes</option>
+          <option value="intermitentes" id="crg-quem-inter">Só intermitentes</option>
         </select>
         <span class="dica" id="crg-outlook" style="margin:0"></span>
       </div>
       <div class="tabela-wrap rolagem" style="margin-bottom:16px"><table class="crg-grade" id="crg-grade"></table></div>
+      <div class="barra-acoes" style="margin-top:6px"><h2 style="font-size:16px">🏢 Agenda do escritório no mês</h2><span class="dica" id="crg-esc-info" style="margin:0"></span></div>
+      <div class="tabela-wrap" style="margin-bottom:16px"><table class="tabela" id="crg-agenda"></table></div>
       <div class="barra-acoes" style="margin-top:6px"><h2 style="font-size:16px">Quem trabalhou onde (e em que dias)</h2></div>
       <div class="tabela-wrap" style="margin-bottom:16px"><table class="tabela" id="crg-onde"></table></div>
-      <div class="barra-acoes" style="margin-top:6px"><h2 style="font-size:16px">Intermitentes no mês → folha</h2></div>
-      <div class="tabela-wrap" style="margin-bottom:16px"><table class="tabela" id="crg-intermitentes"></table></div>
+      <div id="crg-inter-box"><div class="barra-acoes" style="margin-top:6px"><h2 style="font-size:16px">Intermitentes no mês → folha</h2></div>
+      <div class="tabela-wrap" style="margin-bottom:16px"><table class="tabela" id="crg-intermitentes"></table></div></div>
       <div class="barra-acoes" style="margin-top:6px"><h2 style="font-size:16px">Alocações do mês</h2></div>
       <div class="tabela-wrap"><table class="tabela" id="crg-lista"></table></div>
     </div>
@@ -2350,6 +2360,40 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
     </div>
   </div>
 </div>
+<!-- v45: EVENTO DA AGENDA DO ESCRITÓRIO -->
+<div class="modal-overlay" id="modal-escritorio">
+  <div class="modal">
+    <h2 id="esc-titulo-modal">Novo evento do escritório</h2>
+    <p class="modal-sub">Vai para a agenda do escritório (agenda@bvek.com.br) e os convidados recebem o convite no Outlook. Aparece para todos no Cronograma e no Painel. <strong>Não entra na folha.</strong></p>
+    <div class="info-box" id="esc-status" style="display:none;line-height:1.5"></div>
+    <div class="form-grid">
+      <div class="campo full"><label>Assunto *</label><input type="text" id="esc-titulo" placeholder="Ex.: Reunião interna — obra da Fazendinha"></div>
+      <div class="campo"><label>De *</label><div class="linha-flex"><input type="date" id="esc-ini" onchange="if(!$('esc-fim').value||$('esc-fim').value<this.value)$('esc-fim').value=this.value"><input type="time" id="esc-hini" step="900"></div></div>
+      <div class="campo"><label>Até *</label><div class="linha-flex"><input type="date" id="esc-fim"><input type="time" id="esc-hfim" step="900"></div></div>
+      <div class="campo full"><div class="campo-check"><input type="checkbox" id="esc-dia-inteiro" onchange="mudouDiaInteiroEsc()"><label for="esc-dia-inteiro">Dia inteiro (ex.: viagem, visita, feriado do escritório)</label></div></div>
+      <div class="campo full"><label>Local</label><input type="text" id="esc-local" placeholder="Ex.: escritório, Teams, obra da Fazendinha"></div>
+      <div class="campo full"><label>Convidados <button class="btn-link so-edicao" style="margin-left:6px" onclick="marcarTodosEsc()">convidar todos</button></label>
+        <input type="search" id="esc-conv-busca" placeholder="Buscar pessoa" oninput="renderConvidadosEsc($('modal-escritorio').classList.contains('so-leitura'),null)" style="margin-bottom:6px">
+        <div class="crg-equipe" id="esc-convidados"></div></div>
+      <div class="campo full"><label>Descrição / pauta</label><textarea id="esc-desc" rows="3"></textarea></div>
+    </div>
+    <div class="modal-btns">
+      <button class="btn-excluir so-edicao" id="esc-btn-cancelar" style="display:none" onclick="cancelarEventoEscritorio()">Cancelar evento</button>
+      <button class="btn-cancelar" onclick="fecharModal('modal-escritorio')">Fechar</button>
+      <button class="btn-salvar so-edicao" id="esc-btn-salvar" onclick="salvarEventoEscritorio()">Salvar</button>
+    </div>
+  </div>
+</div>
+<div class="modal-overlay" id="modal-esc-dia">
+  <div class="modal modal-sm">
+    <h2 id="escd-titulo">Escritório</h2>
+    <div id="escd-lista" class="lista-mini"></div>
+    <div class="modal-btns">
+      <button class="btn-cancelar" onclick="fecharModal('modal-esc-dia')">Fechar</button>
+      <button class="btn-salvar" id="escd-novo">+ Novo evento neste dia</button>
+    </div>
+  </div>
+</div>
 <div class="modal-overlay" id="modal-pagamento">
   <div class="modal modal-sm">
     <h2 id="pg-titulo">Pagamento a autorizar</h2>
@@ -2610,7 +2654,7 @@ const PERFIS=[['administrador','Administrador'],['comercial','Comercial'],['admi
 const DOMINIO_FUNC='funcionario.bvek.com.br';
 const PERFIL_LABEL=Object.fromEntries(PERFIS);
 function calcularPermissoes(p){
-  const adm=p==='administrador',com=p==='comercial',admv=p==='administrativo',cont=p==='contabilidade';
+  const adm=p==='administrador',com=p==='comercial',admv=p==='administrativo',cont=p==='contabilidade',cons=p==='consulta';
   // comercialVer: vê funil, clientes, projetos, atividades e empresas (a contabilidade não vê)
   // rh: vê benefícios e ponto (v28: o comercial não acessa o RH) · rhEditar: altera benefícios
   // v42: o Comercial não vê mais o funil de propostas (nem os valores do painel); só o administrador altera o funil
@@ -2631,7 +2675,10 @@ function calcularPermissoes(p){
     // v36: contratos fixos no funil (Comercial e Administrativo preenchem; valores só para quem vê valores)
     contratosEditar:adm||admv,
     // v41: cronograma de funcionários (liga ao Outlook e à folha do mês)
-    cronograma:adm||admv};
+    // v45: todos os perfis do escritório veem, criam e alteram (só o administrador apaga) + agenda do escritório
+    cronograma:adm||com||admv||cont||cons,
+    // v45: o Painel completo (funil, valores, contratos) é só do administrador; os outros veem o Painel da equipe
+    painelCompleto:adm};
 }
 const BUCKET_DOCS='documentos';
 const ABERTAS=ETAPAS.filter(e=>!['fechada','concluida','perdida'].includes(e.id)).map(e=>e.id);
@@ -3160,7 +3207,9 @@ function aplicarPermissoes(){
   mostra('btn-tipos-benef',PERM.rhEditar);
   document.querySelectorAll('#tabs [data-comercial]').forEach(t=>t.style.display=PERM.comercialVer?'':'none');
   // v42: funil de propostas fora do perfil Comercial
-  mostra('tab-btn-funil',PERM.funilVer);mostra('pa-funil-paineis',PERM.funilVer);mostra('painel-ano',PERM.funilVer);
+  mostra('tab-btn-funil',PERM.funilVer);mostra('pa-funil-paineis',PERM.funilVer&&PERM.painelCompleto);mostra('painel-ano',PERM.funilVer&&PERM.painelCompleto);
+  mostra('pa-agenda',PERM.cronograma);mostra('pa-campo',PERM.cronograma);
+  mostra('crg-inter-box',PERM.rhPessoal);
   mostra('mc-cards-tit',PERM.funilVer);mostra('mc-cards',PERM.funilVer);mostra('tf-m-card-campo',PERM.funilVer);
   if(!PERM.funil)$('pa-cobr').style.display='none';
   $('funil-dica').textContent=PERM.funil?'Arraste os cards entre as colunas para mudar a etapa.':'🔒 Seu perfil só consulta o funil.';
@@ -3179,7 +3228,7 @@ async function trocarSenha(){
 /* ================= CARGA DE DADOS ================= */
 async function carregarTudo(){
   await carregarEmpresas();
-  await Promise.all([carregarClientes(),carregarCards(),carregarAtividades(),carregarProjetos(),carregarPerfis(),carregarDocsTudo(),carregarBeneficiosTudo(),carregarRH(),carregarCurriculos(),carregarFinanceiro(),carregarSaidas(),carregarContratosFixos(),carregarPremiacoes(),carregarFornecedores(),carregarPrecoCfg(),carregarComunicados(),carregarInventario(),carregarPoliticasDenuncias()]);
+  await Promise.all([carregarClientes(),carregarCards(),carregarAtividades(),carregarProjetos(),carregarPerfis(),carregarDocsTudo(),carregarBeneficiosTudo(),carregarRH(),carregarCurriculos(),carregarFinanceiro(),carregarSaidas(),carregarContratosFixos(),carregarPremiacoes(),carregarFornecedores(),carregarPrecoCfg(),carregarComunicados(),carregarInventario(),carregarPoliticasDenuncias(),carregarAgendaPainel()]);
   atualizarBadgeRH();
   await verificarV24();
   await verificarV34();
@@ -3359,11 +3408,20 @@ function renderPainel(){
     ['Fechado',curtoV(soma(fechados)),`${fechados.length} proposta(s) · ${rotAno}`,'#1565c0','🏆',()=>abrirTab('funil')],
     ['Taxa de conversão',conv==null?'—':conv+'%',`${fechados.length} fechadas × ${perdidos.length} perdidas`,'#e67e22','📈',()=>abrirTab('funil')],
     ['Ticket médio fechado',fechados.length?curtoV(soma(fechados)/fechados.length):'—',rotAno,'#00838f','💰',()=>abrirTab('funil')],
-  ].filter((k,i)=>i===0?PERM.ativ||tfPend.length:PERM.comercialVer&&PERM.funilVer);
+  ].filter((k,i)=>i===0?PERM.ativ||tfPend.length:PERM.comercialVer&&PERM.funilVer&&PERM.painelCompleto);
+  // v45: agenda do escritório e quem está em campo hoje (para todos)
+  if(PERM.cronograma&&v45Ok){
+    const hj=hojeISO(),evHoje=eventosEscDoDia(agendaProx,hj),prox=evHoje.find(e=>e.dia_inteiro||new Date(e.fim)>new Date());
+    const campo=pessoasEmCampoHoje();
+    kpis.splice(1,0,
+      ['Escritório hoje',String(evHoje.length),evHoje.length?(prox?`${prox.dia_inteiro?'dia inteiro':horaBR(prox.inicio)} · ${prox.titulo}`:'eventos de hoje já passaram'):'nenhum evento hoje','#5D6D7E','🏢',()=>{$('pa-agenda').scrollIntoView({behavior:'smooth'});}],
+      ['Em campo hoje',String(campo.pessoas),campo.frentes?`${campo.frentes} frente(s) de trabalho`:'ninguém alocado hoje','#2E7D32','👷',()=>abrirTab('cronograma')]);
+  }
   $('kpis').innerHTML=kpis.map(([r,v,s,cor,ico],i)=>`<div class="kpi" data-kpi="${i}" style="--kpi-cor:${cor}" title="Clique para ver"><span class="ico">${ico}</span><div class="rot">${esc(r)}</div><div class="val" data-contar="${esc(v)}">${esc(v)}</div><div class="sub">${esc(s)}</div></div>`).join('');
   $('kpis').querySelectorAll('[data-kpi]').forEach(el=>el.onclick=()=>kpis[+el.dataset.kpi][5]());
   animarNumeros($('kpis'));
   renderTarefasPainel(tfPend);
+  renderAgendaPainel();renderCampoPainel();
 
   // funil
   const porEtapa=ABERTAS.map(id=>{const l=abertos.filter(c=>c.etapa===id);return{n:ETAPA_LABEL[id],q:l.length,v:soma(l)};});
@@ -3614,7 +3672,7 @@ function animarNumeros(raiz){
   });
 }
 async function atualizarPainel(silencioso){
-  await Promise.all([carregarCards(),carregarAtividades(),carregarDocumentos(),PERM.pagamentos?carregarFinanceiro():null]);
+  await Promise.all([carregarCards(),carregarAtividades(),carregarDocumentos(),PERM.pagamentos?carregarFinanceiro():null,carregarAgendaPainel()]);
   if(tabAtual==='painel')renderPainel();
   if(!silencioso)toast('Painel atualizado');
 }
@@ -7367,6 +7425,7 @@ async function carregarCronograma(){
   const{data,error}=await sb.from('cronograma').select('*').lte('data_inicio',fim).gte('data_fim',ini).order('data_inicio');
   if(error){console.warn(error);if(/cronograma/.test(error.message||'')){v41Ok=false;}cronoLinhas=[];cronoMesCarregado=null;return;}
   v41Ok=true;cronoLinhas=data||[];cronoMesCarregado=ini;
+  agendaMes=await lerAgendaEscritorio(ini,fim);
 }
 async function abrirCronograma(){
   if(!$('crg-mes').value)$('crg-mes').value=hojeISO().slice(0,7);
@@ -7374,17 +7433,19 @@ async function abrirCronograma(){
   renderCronograma();
   // sincroniza com o Outlook uma vez por mês visto (e no botão)
   if(v41Ok&&!cronoSincronizados.has(mesCrono())){cronoSincronizados.add(mesCrono());sincronizarOutlook(true);}
+  if(v45Ok&&!escSincronizando&&!escSincronizados.has(mesCrono())){escSincronizados.add(mesCrono());sincronizarEscritorio(mesCrono(),fimDoMes(mesCrono()),true);}
 }
 function renderCronograma(){
   if(tabAtual!=='cronograma')return;
   const ed=PERM.cronograma;
-  $('crg-btn-novo').style.display=ed&&v41Ok?'':'none';$('crg-btn-sync').style.display=ed&&v41Ok?'':'none';
+  $('crg-btn-novo').style.display=ed&&v41Ok?'':'none';$('crg-btn-sync').style.display=ed&&v41Ok?'':'none';$('crg-btn-esc').style.display=ed&&v45Ok?'':'none';
+  $('crg-quem-inter').hidden=!PERM.rhPessoal;
   if(!v41Ok){
     $('crg-info').innerHTML='<strong>Falta atualizar o banco de dados (v41).</strong> No Supabase, abra <em>SQL Editor → New query</em>, cole o conteúdo do arquivo <code>supabase/migracao_crm_v41_cronograma_outlook.sql</code> e clique em <em>Run</em>. Depois recarregue esta página.';
     ['crg-grade','crg-intermitentes','crg-lista'].forEach(id=>$(id).innerHTML='');return;
   }
   const ini=mesCrono(),fim=fimDoMes(ini),hoje=hojeISO();
-  $('crg-info').innerHTML=`${crgVisao==='projeto'?'Cada linha é um <strong>projeto</strong> (agrupado por cliente); o bloco mostra quem trabalhou no dia (iniciais, ou quantas pessoas — passe o mouse para ver os nomes). Clique num dia vazio para alocar a equipe naquele projeto':'Clique num dia vazio para alocar o funcionário'}, ou num bloco colorido para abrir a alocação. Cada alocação vira um evento na <strong>sua agenda do Outlook</strong> (e-mail do seu login); para os <strong>intermitentes</strong>, os dias do mês (de 1 a ${fim.slice(8)}) entram sozinhos na <strong>folha de ${esc(nomeMes(ini))}</strong>.`;
+  $('crg-info').innerHTML=`A linha <strong>🏢 Escritório</strong> mostra as reuniões e eventos da agenda do escritório (${esc(CAIXA_ESCRITORIO)}) — eles <strong>não</strong> entram na folha. ${crgVisao==='projeto'?'Cada linha é um <strong>projeto</strong> (agrupado por cliente); o bloco mostra quem trabalhou no dia (iniciais, ou quantas pessoas — passe o mouse para ver os nomes). Clique num dia vazio para alocar a equipe naquele projeto':'Clique num dia vazio para alocar o funcionário'}, ou num bloco colorido para abrir a alocação. Cada alocação vira um evento na <strong>sua agenda do Outlook</strong> (e-mail do seu login); para os <strong>intermitentes</strong>, os dias do mês (de 1 a ${fim.slice(8)}) entram sozinhos na <strong>folha de ${esc(nomeMes(ini))}</strong>.`;
   $('crg-outlook').innerHTML=cronoOutlook.ok===true?`🟢 Outlook ligado${cronoOutlook.caixa?' — agenda de '+esc(cronoOutlook.caixa):''}`:cronoOutlook.ok===false?`⚪ Outlook não ligado (o cronograma funciona igual)${cronoOutlook.msg?`<br><span style="color:var(--vermelho)">Motivo: ${esc(cronoOutlook.msg)}</span>`:''}`:'';
   // v42: filtros de projeto e de funcionário valem para as duas visões
   $('crg-visao').value=crgVisao;$('crg-projmodo').value=crgProjModo;
@@ -7422,6 +7483,7 @@ function renderCronograma(){
   g.querySelectorAll('[data-crg-novo]').forEach(td=>td.onclick=()=>{const[fid,d]=td.dataset.crgNovo.split('|');abrirAlocacao(null,{fid,d});});
   g.querySelectorAll('[data-crg-abrir]').forEach(b=>b.onclick=()=>abrirAlocacao(b.dataset.crgAbrir));
   }
+  linhaEscritorioNaGrade(dias,ed);renderAgendaMes();
   // intermitentes → folha
   const inter=todosFuncionarios.filter(f=>ehIntermitente(f)&&(f.ativo!==false||alocados.has(f.id)));
   $('crg-intermitentes').innerHTML='<thead><tr><th>Intermitente</th><th class="num">Dias no mês</th><th>Onde (projeto / cliente)</th><th>Folha de '+esc(nomeMes(ini))+'</th></tr></thead><tbody>'+
@@ -7633,6 +7695,7 @@ async function sincronizarOutlook(silencioso){
   if(!PERM.cronograma||!v41Ok||cronoSincronizando)return;
   const ini=mesCrono(),fim=fimDoMes(ini);
   cronoSincronizando=true;const b=$('crg-btn-sync');b.disabled=true;b.textContent='🔄 Sincronizando…';
+  if(!silencioso&&v45Ok)sincronizarEscritorio(ini,fim,false);
   try{
     const{data,error}=await sb.functions.invoke('outlook-agenda',{body:{acao:'sincronizar',inicio:ini,fim}});
     if(error||!data||!data.ok){
@@ -7649,6 +7712,220 @@ async function sincronizarOutlook(silencioso){
     if(mud)await Promise.all([carregarCronograma(),carregarCompetenciaAtual()]);
   }catch(e){console.warn(e);cronoOutlook={ok:false,msg:String(e.message||e)};}
   finally{cronoSincronizando=false;b.disabled=false;b.textContent='🔄 Sincronizar com Outlook';renderCronograma();}
+}
+
+
+/* ================= v45: AGENDA DO ESCRITÓRIO (caixa agenda@bvek.com.br no Microsoft 365) ================= */
+// Eventos do escritório ficam na tabela agenda_escritorio, separados do cronograma: NÃO entram na folha.
+const CAIXA_ESCRITORIO='agenda@bvek.com.br';
+let v45Ok=true,agendaMes=[],agendaProx=[],cronoHoje=[],pessoasAgenda=null,escEditId=null,escConvidados=new Set(),escSincronizando=false;
+const escSincronizados=new Set();
+const FUSO_BR='America/Sao_Paulo';
+function diaBR(ts){return new Intl.DateTimeFormat('en-CA',{timeZone:FUSO_BR,year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(ts));}
+function horaBR(ts){return new Intl.DateTimeFormat('pt-BR',{timeZone:FUSO_BR,hour:'2-digit',minute:'2-digit'}).format(new Date(ts));}
+function periodoEsc(e){
+  const d1=diaBR(e.inicio),d2=diaBR(e.fim);
+  if(e.dia_inteiro)return d1===d2?'dia inteiro':`${fmtData(d1).slice(0,5)} a ${fmtData(d2).slice(0,5)} (dia inteiro)`;
+  return d1===d2?`${horaBR(e.inicio)}–${horaBR(e.fim)}`:`${fmtData(d1).slice(0,5)} ${horaBR(e.inicio)} a ${fmtData(d2).slice(0,5)} ${horaBR(e.fim)}`;
+}
+function eventosEscDoDia(lista,d){return(lista||[]).filter(e=>e.situacao==='ativo'&&diaBR(e.inicio)<=d&&diaBR(e.fim)>=d).sort((a,b)=>(b.dia_inteiro-a.dia_inteiro)||String(a.inicio).localeCompare(String(b.inicio)));}
+async function lerAgendaEscritorio(ini,fim){
+  if(!PERM.cronograma)return[];
+  const{data,error}=await sb.from('agenda_escritorio').select('*').lte('inicio',somarDias(fim,1)+'T03:00:00Z').gte('fim',ini+'T03:00:00Z').order('inicio');
+  if(error){if(/agenda_escritorio|schema cache|does not exist/i.test(error.message||''))v45Ok=false;else console.warn(error);return[];}
+  v45Ok=true;return data||[];
+}
+async function carregarAgendaPainel(){
+  if(!PERM.cronograma)return;
+  const hj=hojeISO();
+  const[a,c]=await Promise.all([lerAgendaEscritorio(hj,somarDias(hj,7)),
+    sb.from('cronograma').select('*').eq('situacao','ativo').lte('data_inicio',hj).gte('data_fim',hj)]);
+  agendaProx=a;cronoHoje=c.error?[]:(c.data||[]);
+  // traz do Outlook uma vez por sessão (sem travar a tela)
+  if(v45Ok&&!escSincronizados.has('painel')){escSincronizados.add('painel');sincronizarEscritorio(hj,somarDias(hj,14),true);}
+}
+function pessoasEmCampoHoje(){
+  const hj=hojeISO(),ls=cronoHoje.filter(l=>contaDiaCrono(l,hj));
+  return{ls,pessoas:new Set(ls.flatMap(l=>l.funcionarios||[])).size,frentes:new Set(ls.map(chaveAloc)).size};
+}
+function itemEscMini(e,comDia){
+  const d=diaBR(e.inicio),hj=hojeISO();
+  const quando=comDia?(d===hj?'Hoje':d===somarDias(hj,1)?'Amanhã':new Date(d+'T12:00:00').toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'2-digit'})):'';
+  const quem=(e.participantes||[]).map(p=>p.nome||p.email).filter(Boolean);
+  return`<div class="item" data-esc="${esc(e.id)}"><div><span class="esc-hora">${esc(e.dia_inteiro?'dia todo':horaBR(e.inicio))}</span><strong>${esc(e.titulo)}</strong><br><span style="color:var(--texto2)">${esc([quando,e.local?'📍 '+e.local:'',e.organizador?'por '+e.organizador:''].filter(Boolean).join(' · '))}${quem.length?' · 👥 '+esc(quem.slice(0,4).join(', '))+(quem.length>4?` +${quem.length-4}`:''):''}</span></div></div>`;
+}
+function renderAgendaPainel(){
+  const box=$('p-agenda');if(!box||!PERM.cronograma)return;
+  if(!v45Ok){box.innerHTML='<p class="vazio">Rode a migração <strong>v45</strong> no Supabase para ligar a agenda do escritório.</p>';$('pa-ag-cont').textContent='';return;}
+  const hj=hojeISO(),lista=agendaProx.filter(e=>e.situacao==='ativo'&&diaBR(e.fim)>=hj).sort((a,b)=>String(a.inicio).localeCompare(String(b.inicio)));
+  $('pa-ag-cont').textContent=lista.length?`${lista.length} nos próximos 7 dias`:'';
+  box.innerHTML=lista.length?lista.slice(0,12).map(e=>itemEscMini(e,true)).join(''):`<p class="vazio">Nenhum evento do escritório nos próximos 7 dias. Para aparecer aqui, convide <strong>${esc(CAIXA_ESCRITORIO)}</strong> na reunião do Outlook ou clique em <strong>+ Evento do escritório</strong>.</p>`;
+  box.querySelectorAll('[data-esc]').forEach(el=>el.onclick=()=>abrirEventoEscritorio(el.dataset.esc));
+}
+function renderCampoPainel(){
+  const box=$('p-campo');if(!box||!PERM.cronograma)return;
+  const{ls,pessoas}=pessoasEmCampoHoje();
+  $('pa-campo-cont').textContent=pessoas?`${pessoas} pessoa(s)`:'';
+  const porK=new Map();ls.forEach(l=>{const k=chaveAloc(l);if(!porK.has(k))porK.set(k,{l,ids:new Set()});(l.funcionarios||[]).forEach(id=>porK.get(k).ids.add(id));});
+  box.innerHTML=porK.size?[...porK.values()].map(x=>`<div class="item" data-crg="1"><div><span class="crg-cor" style="background:${corAloc(x.l)}"></span><strong>${esc(rotuloAloc(x.l))}</strong>${x.l.local?` <span style="color:var(--texto2)">· 📍 ${esc(x.l.local)}</span>`:''}<br><span style="color:var(--texto2)">${esc([...x.ids].map(id=>(funcPorId(id)||{}).nome||'(funcionário)').join(', '))}</span></div></div>`).join('')
+    :'<p class="vazio">Ninguém alocado em projeto hoje.</p>';
+  box.querySelectorAll('[data-crg]').forEach(el=>el.onclick=()=>abrirTab('cronograma'));
+}
+// linha fixa "🏢 Escritório" no topo da grade do cronograma
+function linhaEscritorioNaGrade(dias,ed){
+  const tb=$('crg-grade').tBodies[0];if(!tb)return;
+  if(!v45Ok){tb.insertAdjacentHTML('afterbegin',`<tr class="crg-esc"><td class="crg-nome">🏢 Escritório</td><td colspan="${dias.length+1}" style="font-size:12px;text-align:left;padding:0 10px">Rode a migração v45 no Supabase para ver a agenda do escritório.</td></tr>`);return;}
+  let tot=0;
+  const cel=dias.map(d=>{
+    const w=new Date(d+'T00:00:00').getDay(),fds=w===0||w===6,evs=eventosEscDoDia(agendaMes,d);tot+=evs.length;
+    if(!evs.length)return`<td class="${fds?'fds':''} ${ed?'crg-livre':''}" ${ed?`data-esc-novo="${d}"`:''} title="${ed?'Marcar evento do escritório neste dia':''}"></td>`;
+    const txt=evs.length>1?String(evs.length):(evs[0].dia_inteiro?'•':horaBR(evs[0].inicio).replace(':00','h').replace(':','h'));
+    return`<td class="${fds?'fds':''}"><span class="crg-bloco esc" data-esc-dia="${d}" title="${esc(fmtData(d))}\n${esc(evs.map(e=>`${e.dia_inteiro?'dia inteiro':horaBR(e.inicio)} — ${e.titulo}${e.local?' ('+e.local+')':''}`).join('\n'))}">${esc(txt)}</span></td>`;
+  }).join('');
+  tb.insertAdjacentHTML('afterbegin',`<tr class="crg-esc"><td class="crg-nome" title="Reuniões e eventos da agenda do escritório (${esc(CAIXA_ESCRITORIO)}). Não entram na folha.">🏢 Escritório</td>${cel}<td class="num"><strong>${tot||''}</strong></td></tr>`);
+  tb.querySelectorAll('[data-esc-novo]').forEach(td=>td.onclick=()=>abrirEventoEscritorio(null,td.dataset.escNovo));
+  tb.querySelectorAll('[data-esc-dia]').forEach(b=>b.onclick=()=>abrirDiaEscritorio(b.dataset.escDia));
+}
+function renderAgendaMes(){
+  const t=$('crg-agenda');if(!t)return;
+  $('crg-esc-info').innerHTML=`Para uma reunião aparecer aqui (e na agenda de todos), convide <strong>${esc(CAIXA_ESCRITORIO)}</strong> no Outlook.`;
+  if(!v45Ok){t.innerHTML='<tbody><tr><td class="vazio">Rode a migração <strong>v45</strong> no Supabase (arquivo <code>supabase/migracao_crm_v45_cronograma_todos_agenda_escritorio.sql</code>) para ligar a agenda do escritório.</td></tr></tbody>';return;}
+  const l=agendaMes.slice().sort((a,b)=>(a.situacao!==b.situacao?(a.situacao==='ativo'?-1:1):0)||String(a.inicio).localeCompare(String(b.inicio)));
+  t.innerHTML='<thead><tr><th>Quando</th><th>Evento</th><th>Quem marcou</th><th>Participantes</th><th>Outlook</th></tr></thead><tbody>'+
+    (l.length?l.map(e=>`<tr class="clicavel ${e.situacao==='cancelado'?'inativo':''}" data-esc="${esc(e.id)}"><td style="white-space:nowrap">${esc(fmtData(diaBR(e.inicio)))}<div class="dica" style="margin:0">${esc(periodoEsc(e))}</div></td>
+      <td><strong>${esc(e.titulo)}</strong>${e.local?`<div class="dica" style="margin:0">📍 ${esc(e.local)}</div>`:''}${e.situacao==='cancelado'?' <span class="badge badge-cinza">cancelado</span>':''}</td>
+      <td>${esc(e.organizador||e.criado_por||'')}</td><td style="font-size:12px;white-space:normal;max-width:260px">${esc((e.participantes||[]).map(p=>p.nome||p.email).join(', '))}</td>
+      <td>${statusOutlookEsc(e)}</td></tr>`).join('')
+    :'<tr><td colspan="5" class="vazio">Nenhum evento do escritório neste mês.</td></tr>')+'</tbody>';
+  t.querySelectorAll('[data-esc]').forEach(tr=>tr.onclick=()=>abrirEventoEscritorio(tr.dataset.esc));
+}
+function statusOutlookEsc(e){
+  if(e.situacao==='cancelado')return e.outlook_erro==='apagado no Outlook'?'🗑️ apagado no Outlook':'—';
+  if(e.origem==='outlook')return'📅 convite do Outlook';
+  if(e.outlook_erro)return`<span style="color:var(--vermelho)" title="${esc(e.outlook_erro)}">⚠️ não foi</span>`;
+  if(e.outlook_id&&e.outlook_sync_em&&new Date(e.atualizado_em)<=new Date(new Date(e.outlook_sync_em).getTime()+2000))return'✅ na agenda';
+  return'⏳ a enviar';
+}
+async function sincronizarEscritorio(ini,fim,silencioso){
+  if(!PERM.cronograma||!v45Ok||escSincronizando)return;
+  escSincronizando=true;
+  try{
+    const{data,error}=await sb.functions.invoke('outlook-agenda',{body:{acao:'escritorio_sincronizar',inicio:ini,fim}});
+    if(error||!data||!data.ok){const m=await erroDaFuncao(error,data);console.warn('Agenda do escritório',m);if(!silencioso)alert('Não foi possível ler a agenda do escritório no Outlook:\n'+m);return;}
+    const mud=data.importados+data.atualizados_no_crm+data.cancelados_no_crm+data.enviados;
+    if((data.erros||[]).length)console.warn('Agenda do escritório',data.erros);
+    if(!silencioso)toast(`Agenda do escritório: ${data.importados} novo(s) · ${data.atualizados_no_crm} alterado(s) · ${data.cancelados_no_crm} cancelado(s)${(data.erros||[]).length?' · ⚠️ '+data.erros.length+' erro(s)':''}`);
+    if(mud||!silencioso){
+      await carregarAgendaPainelSemSync();
+      if(cronoMesCarregado)agendaMes=await lerAgendaEscritorio(cronoMesCarregado,fimDoMes(cronoMesCarregado));
+      renderTabAtual();
+    }
+  }catch(e){console.warn(e);}
+  finally{escSincronizando=false;}
+}
+async function carregarAgendaPainelSemSync(){const hj=hojeISO();agendaProx=await lerAgendaEscritorio(hj,somarDias(hj,7));}
+// vários eventos no mesmo dia: lista para escolher
+function abrirDiaEscritorio(d){
+  const evs=eventosEscDoDia(agendaMes,d);
+  if(evs.length===1){abrirEventoEscritorio(evs[0].id);return;}
+  $('escd-titulo').textContent='Escritório — '+new Date(d+'T12:00:00').toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long'});
+  $('escd-lista').innerHTML=evs.map(e=>itemEscMini(e,false)).join('');
+  $('escd-lista').querySelectorAll('[data-esc]').forEach(el=>el.onclick=()=>{fecharModal('modal-esc-dia');abrirEventoEscritorio(el.dataset.esc);});
+  $('escd-novo').onclick=()=>{fecharModal('modal-esc-dia');abrirEventoEscritorio(null,d);};
+  $('escd-novo').style.display=PERM.cronograma?'':'none';
+  abrirModal('modal-esc-dia');
+}
+async function carregarPessoasAgenda(){
+  if(pessoasAgenda)return pessoasAgenda;
+  const{data,error}=await sb.rpc('bvek_pessoas_agenda');
+  pessoasAgenda=error?[]:(data||[]);
+  return pessoasAgenda;
+}
+async function abrirEventoEscritorio(id=null,dia=null){
+  if(!PERM.cronograma)return;
+  if(!v45Ok){alert('Rode antes a migração v45 no Supabase (supabase/migracao_crm_v45_cronograma_todos_agenda_escritorio.sql).');return;}
+  const e=id?[...agendaMes,...agendaProx].find(x=>x.id===id):null;
+  escEditId=e?e.id:null;
+  const meuEmail=String((usuario&&usuario.email)||'').toLowerCase();
+  const d0=dia||hojeISO();
+  $('esc-titulo-modal').textContent=e?e.titulo:'Novo evento do escritório';
+  $('esc-titulo').value=e?e.titulo:'';
+  $('esc-dia-inteiro').checked=e?!!e.dia_inteiro:false;
+  $('esc-ini').value=e?diaBR(e.inicio):d0;$('esc-fim').value=e?diaBR(e.fim):d0;
+  $('esc-hini').value=e&&!e.dia_inteiro?horaBR(e.inicio):'09:00';$('esc-hfim').value=e&&!e.dia_inteiro?horaBR(e.fim):'10:00';
+  $('esc-local').value=e?e.local||'':'';$('esc-desc').value=e?e.descricao||'':'';
+  escConvidados=new Set(e?(e.participantes||[]).map(p=>String(p.email||'').toLowerCase()).filter(Boolean):(meuEmail&&!/@funcionario\./.test(meuEmail)?[meuEmail]:[]));
+  const doOutlook=!!(e&&e.origem==='outlook');
+  $('esc-status').style.display=e?'block':'none';
+  $('esc-status').innerHTML=!e?'':doOutlook
+    ?`📅 Reunião marcada no Outlook${e.organizador?' por <strong>'+esc(e.organizador)+'</strong>':''}. Para mudar data, horário ou convidados, altere no Outlook de quem marcou — o CRM traz a mudança sozinho.`
+    :`${e.situacao==='cancelado'?'<span class="badge badge-cinza">cancelado</span> ':''}Marcado ${e.criado_por&&e.criado_por!=='Outlook'?'no CRM por <strong>'+esc(e.criado_por)+'</strong>':'na agenda do escritório'} · Outlook: ${statusOutlookEsc(e)}`;
+  $('esc-btn-cancelar').style.display=e&&!doOutlook&&e.situacao==='ativo'?'':'none';
+  $('esc-btn-salvar').textContent=e&&e.situacao==='cancelado'?'Reativar e salvar':'Salvar';
+  mudouDiaInteiroEsc();
+  modoLeitura('modal-escritorio',doOutlook);
+  abrirModal('modal-escritorio');
+  await carregarPessoasAgenda();renderConvidadosEsc(doOutlook,e);
+}
+function mudouDiaInteiroEsc(){const di=$('esc-dia-inteiro').checked;['esc-hini','esc-hfim'].forEach(i=>$(i).style.display=di?'none':'');}
+function renderConvidadosEsc(trava,e){
+  const box=$('esc-convidados'),busca=norm($('esc-conv-busca').value||'');
+  const lista=[...(pessoasAgenda||[])];
+  // convidados de fora da lista (ex.: veio do Outlook)
+  ((e&&e.participantes)||[]).forEach(p=>{const em=String(p.email||'').toLowerCase();if(em&&!lista.some(x=>x.email===em))lista.push({nome:p.nome||em,email:em});});
+  escConvidados.forEach(em=>{if(!lista.some(x=>x.email===em))lista.push({nome:em,email:em});});
+  const vis=lista.filter(p=>!busca||norm(p.nome+' '+p.email).includes(busca));
+  box.innerHTML=vis.length?vis.map(p=>`<label><input type="checkbox" data-conv="${esc(p.email)}" ${escConvidados.has(p.email)?'checked':''} ${trava?'disabled':''}>${esc(p.nome)} <span class="dica" style="margin:0">${esc(p.email)}</span></label>`).join(''):'<p class="vazio">Ninguém encontrado.</p>';
+  box.querySelectorAll('[data-conv]').forEach(c=>c.onchange=()=>{c.checked?escConvidados.add(c.dataset.conv):escConvidados.delete(c.dataset.conv);});
+}
+function marcarTodosEsc(){(pessoasAgenda||[]).forEach(p=>escConvidados.add(p.email));renderConvidadosEsc(false,null);}
+async function salvarEventoEscritorio(){
+  if(!PERM.cronograma)return;
+  const tit=$('esc-titulo').value.trim(),di=$('esc-dia-inteiro').checked,d1=$('esc-ini').value,d2=$('esc-fim').value||d1,h1=$('esc-hini').value,h2=$('esc-hfim').value;
+  if(!tit){alert('Escreva o assunto do evento.');return;}
+  if(!d1){alert('Informe a data.');return;}
+  if(d2<d1){alert('A data final está antes da inicial.');return;}
+  if(!di&&(!h1||!h2)){alert('Informe o horário (ou marque "Dia inteiro").');return;}
+  const inicio=di?`${d1}T00:00:00-03:00`:`${d1}T${h1}:00-03:00`,fim=di?`${d2}T23:59:00-03:00`:`${d2}T${h2}:00-03:00`;
+  if(!di&&fim<=inicio){alert('O horário de término precisa ser depois do início.');return;}
+  const nomes=Object.fromEntries((pessoasAgenda||[]).map(p=>[p.email,p.nome]));
+  const ant=escEditId?[...agendaMes,...agendaProx].find(x=>x.id===escEditId):null;
+  const antNomes=Object.fromEntries(((ant&&ant.participantes)||[]).map(p=>[String(p.email||'').toLowerCase(),p.nome]));
+  const dados={titulo:tit,inicio,fim,dia_inteiro:di,local:$('esc-local').value.trim()||null,descricao:$('esc-desc').value.trim()||null,
+    participantes:[...escConvidados].map(em=>({nome:nomes[em]||antNomes[em]||em,email:em})),situacao:'ativo',atualizado_em:new Date().toISOString()};
+  const btn=$('esc-btn-salvar');btn.disabled=true;
+  try{
+    let id=escEditId;
+    if(id){const{error}=await sb.from('agenda_escritorio').update(dados).eq('id',id);if(erroSB(error))return;}
+    else{
+      const quem=(meuPerfil&&meuPerfil.nome)||(usuario&&usuario.email)||null;
+      Object.assign(dados,{origem:'crm',criado_por:quem,organizador:quem,organizador_email:usuario?usuario.email:null});
+      const{data,error}=await sb.from('agenda_escritorio').insert(dados).select().single();if(erroSB(error))return;id=data.id;
+    }
+    fecharModal('modal-escritorio');
+    await enviarEventoEscritorio(id,'salvo');
+    await recarregarAgendas();
+  }finally{btn.disabled=false;}
+}
+async function cancelarEventoEscritorio(){
+  if(!PERM.cronograma||!escEditId)return;
+  if(!confirm('Cancelar este evento? Ele sai da agenda do escritório e os convidados recebem o cancelamento. Nada é apagado no CRM.'))return;
+  const{error}=await sb.from('agenda_escritorio').update({situacao:'cancelado',atualizado_em:new Date().toISOString()}).eq('id',escEditId);if(erroSB(error))return;
+  fecharModal('modal-escritorio');
+  await enviarEventoEscritorio(escEditId,'cancelado');
+  await recarregarAgendas();
+}
+async function enviarEventoEscritorio(id,oque){
+  try{
+    const{data,error}=await sb.functions.invoke('outlook-agenda',{body:{acao:'escritorio_enviar',id}});
+    if(error||!data||!data.ok){const m=await erroDaFuncao(error,data);console.warn('Agenda do escritório',m);toast(`Evento ${oque} no CRM — ⚠️ não foi para o Outlook: `+m.slice(0,90));return;}
+    toast(data.feito==='cancelado'?'Evento cancelado — os convidados recebem o aviso':'Evento salvo na agenda do escritório — os convidados recebem o convite');
+  }catch(e){console.warn(e);toast(`Evento ${oque} no CRM — ⚠️ não foi para o Outlook`);}
+}
+async function recarregarAgendas(){
+  await carregarAgendaPainelSemSync();
+  if(cronoMesCarregado)agendaMes=await lerAgendaEscritorio(cronoMesCarregado,fimDoMes(cronoMesCarregado));
+  renderTabAtual();
 }
 
 /* ================= v42: POLÍTICAS DA EMPRESA + CANAL DE DENÚNCIAS (RH) ================= */

@@ -28,6 +28,35 @@ quem os alterar.
 Se o administrador do Microsoft 365 tiver limitado o aplicativo a algumas caixas
 (*Application Access Policy*), inclua as caixas de quem usa o Cronograma.
 
+## Agenda do escritório (v45)
+
+Reuniões e eventos do escritório ficam na caixa **agenda@bvek.com.br** do Microsoft 365
+e aparecem para todos no CRM (linha **🏢 Escritório** do Cronograma e quadro
+**Agenda do escritório** no Painel). Ficam na tabela `agenda_escritorio`, separados do
+cronograma: **não entram na folha**.
+
+| Onde muda | O que acontece |
+|-----------|----------------|
+| Reunião criada no Outlook com `agenda@bvek.com.br` convidada | aparece no CRM (só leitura: muda-se no Outlook de quem marcou) |
+| Reunião alterada/cancelada no Outlook | o CRM traz a mudança / marca como cancelada |
+| Evento criado no CRM (**+ Evento do escritório**) | vai para a agenda do escritório e os convidados recebem o convite |
+| Evento alterado/cancelado no CRM | o Outlook é atualizado e os convidados recebem o aviso |
+
+Reunião com `agenda@bvek.com.br` convidada **não vira alocação** do cronograma, mesmo com
+funcionário convidado.
+
+Para ver a agenda do escritório no próprio Outlook: *Calendário → Adicionar calendário →
+Da organização / Do diretório* → `agenda@bvek.com.br` (a caixa precisa estar compartilhada
+com a equipe no Microsoft 365).
+
+Se um convite enviado à agenda não aparecer no calendário dela, o administrador do
+Microsoft 365 pode ligar o processamento automático:
+`Set-CalendarProcessing -Identity agenda@bvek.com.br -AutomateProcessing AutoUpdate`.
+Para usar outra caixa, crie o segredo `OUTLOOK_ESCRITORIO` no Supabase.
+
+Desde a v45 todos os perfis do escritório (Administrador, Comercial, Administrativo,
+Contabilidade e Consulta) usam o Cronograma e a agenda do escritório.
+
 ## Como ligar (uma vez só)
 
 1. **Azure / Microsoft Entra** (portal.azure.com → Registros de aplicativo → o mesmo
@@ -39,6 +68,7 @@ Se o administrador do Microsoft 365 tiver limitado o aplicativo a algumas caixas
    conteúdo de `index.ts` (ou `supabase functions deploy outlook-agenda`).
    Os segredos `MS_TENANT_ID`, `MS_CLIENT_ID`, `MS_CLIENT_SECRET` e `MS_REMETENTE` já existem.
    (Opcional) crie `OUTLOOK_AGENDA` para usar o calendário de outra caixa.
+   **v45:** publique de novo a função depois de atualizar o `index.ts` (agenda do escritório).
 3. No CRM, abra **Cronograma**. Se aparecer "Outlook ligado", está funcionando.
 
 Enquanto não estiver ligado, o cronograma e a folha automática funcionam normalmente;
