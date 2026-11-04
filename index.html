@@ -2583,7 +2583,7 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
     <div class="form-grid">
       <div class="campo full campo-check"><input type="checkbox" id="wa-ativo"><label for="wa-ativo">Lembrete automático ligado</label></div>
       <div class="campo"><label>WhatsApp do André (com DDD) *</label><input type="text" id="wa-telefone" placeholder="(21) 99999-9999" oninput="mascaraTel(this)"></div>
-      <div class="campo"><label>Serviço de envio</label><select id="wa-provedor" onchange="mudouProvedorWA()"><option value="callmebot">CallMeBot (gratuito)</option><option value="meta">API oficial do WhatsApp (Meta, pago por mensagem)</option></select></div>
+      <div class="campo"><label>Serviço do lembrete de pagamentos</label><select id="wa-provedor" onchange="mudouProvedorWA()"><option value="callmebot">CallMeBot (gratuito)</option><option value="meta">API oficial do WhatsApp (Meta, pago por mensagem)</option></select></div>
       <div class="campo full" id="wa-box-callmebot">
         <div class="info-box" style="display:block;line-height:1.6">
           <strong>Como ativar o CallMeBot (uma vez só, pelo celular do André):</strong><br>
@@ -2594,11 +2594,12 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
         <label style="font-size:13px;font-weight:600">apikey do CallMeBot *</label><input type="text" id="wa-apikey" autocomplete="off" style="width:100%;padding:10px 12px;border:1.5px solid var(--borda);border-radius:8px;margin-top:6px">
       </div>
       <div class="campo full oculto" id="wa-box-meta">
+        <div class="secao" style="margin-top:0">API oficial da Meta <span class="dica" style="display:inline;margin:0">— usada sempre na convocação do Cronograma, mesmo com o lembrete no CallMeBot</span></div>
         <div class="info-box" style="display:block;line-height:1.6">Exige conta no <strong>Meta Business</strong>, um número exclusivo para a API e um <strong>modelo de mensagem aprovado</strong> com uma variável (<code>{{1}}</code>), onde entra a lista de pagamentos. Sem modelo, a Meta só entrega se o André tiver mandado mensagem para esse número nas últimas 24h.</div>
         <div class="form-grid">
           <div class="campo"><label>Token de acesso</label><input type="password" id="wa-meta-token" autocomplete="off"></div>
           <div class="campo"><label>ID do número (Phone number ID)</label><input type="text" id="wa-meta-phone"></div>
-          <div class="campo"><label>Nome do modelo aprovado</label><input type="text" id="wa-meta-modelo" placeholder="ex.: lembrete_pagamentos"></div>
+          <div class="campo"><label>Modelo aprovado do lembrete de pagamentos (só se usar a Meta no lembrete)</label><input type="text" id="wa-meta-modelo" placeholder="ex.: lembrete_pagamentos"></div>
           <div class="campo"><label>Idioma do modelo</label><input type="text" id="wa-meta-idioma" placeholder="pt_BR"></div>
           <div class="campo full"><label>Modelo aprovado da CONVOCAÇÃO (Cronograma)</label><input type="text" id="wa-meta-modelo-conv" placeholder="ex.: convocacao_cronograma">
             <div class="dica">A convocação vai para o celular de cada funcionário (ficha → Dados) usando o token e o número acima. Crie na Meta um modelo da categoria <strong>Utilidade</strong> com 7 variáveis, por exemplo:<br>
@@ -8254,7 +8255,8 @@ async function carregarConfigWhatsApp(){
   if(error){console.error(error);waConfig=null;return null;}
   waConfig=data||{};return waConfig;
 }
-function mudouProvedorWA(){const m=$('wa-provedor').value==='meta';$('wa-box-meta').classList.toggle('oculto',!m);$('wa-box-callmebot').classList.toggle('oculto',m);}
+// v47: os campos da Meta ficam sempre visíveis (a convocação do Cronograma usa a Meta mesmo com o lembrete no CallMeBot)
+function mudouProvedorWA(){const m=$('wa-provedor').value==='meta';$('wa-box-meta').classList.remove('oculto');$('wa-box-callmebot').classList.toggle('oculto',m);}
 async function abrirConfigWhatsApp(){
   if(!PERM.admin)return;
   if(!v20Ok){avisarMigracaoV20();return;}
