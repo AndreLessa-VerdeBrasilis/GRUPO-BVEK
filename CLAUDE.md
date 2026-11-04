@@ -10,7 +10,7 @@ Sempre responda em português. O dono do sistema é o André Lessa (sócio do Gr
 - Banco: Supabase, projeto https://smusenaszgkqkjjwblyi.supabase.co
 - Tabelas principais: `clientes`, `contatos`, `cards` (funil/kanban), `itens_proposta`, `sequencia_propostas`, `projetos`, `atividades`, `historico_etapas`, `empresas`.
 - Empresas do grupo: **Engekat** (EK, Engekat Construções), **Verde Brasilis** (VB), **BrasiLimp** (BL) e **Kat Corretora** (KS).
-- Outros arquivos: `perfil.html` + `perfil-questionario.js` (formulário de perfil para candidatos) e `supabase/functions/` (funções do Supabase: `email-contabilidade`, `email-comunicado`, `secullum`, `sharepoint`, `push` e `outlook-agenda` — cronograma ↔ calendário do Outlook) e `modelos/` (modelos de documentos, ex.: termo de adesão à assinatura eletrônica).
+- Outros arquivos: `perfil.html` + `perfil-questionario.js` (formulário de perfil para candidatos) e `supabase/functions/` (funções do Supabase: `email-contabilidade`, `email-comunicado`, `secullum`, `sharepoint`, `push`, `outlook-agenda` — cronograma ↔ calendário do Outlook — e `convocacao` — aviso da alocação do cronograma ao funcionário por WhatsApp/Meta e e-mail; configuração própria em Cronograma → ⚙️ WhatsApp, tabela `whatsapp_convocacao_config`, separada do lembrete de pagamentos do Financeiro) e `modelos/` (modelos de documentos, ex.: termo de adesão à assinatura eletrônica).
 
 ## Regras de negócio (NÃO alterar sem pedido explícito do André)
 
@@ -83,3 +83,4 @@ Boa parte disto já foi implementada nas versões v11 a v18 (acessos, documentos
 
 **Currículos**
 - Banco de currículos (inclui freelas) com análise de perfil e formulário de perfil emocional para candidatos, com parecer do RH.
+- Divulgação de vagas (v49): botão "📣 Divulgar vaga" em Currículos, com modelos por função na tabela `vagas_modelos` (salário conforme CCT, atividades, benefícios, requisitos) e texto padrão "Como se candidatar" em `rh_config.vaga_como_candidatar`. Gera texto para WhatsApp/redes, texto simples para sites de emprego e PDF com a identidade visual da empresa.

@@ -459,6 +459,10 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
   .ativ-form{grid-template-columns:1fr}.barra-linha{grid-template-columns:90px 1fr 90px}
   .filtros input[type=search]{min-width:0;width:100%}
 }
+/* v49: gerador de divulgação de vaga */
+.vaga-grid{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:18px}
+.vaga-previa{white-space:pre-wrap;background:var(--fundo,#f6f7f9);border:1.5px solid var(--borda);border-radius:10px;padding:14px;font-size:13.5px;line-height:1.5;max-height:70vh;overflow:auto;word-break:break-word}
+@media (max-width:820px){.vaga-grid{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -725,6 +729,7 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
         <h2>Cronograma de projetos e equipes</h2>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
           <button class="btn-sec" id="crg-btn-sync" onclick="sincronizarOutlook(false)">🔄 Sincronizar com Outlook</button>
+          <button class="btn-sec" id="crg-btn-wa" onclick="abrirConfigConvocacao()" style="display:none" title="WhatsApp da convocação (só administrador)">⚙️ WhatsApp</button>
           <button class="btn-sec" id="crg-btn-esc" onclick="abrirEventoEscritorio()">🏢 + Evento do escritório</button>
           <button class="btn-novo" id="crg-btn-novo" onclick="abrirAlocacao()">+ Nova alocação</button>
         </div>
@@ -1120,7 +1125,8 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
     <div id="tab-curriculos" style="display:none">
       <div class="barra-acoes">
         <h2>Banco de currículos</h2>
-        <button class="btn-novo" onclick="abrirCurriculo(null)">+ Novo currículo</button>
+        <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn-sec" onclick="abrirDivulgarVaga()" title="Monta o anúncio da vaga já preenchido pela função">📣 Divulgar vaga</button>
+        <button class="btn-novo" onclick="abrirCurriculo(null)">+ Novo currículo</button></div>
       </div>
       <div class="kpis" id="cv-kpis"></div>
       <div class="filtros">
@@ -1867,6 +1873,7 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
         <div class="campo"><label>PIS</label><input type="text" id="fi-pis" inputmode="numeric" maxlength="14" placeholder="000.00000.00-0" oninput="this.value=fmtPIS(this.value)"></div>
         <div class="campo"><label>Data de admissão</label><input type="date" id="fi-admissao"></div>
         <div class="campo"><label>E-mail (comunicados)</label><input type="email" id="fi-email" placeholder="nome@exemplo.com"></div>
+        <div class="campo"><label>Celular (WhatsApp)</label><input type="tel" id="fi-celular" placeholder="(21) 99999-9999" oninput="mascaraTel(this)"><div class="dica">Recebe a convocação do Cronograma pelo WhatsApp.</div></div>
         <div class="campo"><label>Tipo de contrato</label><select id="fi-contrato"></select></div>
         <div class="campo"><label>Salário (R$)</label><input type="text" inputmode="numeric" id="fi-salario" placeholder="0,00" oninput="mascaraMoeda(this)"></div>
         <div class="campo" style="display:flex;align-items:flex-end"><div class="campo-check"><input type="checkbox" id="fi-adianta"><label for="fi-adianta" id="fi-adianta-rot">Recebe adiantamento todo mês</label></div></div>
@@ -2001,6 +2008,41 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
 </div>
 
 <!-- MODAL CURRÍCULO (v14) -->
+<!-- v49: GERADOR DE DIVULGAÇÃO DE VAGA (Currículos) -->
+<div class="modal-overlay" id="modal-vaga">
+  <div class="modal" style="max-width:1100px">
+    <h2>📣 Divulgar vaga</h2>
+    <p class="modal-sub">Escolha a função: a vaga já vem preenchida com salário, atividades e benefícios. Ajuste o que precisar e copie o texto, mande no WhatsApp ou gere o PDF. <strong>💾 Salvar modelo</strong> guarda as mudanças para a próxima vez.</p>
+    <div class="vaga-grid">
+      <div class="form-grid" style="align-content:start">
+        <div class="campo full"><label>Função</label><select id="vg-modelo" onchange="escolherModeloVaga()"></select></div>
+        <div class="campo full"><label>Título da vaga *</label><input type="text" id="vg-funcao" placeholder="Ex.: PEDREIRO" oninput="renderVaga()"></div>
+        <div class="campo"><label>Empresa</label><select id="vg-empresa" onchange="renderVaga()"></select></div>
+        <div class="campo"><label>Quantidade de vagas</label><input type="number" id="vg-qtd" min="1" max="99" placeholder="1" oninput="renderVaga()"></div>
+        <div class="campo"><label>Salário (R$ por mês)</label><input type="text" inputmode="numeric" id="vg-salario" placeholder="0,00" oninput="mascaraMoeda(this);renderVaga()"></div>
+        <div class="campo"><label>Observação do salário</label><input type="text" id="vg-salario-obs" placeholder="Ex.: atualizado 2026/2027 conf. CCT" oninput="renderVaga()"></div>
+        <div class="campo"><label>Tipo de vaga</label><input type="text" id="vg-tipo" list="vg-dl-tipos" placeholder="Ex.: Efetivo CLT" oninput="renderVaga()"><datalist id="vg-dl-tipos"><option value="Efetivo CLT"><option value="CLT intermitente"><option value="Temporário"><option value="Freela / diária"><option value="PJ / empreiteiro"><option value="Estágio"></datalist></div>
+        <div class="campo"><label>Local do trabalho</label><input type="text" id="vg-local" placeholder="Ex.: Presencial — Avenida Brasil, RJ" oninput="renderVaga()"></div>
+        <div class="campo full"><label>Principais atividades <span class="dica" style="display:inline;margin:0">(uma por linha)</span></label><textarea id="vg-atividades" rows="6" oninput="renderVaga()"></textarea></div>
+        <div class="campo full"><label>Benefícios <span class="dica" style="display:inline;margin:0">(um por linha)</span></label><textarea id="vg-beneficios" rows="4" oninput="renderVaga()"></textarea></div>
+        <div class="campo full"><label>Requisitos <span class="dica" style="display:inline;margin:0">(um por linha)</span></label><textarea id="vg-requisitos" rows="2" oninput="renderVaga()"></textarea></div>
+        <div class="campo full"><label>Experiência / documentos <span class="dica" style="display:inline;margin:0">(um por linha)</span></label><textarea id="vg-experiencia" rows="2" oninput="renderVaga()"></textarea></div>
+        <div class="campo full"><label>Como se candidatar</label><textarea id="vg-candidatar" rows="2" placeholder="Ex.: enviar currículo para o WhatsApp (21) 99999-9999 ou rh@bvek.com.br" oninput="renderVaga()"></textarea><div class="dica">Fica guardado como padrão para todas as vagas quando você salva o modelo.</div></div>
+      </div>
+      <div>
+        <div class="campo" style="margin-bottom:8px"><label>Formato do texto</label><select id="vg-formato" onchange="renderVaga()"><option value="whats">WhatsApp e redes sociais (com destaques)</option><option value="site">Sites de emprego — Indeed, LinkedIn, Catho (texto simples)</option></select></div>
+        <div id="vg-previa" class="vaga-previa"></div>
+      </div>
+    </div>
+    <div class="modal-btns">
+      <button class="btn-cancelar" onclick="fecharModal('modal-vaga')">Fechar</button>
+      <button class="btn-sec" onclick="salvarModeloVaga()">💾 Salvar modelo</button>
+      <button class="btn-sec" onclick="pdfVaga()">🖨️ PDF</button>
+      <button class="btn-sec" onclick="whatsVaga()">💬 WhatsApp</button>
+      <button class="btn-salvar" onclick="copiarTexto(textoVaga())">📋 Copiar texto</button>
+    </div>
+  </div>
+</div>
 <div class="modal-overlay" id="modal-curriculo">
   <div class="modal modal-lg">
     <h2 id="cv-titulo">Currículo</h2>
@@ -2342,20 +2384,47 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
       <div class="campo full"><label>Serviço / título (opcional)</label><input type="text" id="crg-titulo" placeholder="Ex.: roçada da área norte"></div>
       <div class="campo"><label>De *</label><input type="date" id="crg-ini" onchange="if(!$('crg-fim').value||$('crg-fim').value<this.value)$('crg-fim').value=this.value;contarDiasCrono()"></div>
       <div class="campo"><label>Até *</label><input type="date" id="crg-fim" onchange="contarDiasCrono()"></div>
+      <div class="campo"><label>Horário (entrada / saída)</label><div class="linha-flex"><input type="time" id="crg-hini" step="900" title="entrada"><input type="time" id="crg-hfim" step="900" title="saída"></div><div class="dica">Vai no aviso da convocação.</div></div>
       <div class="campo full" style="display:flex;gap:22px;flex-wrap:wrap">
         <div class="campo-check"><input type="checkbox" id="crg-sab" onchange="contarDiasCrono()"><label for="crg-sab">Trabalha sábado</label></div>
         <div class="campo-check"><input type="checkbox" id="crg-dom" onchange="contarDiasCrono()"><label for="crg-dom">Trabalha domingo</label></div>
         <span class="dica" id="crg-dias" style="margin:auto 0"></span>
       </div>
-      <div class="campo full"><label>Equipe * <span class="dica" style="display:inline;margin:0">(✉️ = tem e-mail no cadastro: recebe o convite do Outlook)</span></label>
+      <div class="campo full"><label>Equipe * <span class="dica" style="display:inline;margin:0">(📱 = tem celular na ficha: recebe a convocação no WhatsApp · ✉️ = tem e-mail: recebe por e-mail e o convite do Outlook)</span></label>
         <input type="search" id="crg-equipe-busca" placeholder="Buscar funcionário" oninput="renderEquipeCrono()" style="margin-bottom:6px">
         <div class="crg-equipe" id="crg-equipe"></div></div>
-      <div class="campo full"><label>Observações</label><textarea id="crg-obs" rows="2"></textarea></div>
+      <div class="campo full"><label>Observações</label><textarea id="crg-obs" rows="2" placeholder="Ex.: levar EPI, ponto de encontro às 6h30 no escritório"></textarea></div>
+      <div class="campo full so-edicao"><div class="campo-check"><input type="checkbox" id="crg-avisar" checked><label for="crg-avisar">📲 Avisar a equipe ao salvar (WhatsApp e e-mail): quem entrou recebe a convocação, quem já sabia recebe só se algo mudar, quem saiu recebe o cancelamento</label></div></div>
+      <div class="campo full" id="crg-avisos-box" style="display:none"><label>Avisos da convocação</label><div id="crg-avisos"></div></div>
     </div>
     <div class="modal-btns">
+      <button class="btn-sec so-edicao" id="crg-btn-reenviar" style="display:none" onclick="reenviarConvocacao()" title="Manda a convocação de novo para todos da equipe">📲 Reenviar aviso</button>
       <button class="btn-excluir so-edicao" id="crg-btn-cancelar-aloc" style="display:none" onclick="cancelarAlocacao()">Cancelar alocação</button>
       <button class="btn-cancelar" onclick="fecharModal('modal-alocacao')">Fechar</button>
       <button class="btn-salvar so-edicao" id="crg-btn-salvar" onclick="salvarAlocacao()">Salvar</button>
+    </div>
+  </div>
+</div>
+<!-- v48: WHATSAPP DA CONVOCAÇÃO (Cronograma, só administrador) — separado do lembrete de pagamentos do Financeiro -->
+<div class="modal-overlay" id="modal-wa-conv">
+  <div class="modal">
+    <h2>⚙️ WhatsApp da convocação</h2>
+    <p class="modal-sub">Quando uma alocação é salva, cada funcionário da equipe recebe a convocação no celular cadastrado na ficha (RH → ficha → Dados), pela <strong>API oficial do WhatsApp (Meta)</strong>, e também por e-mail. Esta configuração é só do Cronograma: o lembrete de pagamentos continua em Financeiro → ⚙️ WhatsApp. Os dados ficam guardados só no banco (só o Administrador vê).</p>
+    <div class="form-grid">
+      <div class="campo full campo-check"><input type="checkbox" id="wc-ativo"><label for="wc-ativo">Mandar a convocação pelo WhatsApp (desligado = só por e-mail)</label></div>
+      <div class="campo"><label>Token de acesso *</label><input type="password" id="wc-token" autocomplete="off"></div>
+      <div class="campo"><label>ID do número (Phone number ID) *</label><input type="text" id="wc-phone"></div>
+      <div class="campo"><label>Nome do modelo aprovado</label><input type="text" id="wc-modelo" placeholder="ex.: convocacao_cronograma"></div>
+      <div class="campo"><label>Idioma do modelo</label><input type="text" id="wc-idioma" placeholder="pt_BR"></div>
+      <div class="campo full"><div class="info-box" style="display:block;line-height:1.6">Crie na Meta um modelo da categoria <strong>Utilidade</strong> com 7 variáveis, por exemplo:<br>
+        <code>Grupo BVEK — {{1}}<br>Olá, {{2}}!<br>Data: {{3}}<br>Horário: {{4}}<br>Local: {{5}}<br>Serviço: {{6}}<br>Observações: {{7}}<br>Em caso de dúvida, fale com o escritório.</code><br>
+        Sem modelo aprovado, a Meta só entrega a mensagem a quem mandou mensagem para o número da empresa nas últimas 24 horas.</div></div>
+      <div class="campo"><label>Celular para o teste</label><input type="tel" id="wc-teste" placeholder="(21) 99999-9999" oninput="mascaraTel(this)"></div>
+    </div>
+    <div class="modal-btns">
+      <button class="btn-cancelar" onclick="fecharModal('modal-wa-conv')">Fechar</button>
+      <button class="btn-sec" onclick="testarConfigConvocacao()">📲 Enviar teste</button>
+      <button class="btn-salvar" onclick="salvarConfigConvocacao()">Salvar</button>
     </div>
   </div>
 </div>
@@ -6262,7 +6331,7 @@ function preencherFichaDados(){
   const f=fichaId?funcPorId(fichaId):null,r=(fichaId&&rhPorFunc(fichaId))||{};
   $('fi-nome').value=f?f.nome:'';$('fi-cargo').value=f&&f.cargo||'';
   $('fi-empresa').value=f?(f.empresa_id||''):(empresaAtual!=='todas'?empresaAtual:'');
-  $('fi-cpf').value=f&&f.cpf||'';$('fi-email').value=f&&f.email||'';$('fi-pis').value=f&&f.pis||'';$('fi-admissao').value=f&&f.data_admissao||'';$('fi-pasta').value=f&&f.pasta_url||'';
+  $('fi-cpf').value=f&&f.cpf||'';$('fi-email').value=f&&f.email||'';$('fi-celular').value=f&&f.celular?fmtTel(f.celular):'';$('fi-pis').value=f&&f.pis||'';$('fi-admissao').value=f&&f.data_admissao||'';$('fi-pasta').value=f&&f.pasta_url||'';
   $('fi-contrato').value=r.tipo_contrato||'';$('fi-salario').value=r.salario!=null?fmtMoeda(r.salario):'';
   $('fi-adianta').checked=!!r.adianta_mensal;$('fi-obs').value=r.observacoes||'';
   $('fi-adianta-rot').textContent=`Recebe adiantamento de ${pctAdiant()}% do salário todo dia ${diaAdiant()} (ou dia útil próximo)`;
@@ -6297,6 +6366,11 @@ async function salvarFichaDados(){
   if(email&&!/^[^\s@;,<>]+@[^\s@;,<>]+\.[^\s@;,<>]+$/.test(email)){alert('E-mail inválido.');return;}
   if(todosFuncionarios.length?('email' in todosFuncionarios[0]):v30Ok)dados.email=email||null;
   else if(email){alert('Para guardar o e-mail, rode antes a migração v30 no Supabase.');}
+  // v47: celular (WhatsApp) para a convocação do Cronograma — guardado só com números (DDD + número)
+  const cel=$('fi-celular').value.replace(/\D/g,'').replace(/^55(?=\d{10,11}$)/,'');
+  if(cel&&!(cel.length===10||cel.length===11)){alert('Celular inválido: informe com DDD, ex.: (21) 99999-9999.');return;}
+  if(todosFuncionarios.length&&('celular' in todosFuncionarios[0]))dados.celular=cel||null;
+  else if(cel){alert('Para guardar o celular, rode antes a migração v47 (supabase/migracao_crm_v47_convocacao_whatsapp.sql) no Supabase.');return;}
   const r=fichaId?await sb.from('funcionarios').update(dados).eq('id',fichaId).select().single():await sb.from('funcionarios').insert(dados).select().single();
   if(erroSB(r.error))return;
   const fid=r.data.id;
@@ -6989,6 +7063,101 @@ function renderCurriculos(){
     :'<tr><td colspan="9" class="vazio">Nenhum currículo nesta lista.</td></tr>')+'</tbody>';
   $('tabela-cv').querySelectorAll('[data-cv]').forEach(tr=>tr.onclick=()=>abrirCurriculo(tr.dataset.cv));
 }
+/* v49: DIVULGAR VAGA — modelos por função (tabela vagas_modelos) + texto pronto para WhatsApp, sites e PDF */
+let vagasModelos=[],vagaModeloId=null;
+const linhasVaga=id=>String($(id).value||'').split('\n').map(x=>x.replace(/^[\s•●\-–*]+/,'').replace(/[;.]\s*$/,'').trim()).filter(Boolean);
+const opcoesModelosVaga=()=>[...vagasModelos.map(m=>[m.id,m.funcao]),['__nova','＋ Nova função (em branco)']];
+async function abrirDivulgarVaga(){
+  if(!PERM.curriculos)return;
+  const{data,error}=await sb.from('vagas_modelos').select('*').eq('ativo',true).order('funcao');
+  if(error){alert(/vagas_modelos|schema cache|does not exist/i.test(error.message||'')?'Falta atualizar o banco de dados: rode no Supabase a migração v49 (supabase/migracao_crm_v49_divulgacao_vagas.sql).':error.message);return;}
+  vagasModelos=data||[];
+  preencherSelect($('vg-modelo'),opcoesModelosVaga());
+  preencherSelect($('vg-empresa'),todasEmpresas.map(e=>[e.id,`${e.nome} (${e.sigla})`]),'Grupo BVEK');
+  $('vg-candidatar').value=(rhConfig&&rhConfig.vaga_como_candidatar)||'';$('vg-qtd').value='';$('vg-empresa').value='';
+  $('vg-modelo').value=vagasModelos.length?vagasModelos[0].id:'__nova';
+  escolherModeloVaga();abrirModal('modal-vaga');
+}
+function escolherModeloVaga(){
+  const m=vagasModelos.find(x=>x.id===$('vg-modelo').value)||null;vagaModeloId=m?m.id:null;
+  $('vg-funcao').value=m?m.funcao:'';$('vg-salario').value=m&&m.salario!=null?fmtMoeda(m.salario):'';
+  $('vg-salario-obs').value=m?(m.salario_obs||''):'';$('vg-tipo').value=m?(m.tipo_vaga||''):'Efetivo CLT';$('vg-local').value=m?(m.local_trabalho||''):'Presencial';
+  $('vg-atividades').value=m?(m.atividades||''):'';$('vg-beneficios').value=m?(m.beneficios||''):(vagasModelos[0]&&vagasModelos[0].beneficios)||'';
+  $('vg-requisitos').value=m?(m.requisitos||''):'';$('vg-experiencia').value=m?(m.experiencia||''):'';
+  if(m&&m.empresa_id)$('vg-empresa').value=m.empresa_id;
+  renderVaga();if(!m)setTimeout(()=>$('vg-funcao').focus(),50);
+}
+function dadosVaga(){
+  const e=empresaPorId($('vg-empresa').value),sal=parseMoeda($('vg-salario').value),q=Math.round(Number($('vg-qtd').value)||0);
+  return{funcao:$('vg-funcao').value.trim().toUpperCase(),empresa:e?e.nome:'Grupo BVEK',sigla:e?e.sigla:'BVK',qtd:q>1?q:0,
+    salario:sal,salObs:$('vg-salario-obs').value.trim(),tipo:$('vg-tipo').value.trim(),local:$('vg-local').value.trim(),
+    atividades:linhasVaga('vg-atividades'),beneficios:linhasVaga('vg-beneficios'),requisitos:linhasVaga('vg-requisitos'),experiencia:linhasVaga('vg-experiencia'),
+    candidatar:$('vg-candidatar').value.trim()};
+}
+function textoVaga(formato){
+  const v=dadosVaga(),w=(formato||$('vg-formato').value)==='whats',b=t=>w?`*${t}*`:t,ic=(e,t)=>w?e+' '+t:t;
+  const lista=(tit,l)=>l.length?`\n${b(tit+':')}\n${l.map(x=>(w?'• ':'- ')+x).join('\n')}\n`:'';
+  const l=[];
+  l.push(ic('📣',b(`VAGA: ${v.funcao||'(função)'}`)));
+  l.push(ic('🏢',`${v.empresa}${v.sigla!=='BVK'?' — Grupo BVEK':''}${v.qtd?` · ${v.qtd} vagas`:''}`));
+  l.push('');
+  if(v.salario!=null)l.push(ic('💰',`${b('Salário:')} R$ ${fmtMoeda(v.salario)} por mês${v.salObs?` (${v.salObs})`:''}`));
+  if(v.tipo)l.push(ic('📄',`${b('Tipo de vaga:')} ${v.tipo}`));
+  if(v.local)l.push(ic('📍',`${b('Local do trabalho:')} ${v.local}`));
+  let t=l.join('\n')+'\n';
+  t+=lista('Principais atividades',v.atividades)+lista('Benefícios',v.beneficios)+lista('Requisitos',v.requisitos)+lista('Experiência',v.experiencia);
+  if(v.candidatar)t+=`\n${ic('📩',v.candidatar)}\n`;
+  return t.replace(/\n{3,}/g,'\n\n').trim();
+}
+function renderVaga(){
+  // na prévia do WhatsApp, *texto* aparece em negrito como no celular
+  const t=esc(textoVaga());
+  $('vg-previa').innerHTML=$('vg-formato').value==='whats'?t.replace(/\*([^*\n]+)\*/g,'<strong>$1</strong>'):t;
+}
+function whatsVaga(){if(!$('vg-funcao').value.trim()){alert('Informe o título da vaga.');return;}window.open(`https://wa.me/?text=${encodeURIComponent(textoVaga('whats'))}`,'_blank','noopener');}
+async function salvarModeloVaga(){
+  const v=dadosVaga();if(!v.funcao){alert('Informe o título da vaga.');return;}
+  const dados={funcao:v.funcao,empresa_id:$('vg-empresa').value||null,salario:v.salario,salario_obs:v.salObs||null,tipo_vaga:v.tipo||null,local_trabalho:v.local||null,
+    atividades:v.atividades.join('\n')||null,beneficios:v.beneficios.join('\n')||null,requisitos:v.requisitos.join('\n')||null,experiencia:v.experiencia.join('\n')||null,
+    atualizado_em:new Date().toISOString(),atualizado_por:quemSou()};
+  // mesma função já cadastrada (escrita igual) = atualiza aquele modelo
+  const igual=vagasModelos.find(m=>norm(m.funcao)===norm(v.funcao));
+  if(igual&&igual.id!==vagaModeloId&&!confirm(`Já existe o modelo "${igual.funcao}". Substituir pelo que está na tela?`))return;
+  const id=igual?igual.id:null;
+  const r=id?await sb.from('vagas_modelos').update(dados).eq('id',id).select().single():await sb.from('vagas_modelos').insert(dados).select().single();
+  if(erroSB(r.error))return;
+  if((rhConfig.vaga_como_candidatar||'')!==v.candidatar){
+    const{error}=await sb.from('rh_config').upsert({chave:'vaga_como_candidatar',valor:v.candidatar||null,atualizado_em:new Date().toISOString()},{onConflict:'chave'});
+    if(!error)rhConfig.vaga_como_candidatar=v.candidatar;
+  }
+  const i=vagasModelos.findIndex(m=>m.id===r.data.id);if(i>=0)vagasModelos[i]=r.data;else vagasModelos.push(r.data);
+  vagasModelos.sort((a,b)=>a.funcao.localeCompare(b.funcao,'pt-BR'));
+  preencherSelect($('vg-modelo'),opcoesModelosVaga());$('vg-modelo').value=r.data.id;vagaModeloId=r.data.id;
+  toast('Modelo da vaga salvo');
+}
+function pdfVaga(){
+  const v=dadosVaga();if(!v.funcao){alert('Informe o título da vaga.');return;}
+  const tm=temaEmpresa(v.sigla),c='#'+tm.principal,d='#'+tm.destaque;
+  const lista=(tit,l)=>l.length?`<h3>${esc(tit)}</h3><ul>${l.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:'';
+  const linha=(r,t)=>t?`<p><strong>${esc(r)}:</strong> ${t}</p>`:'';
+  const w=window.open('','_blank');if(!w){alert('Permita pop-ups para este site.');return;}
+  w.document.write(`<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>VAGA - ${esc(v.funcao)}</title><style>
+    @page{size:A4;margin:18mm}body{font-family:Arial,Helvetica,sans-serif;color:#333;font-size:12.5pt;line-height:1.45;margin:0}@media screen{body{max-width:760px;margin:24px auto;padding:0 16px}}
+    .topo{display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid ${d};padding-bottom:10px;margin-bottom:18px}
+    .topo img{max-height:56px;max-width:220px}.topo .emp{font-size:10pt;color:#777;text-align:right}
+    h1{color:${c};font-size:20pt;margin:0 0 4px}h3{color:${c};font-size:12.5pt;margin:16px 0 4px}ul{margin:4px 0 0;padding-left:22px}li{margin:2px 0}p{margin:6px 0}
+    .qtd{color:${d};font-weight:700}.rodape{margin-top:22px;padding:10px 12px;border:1.5px solid ${d};border-radius:8px;background:#fafafa}
+  </style></head><body>
+    <div class="topo"><img src="${esc(urlLogo(v.sigla,'logo'))}" alt="${esc(v.empresa)}" onerror="this.style.display='none'"><div class="emp">${esc(v.empresa)}${v.sigla!=='BVK'?'<br>Grupo BVEK':''}</div></div>
+    <h1>${esc(v.funcao)}</h1>${v.qtd?`<div class="qtd">${v.qtd} vagas</div>`:''}
+    ${v.salario!=null?linha('Pagamento',`R$ ${esc(fmtMoeda(v.salario))} por mês${v.salObs?` — <strong>(${esc(v.salObs)})</strong>`:''}`):''}
+    ${linha('Tipo de vaga',esc(v.tipo))}${linha('Local do trabalho',esc(v.local))}
+    ${v.atividades.length?`<h3>Descrição da vaga — principais atividades</h3><ul>${v.atividades.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:''}
+    ${lista('Benefícios',v.beneficios)}${lista('Requisitos',v.requisitos)}${lista('Experiência',v.experiencia)}
+    ${v.candidatar?`<div class="rodape">${esc(v.candidatar).replace(/\n/g,'<br>')}</div>`:''}
+  </body></html>`);
+  w.document.close();imprimirQuandoCarregar(w);
+}
 function abrirCurriculo(id){
   if(!v14Ok){avisarMigracaoV14();return;}
   cvEditandoId=id||null;const c=id?todosCurriculos.find(x=>x.id===id):null;
@@ -7447,7 +7616,7 @@ async function abrirCronograma(){
 function renderCronograma(){
   if(tabAtual!=='cronograma')return;
   const ed=PERM.cronograma;
-  $('crg-btn-novo').style.display=ed&&v41Ok?'':'none';$('crg-btn-sync').style.display=ed&&v41Ok?'':'none';$('crg-btn-esc').style.display=ed&&v45Ok?'':'none';
+  $('crg-btn-novo').style.display=ed&&v41Ok?'':'none';$('crg-btn-sync').style.display=ed&&v41Ok?'':'none';$('crg-btn-esc').style.display=ed&&v45Ok?'':'none';$('crg-btn-wa').style.display=PERM.admin&&v41Ok?'':'none';
   $('crg-quem-inter').hidden=!PERM.rhPessoal;
   if(!v41Ok){
     $('crg-info').innerHTML='<strong>Falta atualizar o banco de dados (v41).</strong> No Supabase, abra <em>SQL Editor → New query</em>, cole o conteúdo do arquivo <code>supabase/migracao_crm_v41_cronograma_outlook.sql</code> e clique em <em>Run</em>. Depois recarregue esta página.';
@@ -7611,6 +7780,9 @@ function abrirAlocacao(id=null,pre=null){
   $('crg-ini').value=l?l.data_inicio:(pre&&pre.d)||'';$('crg-fim').value=l?l.data_fim:(pre&&pre.d)||'';
   $('crg-sab').checked=l?!!l.sabado:false;$('crg-dom').checked=l?!!l.domingo:false;
   $('crg-obs').value=l?(l.observacoes||''):'';
+  $('crg-hini').value=l&&l.hora_inicio?String(l.hora_inicio).slice(0,5):'';$('crg-hfim').value=l&&l.hora_fim?String(l.hora_fim).slice(0,5):'';
+  $('crg-avisar').checked=true;$('crg-btn-reenviar').style.display=l&&l.situacao==='ativo'&&l.data_fim>=hojeISO()?'':'none';
+  $('crg-avisos-box').style.display='none';if(l)renderAvisosConvocacao(l.id);
   cronoEquipe=new Set(l?(l.funcionarios||[]):(pre&&pre.fid?[pre.fid]:[]));
   $('crg-equipe-busca').value='';renderEquipeCrono();contarDiasCrono();
   const st=$('crg-status');
@@ -7626,7 +7798,7 @@ function renderEquipeCrono(){
   const busca=norm($('crg-equipe-busca').value);
   const lista=todosFuncionarios.filter(f=>(f.ativo!==false||cronoEquipe.has(f.id))&&(!busca||norm(f.nome).includes(busca)))
     .sort((a,b)=>(cronoEquipe.has(b.id)-cronoEquipe.has(a.id))||a.nome.localeCompare(b.nome,'pt-BR'));
-  $('crg-equipe').innerHTML=lista.length?lista.map(f=>`<label><input type="checkbox" data-crg-f="${esc(f.id)}" ${cronoEquipe.has(f.id)?'checked':''}>${esc(f.nome)}${ehIntermitente(f)?' <span class="badge badge-cinza" style="font-size:10px">intermitente</span>':''}${f.email?' <span title="'+esc(f.email)+'">✉️</span>':f.tem_email?' <span title="tem e-mail no cadastro">✉️</span>':''}${f.cargo?` <span class="dica" style="margin:0">${esc(f.cargo)}</span>`:''}</label>`).join(''):'<p class="vazio">Nenhum funcionário encontrado.</p>';
+  $('crg-equipe').innerHTML=lista.length?lista.map(f=>`<label><input type="checkbox" data-crg-f="${esc(f.id)}" ${cronoEquipe.has(f.id)?'checked':''}>${esc(f.nome)}${ehIntermitente(f)?' <span class="badge badge-cinza" style="font-size:10px">intermitente</span>':''}${temCelular(f)?' <span title="tem celular na ficha (WhatsApp)">📱</span>':''}${f.email?' <span title="'+esc(f.email)+'">✉️</span>':f.tem_email?' <span title="tem e-mail no cadastro">✉️</span>':''}${f.cargo?` <span class="dica" style="margin:0">${esc(f.cargo)}</span>`:''}</label>`).join(''):'<p class="vazio">Nenhum funcionário encontrado.</p>';
   $('crg-equipe').querySelectorAll('[data-crg-f]').forEach(c=>c.onchange=()=>{c.checked?cronoEquipe.add(c.dataset.crgF):cronoEquipe.delete(c.dataset.crgF);contarDiasCrono();});
 }
 function contarDiasCrono(){
@@ -7662,6 +7834,12 @@ async function salvarAlocacao(){
   const dados={projeto_id:proj,cliente_id:cli,titulo:$('crg-titulo').value.trim()||null,local:$('crg-local').value.trim()||null,
     data_inicio:ini,data_fim:fim,sabado:$('crg-sab').checked,domingo:$('crg-dom').checked,funcionarios:[...cronoEquipe],
     observacoes:$('crg-obs').value.trim()||null,situacao:'ativo',atualizado_em:new Date().toISOString()};
+  // v47: horário (entrada/saída) — só grava se a migração v47 já criou as colunas
+  const hi=$('crg-hini').value,hf=$('crg-hfim').value;
+  if(hi&&hf&&hf<=hi){alert('O horário de saída precisa ser depois da entrada.');return;}
+  const temHora=cronoLinhas.length?('hora_inicio' in cronoLinhas[0]):null;
+  if(temHora!==false){dados.hora_inicio=hi||null;dados.hora_fim=hf||null;}
+  else if(hi||hf){alert('Para guardar o horário, rode antes a migração v47 (supabase/migracao_crm_v47_convocacao_whatsapp.sql) no Supabase.');return;}
   // conflito: mesma pessoa em outro lugar no mesmo dia
   const{data:outras}=await sb.from('cronograma').select('*').eq('situacao','ativo').lte('data_inicio',fim).gte('data_fim',ini).overlaps('funcionarios',dados.funcionarios);
   const conf=[];(outras||[]).filter(o=>o.id!==cronoEditId).forEach(o=>{const dd=new Set(diasDaAlocacao(o,ini,fim));const comuns=diasDaAlocacao(dados).filter(d=>dd.has(d));if(!comuns.length)return;
@@ -7671,21 +7849,24 @@ async function salvarAlocacao(){
   try{
     const ant=cronoEditId?cronoLinhas.find(x=>x.id===cronoEditId):null;
     let id=cronoEditId;
-    if(id){const{error}=await sb.from('cronograma').update(dados).eq('id',id);if(erroSB(error))return;}
-    else{dados.criado_por=usuario?usuario.email:null;dados.origem='crm';const{data,error}=await sb.from('cronograma').insert(dados).select().single();if(erroSB(error))return;id=data.id;}
+    if(id){const{error}=await sb.from('cronograma').update(dados).eq('id',id);if(faltaV47(error)||erroSB(error))return;}
+    else{dados.criado_por=usuario?usuario.email:null;dados.origem='crm';const{data,error}=await sb.from('cronograma').insert(dados).select().single();if(faltaV47(error)||erroSB(error))return;id=data.id;}
+    const avisar=$('crg-avisar').checked;
     const meses=new Set(mesesDoPeriodo(ini,fim));if(ant)mesesDoPeriodo(ant.data_inicio,ant.data_fim).forEach(m=>meses.add(m));
     await abrirCompetenciasDoCronograma([...meses],[...new Set([...dados.funcionarios,...(ant?ant.funcionarios||[]:[])])]);
     fecharModal('modal-alocacao');
     await enviarAlocacaoOutlook(id);
+    if(avisar)await avisarConvocacao(id);
     await Promise.all([carregarCronograma(),carregarCompetenciaAtual()]);renderTabAtual();
   }finally{btn.disabled=false;}
 }
 async function cancelarAlocacao(){
   const l=cronoLinhas.find(x=>x.id===cronoEditId);if(!l||!PERM.cronograma)return;
-  if(!confirm('Cancelar esta alocação? Ela sai do Outlook e os dias deixam de contar na folha dos intermitentes. Nada é apagado (dá para reativar).'))return;
+  if(!confirm('Cancelar esta alocação? Ela sai do Outlook e os dias deixam de contar na folha dos intermitentes. Quem já tinha recebido a convocação recebe o aviso de cancelamento (WhatsApp/e-mail). Nada é apagado (dá para reativar).'))return;
   const{error}=await sb.from('cronograma').update({situacao:'cancelado',atualizado_em:new Date().toISOString()}).eq('id',l.id);if(erroSB(error))return;
   fecharModal('modal-alocacao');
   await enviarAlocacaoOutlook(l.id);
+  await avisarConvocacao(l.id);
   await Promise.all([carregarCronograma(),carregarCompetenciaAtual()]);renderTabAtual();
 }
 async function enviarAlocacaoOutlook(id){
@@ -7698,6 +7879,80 @@ async function enviarAlocacaoOutlook(id){
     cronoOutlook={ok:true,msg:'',caixa:data.caixa||cronoOutlook.caixa||''};
     toast(data.feito==='apagado'?'Alocação cancelada e retirada do Outlook':'Alocação salva e enviada à sua agenda do Outlook');
   }catch(e){console.warn(e);toast('Alocação salva — ⚠️ não foi para o Outlook');}
+}
+/* v47: CONVOCAÇÃO — aviso no WhatsApp (API da Meta) e no e-mail (Microsoft 365) pela função "convocacao".
+   O servidor decide quem recebe: quem entrou na equipe (convocação), quem já sabia e algo mudou (alteração),
+   quem saiu ou alocação cancelada (cancelamento). Cada envio fica em cronograma_avisos. */
+function temCelular(f){return f.tem_celular||String(f.celular||'').replace(/\D/g,'').length>=10;}
+function faltaV47(error){if(error&&/hora_inicio|hora_fim/.test(error.message||'')){alert('Para guardar o horário, rode antes a migração v47 (supabase/migracao_crm_v47_convocacao_whatsapp.sql) no Supabase.');return true;}return false;}
+async function avisarConvocacao(id,reenviar=false){
+  try{
+    const{data,error}=await sb.functions.invoke('convocacao',{body:{cronograma_id:id,reenviar}});
+    if(error||!data||!data.ok){
+      let m=(data&&data.erro)||'',st=0;
+      if(!m&&error){try{st=error.context&&error.context.status||0;const j=await error.context.json();m=j.erro||'';}catch(e){}m=m||error.message||'erro';}
+      if(st===404||/Failed to send|FunctionsFetchError|FunctionsRelayError|not found/i.test(m))m='a função "convocacao" não está publicada no Supabase (Edge Functions → Deploy new function, com o conteúdo de supabase/functions/convocacao/index.ts).';
+      console.warn('Convocação',m);alert('A alocação foi salva, mas a equipe NÃO foi avisada:\n'+m);return;}
+    if(data.pulado){if(reenviar||/terminou/.test(data.pulado))toast(data.pulado);return;}
+    const r=data.resultado||[];
+    const falhas=r.filter(x=>x.whatsapp!=='ok'&&x.email!=='ok');
+    const TIPO={convocacao:'convocação',alteracao:'alteração',cancelamento:'cancelamento'};
+    if(!falhas.length&&!r.some(x=>/^erro/.test(x.whatsapp+'')||/^erro/.test(x.email+'')))toast(`📲 Equipe avisada: ${r.map(x=>`${nomeCurtoTxt(x.nome)} (${TIPO[x.tipo]||x.tipo})`).join(', ')}`);
+    else alert(`Avisos da convocação — ${data.enviados} de ${data.total} pessoa(s) receberam:\n\n`+r.map(x=>`• ${x.nome} (${TIPO[x.tipo]||x.tipo})\n   WhatsApp: ${x.whatsapp}\n   E-mail: ${x.email}`).join('\n')+(falhas.length?'\n\nQuem ficou sem aviso: cadastre o celular/e-mail em RH → ficha → Dados e use “📲 Reenviar aviso” na alocação.':''));
+    if(data.sem_modelo)console.warn('Convocação: sem modelo aprovado na Meta, a mensagem só chega para quem falou com o número da empresa nas últimas 24h (Cronograma → ⚙️ WhatsApp).');
+  }catch(e){console.warn(e);alert('A alocação foi salva, mas não foi possível avisar a equipe.');}
+}
+function nomeCurtoTxt(n){const p=String(n||'').trim().split(/\s+/);return p.length>1?p[0]+' '+p[p.length-1]:p[0];}
+async function reenviarConvocacao(){
+  const l=cronoLinhas.find(x=>x.id===cronoEditId);if(!l)return;
+  if(!confirm('Mandar a convocação de novo, pelo WhatsApp e e-mail, para TODOS da equipe desta alocação (como está salva)?'))return;
+  const b=$('crg-btn-reenviar');b.disabled=true;
+  try{await avisarConvocacao(l.id,true);await renderAvisosConvocacao(l.id);}finally{b.disabled=false;}
+}
+async function renderAvisosConvocacao(id){
+  const{data,error}=await sb.rpc('bvek_cronograma_avisos',{p_ids:[id]});
+  if(error||cronoEditId!==id)return;
+  const box=$('crg-avisos-box');if(!(data||[]).length){box.style.display='none';return;}
+  const TIPO={convocacao:'convocação',alteracao:'alteração',cancelamento:'cancelamento'};
+  const porFunc=new Map();data.forEach(a=>{const k=a.funcionario_id||'?';if(!porFunc.has(k))porFunc.set(k,[]);porFunc.get(k).push(a);});
+  box.style.display='';
+  $('crg-avisos').innerHTML='<div class="sub-lista">'+[...porFunc].map(([fid,av])=>{
+    const ult=av[0],canais=['whatsapp','email'].map(c=>{const a=av.find(x=>x.canal===c&&x.enviado_em===ult.enviado_em)||av.find(x=>x.canal===c);if(!a)return'';
+      return a.ok?`<span class="badge badge-ok" title="${esc(TIPO[a.tipo]||a.tipo)} em ${esc(fmtDataHora(a.enviado_em))}">${c==='whatsapp'?'📱 WhatsApp':'✉️ e-mail'} ✓</span>`:`<span class="badge badge-atraso" title="${esc(a.erro||'')}">${c==='whatsapp'?'📱 WhatsApp':'✉️ e-mail'}: erro</span>`;}).join(' ');
+    return`<div class="sub-item"><span><strong>${esc((funcPorId(fid)||{}).nome||'?')}</strong> · ${esc(TIPO[ult.tipo]||ult.tipo)} · ${esc(fmtDataHora(ult.enviado_em))}${ult.enviado_por?' por '+esc(ult.enviado_por):''}</span><span>${canais}</span></div>`;}).join('')+'</div>';
+}
+/* v48: configuração do WhatsApp da convocação (tabela whatsapp_convocacao_config, só administrador) */
+let waConvConfig=null;
+async function abrirConfigConvocacao(){
+  if(!PERM.admin)return;
+  const{data,error}=await sb.from('whatsapp_convocacao_config').select('*').eq('id',1).maybeSingle();
+  if(error){alert(/whatsapp_convocacao_config|schema cache|does not exist/i.test(error.message||'')?'Falta atualizar o banco de dados: rode no Supabase as migrações v47 e v48 (supabase/migracao_crm_v48_whatsapp_convocacao_separado.sql).':error.message);return;}
+  const c=waConvConfig=data||{};
+  $('wc-ativo').checked=c.ativo!==false;$('wc-token').value=c.meta_token||'';$('wc-phone').value=c.meta_phone_id||'';
+  $('wc-modelo').value=c.meta_modelo||'';$('wc-idioma').value=c.meta_idioma||'pt_BR';$('wc-teste').value='';
+  abrirModal('modal-wa-conv');
+}
+async function salvarConfigConvocacao(silencioso){
+  if(!PERM.admin)return false;
+  const dados={ativo:$('wc-ativo').checked,meta_token:$('wc-token').value.trim()||null,meta_phone_id:$('wc-phone').value.trim()||null,
+    meta_modelo:$('wc-modelo').value.trim()||null,meta_idioma:$('wc-idioma').value.trim()||'pt_BR',atualizado_em:new Date().toISOString()};
+  if(dados.ativo&&(!dados.meta_token||!dados.meta_phone_id)){alert('Para mandar pelo WhatsApp, preencha o token e o ID do número da Meta.');return false;}
+  const{error}=await sb.from('whatsapp_convocacao_config').update(dados).eq('id',1);
+  if(erroSB(error))return false;
+  waConvConfig=Object.assign(waConvConfig||{},dados);if(!silencioso){toast('Configuração do WhatsApp da convocação salva');fecharModal('modal-wa-conv');}
+  return true;
+}
+async function testarConfigConvocacao(){
+  const fone=$('wc-teste').value.replace(/\D/g,'');
+  if(!(fone.length===10||fone.length===11)){alert('Informe o celular para o teste, com DDD.');return;}
+  if(!await salvarConfigConvocacao(true))return;
+  try{
+    const{data,error}=await sb.functions.invoke('convocacao',{body:{teste_fone:fone}});
+    if(error||!data||!data.ok){let m=(data&&data.erro)||'';if(!m&&error){try{const j=await error.context.json();m=j.erro||'';}catch(e){}m=m||error.message||'erro';}
+      if(/Failed to send|FunctionsFetchError|FunctionsRelayError|not found/i.test(m))m='a função "convocacao" não está publicada no Supabase.';
+      alert('O teste não foi enviado:\n'+m);return;}
+    alert('Teste enviado. Confira o WhatsApp.'+(data.sem_modelo?'\n\nAtenção: sem modelo aprovado, a mensagem só chega se esse número mandou mensagem para o número da empresa nas últimas 24 horas.':''));
+  }catch(e){console.warn(e);alert('Não foi possível enviar o teste.');}
 }
 let cronoSincronizando=false;
 async function sincronizarOutlook(silencioso){
