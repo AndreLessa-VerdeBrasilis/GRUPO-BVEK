@@ -29,7 +29,7 @@ Sempre responda em português. O dono do sistema é o André Lessa (sócio do Gr
    - Toda mudança de banco vira um arquivo novo em `supabase/` no formato `migracao_crm_vNN_descricao.sql`, com o próximo número (confira o maior existente; em 29/out/2026 a última era a v31).
    - A migração precisa poder rodar mais de uma vez sem duplicar nada (`if not exists`, `where not exists`, `create or replace`, `on conflict do nothing`).
    - Termine o arquivo com um `select` que permita ao André conferir o resultado.
-   - **Valores protegidos (desde a v36):** o perfil Comercial não recebe `cards.valor_estimado`, `cards.composicao`, `itens_proposta.valor_unitario/valor_total` nem `contratos_recorrentes.valor_mensal/custo_mensal`. O front-end lê propostas, itens e contratos pelas funções `bvek_cards`, `bvek_itens_proposta` e `bvek_contratos` (nunca `select('*')` direto nessas tabelas). Migração que criar coluna nova nessas três tabelas deve terminar com `select public.bvek_proteger_valores();`.
+   - **Funil só do administrador (desde a v46):** propostas (`cards`, `itens_proposta`, histórico), contratos fixos, valores e PDFs das propostas só chegam ao Administrador — o banco não manda para os outros perfis. Antes (v36) a regra era: o perfil Comercial não recebe `cards.valor_estimado`, `cards.composicao`, `itens_proposta.valor_unitario/valor_total` nem `contratos_recorrentes.valor_mensal/custo_mensal`. O front-end lê propostas, itens e contratos pelas funções `bvek_cards`, `bvek_itens_proposta` e `bvek_contratos` (nunca `select('*')` direto nessas tabelas). Migração que criar coluna nova nessas três tabelas deve terminar com `select public.bvek_proteger_valores();`.
    - O André roda o SQL manualmente no SQL Editor do Supabase. Não execute SQL no banco de produção por conta própria. Quando o código depender da migração, diga claramente: "rode a migração vNN ANTES de testar".
 4. **Nunca apague dados nem colunas** sem aprovação explícita. Prefira adicionar/desativar a remover.
 5. **Segredos**: senhas, service_role key, tokens e credenciais nunca vão para arquivos do repositório nem para mensagens de commit. A chave anon pública do Supabase já usada no front-end pode permanecer como está.
@@ -46,12 +46,14 @@ Sempre responda em português. O dono do sistema é o André Lessa (sócio do Gr
 Boa parte disto já foi implementada nas versões v11 a v18 (acessos, documentos, cobrança, RH, currículos, faltas, folha do mês, perfil de contracheque). Confira no código e nas migrações o que já existe antes de construir algo destas listas.
 
 **Perfis de acesso**
-- Administrador, Comercial, Administrativo, Consulta — todos veem todas as empresas; a restrição é só por cargo.
+- Administrador, Comercial, Administrativo — todos veem todas as empresas; a restrição é só por cargo. O perfil Consulta foi removido na v46.
+- Funil, propostas, valores e contratos: só o Administrador (v46). Os outros sabem os clientes e projetos, e só isso.
+- Cadastro completo dos funcionários (CPF, PIS, e-mail…) e documentos dos funcionários: só Administrador, Administrativo e Contabilidade (v46). Os outros perfis recebem só nome, cargo e empresa (`bvek_funcionarios_basico`).
 - Contabilidade: vê só RH e documentos (ponto, VA, VT, academia, odonto etc.).
 - "Funcionário (contracheque e ponto)": login por CPF + senha, vê todos os contracheques do CPF e as próprias marcações do ponto (Secullum, ação `meu_ponto`).
 - Objetivo: abrir o CRM deve ser o primeiro movimento dos funcionários ao chegar no escritório.
 - Painel completo (funil, valores, contratos, ganhos × custos) só para o Administrador (v45). Os outros perfis veem o "Painel da equipe": tarefas, agenda do escritório, quem está onde hoje e documentos — nunca propostas, valores ou contratos.
-- Cronograma (v45): todos os perfis do escritório veem, criam e alteram alocações (só o administrador apaga). Quem não é do RH vê só o nome dos funcionários. Só os intermitentes entram na folha pelo cronograma.
+- Cronograma (v45): todos os perfis do escritório (Administrador, Comercial, Administrativo e Contabilidade) veem, criam e alteram alocações (só o administrador apaga). Quem não é do RH vê só o nome dos funcionários. Só os intermitentes entram na folha pelo cronograma.
 - Agenda do escritório (v45): caixa `agenda@bvek.com.br` no Microsoft 365, tabela `agenda_escritorio`, linha "🏢 Escritório" no Cronograma. Eventos do escritório não entram na folha.
 
 **Funil / propostas**

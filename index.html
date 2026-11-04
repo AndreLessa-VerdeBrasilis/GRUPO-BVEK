@@ -1149,11 +1149,10 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
         <strong>Funcionário saiu?</strong> Desmarque "Ativo" — o login para de funcionar no CRM e o histórico continua guardado.
       </div>
       <div class="legenda-perfis">
-        <div><strong>Administrador</strong>Tudo: usuários, empresas, exclusões e todas as abas.</div>
-        <div><strong>Comercial</strong>Funil, propostas, clientes, contatos, projetos e atividades. Não exclui atendimentos nem clientes. Documentos só consulta. Não acessa benefícios, ponto nem RH.</div>
-        <div><strong>Administrativo</strong>Documentos e certidões, funcionários, RH (ficha, uniformes, contracheques, vales, adiantamentos, envio à contabilidade), currículos, projetos e atividades. Funil e clientes só consulta.</div>
-        <div><strong>Consulta</strong>Vê funil, clientes, projetos e documentos, não altera nada. Não vê benefícios, RH nem currículos.</div>
-        <div><strong>Contabilidade</strong>Só funcionários, benefícios, RH (salários, contracheques, vales e adiantamentos) e documentos/certidões, para consulta e exportação. Não vê funil, propostas, clientes nem currículos.</div>
+        <div><strong>Administrador</strong>Tudo: usuários, empresas, exclusões e todas as abas. É o único que vê o funil, as propostas, os valores e os contratos.</div>
+        <div><strong>Comercial</strong>Clientes, contatos, projetos, tarefas, cronograma e agenda do escritório. Documentos das empresas só consulta. Não vê funil, propostas, valores, contratos nem RH.</div>
+        <div><strong>Administrativo</strong>Documentos e certidões, funcionários, RH (ficha, uniformes, contracheques, vales, adiantamentos, envio à contabilidade), currículos, projetos, tarefas, cronograma e agenda do escritório. Clientes só consulta. Não vê funil, propostas, valores nem contratos.</div>
+        <div><strong>Contabilidade</strong>Funcionários, benefícios, RH (salários, contracheques, vales e adiantamentos), documentos/certidões, cronograma e agenda do escritório. Não vê funil, propostas, clientes nem currículos.</div>
         <div><strong>Funcionário (contracheque e ponto)</strong>Entra com CPF e senha e vê somente os próprios contracheques (todos os meses guardados para o CPF) e as próprias marcações do ponto (Secullum). Não vê nada mais do CRM.</div>
       </div>
       <div class="barra-acoes" style="margin-top:18px"><h2>Acesso dos intermitentes ao contracheque</h2>
@@ -2649,16 +2648,18 @@ const CADENCIA_COBRANCA={enviada:3,cobranca1:4,cobranca2:7,negociacao:7};
 const ETAPAS_COBRANCA=Object.keys(CADENCIA_COBRANCA);
 const PROXIMA_ETAPA_COBRANCA={enviada:'cobranca1',cobranca1:'cobranca2'};
 // Perfis de acesso (as regras valem no banco; aqui só ajustam a tela)
-const PERFIS=[['administrador','Administrador'],['comercial','Comercial'],['administrativo','Administrativo'],['contabilidade','Contabilidade'],['consulta','Consulta'],['funcionario','Funcionário (contracheque e ponto)'],['pendente','Aguardando liberação']];
+const PERFIS=[['administrador','Administrador'],['comercial','Comercial'],['administrativo','Administrativo'],['contabilidade','Contabilidade'],['funcionario','Funcionário (contracheque e ponto)'],['pendente','Aguardando liberação']];
 // v17: login por CPF do perfil Funcionário → e-mail interno CPF@funcionario.bvek.com.br
 const DOMINIO_FUNC='funcionario.bvek.com.br';
-const PERFIL_LABEL=Object.fromEntries(PERFIS);
+// v46: o perfil Consulta foi removido (quem era Consulta passou para Aguardando liberação)
+const PERFIL_LABEL=Object.assign(Object.fromEntries(PERFIS),{consulta:'Consulta (removido)'});
 function calcularPermissoes(p){
-  const adm=p==='administrador',com=p==='comercial',admv=p==='administrativo',cont=p==='contabilidade',cons=p==='consulta';
+  const adm=p==='administrador',com=p==='comercial',admv=p==='administrativo',cont=p==='contabilidade';
   // comercialVer: vê funil, clientes, projetos, atividades e empresas (a contabilidade não vê)
   // rh: vê benefícios e ponto (v28: o comercial não acessa o RH) · rhEditar: altera benefícios
   // v42: o Comercial não vê mais o funil de propostas (nem os valores do painel); só o administrador altera o funil
-  return{admin:adm,funil:adm,funilVer:!com&&!cont,clientes:adm||com,projetos:adm||com||admv,ativ:adm||com||admv,docs:adm||admv,excluir:adm,
+  // v46: funil, propostas, valores e contratos só para o administrador
+  return{admin:adm,funil:adm,funilVer:adm,clientes:adm||com,projetos:adm||com||admv,ativ:adm||com||admv,docs:adm||admv,excluir:adm,
     comercialVer:!cont,rh:adm||admv||cont,rhEditar:adm||admv,
     // v14: rhPessoal = salário, contracheques, vales, uniformes, envio à contabilidade · curriculos = banco de currículos
     rhPessoal:adm||admv||cont,curriculos:adm||admv,
@@ -2671,12 +2672,12 @@ function calcularPermissoes(p){
     // v30: inventário (administrador, comercial e administrativo cadastram; consulta só vê)
     invEditar:adm||com||admv,
     // v34: o comercial não vê valores de propostas nem gera o PDF; custo/lucro (composição, ganhos × custos) só administrador
-    verValores:!com,gerarPDF:!com,verLucro:adm,
+    verValores:adm,gerarPDF:adm,verLucro:adm,
     // v36: contratos fixos no funil (Comercial e Administrativo preenchem; valores só para quem vê valores)
-    contratosEditar:adm||admv,
+    contratosEditar:adm,
     // v41: cronograma de funcionários (liga ao Outlook e à folha do mês)
     // v45: todos os perfis do escritório veem, criam e alteram (só o administrador apaga) + agenda do escritório
-    cronograma:adm||com||admv||cont||cons,
+    cronograma:adm||com||admv||cont,
     // v45: o Painel completo (funil, valores, contratos) é só do administrador; os outros veem o Painel da equipe
     painelCompleto:adm};
 }
@@ -3242,11 +3243,19 @@ async function carregarPerfis(){
   const{data,error}=await sb.from('perfis').select('*').order('nome');
   todosPerfis=error?[]:(data||[]);
 }
+// v46: o cadastro completo (CPF, PIS, e-mail…) só para Administrador, Administrativo e Contabilidade;
+// os outros perfis recebem só nome, cargo e empresa (para o Cronograma)
+async function lerFuncionarios(){
+  if(PERM.rhPessoal||PERM.docs)return await sb.from('funcionarios').select('*').order('nome');
+  const r=await sb.rpc('bvek_funcionarios_basico');
+  if(r.error&&naoTemFuncao(r.error))return await sb.from('funcionarios').select('*').order('nome');
+  return r;
+}
 async function carregarDocsTudo(){
   if(!v11Ok){avisarMigracaoV11();return;}
   const[t,f,d]=await Promise.all([
     sb.from('tipos_documento').select('*').order('ordem').order('nome'),
-    sb.from('funcionarios').select('*').order('nome'),
+    lerFuncionarios(),
     sb.from('documentos').select('*').order('data_validade',{ascending:true,nullsFirst:false}),
   ]);
   const erro=t.error||f.error||d.error;
@@ -3622,7 +3631,7 @@ async function carregarAuditoria(){
 let pdTfFiltro='todas',pdTfGrupo='',pdTfResp='',painelTimer=null;
 function tarefasPendentesPainel(cards){
   const ids=new Set((cards||filtraEmpresa(todosCards)).map(c=>c.id));
-  return todasAtividades.filter(a=>a.tipo!=='nota'&&!a.concluida&&(empresaAtual==='todas'||!a.card_id||ids.has(a.card_id)));
+  return todasAtividades.filter(a=>a.tipo!=='nota'&&!a.concluida&&(empresaAtual==='todas'||!a.card_id||!PERM.funilVer||ids.has(a.card_id)));
 }
 function grupoTarefa(a){if(!a.data_prevista)return'semdata';const d=new Date(a.data_prevista);return d<inicioDoDia()?'atrasadas':d<=fimDoDia()?'hoje':'proximas';}
 function renderTarefasPainel(todas){
@@ -7617,7 +7626,7 @@ function renderEquipeCrono(){
   const busca=norm($('crg-equipe-busca').value);
   const lista=todosFuncionarios.filter(f=>(f.ativo!==false||cronoEquipe.has(f.id))&&(!busca||norm(f.nome).includes(busca)))
     .sort((a,b)=>(cronoEquipe.has(b.id)-cronoEquipe.has(a.id))||a.nome.localeCompare(b.nome,'pt-BR'));
-  $('crg-equipe').innerHTML=lista.length?lista.map(f=>`<label><input type="checkbox" data-crg-f="${esc(f.id)}" ${cronoEquipe.has(f.id)?'checked':''}>${esc(f.nome)}${ehIntermitente(f)?' <span class="badge badge-cinza" style="font-size:10px">intermitente</span>':''}${f.email?' <span title="'+esc(f.email)+'">✉️</span>':''}${f.cargo?` <span class="dica" style="margin:0">${esc(f.cargo)}</span>`:''}</label>`).join(''):'<p class="vazio">Nenhum funcionário encontrado.</p>';
+  $('crg-equipe').innerHTML=lista.length?lista.map(f=>`<label><input type="checkbox" data-crg-f="${esc(f.id)}" ${cronoEquipe.has(f.id)?'checked':''}>${esc(f.nome)}${ehIntermitente(f)?' <span class="badge badge-cinza" style="font-size:10px">intermitente</span>':''}${f.email?' <span title="'+esc(f.email)+'">✉️</span>':f.tem_email?' <span title="tem e-mail no cadastro">✉️</span>':''}${f.cargo?` <span class="dica" style="margin:0">${esc(f.cargo)}</span>`:''}</label>`).join(''):'<p class="vazio">Nenhum funcionário encontrado.</p>';
   $('crg-equipe').querySelectorAll('[data-crg-f]').forEach(c=>c.onchange=()=>{c.checked?cronoEquipe.add(c.dataset.crgF):cronoEquipe.delete(c.dataset.crgF);contarDiasCrono();});
 }
 function contarDiasCrono(){

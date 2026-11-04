@@ -30,8 +30,8 @@
 //        para a agenda (cria, atualiza ou cancela — os convidados recebem o convite).
 //   Eventos do escritório ficam na tabela agenda_escritorio e NÃO entram na folha.
 //
-// v45: todos os perfis do escritório (Administrador, Comercial, Administrativo,
-// Contabilidade e Consulta). O perfil Funcionário (login por CPF) não usa.
+// v45: todos os perfis do escritório (Administrador, Comercial, Administrativo e
+// Contabilidade). O perfil Funcionário (login por CPF) não usa.
 // =====================================================================
 import { createClient, SupabaseClient } from "npm:@supabase/supabase-js@2";
 
@@ -335,7 +335,7 @@ async function sincronizar(adm: SupabaseClient, inicio: string, fim: string, min
 // =====================================================================
 // v45: AGENDA DO ESCRITÓRIO (caixa agenda@bvek.com.br)
 // =====================================================================
-const PERFIS_OK = ["administrador", "comercial", "administrativo", "contabilidade", "consulta"];
+const PERFIS_OK = ["administrador", "comercial", "administrativo", "contabilidade"];
 function caixaEscritorio(): string {
   return (Deno.env.get("OUTLOOK_ESCRITORIO") || "agenda@bvek.com.br").trim();
 }
