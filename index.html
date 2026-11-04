@@ -1867,6 +1867,7 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
         <div class="campo"><label>PIS</label><input type="text" id="fi-pis" inputmode="numeric" maxlength="14" placeholder="000.00000.00-0" oninput="this.value=fmtPIS(this.value)"></div>
         <div class="campo"><label>Data de admissão</label><input type="date" id="fi-admissao"></div>
         <div class="campo"><label>E-mail (comunicados)</label><input type="email" id="fi-email" placeholder="nome@exemplo.com"></div>
+        <div class="campo"><label>Celular (WhatsApp)</label><input type="tel" id="fi-celular" placeholder="(21) 99999-9999" oninput="mascaraTel(this)"><div class="dica">Recebe a convocação do Cronograma pelo WhatsApp.</div></div>
         <div class="campo"><label>Tipo de contrato</label><select id="fi-contrato"></select></div>
         <div class="campo"><label>Salário (R$)</label><input type="text" inputmode="numeric" id="fi-salario" placeholder="0,00" oninput="mascaraMoeda(this)"></div>
         <div class="campo" style="display:flex;align-items:flex-end"><div class="campo-check"><input type="checkbox" id="fi-adianta"><label for="fi-adianta" id="fi-adianta-rot">Recebe adiantamento todo mês</label></div></div>
@@ -2342,17 +2343,21 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
       <div class="campo full"><label>Serviço / título (opcional)</label><input type="text" id="crg-titulo" placeholder="Ex.: roçada da área norte"></div>
       <div class="campo"><label>De *</label><input type="date" id="crg-ini" onchange="if(!$('crg-fim').value||$('crg-fim').value<this.value)$('crg-fim').value=this.value;contarDiasCrono()"></div>
       <div class="campo"><label>Até *</label><input type="date" id="crg-fim" onchange="contarDiasCrono()"></div>
+      <div class="campo"><label>Horário (entrada / saída)</label><div class="linha-flex"><input type="time" id="crg-hini" step="900" title="entrada"><input type="time" id="crg-hfim" step="900" title="saída"></div><div class="dica">Vai no aviso da convocação.</div></div>
       <div class="campo full" style="display:flex;gap:22px;flex-wrap:wrap">
         <div class="campo-check"><input type="checkbox" id="crg-sab" onchange="contarDiasCrono()"><label for="crg-sab">Trabalha sábado</label></div>
         <div class="campo-check"><input type="checkbox" id="crg-dom" onchange="contarDiasCrono()"><label for="crg-dom">Trabalha domingo</label></div>
         <span class="dica" id="crg-dias" style="margin:auto 0"></span>
       </div>
-      <div class="campo full"><label>Equipe * <span class="dica" style="display:inline;margin:0">(✉️ = tem e-mail no cadastro: recebe o convite do Outlook)</span></label>
+      <div class="campo full"><label>Equipe * <span class="dica" style="display:inline;margin:0">(📱 = tem celular na ficha: recebe a convocação no WhatsApp · ✉️ = tem e-mail: recebe por e-mail e o convite do Outlook)</span></label>
         <input type="search" id="crg-equipe-busca" placeholder="Buscar funcionário" oninput="renderEquipeCrono()" style="margin-bottom:6px">
         <div class="crg-equipe" id="crg-equipe"></div></div>
-      <div class="campo full"><label>Observações</label><textarea id="crg-obs" rows="2"></textarea></div>
+      <div class="campo full"><label>Observações</label><textarea id="crg-obs" rows="2" placeholder="Ex.: levar EPI, ponto de encontro às 6h30 no escritório"></textarea></div>
+      <div class="campo full so-edicao"><div class="campo-check"><input type="checkbox" id="crg-avisar" checked><label for="crg-avisar">📲 Avisar a equipe ao salvar (WhatsApp e e-mail): quem entrou recebe a convocação, quem já sabia recebe só se algo mudar, quem saiu recebe o cancelamento</label></div></div>
+      <div class="campo full" id="crg-avisos-box" style="display:none"><label>Avisos da convocação</label><div id="crg-avisos"></div></div>
     </div>
     <div class="modal-btns">
+      <button class="btn-sec so-edicao" id="crg-btn-reenviar" style="display:none" onclick="reenviarConvocacao()" title="Manda a convocação de novo para todos da equipe">📲 Reenviar aviso</button>
       <button class="btn-excluir so-edicao" id="crg-btn-cancelar-aloc" style="display:none" onclick="cancelarAlocacao()">Cancelar alocação</button>
       <button class="btn-cancelar" onclick="fecharModal('modal-alocacao')">Fechar</button>
       <button class="btn-salvar so-edicao" id="crg-btn-salvar" onclick="salvarAlocacao()">Salvar</button>
@@ -2595,6 +2600,10 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
           <div class="campo"><label>ID do número (Phone number ID)</label><input type="text" id="wa-meta-phone"></div>
           <div class="campo"><label>Nome do modelo aprovado</label><input type="text" id="wa-meta-modelo" placeholder="ex.: lembrete_pagamentos"></div>
           <div class="campo"><label>Idioma do modelo</label><input type="text" id="wa-meta-idioma" placeholder="pt_BR"></div>
+          <div class="campo full"><label>Modelo aprovado da CONVOCAÇÃO (Cronograma)</label><input type="text" id="wa-meta-modelo-conv" placeholder="ex.: convocacao_cronograma">
+            <div class="dica">A convocação vai para o celular de cada funcionário (ficha → Dados) usando o token e o número acima. Crie na Meta um modelo da categoria <strong>Utilidade</strong> com 7 variáveis, por exemplo:<br>
+            <code>Grupo BVEK — {{1}}<br>Olá, {{2}}!<br>Data: {{3}}<br>Horário: {{4}}<br>Local: {{5}}<br>Serviço: {{6}}<br>Observações: {{7}}<br>Em caso de dúvida, fale com o escritório.</code><br>
+            Sem modelo, a Meta só entrega a mensagem a quem mandou mensagem para o número da empresa nas últimas 24 horas.</div></div>
         </div>
       </div>
       <div class="campo"><label>Repetir a cada (minutos)</label><input type="number" id="wa-intervalo" min="15" max="1440" step="5"></div>
@@ -6262,7 +6271,7 @@ function preencherFichaDados(){
   const f=fichaId?funcPorId(fichaId):null,r=(fichaId&&rhPorFunc(fichaId))||{};
   $('fi-nome').value=f?f.nome:'';$('fi-cargo').value=f&&f.cargo||'';
   $('fi-empresa').value=f?(f.empresa_id||''):(empresaAtual!=='todas'?empresaAtual:'');
-  $('fi-cpf').value=f&&f.cpf||'';$('fi-email').value=f&&f.email||'';$('fi-pis').value=f&&f.pis||'';$('fi-admissao').value=f&&f.data_admissao||'';$('fi-pasta').value=f&&f.pasta_url||'';
+  $('fi-cpf').value=f&&f.cpf||'';$('fi-email').value=f&&f.email||'';$('fi-celular').value=f&&f.celular?fmtTel(f.celular):'';$('fi-pis').value=f&&f.pis||'';$('fi-admissao').value=f&&f.data_admissao||'';$('fi-pasta').value=f&&f.pasta_url||'';
   $('fi-contrato').value=r.tipo_contrato||'';$('fi-salario').value=r.salario!=null?fmtMoeda(r.salario):'';
   $('fi-adianta').checked=!!r.adianta_mensal;$('fi-obs').value=r.observacoes||'';
   $('fi-adianta-rot').textContent=`Recebe adiantamento de ${pctAdiant()}% do salário todo dia ${diaAdiant()} (ou dia útil próximo)`;
@@ -6297,6 +6306,11 @@ async function salvarFichaDados(){
   if(email&&!/^[^\s@;,<>]+@[^\s@;,<>]+\.[^\s@;,<>]+$/.test(email)){alert('E-mail inválido.');return;}
   if(todosFuncionarios.length?('email' in todosFuncionarios[0]):v30Ok)dados.email=email||null;
   else if(email){alert('Para guardar o e-mail, rode antes a migração v30 no Supabase.');}
+  // v47: celular (WhatsApp) para a convocação do Cronograma — guardado só com números (DDD + número)
+  const cel=$('fi-celular').value.replace(/\D/g,'').replace(/^55(?=\d{10,11}$)/,'');
+  if(cel&&!(cel.length===10||cel.length===11)){alert('Celular inválido: informe com DDD, ex.: (21) 99999-9999.');return;}
+  if(todosFuncionarios.length&&('celular' in todosFuncionarios[0]))dados.celular=cel||null;
+  else if(cel){alert('Para guardar o celular, rode antes a migração v47 (supabase/migracao_crm_v47_convocacao_whatsapp.sql) no Supabase.');return;}
   const r=fichaId?await sb.from('funcionarios').update(dados).eq('id',fichaId).select().single():await sb.from('funcionarios').insert(dados).select().single();
   if(erroSB(r.error))return;
   const fid=r.data.id;
@@ -7611,6 +7625,9 @@ function abrirAlocacao(id=null,pre=null){
   $('crg-ini').value=l?l.data_inicio:(pre&&pre.d)||'';$('crg-fim').value=l?l.data_fim:(pre&&pre.d)||'';
   $('crg-sab').checked=l?!!l.sabado:false;$('crg-dom').checked=l?!!l.domingo:false;
   $('crg-obs').value=l?(l.observacoes||''):'';
+  $('crg-hini').value=l&&l.hora_inicio?String(l.hora_inicio).slice(0,5):'';$('crg-hfim').value=l&&l.hora_fim?String(l.hora_fim).slice(0,5):'';
+  $('crg-avisar').checked=true;$('crg-btn-reenviar').style.display=l&&l.situacao==='ativo'&&l.data_fim>=hojeISO()?'':'none';
+  $('crg-avisos-box').style.display='none';if(l)renderAvisosConvocacao(l.id);
   cronoEquipe=new Set(l?(l.funcionarios||[]):(pre&&pre.fid?[pre.fid]:[]));
   $('crg-equipe-busca').value='';renderEquipeCrono();contarDiasCrono();
   const st=$('crg-status');
@@ -7626,7 +7643,7 @@ function renderEquipeCrono(){
   const busca=norm($('crg-equipe-busca').value);
   const lista=todosFuncionarios.filter(f=>(f.ativo!==false||cronoEquipe.has(f.id))&&(!busca||norm(f.nome).includes(busca)))
     .sort((a,b)=>(cronoEquipe.has(b.id)-cronoEquipe.has(a.id))||a.nome.localeCompare(b.nome,'pt-BR'));
-  $('crg-equipe').innerHTML=lista.length?lista.map(f=>`<label><input type="checkbox" data-crg-f="${esc(f.id)}" ${cronoEquipe.has(f.id)?'checked':''}>${esc(f.nome)}${ehIntermitente(f)?' <span class="badge badge-cinza" style="font-size:10px">intermitente</span>':''}${f.email?' <span title="'+esc(f.email)+'">✉️</span>':f.tem_email?' <span title="tem e-mail no cadastro">✉️</span>':''}${f.cargo?` <span class="dica" style="margin:0">${esc(f.cargo)}</span>`:''}</label>`).join(''):'<p class="vazio">Nenhum funcionário encontrado.</p>';
+  $('crg-equipe').innerHTML=lista.length?lista.map(f=>`<label><input type="checkbox" data-crg-f="${esc(f.id)}" ${cronoEquipe.has(f.id)?'checked':''}>${esc(f.nome)}${ehIntermitente(f)?' <span class="badge badge-cinza" style="font-size:10px">intermitente</span>':''}${temCelular(f)?' <span title="tem celular na ficha (WhatsApp)">📱</span>':''}${f.email?' <span title="'+esc(f.email)+'">✉️</span>':f.tem_email?' <span title="tem e-mail no cadastro">✉️</span>':''}${f.cargo?` <span class="dica" style="margin:0">${esc(f.cargo)}</span>`:''}</label>`).join(''):'<p class="vazio">Nenhum funcionário encontrado.</p>';
   $('crg-equipe').querySelectorAll('[data-crg-f]').forEach(c=>c.onchange=()=>{c.checked?cronoEquipe.add(c.dataset.crgF):cronoEquipe.delete(c.dataset.crgF);contarDiasCrono();});
 }
 function contarDiasCrono(){
@@ -7662,6 +7679,12 @@ async function salvarAlocacao(){
   const dados={projeto_id:proj,cliente_id:cli,titulo:$('crg-titulo').value.trim()||null,local:$('crg-local').value.trim()||null,
     data_inicio:ini,data_fim:fim,sabado:$('crg-sab').checked,domingo:$('crg-dom').checked,funcionarios:[...cronoEquipe],
     observacoes:$('crg-obs').value.trim()||null,situacao:'ativo',atualizado_em:new Date().toISOString()};
+  // v47: horário (entrada/saída) — só grava se a migração v47 já criou as colunas
+  const hi=$('crg-hini').value,hf=$('crg-hfim').value;
+  if(hi&&hf&&hf<=hi){alert('O horário de saída precisa ser depois da entrada.');return;}
+  const temHora=cronoLinhas.length?('hora_inicio' in cronoLinhas[0]):null;
+  if(temHora!==false){dados.hora_inicio=hi||null;dados.hora_fim=hf||null;}
+  else if(hi||hf){alert('Para guardar o horário, rode antes a migração v47 (supabase/migracao_crm_v47_convocacao_whatsapp.sql) no Supabase.');return;}
   // conflito: mesma pessoa em outro lugar no mesmo dia
   const{data:outras}=await sb.from('cronograma').select('*').eq('situacao','ativo').lte('data_inicio',fim).gte('data_fim',ini).overlaps('funcionarios',dados.funcionarios);
   const conf=[];(outras||[]).filter(o=>o.id!==cronoEditId).forEach(o=>{const dd=new Set(diasDaAlocacao(o,ini,fim));const comuns=diasDaAlocacao(dados).filter(d=>dd.has(d));if(!comuns.length)return;
@@ -7671,21 +7694,24 @@ async function salvarAlocacao(){
   try{
     const ant=cronoEditId?cronoLinhas.find(x=>x.id===cronoEditId):null;
     let id=cronoEditId;
-    if(id){const{error}=await sb.from('cronograma').update(dados).eq('id',id);if(erroSB(error))return;}
-    else{dados.criado_por=usuario?usuario.email:null;dados.origem='crm';const{data,error}=await sb.from('cronograma').insert(dados).select().single();if(erroSB(error))return;id=data.id;}
+    if(id){const{error}=await sb.from('cronograma').update(dados).eq('id',id);if(faltaV47(error)||erroSB(error))return;}
+    else{dados.criado_por=usuario?usuario.email:null;dados.origem='crm';const{data,error}=await sb.from('cronograma').insert(dados).select().single();if(faltaV47(error)||erroSB(error))return;id=data.id;}
+    const avisar=$('crg-avisar').checked;
     const meses=new Set(mesesDoPeriodo(ini,fim));if(ant)mesesDoPeriodo(ant.data_inicio,ant.data_fim).forEach(m=>meses.add(m));
     await abrirCompetenciasDoCronograma([...meses],[...new Set([...dados.funcionarios,...(ant?ant.funcionarios||[]:[])])]);
     fecharModal('modal-alocacao');
     await enviarAlocacaoOutlook(id);
+    if(avisar)await avisarConvocacao(id);
     await Promise.all([carregarCronograma(),carregarCompetenciaAtual()]);renderTabAtual();
   }finally{btn.disabled=false;}
 }
 async function cancelarAlocacao(){
   const l=cronoLinhas.find(x=>x.id===cronoEditId);if(!l||!PERM.cronograma)return;
-  if(!confirm('Cancelar esta alocação? Ela sai do Outlook e os dias deixam de contar na folha dos intermitentes. Nada é apagado (dá para reativar).'))return;
+  if(!confirm('Cancelar esta alocação? Ela sai do Outlook e os dias deixam de contar na folha dos intermitentes. Quem já tinha recebido a convocação recebe o aviso de cancelamento (WhatsApp/e-mail). Nada é apagado (dá para reativar).'))return;
   const{error}=await sb.from('cronograma').update({situacao:'cancelado',atualizado_em:new Date().toISOString()}).eq('id',l.id);if(erroSB(error))return;
   fecharModal('modal-alocacao');
   await enviarAlocacaoOutlook(l.id);
+  await avisarConvocacao(l.id);
   await Promise.all([carregarCronograma(),carregarCompetenciaAtual()]);renderTabAtual();
 }
 async function enviarAlocacaoOutlook(id){
@@ -7698,6 +7724,47 @@ async function enviarAlocacaoOutlook(id){
     cronoOutlook={ok:true,msg:'',caixa:data.caixa||cronoOutlook.caixa||''};
     toast(data.feito==='apagado'?'Alocação cancelada e retirada do Outlook':'Alocação salva e enviada à sua agenda do Outlook');
   }catch(e){console.warn(e);toast('Alocação salva — ⚠️ não foi para o Outlook');}
+}
+/* v47: CONVOCAÇÃO — aviso no WhatsApp (API da Meta) e no e-mail (Microsoft 365) pela função "convocacao".
+   O servidor decide quem recebe: quem entrou na equipe (convocação), quem já sabia e algo mudou (alteração),
+   quem saiu ou alocação cancelada (cancelamento). Cada envio fica em cronograma_avisos. */
+function temCelular(f){return f.tem_celular||String(f.celular||'').replace(/\D/g,'').length>=10;}
+function faltaV47(error){if(error&&/hora_inicio|hora_fim/.test(error.message||'')){alert('Para guardar o horário, rode antes a migração v47 (supabase/migracao_crm_v47_convocacao_whatsapp.sql) no Supabase.');return true;}return false;}
+async function avisarConvocacao(id,reenviar=false){
+  try{
+    const{data,error}=await sb.functions.invoke('convocacao',{body:{cronograma_id:id,reenviar}});
+    if(error||!data||!data.ok){
+      let m=(data&&data.erro)||'',st=0;
+      if(!m&&error){try{st=error.context&&error.context.status||0;const j=await error.context.json();m=j.erro||'';}catch(e){}m=m||error.message||'erro';}
+      if(st===404||/Failed to send|FunctionsFetchError|FunctionsRelayError|not found/i.test(m))m='a função "convocacao" não está publicada no Supabase (Edge Functions → Deploy new function, com o conteúdo de supabase/functions/convocacao/index.ts).';
+      console.warn('Convocação',m);alert('A alocação foi salva, mas a equipe NÃO foi avisada:\n'+m);return;}
+    if(data.pulado){if(reenviar||/terminou/.test(data.pulado))toast(data.pulado);return;}
+    const r=data.resultado||[];
+    const falhas=r.filter(x=>x.whatsapp!=='ok'&&x.email!=='ok');
+    const TIPO={convocacao:'convocação',alteracao:'alteração',cancelamento:'cancelamento'};
+    if(!falhas.length&&!r.some(x=>/^erro/.test(x.whatsapp+'')||/^erro/.test(x.email+'')))toast(`📲 Equipe avisada: ${r.map(x=>`${nomeCurtoTxt(x.nome)} (${TIPO[x.tipo]||x.tipo})`).join(', ')}`);
+    else alert(`Avisos da convocação — ${data.enviados} de ${data.total} pessoa(s) receberam:\n\n`+r.map(x=>`• ${x.nome} (${TIPO[x.tipo]||x.tipo})\n   WhatsApp: ${x.whatsapp}\n   E-mail: ${x.email}`).join('\n')+(falhas.length?'\n\nQuem ficou sem aviso: cadastre o celular/e-mail em RH → ficha → Dados e use “📲 Reenviar aviso” na alocação.':''));
+    if(data.sem_modelo)console.warn('Convocação: sem modelo aprovado na Meta, a mensagem só chega para quem falou com o número da empresa nas últimas 24h (Financeiro → ⚙️ WhatsApp).');
+  }catch(e){console.warn(e);alert('A alocação foi salva, mas não foi possível avisar a equipe.');}
+}
+function nomeCurtoTxt(n){const p=String(n||'').trim().split(/\s+/);return p.length>1?p[0]+' '+p[p.length-1]:p[0];}
+async function reenviarConvocacao(){
+  const l=cronoLinhas.find(x=>x.id===cronoEditId);if(!l)return;
+  if(!confirm('Mandar a convocação de novo, pelo WhatsApp e e-mail, para TODOS da equipe desta alocação (como está salva)?'))return;
+  const b=$('crg-btn-reenviar');b.disabled=true;
+  try{await avisarConvocacao(l.id,true);await renderAvisosConvocacao(l.id);}finally{b.disabled=false;}
+}
+async function renderAvisosConvocacao(id){
+  const{data,error}=await sb.rpc('bvek_cronograma_avisos',{p_ids:[id]});
+  if(error||cronoEditId!==id)return;
+  const box=$('crg-avisos-box');if(!(data||[]).length){box.style.display='none';return;}
+  const TIPO={convocacao:'convocação',alteracao:'alteração',cancelamento:'cancelamento'};
+  const porFunc=new Map();data.forEach(a=>{const k=a.funcionario_id||'?';if(!porFunc.has(k))porFunc.set(k,[]);porFunc.get(k).push(a);});
+  box.style.display='';
+  $('crg-avisos').innerHTML='<div class="sub-lista">'+[...porFunc].map(([fid,av])=>{
+    const ult=av[0],canais=['whatsapp','email'].map(c=>{const a=av.find(x=>x.canal===c&&x.enviado_em===ult.enviado_em)||av.find(x=>x.canal===c);if(!a)return'';
+      return a.ok?`<span class="badge badge-ok" title="${esc(TIPO[a.tipo]||a.tipo)} em ${esc(fmtDataHora(a.enviado_em))}">${c==='whatsapp'?'📱 WhatsApp':'✉️ e-mail'} ✓</span>`:`<span class="badge badge-atraso" title="${esc(a.erro||'')}">${c==='whatsapp'?'📱 WhatsApp':'✉️ e-mail'}: erro</span>`;}).join(' ');
+    return`<div class="sub-item"><span><strong>${esc((funcPorId(fid)||{}).nome||'?')}</strong> · ${esc(TIPO[ult.tipo]||ult.tipo)} · ${esc(fmtDataHora(ult.enviado_em))}${ult.enviado_por?' por '+esc(ult.enviado_por):''}</span><span>${canais}</span></div>`;}).join('')+'</div>';
 }
 let cronoSincronizando=false;
 async function sincronizarOutlook(silencioso){
@@ -8195,7 +8262,7 @@ async function abrirConfigWhatsApp(){
   $('wa-ativo').checked=!!c.ativo;$('wa-provedor').value=c.provedor||'callmebot';
   const tel=String(c.telefone||'').replace(/^55/,'');$('wa-telefone').value=tel?fmtTel(tel):'';
   $('wa-apikey').value=c.callmebot_apikey||'';$('wa-meta-token').value=c.meta_token||'';$('wa-meta-phone').value=c.meta_phone_id||'';
-  $('wa-meta-modelo').value=c.meta_modelo||'';$('wa-meta-idioma').value=c.meta_idioma||'pt_BR';
+  $('wa-meta-modelo').value=c.meta_modelo||'';$('wa-meta-modelo-conv').value=c.meta_modelo_convocacao||'';$('wa-meta-idioma').value=c.meta_idioma||'pt_BR';
   $('wa-intervalo').value=c.intervalo_min||60;$('wa-hora-ini').value=c.hora_inicio??8;$('wa-hora-fim').value=c.hora_fim??18;$('wa-fds').checked=!!c.fim_de_semana;
   mudouProvedorWA();abrirModal('modal-whatsapp');renderEnviosWA();
 }
@@ -8219,6 +8286,10 @@ async function salvarConfigWhatsApp(silencioso){
     meta_token:$('wa-meta-token').value.trim()||null,meta_phone_id:$('wa-meta-phone').value.trim()||null,meta_modelo:$('wa-meta-modelo').value.trim()||null,
     meta_idioma:$('wa-meta-idioma').value.trim()||'pt_BR',intervalo_min:Math.max(15,Math.round(Number($('wa-intervalo').value)||60)),
     hora_inicio:hi,hora_fim:hf,fim_de_semana:$('wa-fds').checked,atualizado_em:new Date().toISOString()};
+  // v47: modelo da convocação (só grava se a migração v47 já criou a coluna)
+  const mConv=$('wa-meta-modelo-conv').value.trim();
+  if(waConfig&&('meta_modelo_convocacao' in waConfig))dados.meta_modelo_convocacao=mConv||null;
+  else if(mConv){alert('Para guardar o modelo da convocação, rode antes a migração v47 no Supabase.');return false;}
   const{error}=await sb.from('whatsapp_config').update(dados).eq('id',1);
   if(erroSB(error))return false;
   waConfig=Object.assign(waConfig||{},dados);if(!silencioso)toast('Configuração salva');return true;
