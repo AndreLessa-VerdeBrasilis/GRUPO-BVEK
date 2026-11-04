@@ -22,7 +22,16 @@
 //        • evento alterado/apagado no Outlook altera/cancela a alocação;
 //        • alocação nova/alterada/cancelada no CRM vai para o Outlook.
 //
-// Só Administrador e Administrativo.
+//   v45 — agenda do escritório (caixa agenda@bvek.com.br, ou o segredo OUTLOOK_ESCRITORIO):
+//   { acao: "escritorio_sincronizar", inicio, fim } → traz para o CRM os eventos da agenda
+//        do escritório (convites recebidos e eventos criados nela) e manda para o Outlook
+//        os eventos criados/alterados/cancelados no CRM;
+//   { acao: "escritorio_enviar", id }  → manda um evento do escritório criado no CRM
+//        para a agenda (cria, atualiza ou cancela — os convidados recebem o convite).
+//   Eventos do escritório ficam na tabela agenda_escritorio e NÃO entram na folha.
+//
+// v45: todos os perfis do escritório (Administrador, Comercial, Administrativo,
+// Contabilidade e Consulta). O perfil Funcionário (login por CPF) não usa.
 // =====================================================================
 import { createClient, SupabaseClient } from "npm:@supabase/supabase-js@2";
 
@@ -160,7 +169,7 @@ async function enviarLinha(adm: SupabaseClient, l: Linha, apoio: Awaited<ReturnT
     categories: ["Cronograma"],
     singleValueExtendedProperties: [{ id: PROP, value: l.id }],
   };
-  let r = l.outlook_id && !legado ? await graph("PATCH", `/users/${cx}/events/${encodeURIComponent(l.outlook_id)}`, ev) : null;
+  let r = l.outlook_id && !legado ? await graph("PATCH", `/users/${encodeURIComponent(caixaEv || minhaCaixa)}/events/${encodeURIComponent(l.outlook_id)}`, ev) : null;
   let caixaFinal = l.outlook_id && !legado ? (caixaEv || minhaCaixa) : minhaCaixa;
   if (r && r.status === 404) { r = null; caixaFinal = minhaCaixa; } // apagado no Outlook: cria de novo na agenda de quem enviou
   if (!r) r = await graph("POST", `/users/${encodeURIComponent(caixaFinal)}/events`, ev);
@@ -218,7 +227,7 @@ async function sincronizar(adm: SupabaseClient, inicio: string, fim: string, min
   // 1. eventos do Outlook no período
   const eventos: any[] = [];
   let url: string | null = `/users/${cx}/calendar/calendarView?startDateTime=${inicio}T00:00:00-03:00&endDateTime=${somaDias(fim, 1)}T00:00:00-03:00` +
-    `&$top=200&$select=id,iCalUId,isOrganizer,subject,start,end,isAllDay,attendees,lastModifiedDateTime,isCancelled,location,bodyPreview,type` +
+    `&$top=200&$select=id,iCalUId,isOrganizer,subject,start,end,isAllDay,attendees,organizer,lastModifiedDateTime,isCancelled,location,bodyPreview,type` +
     `&$expand=${encodeURIComponent(`singleValueExtendedProperties($filter=id eq '${PROP}')`)}`;
   while (url) {
     const r = await graph("GET", url);
@@ -280,6 +289,7 @@ async function sincronizar(adm: SupabaseClient, inicio: string, fim: string, min
       // for o organizador (convite recebido não conta) e se ainda não for de outra alocação
       if (!e.funcs.length || !e.ini) continue;
       if (ev.isOrganizer === false) continue;
+      if (ehDoEscritorio(ev)) continue; // v45: evento do escritório fica na agenda do escritório, não na folha
       if (ev.iCalUId && uidConhecido.has(ev.iCalUId)) continue;
       const { data: ins, error } = await adm.from("cronograma").insert({
         titulo: e.titulo, projeto_id: e.projeto_id, cliente_id: e.cliente_id, local: e.local,
@@ -322,6 +332,165 @@ async function sincronizar(adm: SupabaseClient, inicio: string, fim: string, min
   return { ...res, meses: [...res.meses].sort() };
 }
 
+// =====================================================================
+// v45: AGENDA DO ESCRITÓRIO (caixa agenda@bvek.com.br)
+// =====================================================================
+const PERFIS_OK = ["administrador", "comercial", "administrativo", "contabilidade", "consulta"];
+function caixaEscritorio(): string {
+  return (Deno.env.get("OUTLOOK_ESCRITORIO") || "agenda@bvek.com.br").trim();
+}
+// o evento tem a agenda do escritório como convidada (ou foi marcado nela)?
+function ehDoEscritorio(ev: any): boolean {
+  const cx = caixaEscritorio();
+  if (mesmaCaixa(ev.organizer?.emailAddress?.address || null, cx)) return true;
+  return (ev.attendees || []).some((a: any) => mesmaCaixa(a.emailAddress?.address || null, cx));
+}
+// Brasília não tem horário de verão desde 2019: UTC-3 fixo
+const BR = "-03:00";
+const localBR = (ts: string) => new Date(new Date(ts).getTime() - 3 * 3600 * 1000).toISOString().slice(0, 19);
+function lerEventoEscritorio(ev: any) {
+  const cx = caixaEscritorio();
+  let inicio: string, fim: string;
+  if (ev.isAllDay) {
+    const { ini, fim: f } = datasDoEvento(ev);
+    inicio = ini + "T00:00:00" + BR; fim = f + "T23:59:00" + BR;
+  } else {
+    inicio = String(ev.start?.dateTime || "").slice(0, 19) + BR;
+    fim = String(ev.end?.dateTime || "").slice(0, 19) + BR;
+    if (fim < inicio) fim = inicio;
+  }
+  const participantes = (ev.attendees || [])
+    .map((a: any) => ({ nome: a.emailAddress?.name || "", email: String(a.emailAddress?.address || "").toLowerCase().trim() }))
+    .filter((a: any) => a.email && !mesmaCaixa(a.email, cx));
+  return {
+    titulo: String(ev.subject || "(sem assunto)").slice(0, 250), inicio, fim, dia_inteiro: !!ev.isAllDay,
+    local: ev.location?.displayName || null, descricao: ev.bodyPreview ? String(ev.bodyPreview).slice(0, 1000) : null,
+    organizador: ev.organizer?.emailAddress?.name || null,
+    organizador_email: ev.organizer?.emailAddress?.address ? String(ev.organizer.emailAddress.address).toLowerCase() : null,
+    participantes,
+  };
+}
+// manda um evento do escritório criado no CRM para a agenda (o convite sai em nome da agenda do escritório)
+async function enviarEscritorio(adm: SupabaseClient, e: Linha): Promise<string> {
+  const cx = encodeURIComponent(caixaEscritorio());
+  if (e.origem === "outlook") throw new Error("Este evento veio de um convite do Outlook: altere no Outlook de quem marcou (" + (e.organizador || "organizador") + ").");
+  if (e.situacao === "cancelado") {
+    if (e.outlook_id) {
+      const r = await graph("DELETE", `/users/${cx}/events/${encodeURIComponent(e.outlook_id)}`);
+      if (!r.ok && r.status !== 404) throw new Error("Outlook não cancelou o evento: " + (r.b?.error?.message || r.status));
+    }
+    await adm.from("agenda_escritorio").update({ outlook_id: null, outlook_icaluid: null, outlook_sync_em: new Date().toISOString(), outlook_erro: null }).eq("id", e.id);
+    return "cancelado";
+  }
+  const ini = localBR(e.inicio), fim = localBR(e.fim);
+  const ev: Record<string, unknown> = {
+    subject: e.titulo,
+    body: { contentType: "HTML", content: `${e.descricao ? `<p>${escH(e.descricao).replace(/\n/g, "<br>")}</p>` : ""}<p style="color:#888;font-size:11px">Agenda do escritório — Grupo BVEK${e.criado_por ? " · marcado no CRM por " + escH(e.criado_por) : ""}.</p>` },
+    start: { dateTime: e.dia_inteiro ? ini.slice(0, 10) + "T00:00:00" : ini, timeZone: FUSO },
+    end: { dateTime: e.dia_inteiro ? somaDias(fim.slice(0, 10), 1) + "T00:00:00" : fim, timeZone: FUSO },
+    isAllDay: !!e.dia_inteiro, showAs: e.dia_inteiro ? "free" : "busy",
+    location: { displayName: e.local || "" },
+    attendees: (e.participantes || []).filter((a: Linha) => a?.email).map((a: Linha) => ({ emailAddress: { address: String(a.email).trim(), name: a.nome || a.email }, type: "required" })),
+    categories: ["Escritório"],
+  };
+  let r = e.outlook_id ? await graph("PATCH", `/users/${cx}/events/${encodeURIComponent(e.outlook_id)}`, ev) : null;
+  if (r && r.status === 404) r = null; // apagado no Outlook: cria de novo
+  const criou = !r;
+  if (!r) r = await graph("POST", `/users/${cx}/events`, ev);
+  if (!r.ok) {
+    const msg = r.b?.error?.message || String(r.status);
+    await adm.from("agenda_escritorio").update({ outlook_erro: msg.slice(0, 300) }).eq("id", e.id);
+    if (r.status === 404) throw new Error(`Não achei a agenda ${caixaEscritorio()} no Microsoft 365 (ou o aplicativo do CRM não tem acesso a ela).`);
+    throw new Error("Outlook recusou o evento: " + msg);
+  }
+  await adm.from("agenda_escritorio").update({
+    outlook_id: r.b.id, outlook_icaluid: r.b.iCalUId || null,
+    outlook_alterado_em: r.b.lastModifiedDateTime || new Date().toISOString(),
+    outlook_sync_em: new Date().toISOString(), outlook_erro: null,
+  }).eq("id", e.id);
+  return criou ? "criado" : "atualizado";
+}
+async function sincronizarEscritorio(adm: SupabaseClient, inicio: string, fim: string) {
+  const cx = encodeURIComponent(caixaEscritorio());
+  const res = { importados: 0, atualizados_no_crm: 0, cancelados_no_crm: 0, enviados: 0, erros: [] as string[] };
+  const eventos: any[] = [];
+  let url: string | null = `/users/${cx}/calendar/calendarView?startDateTime=${inicio}T00:00:00${BR}&endDateTime=${somaDias(fim, 1)}T00:00:00${BR}` +
+    `&$top=200&$select=id,iCalUId,isOrganizer,subject,start,end,isAllDay,attendees,organizer,lastModifiedDateTime,isCancelled,location,bodyPreview,type`;
+  while (url) {
+    const r = await graph("GET", url);
+    if (!r.ok) {
+      if (r.status === 404) throw new Error(`Não achei a agenda ${caixaEscritorio()} no Microsoft 365 (ou o aplicativo do CRM não tem acesso a ela).`);
+      throw new Error("Não consegui ler a agenda do escritório: " + (r.b?.error?.message || r.status));
+    }
+    eventos.push(...(r.b.value || []));
+    url = r.b["@odata.nextLink"] || null;
+    if (eventos.length > 3000) break;
+  }
+  const { data: linhasPer } = await adm.from("agenda_escritorio").select("*")
+    .lte("inicio", somaDias(fim, 1) + "T00:00:00" + BR).gte("fim", inicio + "T00:00:00" + BR);
+  const idsEv = eventos.map((e) => e.id);
+  const { data: linhasEv } = idsEv.length ? await adm.from("agenda_escritorio").select("*").in("outlook_id", idsEv.slice(0, 500)) : { data: [] };
+  const linhas = new Map<string, Linha>();
+  [...(linhasPer || []), ...(linhasEv || [])].forEach((l: Linha) => linhas.set(l.id, l));
+  const porOutlook = new Map<string, Linha>();
+  linhas.forEach((l) => { if (l.outlook_id) porOutlook.set(l.outlook_id, l); });
+  const vistos = new Set<string>();
+
+  for (const ev of eventos) {
+    try {
+      if (ev.isCancelled) continue;
+      const l = porOutlook.get(ev.id);
+      const d = lerEventoEscritorio(ev);
+      if (l) {
+        vistos.add(l.id);
+        if (l.situacao === "cancelado" && l.origem === "crm") continue; // será cancelado no Outlook (abaixo)
+        const mudouOutlook = new Date(ev.lastModifiedDateTime).getTime() > new Date(l.outlook_alterado_em || 0).getTime() + 2000;
+        const mudouCrm = l.origem === "crm" && (!l.outlook_sync_em || new Date(l.atualizado_em).getTime() > new Date(l.outlook_sync_em).getTime() + 2000);
+        const outlookMaisNovo = new Date(ev.lastModifiedDateTime).getTime() > new Date(l.atualizado_em).getTime();
+        if (mudouOutlook && (!mudouCrm || outlookMaisNovo)) {
+          await adm.from("agenda_escritorio").update({ ...d, situacao: "ativo", outlook_icaluid: ev.iCalUId || null, outlook_alterado_em: ev.lastModifiedDateTime, outlook_sync_em: new Date().toISOString(), outlook_erro: null }).eq("id", l.id);
+          res.atualizados_no_crm++;
+        } else if (mudouCrm) {
+          await enviarEscritorio(adm, l); res.enviados++;
+        }
+        continue;
+      }
+      // evento novo na agenda do escritório (convite recebido ou criado direto nela)
+      const { error } = await adm.from("agenda_escritorio").insert({
+        ...d, origem: ev.isOrganizer ? "crm" : "outlook", outlook_id: ev.id, outlook_icaluid: ev.iCalUId || null,
+        outlook_alterado_em: ev.lastModifiedDateTime, outlook_sync_em: new Date().toISOString(), criado_por: "Outlook",
+      });
+      if (error) { if (!/duplicate/i.test(error.message)) res.erros.push(error.message); continue; }
+      res.importados++;
+    } catch (err) { res.erros.push(String((err as Error).message || err)); }
+  }
+
+  // ligados ao Outlook que não apareceram no período: apagados, recusados ou mudaram de data
+  for (const l of linhas.values()) {
+    if (vistos.has(l.id) || !l.outlook_id || l.situacao !== "ativo") continue;
+    try {
+      const r = await graph("GET", `/users/${cx}/events/${encodeURIComponent(l.outlook_id)}?$select=id,iCalUId,isOrganizer,subject,start,end,isAllDay,attendees,organizer,lastModifiedDateTime,isCancelled,location,bodyPreview`);
+      if (r.status === 404 || (r.ok && r.b.isCancelled)) {
+        await adm.from("agenda_escritorio").update({ situacao: "cancelado", outlook_id: null, outlook_erro: "apagado no Outlook", outlook_sync_em: new Date().toISOString() }).eq("id", l.id);
+        res.cancelados_no_crm++;
+      } else if (r.ok) {
+        await adm.from("agenda_escritorio").update({ ...lerEventoEscritorio(r.b), outlook_alterado_em: r.b.lastModifiedDateTime, outlook_sync_em: new Date().toISOString() }).eq("id", l.id);
+        res.atualizados_no_crm++;
+      }
+    } catch (err) { res.erros.push(String((err as Error).message || err)); }
+  }
+
+  // CRM → Outlook: criados no CRM ainda sem evento, alterados e cancelados
+  for (const l of linhas.values()) {
+    if (l.origem !== "crm" || (vistos.has(l.id) && l.situacao === "ativo")) continue;
+    const precisa = l.situacao === "cancelado" ? !!l.outlook_id
+      : !l.outlook_id || !l.outlook_sync_em || new Date(l.atualizado_em).getTime() > new Date(l.outlook_sync_em).getTime() + 2000;
+    if (!precisa) continue;
+    try { await enviarEscritorio(adm, l); res.enviados++; } catch (err) { res.erros.push(String((err as Error).message || err)); }
+  }
+  return res;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
   if (req.method !== "POST") return json({ erro: "Use POST." }, 405);
@@ -331,7 +500,7 @@ Deno.serve(async (req) => {
     const { data: { user }, error: eu } = await adm.auth.getUser(jwt);
     if (eu || !user) return json({ erro: "Sessão inválida. Saia e entre de novo no CRM." }, 401);
     const { data: perfil } = await adm.from("perfis").select("perfil,ativo").eq("id", user.id).maybeSingle();
-    if (!perfil || perfil.ativo === false || !["administrador", "administrativo"].includes(perfil.perfil)) return json({ erro: "Sem permissão." }, 403);
+    if (!perfil || perfil.ativo === false || !PERFIS_OK.includes(perfil.perfil)) return json({ erro: "Sem permissão." }, 403);
     // v42: a agenda usada é a do próprio usuário (e-mail do login)
     const minhaCaixa = String(user.email || "").trim();
     if (!minhaCaixa || /@funcionario\.bvek\.com\.br$/i.test(minhaCaixa)) return json({ ok: false, erro: "Seu login não tem e-mail do Microsoft 365 para a agenda." }, 400);
@@ -351,6 +520,18 @@ Deno.serve(async (req) => {
       const apoio = await carregarApoio(adm);
       const feito = await enviarLinha(adm, l, apoio, minhaCaixa);
       return json({ ok: true, feito, caixa: minhaCaixa });
+    }
+    if (acao === "escritorio_enviar") {
+      const { data: e } = await adm.from("agenda_escritorio").select("*").eq("id", String(p.id || "")).maybeSingle();
+      if (!e) return json({ erro: "Evento não encontrado." }, 404);
+      const feito = await enviarEscritorio(adm, e);
+      return json({ ok: true, feito, caixa: caixaEscritorio() });
+    }
+    if (acao === "escritorio_sincronizar") {
+      const ok = (s: unknown) => /^\d{4}-\d{2}-\d{2}$/.test(String(s || ""));
+      if (!ok(p.inicio) || !ok(p.fim) || p.fim < p.inicio) return json({ erro: "Período inválido." }, 400);
+      if (mesesEntre(p.inicio, p.fim).length > 4) return json({ erro: "Sincronize no máximo 3 meses por vez." }, 400);
+      return json({ ok: true, caixa: caixaEscritorio(), ...(await sincronizarEscritorio(adm, p.inicio, p.fim)) });
     }
     if (acao === "sincronizar") {
       const ok = (s: unknown) => /^\d{4}-\d{2}-\d{2}$/.test(String(s || ""));
