@@ -17,6 +17,8 @@
 //        pelo WhatsApp (convite / alteração / cancelamento, mesma lógica acima;
 //        o e-mail já vai pelo convite do Outlook). Celular: ficha do funcionário
 //        com o mesmo e-mail (ou, se não houver, com o mesmo nome).
+//        Desde a v54 também os funcionários convidados (agenda_escritorio.funcionarios),
+//        mesmo sem e-mail: celular da própria ficha.
 //   { escritorio_id: "...", reenviar: true }  → manda de novo a todos os convidados
 //
 // Quem pode: Administrador, Comercial, Administrativo e Contabilidade.
@@ -187,55 +189,72 @@ async function avisarEscritorio(adm: any, p: Linha, quem: string, cfg: Linha): P
   const d = detalhesEsc(e);
   if (d.fim < hojeBrasilia()) return json({ ok: true, pulado: "O evento já terminou: ninguém foi avisado.", resultado: [] });
 
-  const { data: avisos, error: eAv } = await adm.from("agenda_escritorio_avisos").select("email,nome,tipo,assinatura,ok,enviado_em")
+  const { data: avisos, error: eAv } = await adm.from("agenda_escritorio_avisos").select("email,funcionario_id,nome,tipo,assinatura,ok,enviado_em")
     .eq("evento_id", e.id).eq("ok", true).order("enviado_em", { ascending: false });
-  if (eAv) throw new Error(/agenda_escritorio_avisos/.test(eAv.message) ? "Falta rodar a migração v53 no Supabase." : eAv.message);
+  if (eAv) throw new Error(/agenda_escritorio_avisos|funcionario_id/.test(eAv.message) ? "Falta rodar as migrações v53 e v54 no Supabase." : eAv.message);
+  // cada convidado tem uma chave: "f:<id>" (funcionário convidado, v54) ou o e-mail (convidado do Outlook/CRM)
+  const chaveAviso = (a: Linha) => a.funcionario_id ? "f:" + a.funcionario_id : String(a.email || "");
   const ultimo = new Map<string, Linha>();
-  for (const a of avisos || []) if (a.email && !ultimo.has(a.email)) ultimo.set(a.email, a);
+  for (const a of avisos || []) { const k = chaveAviso(a); if (k && !ultimo.has(k)) ultimo.set(k, a); }
 
   const caixa = "agenda@bvek.com.br";
-  const convidados = new Map<string, string>();
-  if (e.situacao === "ativo") for (const x of (e.participantes || []) as Linha[]) {
-    const em = String(x.email || "").toLowerCase().trim();
-    if (em && em !== caixa) convidados.set(em, String(x.nome || em));
+  const convidados = new Map<string, { nome: string; email?: string; funcId?: string }>();
+  if (e.situacao === "ativo") {
+    for (const x of (e.participantes || []) as Linha[]) {
+      const em = String(x.email || "").toLowerCase().trim();
+      if (em && em !== caixa) convidados.set(em, { nome: String(x.nome || em), email: em });
+    }
+    for (const id of (e.funcionarios || []) as string[]) if (id) convidados.set("f:" + id, { nome: "", funcId: id });
   }
-  const emails = [...new Set([...convidados.keys(), ...ultimo.keys()])];
+  const chaves = [...new Set([...convidados.keys(), ...ultimo.keys()])];
   const assinatura = JSON.stringify([e.inicio, e.fim, !!e.dia_inteiro, d.local, d.titulo, d.pauta]);
 
-  const plano: { email: string; nome: string; tipo: TipoEsc }[] = [];
-  for (const em of emails) {
-    const u = ultimo.get(em), avisado = !!u && u.tipo !== "cancelamento";
-    const nome = convidados.get(em) || String(ultimo.get(em)?.nome || "") || em;
-    if (convidados.has(em)) {
-      if (!avisado) plano.push({ email: em, nome, tipo: "convite" });
-      else if (u!.assinatura !== assinatura) plano.push({ email: em, nome, tipo: "alteracao" });
-      else if (p.reenviar) plano.push({ email: em, nome, tipo: "convite" });
-    } else if (avisado) plano.push({ email: em, nome, tipo: "cancelamento" });
+  const plano: { chave: string; email?: string; funcId?: string; nome: string; tipo: TipoEsc }[] = [];
+  for (const k of chaves) {
+    const u = ultimo.get(k), avisado = !!u && u.tipo !== "cancelamento";
+    const c = convidados.get(k);
+    const base = { chave: k, email: c?.email || (u?.email || undefined), funcId: c?.funcId || (u?.funcionario_id || undefined), nome: c?.nome || String(u?.nome || "") || (k.startsWith("f:") ? "" : k) };
+    if (c) {
+      if (!avisado) plano.push({ ...base, tipo: "convite" });
+      else if (u!.assinatura !== assinatura) plano.push({ ...base, tipo: "alteracao" });
+      else if (p.reenviar) plano.push({ ...base, tipo: "convite" });
+    } else if (avisado) plano.push({ ...base, tipo: "cancelamento" });
   }
   if (!plano.length) return json({ ok: true, pulado: "Todos já estavam avisados no WhatsApp (nada mudou).", resultado: [] });
 
-  // celular: ficha do funcionário com o mesmo e-mail; se não houver, com o mesmo nome
-  const { data: fs } = await adm.from("funcionarios").select("nome,email,celular,ativo").neq("ativo", false);
-  const funcs = ((fs || []) as Linha[]).filter((f) => foneMeta(f.celular));
-  const acharFunc = (em: string, nome: string) =>
-    funcs.find((f) => String(f.email || "").toLowerCase().trim() === em) ||
-    (nome && nome !== em ? funcs.find((f) => semAcento(f.nome) === semAcento(nome)) : undefined);
+  // celular: funcionário convidado → a própria ficha; convidado por e-mail → ficha com o mesmo e-mail (ou o mesmo nome)
+  const { data: fs } = await adm.from("funcionarios").select("id,nome,email,celular,ativo");
+  const todos = (fs || []) as Linha[];
+  const comFone = todos.filter((f) => f.ativo !== false && foneMeta(f.celular));
+  const acharFunc = (x: { email?: string; funcId?: string; nome: string }) =>
+    x.funcId ? todos.find((f) => f.id === x.funcId)
+      : comFone.find((f) => String(f.email || "").toLowerCase().trim() === x.email) ||
+        (x.nome && x.nome !== x.email ? comFone.find((f) => semAcento(f.nome) === semAcento(x.nome)) : undefined);
 
   const temWhats = cfg.ativo !== false && !!(String(cfg.meta_token || "").trim() && String(cfg.meta_phone_id || "").trim());
   const organizador = String(e.organizador || e.criado_por || "").trim();
   const resultado: Linha[] = [], registros: Linha[] = [];
+  const jaMandado = new Map<string, TipoEsc>();   // mesmo celular convidado duas vezes (por e-mail e como funcionário): uma mensagem só
   for (const x of plano) {
-    const f = acharFunc(x.email, x.nome);
-    const fone = f ? foneMeta(f.celular) : "";
-    const nomeMsg = primeiroNome(f?.nome || x.nome.split("@")[0]);
-    const r: Linha = { nome: f?.nome || x.nome, email: x.email, tipo: x.tipo, whatsapp: "" };
-    if (!fone) r.whatsapp = "sem celular na ficha";
+    const f = acharFunc(x);
+    const fone = f && f.ativo !== false ? foneMeta(f.celular) : "";
+    const nomeCompleto = f?.nome || x.nome || (x.email || "").split("@")[0] || "(funcionário)";
+    const r: Linha = { nome: nomeCompleto, email: x.email || null, tipo: x.tipo, whatsapp: "" };
+    if (!f && x.funcId) r.whatsapp = "funcionário não encontrado";
+    else if (f && f.ativo === false && x.tipo !== "cancelamento") r.whatsapp = "funcionário inativo";
+    else if (!fone) r.whatsapp = "sem celular na ficha";
     else if (!temWhats) r.whatsapp = cfg.ativo === false ? "WhatsApp desligado (Cronograma → ⚙️ WhatsApp)" : "WhatsApp (Meta) não configurado";
-    else {
+    else if (jaMandado.has(fone) && jaMandado.get(fone) === x.tipo) {
+      // registra como avisado sem mandar de novo
+      r.whatsapp = "ok";
+      registros.push({ evento_id: e.id, email: x.email || null, funcionario_id: x.funcId || null, nome: r.nome, tipo: x.tipo, canal: "whatsapp", destino: fone, ok: true, erro: null, assinatura, enviado_por: quem });
+      continue;
+    } else {
       let erro: string | null;
-      try { erro = await enviarWhatsEsc(cfg, fone, x.tipo, nomeMsg, d, organizador); } catch (er) { erro = String((er as Error).message || er).slice(0, 300); }
+      try { erro = await enviarWhatsEsc(cfg, fone, x.tipo, primeiroNome(nomeCompleto), d, organizador); } catch (er) { erro = String((er as Error).message || er).slice(0, 300); }
+      if (!erro) jaMandado.set(fone, x.tipo);
       r.whatsapp = erro ? "erro: " + erro : "ok";
-      registros.push({ evento_id: e.id, email: x.email, nome: r.nome, tipo: x.tipo, canal: "whatsapp", destino: fone, ok: !erro, erro, assinatura, enviado_por: quem });
+      registros.push({ evento_id: e.id, email: x.email || null, funcionario_id: x.funcId || null, nome: r.nome, tipo: x.tipo, canal: "whatsapp", destino: fone, ok: !erro, erro, assinatura, enviado_por: quem });
     }
     resultado.push(r);
   }

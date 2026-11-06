@@ -2528,7 +2528,10 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
       <div class="campo full"><label>Local</label><input type="text" id="esc-local" placeholder="Ex.: escritório, Teams, obra da Fazendinha"></div>
       <div class="campo full"><label>Convidados <button class="btn-link so-edicao" style="margin-left:6px" onclick="marcarTodosEsc()">convidar todos</button></label>
         <input type="search" id="esc-conv-busca" placeholder="Buscar pessoa" oninput="renderConvidadosEsc($('modal-escritorio').classList.contains('so-leitura'),null)" style="margin-bottom:6px">
-        <div class="crg-equipe" id="esc-convidados"></div></div>
+        <div class="crg-equipe" id="esc-convidados"></div><div class="dica">Pessoas com acesso ao CRM: recebem o convite no Outlook.</div></div>
+      <div class="campo full"><label>Funcionários <span class="dica" style="display:inline;margin:0">(recebem o aviso pelo WhatsApp · 📱 = tem celular na ficha)</span> <button class="btn-link" style="margin-left:6px" onclick="marcarTodosFuncEsc()">convidar todos os funcionários</button> <button class="btn-link" style="margin-left:4px" onclick="limparFuncEsc()">limpar</button></label>
+        <input type="search" id="esc-func-busca" placeholder="Buscar funcionário" oninput="renderFuncsEsc()" style="margin-bottom:6px">
+        <div class="crg-equipe" id="esc-funcs"></div><div class="dica" id="esc-funcs-info"></div></div>
       <div class="campo full"><label>Descrição / pauta</label><textarea id="esc-desc" rows="3"></textarea></div>
       <div class="campo full so-edicao"><div class="campo-check"><input type="checkbox" id="esc-whats"><label for="esc-whats">📲 Avisar os convidados também pelo WhatsApp ao salvar (📱 = tem celular na ficha): quem entrou recebe o convite, quem já sabia recebe só se algo mudar, quem saiu recebe o cancelamento</label></div></div>
       <div class="campo full" id="esc-avisos-box" style="display:none"><label>Avisos no WhatsApp</label><div id="esc-avisos"></div></div>
@@ -8745,7 +8748,7 @@ async function sincronizarOutlook(silencioso){
 /* ================= v45: AGENDA DO ESCRITÓRIO (caixa agenda@bvek.com.br no Microsoft 365) ================= */
 // Eventos do escritório ficam na tabela agenda_escritorio, separados do cronograma: NÃO entram na folha.
 const CAIXA_ESCRITORIO='agenda@bvek.com.br';
-let v45Ok=true,agendaMes=[],agendaProx=[],cronoHoje=[],pessoasAgenda=null,escEditId=null,escConvidados=new Set(),escSincronizando=false,escAvisos=[];
+let v45Ok=true,agendaMes=[],agendaProx=[],cronoHoje=[],pessoasAgenda=null,escEditId=null,escConvidados=new Set(),escSincronizando=false,escAvisos=[],escFuncs=new Set(),escFuncsAntes='';
 const escSincronizados=new Set();
 const FUSO_BR='America/Sao_Paulo';
 function diaBR(ts){return new Intl.DateTimeFormat('en-CA',{timeZone:FUSO_BR,year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(ts));}
@@ -8775,10 +8778,12 @@ function pessoasEmCampoHoje(){
   const hj=hojeISO(),ls=cronoHoje.filter(l=>contaDiaCrono(l,hj));
   return{ls,pessoas:new Set(ls.flatMap(l=>l.funcionarios||[])).size,frentes:new Set(ls.map(chaveAloc)).size};
 }
+// convidados do Outlook/CRM + funcionários convidados (v54)
+function quemEsc(e){const a=(e.participantes||[]).map(p=>p.nome||p.email).filter(Boolean),b=(e.funcionarios||[]).map(id=>(funcPorId(id)||{}).nome).filter(Boolean).map(nomeCurtoTxt);return[...a,...b.filter(n=>!a.some(x=>norm(x)===norm(n)))];}
 function itemEscMini(e,comDia){
   const d=diaBR(e.inicio),hj=hojeISO();
   const quando=comDia?(d===hj?'Hoje':d===somarDias(hj,1)?'Amanhã':new Date(d+'T12:00:00').toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'2-digit'})):'';
-  const quem=(e.participantes||[]).map(p=>p.nome||p.email).filter(Boolean);
+  const quem=quemEsc(e);
   return`<div class="item" data-esc="${esc(e.id)}"><div><span class="esc-hora">${esc(e.dia_inteiro?'dia todo':horaBR(e.inicio))}</span><strong>${esc(e.titulo)}</strong><br><span style="color:var(--texto2)">${esc([quando,e.local?'📍 '+e.local:'',e.organizador?'por '+e.organizador:''].filter(Boolean).join(' · '))}${quem.length?' · 👥 '+esc(quem.slice(0,4).join(', '))+(quem.length>4?` +${quem.length-4}`:''):''}</span></div></div>`;
 }
 function renderAgendaPainel(){
@@ -8821,7 +8826,7 @@ function renderAgendaMes(){
   t.innerHTML='<thead><tr><th>Quando</th><th>Evento</th><th>Quem marcou</th><th>Participantes</th><th>Outlook</th></tr></thead><tbody>'+
     (l.length?l.map(e=>`<tr class="clicavel ${e.situacao==='cancelado'?'inativo':''}" data-esc="${esc(e.id)}"><td style="white-space:nowrap">${esc(fmtData(diaBR(e.inicio)))}<div class="dica" style="margin:0">${esc(periodoEsc(e))}</div></td>
       <td><strong>${esc(e.titulo)}</strong>${e.local?`<div class="dica" style="margin:0">📍 ${esc(e.local)}</div>`:''}${e.situacao==='cancelado'?' <span class="badge badge-cinza">cancelado</span>':''}</td>
-      <td>${esc(e.organizador||e.criado_por||'')}</td><td style="font-size:12px;white-space:normal;max-width:260px">${esc((e.participantes||[]).map(p=>p.nome||p.email).join(', '))}</td>
+      <td>${esc(e.organizador||e.criado_por||'')}</td><td style="font-size:12px;white-space:normal;max-width:260px">${esc(quemEsc(e).join(', '))}</td>
       <td>${statusOutlookEsc(e)}</td></tr>`).join('')
     :'<tr><td colspan="5" class="vazio">Nenhum evento do escritório neste mês.</td></tr>')+'</tbody>';
   t.querySelectorAll('[data-esc]').forEach(tr=>tr.onclick=()=>abrirEventoEscritorio(tr.dataset.esc));
@@ -8892,8 +8897,11 @@ async function abrirEventoEscritorio(id=null,dia=null){
   // v53: WhatsApp dos convidados
   escAvisos=[];$('esc-whats').checked=false;$('esc-avisos-box').style.display='none';
   $('esc-btn-whats').style.display=e&&e.situacao==='ativo'?'':'none';
+  // v54: funcionários convidados (aviso pelo WhatsApp) — dá para escolher até nas reuniões vindas do Outlook
+  escFuncs=new Set((e&&e.funcionarios)||[]);escFuncsAntes=[...escFuncs].sort().join(',');$('esc-func-busca').value='';
   mudouDiaInteiroEsc();
   modoLeitura('modal-escritorio',doOutlook);
+  $('esc-func-busca').disabled=false;renderFuncsEsc();
   abrirModal('modal-escritorio');
   await carregarPessoasAgenda();renderConvidadosEsc(doOutlook,e);
   if(e)await renderAvisosEsc(e.id);
@@ -8909,6 +8917,28 @@ function renderConvidadosEsc(trava,e){
   box.innerHTML=vis.length?vis.map(p=>`<label><input type="checkbox" data-conv="${esc(p.email)}" ${escConvidados.has(p.email)?'checked':''} ${trava?'disabled':''}>${esc(p.nome)}${p.tem_celular?' <span title="tem celular na ficha: pode receber no WhatsApp">📱</span>':''} <span class="dica" style="margin:0">${esc(p.email)}</span></label>`).join(''):'<p class="vazio">Ninguém encontrado.</p>';
   box.querySelectorAll('[data-conv]').forEach(c=>c.onchange=()=>{c.checked?escConvidados.add(c.dataset.conv):escConvidados.delete(c.dataset.conv);});
 }
+// v54: funcionários convidados (todos os ativos, com ou sem e-mail)
+function renderFuncsEsc(){
+  const box=$('esc-funcs');if(!box)return;
+  const busca=norm($('esc-func-busca').value||'');
+  const lista=todosFuncionarios.filter(f=>(f.ativo!==false||escFuncs.has(f.id))&&(!busca||norm(f.nome).includes(busca)))
+    .sort((a,b)=>(escFuncs.has(b.id)-escFuncs.has(a.id))||String(a.nome).localeCompare(String(b.nome),'pt-BR'));
+  box.innerHTML=lista.length?lista.map(f=>`<label><input type="checkbox" data-esc-f="${esc(f.id)}" ${escFuncs.has(f.id)?'checked':''}>${esc(f.nome)}${temCelular(f)?' <span title="tem celular na ficha: recebe no WhatsApp">📱</span>':''}</label>`).join(''):'<p class="vazio">Nenhum funcionário encontrado.</p>';
+  box.querySelectorAll('[data-esc-f]').forEach(c=>c.onchange=()=>{c.checked?escFuncs.add(c.dataset.escF):escFuncs.delete(c.dataset.escF);mudouFuncsEsc();});
+  infoFuncsEsc();
+}
+function infoFuncsEsc(){
+  const sel=[...escFuncs].map(funcPorId).filter(Boolean),sem=sel.filter(f=>!temCelular(f));
+  $('esc-funcs-info').textContent=sel.length?`${sel.length} funcionário(s) convidado(s)${sem.length?` · ${sem.length} sem celular na ficha (não recebem): ${sem.map(f=>nomeCurtoTxt(f.nome)).join(', ')}`:''}`:'';
+}
+function mudouFuncsEsc(){
+  infoFuncsEsc();
+  // funcionário convidado só fica sabendo pelo WhatsApp: liga a opção sozinho
+  const w=$('esc-whats');if(escFuncs.size&&!w.disabled)w.checked=true;
+}
+function marcarTodosFuncEsc(){todosFuncionarios.filter(f=>f.ativo!==false).forEach(f=>escFuncs.add(f.id));renderFuncsEsc();mudouFuncsEsc();}
+function limparFuncEsc(){escFuncs.clear();renderFuncsEsc();infoFuncsEsc();}
+function faltaV54(error){if(error&&/funcionarios/.test(error.message||'')&&/agenda_escritorio|column|schema cache/i.test(error.message||'')){alert('Para convidar funcionários, rode antes a migração v54 no Supabase (supabase/migracao_crm_v54_escritorio_convidar_funcionarios.sql).');return true;}return false;}
 function marcarTodosEsc(){(pessoasAgenda||[]).forEach(p=>escConvidados.add(p.email));renderConvidadosEsc(false,null);}
 async function salvarEventoEscritorio(){
   if(!PERM.cronograma)return;
@@ -8924,15 +8954,18 @@ async function salvarEventoEscritorio(){
   const antNomes=Object.fromEntries(((ant&&ant.participantes)||[]).map(p=>[String(p.email||'').toLowerCase(),p.nome]));
   const dados={titulo:tit,inicio,fim,dia_inteiro:di,local:$('esc-local').value.trim()||null,descricao:$('esc-desc').value.trim()||null,
     participantes:[...escConvidados].map(em=>({nome:nomes[em]||antNomes[em]||em,email:em})),situacao:'ativo',atualizado_em:new Date().toISOString()};
+  // v54: só manda a coluna nova quando há funcionários (ou quando a lista mudou), para não travar quem ainda não rodou a migração
+  const funcsTxt=[...escFuncs].sort().join(',');
+  if(escFuncs.size||funcsTxt!==escFuncsAntes)dados.funcionarios=[...escFuncs];
   const whats=$('esc-whats').checked;
   const btn=$('esc-btn-salvar');btn.disabled=true;
   try{
     let id=escEditId;
-    if(id){const{error}=await sb.from('agenda_escritorio').update(dados).eq('id',id);if(erroSB(error))return;}
+    if(id){const{error}=await sb.from('agenda_escritorio').update(dados).eq('id',id);if(faltaV54(error)||erroSB(error))return;}
     else{
       const quem=(meuPerfil&&meuPerfil.nome)||(usuario&&usuario.email)||null;
       Object.assign(dados,{origem:'crm',criado_por:quem,organizador:quem,organizador_email:usuario?usuario.email:null});
-      const{data,error}=await sb.from('agenda_escritorio').insert(dados).select().single();if(erroSB(error))return;id=data.id;
+      const{data,error}=await sb.from('agenda_escritorio').insert(dados).select().single();if(faltaV54(error)||erroSB(error))return;id=data.id;
     }
     fecharModal('modal-escritorio');
     await enviarEventoEscritorio(id,'salvo');
@@ -8981,6 +9014,12 @@ async function reenviarWhatsEscritorio(){
   const id=escEditId;if(!id)return;
   const b=$('esc-btn-whats');b.disabled=true;
   try{
+    const funcsTxt=[...escFuncs].sort().join(',');
+    if(funcsTxt!==escFuncsAntes){
+      const{error}=await sb.from('agenda_escritorio').update({funcionarios:[...escFuncs]}).eq('id',id);
+      if(faltaV54(error)||erroSB(error))return;
+      escFuncsAntes=funcsTxt;const ev=[...agendaMes,...agendaProx].find(x=>x.id===id);if(ev)ev.funcionarios=[...escFuncs];
+    }
     const d=await avisarWhatsEscritorio(id);
     if(d&&d.pulado&&/já estavam avisados/.test(d.pulado)&&confirm('Todos os convidados já foram avisados no WhatsApp e nada mudou.\n\nMandar o convite de novo para TODOS os convidados?'))await avisarWhatsEscritorio(id,true);
     else if(d&&d.pulado)toast(d.pulado);
@@ -8995,9 +9034,9 @@ async function renderAvisosEsc(id){
   escAvisos=data||[];
   if(escAvisos.some(a=>a.ok&&a.tipo!=='cancelamento')&&!$('esc-whats').disabled)$('esc-whats').checked=true;
   if(!escAvisos.length){box.style.display='none';return;}
-  const porEmail=new Map();escAvisos.forEach(a=>{if(!porEmail.has(a.email))porEmail.set(a.email,a);});
+  const porEmail=new Map();escAvisos.forEach(a=>{const k=a.funcionario_id?'f:'+a.funcionario_id:a.email;if(!porEmail.has(k))porEmail.set(k,a);});
   box.style.display='';
-  $('esc-avisos').innerHTML='<div class="sub-lista">'+[...porEmail.values()].map(a=>`<div class="sub-item"><span><strong>${esc(a.nome||a.email)}</strong> · ${esc(TIPO_ESC[a.tipo]||a.tipo)} · ${esc(fmtDataHora(a.enviado_em))}${a.enviado_por?' por '+esc(a.enviado_por):''}</span><span>${a.ok?'<span class="badge badge-ok">📱 WhatsApp ✓</span>':`<span class="badge badge-atraso" title="${esc(a.erro||'')}">📱 WhatsApp: erro</span>`}</span></div>`).join('')+'</div>';
+  $('esc-avisos').innerHTML='<div class="sub-lista">'+[...porEmail.values()].map(a=>`<div class="sub-item"><span><strong>${esc(a.nome||a.email||(funcPorId(a.funcionario_id)||{}).nome||'?')}</strong> · ${esc(TIPO_ESC[a.tipo]||a.tipo)} · ${esc(fmtDataHora(a.enviado_em))}${a.enviado_por?' por '+esc(a.enviado_por):''}</span><span>${a.ok?'<span class="badge badge-ok">📱 WhatsApp ✓</span>':`<span class="badge badge-atraso" title="${esc(a.erro||'')}">📱 WhatsApp: erro</span>`}</span></div>`).join('')+'</div>';
 }
 async function recarregarAgendas(){
   await carregarAgendaPainelSemSync();
