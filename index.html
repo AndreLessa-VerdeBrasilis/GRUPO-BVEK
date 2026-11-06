@@ -6331,22 +6331,23 @@ function renderDiarios(){
       return`<tr class="clicavel" data-dio="${esc(d.id)}"><td style="white-space:nowrap"><strong>${esc(fmtData(d.data))}</strong> <span class="dica" style="display:inline">${diaSemana(d.data)}</span></td>
       <td>${esc(projetoRotulo(p))}</td><td style="font-size:12px">${esc(eq.map(primeiroNome).join(', '))}</td>
       <td><span class="badge ${s[1]}">${esc(s[0])}</span>${d.preenchido_por?`<div class="dica" style="margin:0">por ${esc(d.preenchido_por)}</div>`:''}</td>
-      <td style="font-size:12px">${esc(String(d.atividades||'').slice(0,110))}${String(d.atividades||'').length>110?'…':''}</td>
+      <td style="font-size:12px">${esc(String(d.atividades||'').slice(0,110))}${String(d.atividades||'').length>110?'…':''}${resumoRegistros(d)?`<div class="dica" style="margin:0">${esc(resumoRegistros(d))}${!d.atividades?' — falta o resumo escrito':''}</div>`:''}</td>
       <td style="white-space:nowrap">${d.divergencias?'<span title="Divergência da OS registrada">⚠️</span>':''}${(d.fotos||[]).length?` 📷${d.fotos.length}`:''}</td></tr>`;}).join(''):
       `<tr><td colspan="6" class="vazio">Nenhum diário neste período. Os diários aparecem sozinhos nos dias em que há equipe alocada num projeto no Cronograma (ou use “+ Diário avulso”).</td></tr>`)+'</tbody>';
   $('tabela-diarios').querySelectorAll('[data-dio]').forEach(tr=>tr.onclick=()=>abrirDiario(tr.dataset.dio));
 }
 // formulário do dia (usado no CRM e no celular do funcionário)
+function blocoOSHTML(os,aberto){
+  return os&&(os.condicoes_local||os.incluido||os.nao_incluido||os.resultado_final||os.pontos_parada||os.seguranca||os.escopo)?`<details class="info-box" style="display:block;background:#fffbea"${aberto===false?'':' open'}><summary style="cursor:pointer"><strong>📋 O que a Ordem de Serviço pede${os.numero_os?' — '+esc(os.numero_os):''}</strong></summary>
+    ${[['Escopo',os.escopo],['Condições do local',os.condicoes_local],['✅ Incluído',os.incluido],['⛔ NÃO incluído',os.nao_incluido],['Como deve ficar no final',os.resultado_final],['🛑 Pare e consulte o responsável se…',os.pontos_parada],['Segurança',os.seguranca],['Responsável',[os.responsavel_tecnico,os.contato_responsavel].filter(Boolean).join(' — ')]]
+      .filter(x=>x[1]).map(([t,v])=>`<div style="margin-top:6px"><strong>${t}:</strong> ${esc(v).replace(/\n/g,'<br>')}</div>`).join('')}</details>`
+    :`<div class="info-box" style="display:block">Este projeto ainda não tem Ordem de Serviço detalhada no CRM. Registre abaixo o que foi combinado e tudo o que for diferente no local.</div>`;
+}
 function formDiarioHTML(d,os,px,equipe){
   const opt=(l,v)=>l.map(([k,t])=>`<option value="${esc(k)}"${k===(v||'')?' selected':''}>${esc(t)}</option>`).join('');
   const pres=d.presentes||d.equipe||[];
   const serv=servicosDoDiario(d,os);
-  const blocoOS=os&&(os.condicoes_local||os.incluido||os.nao_incluido||os.resultado_final||os.pontos_parada||os.seguranca||os.escopo)?`<details class="info-box" style="display:block;background:#fffbea" open><summary style="cursor:pointer"><strong>📋 O que a Ordem de Serviço pede${os.numero_os?' — '+esc(os.numero_os):''}</strong></summary>
-    ${[['Escopo',os.escopo],['Condições do local',os.condicoes_local],['✅ Incluído',os.incluido],['⛔ NÃO incluído',os.nao_incluido],['Como deve ficar no final',os.resultado_final],['🛑 Pare e consulte o responsável se…',os.pontos_parada],['Segurança',os.seguranca],['Responsável',[os.responsavel_tecnico,os.contato_responsavel].filter(Boolean).join(' — ')]]
-      .filter(x=>x[1]).map(([t,v])=>`<div style="margin-top:6px"><strong>${t}:</strong> ${esc(v).replace(/\n/g,'<br>')}</div>`).join('')}</details>`
-    :`<div class="info-box" style="display:block">Este projeto ainda não tem Ordem de Serviço detalhada no CRM. Registre abaixo o que foi combinado e tudo o que for diferente no local.</div>`;
-  return`${blocoOS}
-  <div class="form-grid">
+  return`<div class="form-grid">
     <div class="campo"><label>Início</label><input type="time" id="${px}-hini" value="${esc(String(d.hora_inicio||'').slice(0,5))}"></div>
     <div class="campo"><label>Término</label><input type="time" id="${px}-hfim" value="${esc(String(d.hora_fim||'').slice(0,5))}"></div>
     <div class="campo"><label>Tempo — manhã</label><select id="${px}-cm">${opt(DIO_CLIMA,d.clima_manha)}</select></div>
@@ -6361,7 +6362,6 @@ function formDiarioHTML(d,os,px,equipe){
     <div class="campo"><label>Pendências para amanhã</label><textarea id="${px}-pen" rows="2">${esc(d.pendencias||'')}</textarea></div>
     <div class="campo"><label>Segurança</label><textarea id="${px}-seg" rows="2" placeholder="Isolamento, EPI, riscos encontrados">${esc(d.seguranca||'')}</textarea></div>
     <div class="campo"><label>Visitas e pedidos do cliente / fiscal</label><textarea id="${px}-vis" rows="2" placeholder="Quem esteve no local e o que pediu">${esc(d.visitas||'')}</textarea></div>
-    <div class="campo full"><label>Fotos (antes, durante e depois)</label><input type="file" accept="image/*" multiple onchange="enviarFotosDiario(this.files,'${px}');this.value=''"><div id="${px}-fotos" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px"></div></div>
   </div>`;
 }
 // lista de serviços: os da OS + os já registrados no diário (situação puxada do último diário do projeto)
@@ -6433,9 +6433,10 @@ async function abrirDiario(id){
   $('dio-m-status').style.display='block';
   $('dio-m-status').innerHTML=`<span class="badge ${s[1]}">${esc(s[0])}</span> ${d.preenchido_por?`Preenchido por <strong>${esc(d.preenchido_por)}</strong>${d.preenchido_em?' em '+esc(fmtDataHora(d.preenchido_em)):''}. `:''}${d.fechado_por?`Fechado por <strong>${esc(d.fechado_por)}</strong> em ${esc(fmtDataHora(d.fechado_em))}.`:''}${d.situacao==='fechado'?' Diário fechado: só o Administrador ou o Administrativo reabrem.':''}`;
   const equipe=[...new Set([...(d.equipe||[]),...(d.presentes||[])])].map(id=>({id,nome:(funcPorId(id)||{}).nome||'(funcionário)'}));
-  $('dio-m-corpo').innerHTML=formDiarioHTML(d,os,'dio',equipe);
-  renderFotosDiario('dio');
   const fechado=d.situacao==='fechado';
+  $('dio-m-corpo').innerHTML=blocoOSHTML(os,!(d.registros||[]).length)+`<div class="secao">Relatos e fotos do dia (linha do tempo)</div>`+registrosHTML('dio',fechado)+
+    `<div class="secao">Resumo do dia (sai no relatório do cliente)</div><div class="dica">Ouça os relatos e escreva aqui o resumo — o áudio não vai para o PDF.</div>`+formDiarioHTML(d,os,'dio',equipe);
+  renderRegistros('dio');
   modoLeitura('modal-diario',fechado);
   $('dio-m-salvar').style.display=fechado?'none':'';
   $('dio-m-fechar').style.display=!fechado&&PERM.diarioFechar?'':'none';
@@ -6444,7 +6445,7 @@ async function abrirDiario(id){
 }
 async function salvarDiario(fechar){
   if(!dioAtual)return false;const d=dioAtual.d,f=lerFormDiario('dio');
-  if(!f.atividades&&f.condicao!=='parado'){alert('Escreva o que foi feito no dia (ou marque “Parado”).');return false;}
+  if(!f.atividades&&f.condicao!=='parado'&&!(d.registros||[]).length){alert('Escreva o que foi feito no dia (ou marque “Parado”).');return false;}
   const dados={...f,situacao:fechar?'fechado':'preenchido',preenchido_por:d.preenchido_por||(meuPerfil&&meuPerfil.nome)||(usuario&&usuario.email),preenchido_em:d.preenchido_em||new Date().toISOString()};
   if(fechar){dados.fechado_por=(meuPerfil&&meuPerfil.nome)||(usuario&&usuario.email);dados.fechado_em=new Date().toISOString();}
   const{error}=await sb.from('diarios_obra').update(dados).eq('id',d.id);
@@ -6517,7 +6518,7 @@ async function montarRelatorioDiario(win,pid,dias,o){
   const os=o.os!==undefined?o.os:await osDoProjeto(pid);
   const br=s=>esc(s).replace(/\n/g,'<br>');
   const regs=dias.filter(d=>d.situacao!=='pendente'),semReg=dias.filter(d=>d.situacao==='pendente');
-  const urls=o.fotos?await urlsFotos(regs.flatMap(d=>d.fotos||[]),7*24*3600):{};
+  const urls=o.fotos?await urlsFotos([...regs.flatMap(d=>d.fotos||[]),...regs.flatMap(d=>(d.registros||[]).filter(r=>r.foto).map(r=>({caminho:r.foto})))],7*24*3600):{};
   // andamento: a situação mais recente de cada serviço
   const ult=new Map();regs.forEach(d=>(d.servicos||[]).forEach(s=>ult.set(s.ref||s.descricao,{...s,data:d.data})));
   const itensOS=(os&&os.itens)||[];
@@ -6555,13 +6556,17 @@ async function montarRelatorioDiario(win,pid,dias,o){
     return`<div class="dia"><h3>${esc(fmtData(d.data))} (${diaSemana(d.data)})${d.hora_inicio?` · ${fmtH(d.hora_inicio)}–${fmtH(d.hora_fim)}`:''} · ${esc(rotulo(DIO_COND,d.condicao))} · tempo: manhã ${esc(rotulo(DIO_CLIMA,d.clima_manha))}, tarde ${esc(rotulo(DIO_CLIMA,d.clima_tarde))}</h3>
       <div><strong>Equipe (${eq.length}):</strong> ${esc(eq.join(', '))}</div>
       ${d.atividades?`<div style="margin-top:4px"><strong>Executado:</strong> ${br(d.atividades)}</div>`:''}
+      ${(()=>{const rs=(d.registros||[]).slice().sort((a,b)=>String(a.em).localeCompare(String(b.em)));if(!rs.length)return'';
+        const tx=rs.filter(r=>r.texto||(r.audio&&!r.foto)),fr=rs.filter(r=>r.foto&&urls[r.foto]);
+        return`${tx.length?`<div style="margin-top:4px"><strong>Registros do dia:</strong><br>${tx.map(r=>`${esc(horaReg(r))} — ${r.texto?br(r.texto):'<em>relato em áudio</em>'}${r.audio?` 🎙️${r.duracao?' '+mmss(r.duracao):''}`:''} <span style="color:#888">(${esc(r.autor||'')})</span>`).join('<br>')}</div>`:''}
+          ${fr.length?`<div class="fotos">${fr.map(r=>`<figure><img src="${esc(urls[r.foto])}"><figcaption>${esc(horaReg(r))}${r.texto?' — '+esc(r.texto):''}${r.audio?' 🎙️':''}</figcaption></figure>`).join('')}</div>`:''}`;})()}
       ${(d.servicos||[]).length?`<div style="margin-top:4px">${d.servicos.map(s=>`• ${esc(s.item?s.item+' ':'')}${esc(s.descricao)} — ${esc(rotulo(DIO_SERV,s.situacao))}${s.pct!=null&&s.pct!==''?' ('+esc(s.pct)+'%)':''}${s.obs?' · '+esc(s.obs):''}`).join('<br>')}</div>`:''}
       ${d.divergencias?`<div class="div"><strong>Diferente da OS:</strong> ${br(d.divergencias)}</div>`:''}
       ${[['Ocorrências',d.ocorrencias],['Visitas / pedidos do cliente',d.visitas],['Segurança',d.seguranca],['Pendências',d.pendencias]].filter(x=>x[1]).map(([t,v])=>`<div style="margin-top:4px"><strong>${t}:</strong> ${br(v)}</div>`).join('')}
       ${fs.length?`<div class="fotos">${fs.map(f=>`<figure><img src="${esc(urls[f.caminho])}"><figcaption>${esc(rotulo(DIO_MOM,f.momento))}${f.legenda?' — '+esc(f.legenda):''}</figcaption></figure>`).join('')}</div>`:''}
       <div style="color:#888;font-size:9.5px;margin-top:4px">${d.preenchido_por?'Registrado por '+esc(d.preenchido_por):''}${d.fechado_por?' · conferido por '+esc(d.fechado_por):''}</div></div>`;}).join(''):'<p>Nenhum dia registrado no período.</p>'}
   <div class="assin"><div>Responsável pela execução<br><small>${esc(emp.nome||'')}${os&&os.responsavel_tecnico?' — '+esc(os.responsavel_tecnico):''}</small></div><div>Ciência do cliente<br><small>${esc(cli.razao_social||cli.nome||'')} · nome e data: ____/____/______</small></div></div>
-  <div class="rodape">${esc(nomeArq)} · gerado pelo CRM a partir dos diários de obra — não contém valores</div></div></body></html>`;
+  <div class="rodape">${esc(nomeArq)} · gerado pelo CRM a partir dos diários de obra — não contém valores${regs.some(d=>(d.registros||[]).some(r=>r.audio))?' · 🎙️ = há relato em áudio guardado no CRM':''}</div></div></body></html>`;
   win.document.open();win.document.write(html);win.document.close();imprimirQuandoCarregar(win);
 }
 
@@ -6574,14 +6579,18 @@ async function carregarMeusDiarios(mostrarAba){
   if(error){if(!faltaV51(error))console.warn(error);return;}
   meusDiarios=data||[];
   if(meusDiarios.length)$('cc-aba-diario').style.display='';
+  processarFila();
+  // v52: tem diário de hoje aberto? o celular já abre no diário
+  if(!mostrarAba&&meusDiarios.some(d=>d.data===hojeISO()&&d.situacao!=='fechado')){ccAba('diario');return;}
   if(mostrarAba)renderMeusDiarios();
 }
 function renderMeusDiarios(){
+  if(grav)pararGravacao();dioAtual=null;
   const box=$('cc-diario'),hoje=hojeISO();
   if(!meusDiarios.length){box.innerHTML='<div class="cc-vazio">Nenhum diário para preencher. Ele aparece aqui nos dias em que você está alocado num serviço no Cronograma.</div>';return;}
   box.innerHTML='<div class="cc-lista">'+meusDiarios.map((d,i)=>{const s=DIO_SIT[d.situacao]||[d.situacao,''];
-    return`<div class="cc-item"><div><strong>${esc(fmtData(d.data))} (${diaSemana(d.data)})${d.data===hoje?' · hoje':''}</strong><div class="cc-sub">${esc(d.projeto_codigo||'')} — ${esc(d.projeto_nome||'')}${d.cliente_nome?' · '+esc(d.cliente_nome):''}</div><span class="badge ${s[1]}">${esc(s[0])}</span></div>
-    <div class="cc-btns"><button class="cc-prim" onclick="abrirMeuDiario(${i})">${d.situacao==='fechado'?'Ver':'Preencher'}</button></div></div>`;}).join('')+'</div>';
+    return`<div class="cc-item"><div><strong>${esc(fmtData(d.data))} (${diaSemana(d.data)})${d.data===hoje?' · hoje':''}</strong><div class="cc-sub">${esc(d.projeto_codigo||'')} — ${esc(d.projeto_nome||'')}${d.cliente_nome?' · '+esc(d.cliente_nome):''}</div><span class="badge ${s[1]}">${esc(s[0])}</span>${resumoRegistros(d)?` <span class="cc-sub">${esc(resumoRegistros(d))}</span>`:''}</div>
+    <div class="cc-btns"><button class="cc-prim" onclick="abrirMeuDiario(${i})">${d.situacao==='fechado'?'Ver':'Abrir'}</button></div></div>`;}).join('')+'</div>';
 }
 async function abrirMeuDiario(i){
   const d=meusDiarios[i];if(!d)return;
@@ -6593,19 +6602,200 @@ async function abrirMeuDiario(i){
   box.innerHTML=`<div class="cc-ola"><button onclick="renderMeusDiarios()" style="padding:6px 10px;border-radius:8px;border:1.5px solid var(--borda);background:#fff">◀ Voltar</button>
     <h3 style="margin:10px 0 2px">${esc(fmtData(d.data))} — ${esc(d.projeto_codigo||'')} ${esc(d.projeto_nome||'')}</h3><p>${esc(d.projeto_local||d.cliente_nome||'')}</p>
     ${fechado?'<p style="color:var(--verde);font-weight:600">✅ Conferido e fechado pelo escritório (só leitura).</p>':''}</div>
+    ${registrosHTML('mdo',fechado)}
+    ${blocoOSHTML(os,!(d.registros||[]).length)}
+    <details style="margin-top:12px"><summary style="cursor:pointer;font-weight:700;padding:10px 0">📋 Mais detalhes do dia (opcional): horário, tempo, equipe, serviços</summary>
     <div id="mdo-form">${formDiarioHTML(d,os,'mdo',d.equipe_nomes||[])}</div>
-    ${fechado?'':'<button class="cc-prim" style="width:100%;padding:14px;font-size:16px;margin-top:10px;border-radius:10px;border:none;background:var(--verde);color:#fff" onclick="salvarMeuDiario()">Salvar diário</button>'}`;
+    ${fechado?'':'<button class="cc-prim" style="width:100%;padding:14px;font-size:16px;margin-top:10px;border-radius:10px;border:none;background:var(--verde);color:#fff" onclick="salvarMeuDiario()">Salvar detalhes</button>'}</details>`;
   if(fechado)$('mdo-form').querySelectorAll('input,select,textarea').forEach(e=>e.disabled=true);
-  renderFotosDiario('mdo');window.scrollTo(0,0);
+  renderRegistros('mdo');window.scrollTo(0,0);
 }
 async function salvarMeuDiario(){
   if(!dioAtual)return;const f=lerFormDiario('mdo');
-  if(!f.atividades&&f.condicao!=='parado'){alert('Escreva o que foi feito hoje (ou marque “Parado”).');return;}
+  if(!f.atividades&&f.condicao!=='parado'&&!(dioAtual.d.registros||[]).length){alert('Grave um relato, tire uma foto ou escreva o que foi feito hoje (ou marque “Parado”).');return;}
   const{data,error}=await sb.rpc('bvek_diario_salvar',{p_id:dioAtual.d.id,p_dados:f});
   if(error){console.error(error);alert('Não foi possível salvar: '+(error.message||error));return;}
   const i=meusDiarios.findIndex(x=>x.id===dioAtual.d.id);if(i>=0)meusDiarios[i]={...meusDiarios[i],...data};
   toast('Diário salvo. Obrigado!');renderMeusDiarios();
 }
+
+/* ================= v52: DIÁRIO PELO CELULAR — relatos em áudio e fotos na hora ================= */
+// A linha do tempo do dia (diarios_obra.registros): cada registro tem foto e/ou áudio e/ou texto, com hora e
+// autor. Cada um vai na hora para o CRM. Sem sinal na obra, fica guardado no celular (IndexedDB) e sobe
+// sozinho quando a internet voltar. O id do registro nasce no celular: reenviar nunca duplica (o banco confere).
+const FILA_DB='bvek-diario',FILA_ST='fila';let filaMem=[],filaSemIDB=false,filaRodando=false;
+function filaAbrir(){return new Promise((res,rej)=>{try{const r=indexedDB.open(FILA_DB,1);r.onupgradeneeded=()=>r.result.createObjectStore(FILA_ST,{keyPath:'k',autoIncrement:true});r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);}catch(e){rej(e);}});}
+async function filaOp(modo,fn){const db=await filaAbrir();return new Promise((res,rej)=>{const tx=db.transaction(FILA_ST,modo),r=fn(tx.objectStore(FILA_ST));tx.oncomplete=()=>res(r&&r.result);tx.onerror=()=>rej(tx.error);});}
+async function filaAdd(it){if(!filaSemIDB){try{return await filaOp('readwrite',st=>st.add(it));}catch(e){console.warn('IndexedDB indisponível — fila só na memória',e);filaSemIDB=true;}}it.k=Date.now()+Math.random();filaMem.push(it);return it.k;}
+async function filaTodos(){if(!filaSemIDB){try{return(await filaOp('readonly',st=>st.getAll()))||[];}catch(e){filaSemIDB=true;}}return filaMem.slice();}
+async function filaPut(it){if(!filaSemIDB){try{return await filaOp('readwrite',st=>st.put(it));}catch(e){filaSemIDB=true;}}}
+async function filaDel(k){if(!filaSemIDB){try{return await filaOp('readwrite',st=>st.delete(k));}catch(e){filaSemIDB=true;}}filaMem=filaMem.filter(x=>x.k!==k);}
+const novoId=()=>(window.crypto&&crypto.randomUUID)?crypto.randomUUID():'r'+Date.now().toString(36)+Math.random().toString(36).slice(2,10);
+const extAudio=t=>/mp4|m4a|aac/.test(t)?'m4a':/ogg/.test(t)?'ogg':/mpeg/.test(t)?'mp3':'webm';
+const agoraLocal=()=>{const d=new Date();return isoLocal(d)+'T'+[d.getHours(),d.getMinutes(),d.getSeconds()].map(pad2).join(':');};
+const erroDeRede=e=>!navigator.onLine||/Failed to fetch|NetworkError|Load failed|network|timeout|fetch/i.test(String((e&&(e.message||e.error))||e));
+async function subirArquivoDiario(diario,nome,blob,tipo){
+  const caminho=`${diario}/${nome}`;
+  const{error}=await sb.storage.from('diarios').upload(caminho,blob,{contentType:tipo,upsert:false});
+  if(error&&!/already exists|duplicate|409/i.test(String(error.message||'')+String(error.statusCode||'')))throw error;
+  return caminho;
+}
+async function enviarItemFila(it){
+  if(it.tipo==='novo'){
+    const reg={...it.reg};
+    if(it.foto)reg.foto=await subirArquivoDiario(it.diario,it.reg.id+'.jpg',it.foto,'image/jpeg');
+    if(it.audio){reg.audio=await subirArquivoDiario(it.diario,it.reg.id+'.'+extAudio(it.audioTipo),it.audio,it.audioTipo);reg.duracao=it.duracao;}
+    const{data,error}=await sb.rpc('bvek_diario_registrar',{p_id:it.diario,p_reg:reg});if(error)throw error;return data;
+  }
+  const dados={};
+  if(it.audio){dados.audio=await subirArquivoDiario(it.diario,it.reg_id+'_narr_'+it.nid+'.'+extAudio(it.audioTipo),it.audio,it.audioTipo);dados.duracao=it.duracao;}
+  const{data,error}=await sb.rpc('bvek_diario_registro_alterar',{p_id:it.diario,p_reg:it.reg_id,p_dados:dados});if(error)throw error;return data;
+}
+// atualiza o diário na tela (celular ou escritório) com os registros que o banco devolveu
+function aplicarRegistros(diario,regs){
+  if(!Array.isArray(regs))return;
+  [meusDiarios,todosDiarios].forEach(l=>(l||[]).forEach(d=>{if(d.id===diario){d.registros=regs;if(d.situacao==='pendente')d.situacao='preenchido';}}));
+  if(dioAtual&&dioAtual.d.id===diario){dioAtual.d.registros=regs;}
+}
+async function processarFila(){
+  if(filaRodando)return;filaRodando=true;
+  try{
+    const itens=(await filaTodos()).sort((a,b)=>a.k-b.k);
+    for(const it of itens){
+      if(it.erro&&!it.tentarDeNovo)continue;
+      try{const regs=await enviarItemFila(it);await filaDel(it.k);aplicarRegistros(it.diario,regs);}
+      catch(e){
+        if(erroDeRede(e))break; // sem sinal: tenta tudo de novo depois, na mesma ordem
+        if(/ainda não chegou/i.test(e.message||''))continue; // narração de foto que ainda está na fila
+        it.erro=String(e.message||e);it.tentarDeNovo=false;await filaPut(it);console.warn('diário: não enviado',e);
+      }
+    }
+  }finally{filaRodando=false;if(dioAtual)renderRegistros(dioAtual.px);}
+}
+window.addEventListener('online',()=>processarFila());
+setInterval(()=>{if(navigator.onLine)processarFila();},60000);
+async function novoRegistro(dados){
+  if(!dioAtual)return;
+  const it={diario:dioAtual.d.id,tipo:'novo',reg:{id:novoId(),em:agoraLocal(),texto:dados.texto||undefined},foto:dados.foto||null,audio:dados.audio||null,audioTipo:dados.audioTipo||null,duracao:dados.duracao||null,criado:Date.now()};
+  await filaAdd(it);renderRegistros(dioAtual.px);processarFila();
+  return it.reg.id;
+}
+async function narrarRegistro(regId,audio,tipo,dur){
+  if(!dioAtual)return;
+  await filaAdd({diario:dioAtual.d.id,tipo:'narrar',reg_id:regId,nid:novoId().slice(0,8),audio,audioTipo:tipo,duracao:dur,criado:Date.now()});
+  renderRegistros(dioAtual.px);processarFila();
+}
+// gravação de áudio (MediaRecorder): um toque grava, outro toque para e salva
+let grav=null;
+async function gravarAudio(alvoRegId){
+  if(grav){pararGravacao();return;}
+  if(!dioAtual)return;
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia||!window.MediaRecorder){alert('Este celular não grava áudio pelo navegador. Atualize o Chrome (Android) ou o iPhone, ou escreva o relato.');return;}
+  let stream;
+  try{stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true}});}
+  catch(e){alert('O CRM precisa do microfone. Toque no cadeado ao lado do endereço do site → Microfone → Permitir, e tente de novo.');return;}
+  const tipo=['audio/webm;codecs=opus','audio/mp4','audio/webm','audio/ogg;codecs=opus'].find(t=>MediaRecorder.isTypeSupported&&MediaRecorder.isTypeSupported(t))||'';
+  let rec;try{rec=new MediaRecorder(stream,tipo?{mimeType:tipo,audioBitsPerSecond:32000}:undefined);}catch(e){rec=new MediaRecorder(stream);}
+  grav={rec,stream,chunks:[],ini:Date.now(),alvo:alvoRegId||null,px:dioAtual.px};
+  rec.ondataavailable=e=>{if(grav&&e.data&&e.data.size)grav.chunks.push(e.data);};
+  rec.onstop=finalizarGravacao;
+  rec.start(1000);
+  grav.timer=setInterval(()=>{botaoGravacao();if(grav&&Date.now()-grav.ini>10*60*1000)pararGravacao();},500);
+  if(navigator.vibrate)navigator.vibrate(60);
+  botaoGravacao();
+}
+function pararGravacao(){if(grav&&grav.rec.state!=='inactive')grav.rec.stop();}
+async function finalizarGravacao(){
+  const g=grav;grav=null;if(!g)return;
+  clearInterval(g.timer);g.stream.getTracks().forEach(t=>t.stop());
+  const tipo=String(g.rec.mimeType||'audio/webm').split(';')[0]||'audio/webm',dur=Math.round((Date.now()-g.ini)/1000);
+  const blob=new Blob(g.chunks,{type:tipo});
+  if(navigator.vibrate)navigator.vibrate([40,40,40]);
+  if(dur<1||!blob.size){botaoGravacao();toast('Gravação muito curta — segure um pouco mais.');return;}
+  if(g.alvo)await narrarRegistro(g.alvo,blob,tipo,dur);else await novoRegistro({audio:blob,audioTipo:tipo,duracao:dur});
+  toast('🎙️ Relato salvo');botaoGravacao();
+}
+const mmss=s=>Math.floor(s/60)+':'+pad2(Math.floor(s%60));
+function botaoGravacao(){
+  if(!dioAtual)return;const b=$(dioAtual.px+'-bt-grav');if(!b)return;
+  if(grav){const s=(Date.now()-grav.ini)/1000;b.innerHTML=`⏹️ Parar e salvar <span style="font-variant-numeric:tabular-nums">${mmss(s)}</span>${grav.alvo?'<br><small>narrando a foto</small>':''}`;b.style.background='#c62828';b.style.color='#fff';}
+  else{b.innerHTML='🎙️ Gravar relato';b.style.background='';b.style.color='';}
+}
+async function fotosEscolhidas(input,camera){
+  const fs=[...(input.files||[])].slice(0,20);input.value='';if(!fs.length)return;
+  let ultimo=null;
+  for(const f of fs){if(!/^image\//.test(f.type))continue;const b=await reduzirImagem(f);ultimo=await novoRegistro({foto:b});}
+  if(camera&&ultimo){dioAtual.realce=ultimo;renderRegistros(dioAtual.px);toast('📷 Foto salva — toque em 🎙️ Narrar para explicar o que ela mostra');}
+  else toast(fs.length>1?`📷 ${fs.length} fotos salvas`:'📷 Foto salva');
+}
+async function escreverRegistro(regId){
+  const r=((dioAtual&&dioAtual.d.registros)||[]).find(x=>x.id===regId);
+  const t=prompt(regId?'Texto deste registro:':'Escreva o relato:',r&&r.texto||'');if(t===null)return;
+  if(!regId){if(t.trim())await novoRegistro({texto:t.trim()});return;}
+  const{data,error}=await sb.rpc('bvek_diario_registro_alterar',{p_id:dioAtual.d.id,p_reg:regId,p_dados:{texto:t.trim()}});
+  if(error){alert('Não foi possível salvar: '+(error.message||error));return;}
+  aplicarRegistros(dioAtual.d.id,data);renderRegistros(dioAtual.px);
+}
+async function tirarRegistro(regId){
+  if(!confirm('Tirar este registro do diário?'))return;
+  const{data,error}=await sb.rpc('bvek_diario_registro_alterar',{p_id:dioAtual.d.id,p_reg:regId,p_dados:{remover:true}});
+  if(error){alert('Não foi possível tirar: '+(error.message||error));return;}
+  aplicarRegistros(dioAtual.d.id,data);renderRegistros(dioAtual.px);
+}
+async function descartarFila(k){if(!confirm('Descartar este registro que não foi enviado?'))return;await filaDel(k);renderRegistros(dioAtual.px);}
+async function tentarFila(k){const l=await filaTodos(),it=l.find(x=>x.k===k);if(it){it.tentarDeNovo=true;delete it.erro;await filaPut(it);}processarFila();}
+// botões grandes + linha do tempo
+function registrosHTML(px,fechado){
+  const bt='flex:1 1 45%;min-height:64px;font-size:17px;font-weight:700;border-radius:12px;border:2px solid var(--verde);background:#fff;color:var(--verde);cursor:pointer;padding:10px';
+  return`<div style="margin:6px 0 12px">
+    ${fechado?'':`<div style="display:flex;gap:10px;flex-wrap:wrap">
+      <button type="button" id="${px}-bt-grav" style="${bt}" onclick="gravarAudio()">🎙️ Gravar relato</button>
+      <button type="button" style="${bt}" onclick="$('${px}-in-cam').click()">📷 Tirar foto</button>
+      <input type="file" id="${px}-in-cam" accept="image/*" capture="environment" style="display:none" onchange="fotosEscolhidas(this,true)">
+      <input type="file" id="${px}-in-gal" accept="image/*" multiple style="display:none" onchange="fotosEscolhidas(this,false)">
+    </div>
+    <div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:8px;font-size:14px"><button type="button" class="btn-link" onclick="$('${px}-in-gal').click()">🖼️ Enviar fotos da galeria</button><button type="button" class="btn-link" onclick="escreverRegistro()">✏️ Escrever um relato</button></div>
+    <div class="dica" style="margin-top:6px">Grave quantas vezes quiser ao longo do dia. Conte: o que foi feito, <strong>o que estava diferente da OS</strong> e <strong>quem autorizou</strong>. Cada registro é salvo na hora — sem sinal, fica guardado no celular e sobe sozinho depois.</div>`}
+    <div id="${px}-regs" style="margin-top:10px"></div></div>`;
+}
+const urlCacheDiario={};
+async function urlsDiario(caminhos){
+  const falta=caminhos.filter(c=>c&&!(urlCacheDiario[c]&&urlCacheDiario[c].ate>Date.now()));
+  if(falta.length){const{data}=await sb.storage.from('diarios').createSignedUrls(falta,3600);(data||[]).forEach(x=>{if(x.signedUrl)urlCacheDiario[x.path]={u:x.signedUrl,ate:Date.now()+50*60*1000};});}
+  const m={};caminhos.forEach(c=>{if(urlCacheDiario[c])m[c]=urlCacheDiario[c].u;});return m;
+}
+const horaReg=r=>String(r.em||'').slice(11,16);
+async function renderRegistros(px){
+  const box=$(px+'-regs');if(!box||!dioAtual)return;
+  const d=dioAtual.d,regs=(d.registros||[]).slice().sort((a,b)=>String(a.em).localeCompare(String(b.em)));
+  const fila=(await filaTodos()).filter(x=>x.diario===d.id).sort((a,b)=>a.k-b.k);
+  const urls=await urlsDiario(regs.flatMap(r=>[r.foto,r.audio]).filter(Boolean));
+  const meu=($('cc-nome')&&$('cc-nome').dataset.nome)||'';
+  const fechado=d.situacao==='fechado',escr=!!(PERM&&PERM.cronograma);
+  const narrPend=new Set(fila.filter(x=>x.tipo==='narrar').map(x=>x.reg_id));
+  const card=(inner,destaque)=>`<div style="border:1.5px solid ${destaque?'var(--verde)':'var(--borda)'};border-radius:12px;padding:10px;margin-bottom:10px;background:#fff">${inner}</div>`;
+  const bl='font-size:14px;padding:6px 10px;border-radius:8px;border:1.5px solid var(--borda);background:#fff;cursor:pointer';
+  // revoga as prévias antigas (fotos/áudios ainda no celular)
+  (dioAtual.previas||[]).forEach(u=>URL.revokeObjectURL(u));dioAtual.previas=[];
+  const prev=b=>{const u=URL.createObjectURL(b);dioAtual.previas.push(u);return u;};
+  let h=regs.map(r=>{const meuReg=escr||(r.autor&&r.autor===meu);
+    return card(`<div style="display:flex;justify-content:space-between;gap:8px;font-size:13px;color:var(--texto2)"><strong style="color:var(--texto)">${esc(horaReg(r))}</strong><span>${esc(r.autor||'')}</span></div>
+      ${r.foto&&urls[r.foto]?`<a href="${esc(urls[r.foto])}" target="_blank" rel="noopener"><img src="${esc(urls[r.foto])}" style="width:100%;max-height:300px;object-fit:cover;border-radius:8px;margin-top:6px"></a>`:r.foto?'<div>📷 foto</div>':''}
+      ${r.audio&&urls[r.audio]?`<audio controls preload="none" src="${esc(urls[r.audio])}" style="width:100%;margin-top:6px"></audio><div class="dica" style="margin:0">🎙️ ${r.duracao?mmss(r.duracao):''}</div>`:''}
+      ${r.texto?`<div style="margin-top:6px;white-space:pre-wrap">${esc(r.texto)}</div>`:''}
+      ${fechado||!meuReg?'':`<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+        ${r.foto&&!r.audio?(narrPend.has(r.id)?'<span class="dica" style="margin:0">⏳ narração aguardando sinal</span>':`<button type="button" style="${bl};${dioAtual.realce===r.id?'border-color:var(--verde);color:var(--verde);font-weight:700':''}" onclick="gravarAudio('${esc(r.id)}')">🎙️ Narrar</button>`):''}
+        <button type="button" style="${bl}" onclick="escreverRegistro('${esc(r.id)}')">✏️ ${r.texto?'Mudar texto':'Escrever'}</button>
+        <button type="button" style="${bl};color:var(--vermelho)" onclick="tirarRegistro('${esc(r.id)}')">🗑️</button></div>`}`,dioAtual.realce===r.id);}).join('');
+  h+=fila.filter(x=>x.tipo==='novo').map(x=>card(`<div style="font-size:13px;color:var(--texto2)"><strong>${esc(String(x.reg.em).slice(11,16))}</strong> · ${x.erro?`<span style="color:var(--vermelho)">⚠️ não enviado: ${esc(x.erro)}</span>`:'⏳ aguardando sinal para enviar (fica guardado no celular)'}</div>
+      ${x.foto?`<img src="${prev(x.foto)}" style="width:100%;max-height:220px;object-fit:cover;border-radius:8px;margin-top:6px;opacity:.75">`:''}
+      ${x.audio?`<audio controls src="${prev(x.audio)}" style="width:100%;margin-top:6px"></audio>`:''}${x.reg.texto?`<div style="margin-top:6px">${esc(x.reg.texto)}</div>`:''}
+      <div style="display:flex;gap:8px;margin-top:6px"><button type="button" style="${bl}" onclick="tentarFila(${x.k})">🔄 Enviar agora</button>${x.erro?`<button type="button" style="${bl}" onclick="descartarFila(${x.k})">Descartar</button>`:''}</div>`)).join('');
+  box.innerHTML=h||'<div class="dica" style="text-align:center;padding:10px">Nenhum registro ainda hoje. Toque em 🎙️ ou 📷 para começar.</div>';
+  botaoGravacao();
+}
+function resumoRegistros(d){const r=d.registros||[],a=r.filter(x=>x.audio).length,f=r.filter(x=>x.foto).length,t=r.filter(x=>x.texto&&!x.audio&&!x.foto).length;
+  return[a?`🎙️ ${a}`:'',f?`📷 ${f}`:'',t?`✏️ ${t}`:''].filter(Boolean).join(' · ');}
 
 /* ================= v51: DOCUMENTOS DOS FUNCIONÁRIOS NO SHAREPOINT (espelho) ================= */
 // A função "sharepoint" (sincronizar_colaboradores) lê as pastas 01.2.1.1_ATIVOS e 01.2.1.2_DESLIGADOS e grava
