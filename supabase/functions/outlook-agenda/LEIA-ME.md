@@ -45,6 +45,13 @@ cronograma: **não entram na folha**.
 Reunião com `agenda@bvek.com.br` convidada **não vira alocação** do cronograma, mesmo com
 funcionário convidado.
 
+**Como marcar uma reunião do escritório pelo Outlook:** convide `agenda@bvek.com.br` (junto com
+os colegas). Sem ela, um evento com funcionários convidados vira alocação “sem cliente” no
+Cronograma. **v51:** se isso já aconteceu, basta acrescentar `agenda@bvek.com.br` como convidada
+no Outlook e clicar em 🔄 Sincronizar: a alocação sai do Cronograma (e da folha) e o evento
+passa para a linha 🏢 Escritório. O evento no Outlook não é apagado. (Não use “Cancelar
+alocação” no CRM para isso: cancelar no CRM apaga o evento no Outlook.)
+
 Para ver a agenda do escritório no próprio Outlook: *Calendário → Adicionar calendário →
 Da organização / Do diretório* → `agenda@bvek.com.br` (a caixa precisa estar compartilhada
 com a equipe no Microsoft 365).

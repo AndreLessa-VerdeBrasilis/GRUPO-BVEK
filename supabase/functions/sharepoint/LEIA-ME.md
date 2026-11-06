@@ -28,3 +28,27 @@ só envia e mostra.
 
 Enquanto não estiver ligado, nada quebra: o CRM só deixa de copiar e mostra a "colinha"
 com o nome e a pasta para salvar à mão.
+
+## Documentos dos funcionários no CRM (v51) — espelho, sem duplicar
+
+A ação `sincronizar_colaboradores` lê as pastas `01.2.1.1_ATIVOS` e `01.2.1.2_DESLIGADOS`
+(com subpastas, até 3 níveis) e grava na tabela `documentos_sharepoint` **um registro por
+arquivo**, pela identificação única do arquivo no SharePoint. Os arquivos aparecem em
+**Documentos** (filtro “Funcionário”, ou botão 📄 Documentos da ficha).
+
+| Situação no SharePoint | O que acontece no CRM |
+|------------------------|-----------------------|
+| Arquivo novo | aparece na próxima sincronização |
+| Mesmo arquivo lido de novo | não duplica (a identificação é única no banco) |
+| Arquivo renomeado ou movido (inclusive de ATIVOS para DESLIGADOS) | o mesmo registro é atualizado |
+| Arquivo apagado | fica “removido” (some da tela) — **só** se a pasta foi lida inteira sem erro |
+| Pasta que falhou na leitura | nada dela é removido; o aviso aparece na tela |
+| Arquivo que o próprio CRM enviou (mesmo nome, mesmo funcionário) | fica ligado ao documento do CRM e aparece **uma vez só**, na linha do documento (☁️ SharePoint) |
+| Pasta com nome que não bate com nenhum funcionário | aparece com o aviso “pasta sem funcionário no CRM” |
+
+A pasta é ligada ao funcionário pelo nome completo (sem acento, maiúsculo), o mesmo padrão
+que o CRM usa para criar a pasta. A sincronização roda sozinha ao abrir a aba Documentos
+(no máximo a cada 15 minutos) e no botão **🔄 Sincronizar agora**. Só o SharePoint grava o
+espelho; o CRM nunca apaga nada no SharePoint.
+
+**Publicar:** depois de rodar a migração v51, publique de novo a função `sharepoint`.

@@ -1,5 +1,5 @@
 // =====================================================================
-// CRM Grupo BVEK — função "sharepoint" (Supabase Edge Function) · v34
+// CRM Grupo BVEK — função "sharepoint" (Supabase Edge Function) · v34 / v51
 // Liga o CRM às pastas do SharePoint (site Grupo BVEK), pelo Microsoft Graph,
 // com os MESMOS segredos do e-mail: MS_TENANT_ID, MS_CLIENT_ID, MS_CLIENT_SECRET.
 // Opcionais: SP_HOST (padrão andrelessaverdebrasiliscom.sharepoint.com)
@@ -13,6 +13,11 @@
 //   { acao: "enviar", bucket, caminho, pasta, nome }    → copia um arquivo guardado no CRM
 //                                                         para a pasta do SharePoint (substitui se já existir)
 //   { acao: "listar", pasta }                           → lista os arquivos de uma pasta
+//   v51: { acao: "sincronizar_colaboradores" }          → espelha no CRM (tabela documentos_sharepoint)
+//        os arquivos das pastas dos funcionários (01.2.1.1_ATIVOS e 01.2.1.2_DESLIGADOS).
+//        Sem duplicar: cada arquivo é guardado pela identificação única dele no SharePoint
+//        (renomear/mover não cria outro). Arquivo apagado no SharePoint fica "removido" — mas
+//        só quando a pasta inteira foi lida sem erro (falha de leitura nunca some com nada).
 //
 // Só perfis internos (administrador, administrativo, comercial, contabilidade).
 // Só pastas de 01_ADMINISTRATIVO/ e 03_CLIENTES/ (nada fora disso).
@@ -76,6 +81,94 @@ async function siteId(tok: string): Promise<string> {
   return b.id;
 }
 
+// ---------------------------------------------------------------------
+// v51: espelho das pastas dos funcionários
+// ---------------------------------------------------------------------
+const BASES_COLAB = [
+  "01_ADMINISTRATIVO/01.2_RH/01.2.1_COLABORADORES/01.2.1.1_ATIVOS",
+  "01_ADMINISTRATIVO/01.2_RH/01.2.1_COLABORADORES/01.2.1.2_DESLIGADOS",
+];
+// mesmo nome de pasta que o CRM usa (pastaColaborador no index.html)
+const nomePasta = (n: string) => String(n || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toUpperCase()
+  .replace(/[^A-Z0-9 ]+/g, " ").replace(/\s+/g, " ").trim();
+type ItemSP = { id: string; name: string; size?: number; webUrl?: string; lastModifiedDateTime?: string; folder?: unknown; file?: unknown };
+// lista TODOS os itens de uma pasta (segue as páginas). null = pasta não existe; lança erro se falhar
+async function filhos(tok: string, sid: string, pasta: string): Promise<ItemSP[] | null> {
+  let url: string | null = `https://graph.microsoft.com/v1.0/sites/${sid}/drive/root:/${caminhoGraph(pasta)}:/children?$top=200&$select=id,name,size,webUrl,lastModifiedDateTime,folder,file`;
+  const out: ItemSP[] = [];
+  while (url) {
+    const r = await fetch(url, { headers: { Authorization: "Bearer " + tok } });
+    if (r.status === 404) return null;
+    const b = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(`não consegui ler ${pasta}: ${b.error?.message || r.status}`);
+    out.push(...(b.value || []));
+    url = b["@odata.nextLink"] || null;
+  }
+  return out;
+}
+async function sincronizarColaboradores(adm: any, tok: string, sid: string) {
+  const inicio = new Date().toISOString();
+  const res = { arquivos: 0, novos: 0, removidos: 0, ligados_ao_crm: 0, pastas: 0,
+    pastas_sem_funcionario: [] as string[], pastas_com_erro: [] as string[], funcionarios_com_nome_repetido: [] as string[] };
+  const { data: funcs, error: ef } = await adm.from("funcionarios").select("id,nome,ativo");
+  if (ef) throw new Error("não consegui ler os funcionários: " + ef.message);
+  const porNome = new Map<string, any[]>();
+  for (const f of funcs || []) { const k = nomePasta(f.nome); if (!porNome.has(k)) porNome.set(k, []); porNome.get(k)!.push(f); }
+  const { data: jaTem } = await adm.from("documentos_sharepoint").select("sp_id");
+  const conhecidos = new Set((jaTem || []).map((x: any) => x.sp_id));
+
+  const basesOk = new Set<string>(), raizesListadas = new Set<string>(), raizesOk = new Set<string>();
+  const linhas: any[] = [];
+  for (const base of BASES_COLAB) {
+    const pastas = await filhos(tok, sid, base); // erro aqui = para tudo (nada é removido)
+    if (pastas === null) continue;               // pasta-base ainda não existe
+    basesOk.add(base);
+    for (const pf of pastas.filter((x) => x.folder)) {
+      const raiz = base + "/" + pf.name;
+      raizesListadas.add(raiz); res.pastas++;
+      const cands = porNome.get(nomePasta(pf.name)) || [];
+      let func = cands.length === 1 ? cands[0] : cands.filter((f) => (f.ativo !== false) === base.endsWith("ATIVOS"));
+      if (Array.isArray(func)) func = func.length === 1 ? func[0] : null;
+      if (!cands.length) res.pastas_sem_funcionario.push(raiz.split("/").slice(-2).join("/"));
+      else if (!func) res.funcionarios_com_nome_repetido.push(pf.name);
+      // arquivos da pasta do funcionário e das subpastas (até 3 níveis)
+      try {
+        const fila: { p: string; n: number }[] = [{ p: raiz, n: 0 }];
+        while (fila.length) {
+          const { p, n } = fila.shift()!;
+          const itens = await filhos(tok, sid, p);
+          for (const it of itens || []) {
+            if (it.folder) { if (n < 3) fila.push({ p: p + "/" + it.name, n: n + 1 }); continue; }
+            linhas.push({ sp_id: it.id, funcionario_id: func ? func.id : null, raiz, pasta: p, nome: it.name, url: it.webUrl || null,
+              tamanho: it.size ?? null, alterado_em: it.lastModifiedDateTime || null, situacao: "ativo", visto_em: inicio, atualizado_em: inicio });
+          }
+        }
+        raizesOk.add(raiz);
+      } catch (e) { res.pastas_com_erro.push(pf.name + ": " + String((e as Error).message || e)); }
+    }
+  }
+  // grava: um registro por arquivo (sp_id único) — o mesmo arquivo nunca entra duas vezes
+  const vistos = new Set<string>();
+  const unicas = linhas.filter((l) => !vistos.has(l.sp_id) && vistos.add(l.sp_id));
+  for (let i = 0; i < unicas.length; i += 200) {
+    const { error } = await adm.from("documentos_sharepoint").upsert(unicas.slice(i, i + 200), { onConflict: "sp_id" });
+    if (error) throw new Error("não consegui gravar o espelho: " + error.message);
+  }
+  res.arquivos = unicas.length;
+  res.novos = unicas.filter((l) => !conhecidos.has(l.sp_id)).length;
+  // apagados no SharePoint: só quando a pasta foi lida inteira sem erro (ou a pasta do funcionário sumiu)
+  const { data: ativos } = await adm.from("documentos_sharepoint").select("id,raiz,visto_em").eq("situacao", "ativo").lt("visto_em", inicio);
+  const sumiram = (ativos || []).filter((l: any) => raizesOk.has(l.raiz) ||
+    (!raizesListadas.has(l.raiz) && [...basesOk].some((b) => String(l.raiz).startsWith(b + "/")))).map((l: any) => l.id);
+  for (let i = 0; i < sumiram.length; i += 200) {
+    await adm.from("documentos_sharepoint").update({ situacao: "removido", atualizado_em: new Date().toISOString() }).in("id", sumiram.slice(i, i + 200));
+  }
+  res.removidos = sumiram.length;
+  const { data: lig } = await adm.rpc("bvek_sp_ligar_documentos");
+  res.ligados_ao_crm = Number(lig || 0);
+  return res;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
   if (req.method !== "POST") return json({ erro: "Use POST." }, 405);
@@ -92,6 +185,14 @@ Deno.serve(async (req) => {
     if (acao === "status") {
       try { const t = await tokenM365(); await siteId(t); return json({ ok: true }); }
       catch (e) { return json({ ok: false, erro: String((e as Error).message || e) }); }
+    }
+
+    if (acao === "sincronizar_colaboradores") {
+      if (!["administrador", "administrativo", "contabilidade"].includes(perfil.perfil)) return json({ erro: "Sem permissão." }, 403);
+      const tok = await tokenM365(), sid = await siteId(tok);
+      const res = await sincronizarColaboradores(adm, tok, sid);
+      await adm.from("sharepoint_sync").upsert({ id: "colaboradores", ultima_em: new Date().toISOString(), por: user.email || null, resultado: res }, { onConflict: "id" });
+      return json({ ok: true, ...res });
     }
 
     const pasta = pastaSegura(p.pasta);

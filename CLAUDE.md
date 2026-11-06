@@ -26,7 +26,7 @@ Sempre responda em português. O dono do sistema é o André Lessa (sócio do Gr
 1. **Antes de mexer**, leia o `index.html` atual e as migrações em `supabase/`. Não reescreva o que já funciona; faça a menor mudança que resolve.
 2. **Decisões do André**: se algo exigir regra de negócio, nome, campo novo ou mudança de comportamento visível, pergunte antes de implementar.
 3. **Banco de dados**:
-   - Toda mudança de banco vira um arquivo novo em `supabase/` no formato `migracao_crm_vNN_descricao.sql`, com o próximo número (confira o maior existente; em 29/out/2026 a última era a v31).
+   - Toda mudança de banco vira um arquivo novo em `supabase/` no formato `migracao_crm_vNN_descricao.sql`, com o próximo número (confira o maior existente; em 06/nov/2026 a última era a v51).
    - A migração precisa poder rodar mais de uma vez sem duplicar nada (`if not exists`, `where not exists`, `create or replace`, `on conflict do nothing`).
    - Termine o arquivo com um `select` que permita ao André conferir o resultado.
    - **Funil só do administrador (desde a v46):** propostas (`cards`, `itens_proposta`, histórico), contratos fixos, valores e PDFs das propostas só chegam ao Administrador — o banco não manda para os outros perfis. Antes (v36) a regra era: o perfil Comercial não recebe `cards.valor_estimado`, `cards.composicao`, `itens_proposta.valor_unitario/valor_total` nem `contratos_recorrentes.valor_mensal/custo_mensal`. O front-end lê propostas, itens e contratos pelas funções `bvek_cards`, `bvek_itens_proposta` e `bvek_contratos` (nunca `select('*')` direto nessas tabelas). Migração que criar coluna nova nessas três tabelas deve terminar com `select public.bvek_proteger_valores();`.
@@ -84,3 +84,9 @@ Boa parte disto já foi implementada nas versões v11 a v18 (acessos, documentos
 **Currículos**
 - Banco de currículos (inclui freelas) com análise de perfil e formulário de perfil emocional para candidatos, com parecer do RH.
 - Divulgação de vagas (v49): botão "📣 Divulgar vaga" em Currículos, com modelos por função na tabela `vagas_modelos` (salário conforme CCT, atividades, benefícios, requisitos) e texto padrão "Como se candidatar" em `rh_config.vaga_como_candidatar`. Gera texto para WhatsApp/redes, texto simples para sites de emprego e PDF com a identidade visual da empresa.
+
+**Obras (v51)**
+- Ordem de serviço detalhada: botão "🧭 Detalhar execução (OS)" na proposta, tabela `os_detalhes` (condições do local, incluído / NÃO incluído, como deve ficar, quando parar e consultar, segurança, "como executar" item a item). Sai só na OS, nunca na proposta. Campo em branco sai na OS como "⚠️ não informado — confirmar com o responsável".
+- Diário de obra: aba "Diário de obra" e aba "📒 Diário de obra" no login do funcionário (CPF). Tabela `diarios_obra`; `bvek_diarios_gerar` cria o diário de cada dia com equipe alocada num projeto no Cronograma. A equipe preenche (só os diários dela, via `bvek_diario_salvar`); Administrador e Administrativo conferem e fecham. Relatório em PDF para o cliente (sem valores, com ciência do cliente). Fotos no bucket `diarios`.
+- Documentos do SharePoint dos funcionários: espelho na tabela `documentos_sharepoint` (um registro por arquivo, `sp_id` único), gravado só pela função `sharepoint` (`sincronizar_colaboradores`); arquivo enviado pelo CRM fica ligado ao documento e aparece uma vez só.
+- Reunião do escritório marcada no Outlook: convidar `agenda@bvek.com.br` (senão vira alocação "sem cliente"; acrescentar a agenda depois e sincronizar tira a alocação do cronograma sem apagar o evento).
