@@ -5795,6 +5795,8 @@ async function salvarImagensProposta(cardId,numero){
   if(error){console.error(error);alert(/imagens/.test(error.message||'')?'Para guardar imagens, rode antes a migração v33 no Supabase (supabase/migracao_crm_v33_imagens_proposta.sql).':'As imagens foram enviadas, mas não ficaram ligadas ao atendimento: '+(error.message||error));return false;}
   // o arquivo não é apagado: a imagem pode estar em outra versão da mesma proposta
   imagensRemovidas=[];
+  if(cardOriginal)cardOriginal.imagens=lista;
+  if(pend.length){renderImagensCard();const inf=$('card-imgs-info');if(inf)inf.textContent='Imagens guardadas.';}
   return true;
 }
 (function(){const d=document.getElementById('card-imgs-drop');if(!d)return;
@@ -5810,6 +5812,8 @@ async function gerarPDF(){
   const win=window.open('','_blank');
   if(!win){alert('O navegador bloqueou a janela da proposta. Permita pop-ups para este site.');return;}
   win.document.write('<p style="font-family:Arial;padding:30px">Gerando a proposta…</p>');
+  // o PDF lê o que está gravado: imagens anexadas (ou legendas mudadas) e ainda não salvas são gravadas antes
+  if(PERM.funil&&!await salvarImagensProposta(cardEditandoId,cardOriginal&&cardOriginal.numero_proposta)){win.close();return;}
   try{await montarPDF(win);}
   catch(e){console.error(e);win.close();alert('Não foi possível gerar a proposta:\n'+(e&&e.message||e));}
 }
@@ -5909,7 +5913,9 @@ async function montarPDF(win){
   // v33: imagens marcadas para sair na proposta
   const imgsProp=(Array.isArray(card.imagens)?card.imagens:[]).filter(x=>x&&x.path&&x.na_proposta!==false);
   if(imgsProp.length){
-    const{data:urls}=await sb.storage.from(BUCKET_PROPOSTAS).createSignedUrls(imgsProp.map(x=>x.path),3600);
+    const{data:urls,error:eUrls}=await sb.storage.from(BUCKET_PROPOSTAS).createSignedUrls(imgsProp.map(x=>x.path),3600);
+    if(eUrls)console.error('imagens da proposta',eUrls);
+    if(eUrls||(urls||[]).filter(x=>x.signedUrl).length<imgsProp.length)alert('Atenção: '+(eUrls?'as imagens':'algumas imagens')+' da proposta não puderam ser carregadas e não vão sair no PDF.');
     const u=Object.fromEntries((urls||[]).filter(x=>x.signedUrl).map(x=>[x.path,x.signedUrl]));
     const figs=imgsProp.filter(x=>u[x.path]).map((x,i)=>`<figure><img src="${esc(u[x.path])}" alt=""><figcaption>Figura ${i+1}${x.legenda?' – '+esc(x.legenda):''}</figcaption></figure>`).join('');
     sec('IMAGENS DE REFERÊNCIA',figs?`<div class="fotos">${figs}</div>`:'');
