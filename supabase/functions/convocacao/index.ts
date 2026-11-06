@@ -13,6 +13,11 @@
 //        • quem saiu da equipe, ou alocação cancelada → CANCELAMENTO
 //   { cronograma_id: "...", reenviar: true }  → manda de novo a todos da equipe
 //   { teste_fone: "21999999999" }             → (só Administrador) manda uma convocação de exemplo
+//   { escritorio_id: "..." }                  → (v53) evento do escritório: avisa os convidados
+//        pelo WhatsApp (convite / alteração / cancelamento, mesma lógica acima;
+//        o e-mail já vai pelo convite do Outlook). Celular: ficha do funcionário
+//        com o mesmo e-mail (ou, se não houver, com o mesmo nome).
+//   { escritorio_id: "...", reenviar: true }  → manda de novo a todos os convidados
 //
 // Quem pode: Administrador, Comercial, Administrativo e Contabilidade.
 // Cada envio fica gravado em "cronograma_avisos".
@@ -118,6 +123,130 @@ function emailHtml(tipo: Tipo, nome: string, d: Det): string {
 // parâmetros do modelo da Meta (sem quebra de linha, nunca vazios)
 const param = (t: string) => ({ type: "text", text: (String(t || "").replace(/\s*\n+\s*/g, " | ").replace(/\s{4,}/g, "   ").trim() || "—").slice(0, 900) });
 
+// ------------------------------------------------------------------ v53: evento do escritório
+type TipoEsc = "convite" | "alteracao" | "cancelamento";
+const CAB_ESC: Record<TipoEsc, string> = {
+  convite: "Evento do escritório",
+  alteracao: "Evento do escritório ALTERADO",
+  cancelamento: "Evento do escritório CANCELADO",
+};
+const ABRE_ESC: Record<TipoEsc, string> = {
+  convite: "Você foi convidado(a) para o evento abaixo.",
+  alteracao: "Houve mudança no evento abaixo. Vale o que está aqui.",
+  cancelamento: "O evento abaixo foi cancelado. Não é preciso comparecer.",
+};
+const FUSO = "America/Sao_Paulo";
+const diaFuso = (ts: string) => new Intl.DateTimeFormat("en-CA", { timeZone: FUSO, year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(ts));
+const horaFuso = (ts: string) => new Intl.DateTimeFormat("pt-BR", { timeZone: FUSO, hour: "2-digit", minute: "2-digit", hour12: false }).format(new Date(ts));
+const semAcento = (t: unknown) => String(t || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim().replace(/\s+/g, " ");
+function detalhesEsc(e: Linha) {
+  const d1 = diaFuso(e.inicio), d2 = diaFuso(e.fim);
+  const data = d1 === d2 ? `${diaSemana(d1)}, ${dataBR(d1)}` : `${diaSemana(d1)}, ${dataBR(d1, false)} a ${diaSemana(d2)}, ${dataBR(d2)}`;
+  const horario = e.dia_inteiro ? "dia inteiro"
+    : d1 === d2 ? `${horaFuso(e.inicio)} às ${horaFuso(e.fim)}` : `${horaFuso(e.inicio)} (${dataBR(d1, false)}) às ${horaFuso(e.fim)} (${dataBR(d2, false)})`;
+  return { data, horario, local: String(e.local || "").trim() || "a combinar com o escritório", titulo: String(e.titulo || "").trim(), pauta: String(e.descricao || "").trim(), fim: d2 };
+}
+function textoWhatsEsc(tipo: TipoEsc, nome: string, d: ReturnType<typeof detalhesEsc>, quem: string): string {
+  const icone = tipo === "cancelamento" ? "❌" : tipo === "alteracao" ? "🔄" : "🏢";
+  const l = [`${icone} *${CAB_ESC[tipo]} — Grupo BVEK*`, `Olá, ${nome}! ${ABRE_ESC[tipo]}`, "",
+    `📌 *Assunto:* ${d.titulo}`, `📅 *Data:* ${d.data}`, `🕗 *Horário:* ${d.horario}`, `📍 *Local:* ${d.local}`];
+  if (tipo !== "cancelamento" && d.pauta) l.push(`📝 *Pauta:* ${d.pauta}`);
+  if (quem) l.push(`👤 *Marcado por:* ${quem}`);
+  l.push("", "O convite também está no seu Outlook.");
+  return l.join("\n");
+}
+async function enviarWhatsEsc(cfg: Linha, fone: string, tipo: TipoEsc, nome: string, d: ReturnType<typeof detalhesEsc>, quem: string): Promise<string | null> {
+  const modelo = String(cfg.meta_modelo || "").trim();
+  // mesmo modelo de 7 variáveis da convocação: {{6}} = assunto, {{7}} = pauta
+  const corpo = modelo
+    ? {
+      messaging_product: "whatsapp", to: fone, type: "template",
+      template: {
+        name: modelo, language: { code: cfg.meta_idioma || "pt_BR" },
+        components: [{
+          type: "body",
+          parameters: [CAB_ESC[tipo], nome, d.data, d.horario, d.local, d.titulo,
+            tipo === "cancelamento" ? "Não é preciso comparecer." : d.pauta].map(param),
+        }],
+      },
+    }
+    : { messaging_product: "whatsapp", to: fone, type: "text", text: { body: textoWhatsEsc(tipo, nome, d, quem) } };
+  const r = await fetch(`https://graph.facebook.com/v21.0/${encodeURIComponent(cfg.meta_phone_id)}/messages`, {
+    method: "POST",
+    headers: { Authorization: "Bearer " + cfg.meta_token, "Content-Type": "application/json" },
+    body: JSON.stringify(corpo),
+  });
+  if (r.ok) return null;
+  const t = await r.text();
+  try { const e = JSON.parse(t).error; return String(e.error_data?.details || e.message || t).slice(0, 300); } catch (_) { return t.slice(0, 300); }
+}
+// deno-lint-ignore no-explicit-any
+async function avisarEscritorio(adm: any, p: Linha, quem: string, cfg: Linha): Promise<Response> {
+  const { data: e } = await adm.from("agenda_escritorio").select("*").eq("id", String(p.escritorio_id || "")).maybeSingle();
+  if (!e) return json({ erro: "Evento não encontrado. Salve antes de avisar." }, 404);
+  const d = detalhesEsc(e);
+  if (d.fim < hojeBrasilia()) return json({ ok: true, pulado: "O evento já terminou: ninguém foi avisado.", resultado: [] });
+
+  const { data: avisos, error: eAv } = await adm.from("agenda_escritorio_avisos").select("email,nome,tipo,assinatura,ok,enviado_em")
+    .eq("evento_id", e.id).eq("ok", true).order("enviado_em", { ascending: false });
+  if (eAv) throw new Error(/agenda_escritorio_avisos/.test(eAv.message) ? "Falta rodar a migração v53 no Supabase." : eAv.message);
+  const ultimo = new Map<string, Linha>();
+  for (const a of avisos || []) if (a.email && !ultimo.has(a.email)) ultimo.set(a.email, a);
+
+  const caixa = "agenda@bvek.com.br";
+  const convidados = new Map<string, string>();
+  if (e.situacao === "ativo") for (const x of (e.participantes || []) as Linha[]) {
+    const em = String(x.email || "").toLowerCase().trim();
+    if (em && em !== caixa) convidados.set(em, String(x.nome || em));
+  }
+  const emails = [...new Set([...convidados.keys(), ...ultimo.keys()])];
+  const assinatura = JSON.stringify([e.inicio, e.fim, !!e.dia_inteiro, d.local, d.titulo, d.pauta]);
+
+  const plano: { email: string; nome: string; tipo: TipoEsc }[] = [];
+  for (const em of emails) {
+    const u = ultimo.get(em), avisado = !!u && u.tipo !== "cancelamento";
+    const nome = convidados.get(em) || String(ultimo.get(em)?.nome || "") || em;
+    if (convidados.has(em)) {
+      if (!avisado) plano.push({ email: em, nome, tipo: "convite" });
+      else if (u!.assinatura !== assinatura) plano.push({ email: em, nome, tipo: "alteracao" });
+      else if (p.reenviar) plano.push({ email: em, nome, tipo: "convite" });
+    } else if (avisado) plano.push({ email: em, nome, tipo: "cancelamento" });
+  }
+  if (!plano.length) return json({ ok: true, pulado: "Todos já estavam avisados no WhatsApp (nada mudou).", resultado: [] });
+
+  // celular: ficha do funcionário com o mesmo e-mail; se não houver, com o mesmo nome
+  const { data: fs } = await adm.from("funcionarios").select("nome,email,celular,ativo").neq("ativo", false);
+  const funcs = ((fs || []) as Linha[]).filter((f) => foneMeta(f.celular));
+  const acharFunc = (em: string, nome: string) =>
+    funcs.find((f) => String(f.email || "").toLowerCase().trim() === em) ||
+    (nome && nome !== em ? funcs.find((f) => semAcento(f.nome) === semAcento(nome)) : undefined);
+
+  const temWhats = cfg.ativo !== false && !!(String(cfg.meta_token || "").trim() && String(cfg.meta_phone_id || "").trim());
+  const organizador = String(e.organizador || e.criado_por || "").trim();
+  const resultado: Linha[] = [], registros: Linha[] = [];
+  for (const x of plano) {
+    const f = acharFunc(x.email, x.nome);
+    const fone = f ? foneMeta(f.celular) : "";
+    const nomeMsg = primeiroNome(f?.nome || x.nome.split("@")[0]);
+    const r: Linha = { nome: f?.nome || x.nome, email: x.email, tipo: x.tipo, whatsapp: "" };
+    if (!fone) r.whatsapp = "sem celular na ficha";
+    else if (!temWhats) r.whatsapp = cfg.ativo === false ? "WhatsApp desligado (Cronograma → ⚙️ WhatsApp)" : "WhatsApp (Meta) não configurado";
+    else {
+      let erro: string | null;
+      try { erro = await enviarWhatsEsc(cfg, fone, x.tipo, nomeMsg, d, organizador); } catch (er) { erro = String((er as Error).message || er).slice(0, 300); }
+      r.whatsapp = erro ? "erro: " + erro : "ok";
+      registros.push({ evento_id: e.id, email: x.email, nome: r.nome, tipo: x.tipo, canal: "whatsapp", destino: fone, ok: !erro, erro, assinatura, enviado_por: quem });
+    }
+    resultado.push(r);
+  }
+  if (registros.length) {
+    const { error } = await adm.from("agenda_escritorio_avisos").insert(registros);
+    if (error) console.warn("agenda_escritorio_avisos", error.message);
+  }
+  const enviados = resultado.filter((r) => r.whatsapp === "ok").length;
+  return json({ ok: true, enviados, total: resultado.length, resultado, sem_modelo: temWhats && !String(cfg.meta_modelo || "").trim() });
+}
+
 // ------------------------------------------------------------------ envios
 async function enviarWhats(cfg: Linha, fone: string, tipo: Tipo, nome: string, d: Det): Promise<string | null> {
   const modelo = String(cfg.meta_modelo || "").trim();
@@ -201,6 +330,9 @@ Deno.serve(async (req) => {
       const erro = await enviarWhats(cfg, fone, "convocacao", primeiroNome(perfil.nome || ""), d);
       return erro ? json({ erro: "A Meta recusou: " + erro }, 400) : json({ ok: true, sem_modelo: !String(cfg.meta_modelo || "").trim() });
     }
+
+    // v53: evento do escritório → WhatsApp dos convidados
+    if (p.escritorio_id) return await avisarEscritorio(adm, p, quem, await lerConfig());
 
     // 2. a alocação e o que já foi avisado
     const { data: l } = await adm.from("cronograma").select("*").eq("id", String(p.cronograma_id || "")).maybeSingle();
