@@ -2494,15 +2494,16 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
 <div class="modal-overlay" id="modal-wa-conv">
   <div class="modal">
     <h2>⚙️ WhatsApp da convocação</h2>
-    <p class="modal-sub">Quando uma alocação é salva, cada funcionário da equipe recebe a convocação no celular cadastrado na ficha (RH → ficha → Dados), pela <strong>API oficial do WhatsApp (Meta)</strong>, e também por e-mail. Esta configuração é só do Cronograma: o lembrete de pagamentos continua em Financeiro → ⚙️ WhatsApp. Os dados ficam guardados só no banco (só o Administrador vê).</p>
+    <p class="modal-sub">Quando uma alocação é salva, cada funcionário da equipe recebe a convocação no celular cadastrado na ficha (RH → ficha → Dados), pela <strong>API oficial do WhatsApp (Meta)</strong>, e também por e-mail. Os eventos do escritório (🏢) usam este mesmo número para avisar os convidados que marcarem a opção do WhatsApp. Esta configuração é só do Cronograma: o lembrete de pagamentos continua em Financeiro → ⚙️ WhatsApp. Os dados ficam guardados só no banco (só o Administrador vê).</p>
     <div class="form-grid">
-      <div class="campo full campo-check"><input type="checkbox" id="wc-ativo"><label for="wc-ativo">Mandar a convocação pelo WhatsApp (desligado = só por e-mail)</label></div>
+      <div class="campo full campo-check"><input type="checkbox" id="wc-ativo"><label for="wc-ativo">Mandar a convocação e os eventos do escritório pelo WhatsApp (desligado = só por e-mail / Outlook)</label></div>
       <div class="campo"><label>Token de acesso *</label><input type="password" id="wc-token" autocomplete="off"></div>
       <div class="campo"><label>ID do número (Phone number ID) *</label><input type="text" id="wc-phone"></div>
       <div class="campo"><label>Nome do modelo aprovado</label><input type="text" id="wc-modelo" placeholder="ex.: convocacao_cronograma"></div>
       <div class="campo"><label>Idioma do modelo</label><input type="text" id="wc-idioma" placeholder="pt_BR"></div>
       <div class="campo full"><div class="info-box" style="display:block;line-height:1.6">Crie na Meta um modelo da categoria <strong>Utilidade</strong> com 7 variáveis, por exemplo:<br>
         <code>Grupo BVEK — {{1}}<br>Olá, {{2}}!<br>Data: {{3}}<br>Horário: {{4}}<br>Local: {{5}}<br>Serviço: {{6}}<br>Observações: {{7}}<br>Em caso de dúvida, fale com o escritório.</code><br>
+        Nos eventos do escritório, {{6}} recebe o assunto e {{7}} a pauta.<br>
         Sem modelo aprovado, a Meta só entrega a mensagem a quem mandou mensagem para o número da empresa nas últimas 24 horas.</div></div>
       <div class="campo"><label>Celular para o teste</label><input type="tel" id="wc-teste" placeholder="(21) 99999-9999" oninput="mascaraTel(this)"></div>
     </div>
@@ -2529,8 +2530,11 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
         <input type="search" id="esc-conv-busca" placeholder="Buscar pessoa" oninput="renderConvidadosEsc($('modal-escritorio').classList.contains('so-leitura'),null)" style="margin-bottom:6px">
         <div class="crg-equipe" id="esc-convidados"></div></div>
       <div class="campo full"><label>Descrição / pauta</label><textarea id="esc-desc" rows="3"></textarea></div>
+      <div class="campo full so-edicao"><div class="campo-check"><input type="checkbox" id="esc-whats"><label for="esc-whats">📲 Avisar os convidados também pelo WhatsApp ao salvar (📱 = tem celular na ficha): quem entrou recebe o convite, quem já sabia recebe só se algo mudar, quem saiu recebe o cancelamento</label></div></div>
+      <div class="campo full" id="esc-avisos-box" style="display:none"><label>Avisos no WhatsApp</label><div id="esc-avisos"></div></div>
     </div>
     <div class="modal-btns">
+      <button class="btn-sec" id="esc-btn-whats" style="display:none" onclick="reenviarWhatsEscritorio()" title="Avisa no WhatsApp os convidados que ainda não sabem (ou manda de novo a todos)">📲 Avisar no WhatsApp</button>
       <button class="btn-excluir so-edicao" id="esc-btn-cancelar" style="display:none" onclick="cancelarEventoEscritorio()">Cancelar evento</button>
       <button class="btn-cancelar" onclick="fecharModal('modal-escritorio')">Fechar</button>
       <button class="btn-salvar so-edicao" id="esc-btn-salvar" onclick="salvarEventoEscritorio()">Salvar</button>
@@ -8741,7 +8745,7 @@ async function sincronizarOutlook(silencioso){
 /* ================= v45: AGENDA DO ESCRITÓRIO (caixa agenda@bvek.com.br no Microsoft 365) ================= */
 // Eventos do escritório ficam na tabela agenda_escritorio, separados do cronograma: NÃO entram na folha.
 const CAIXA_ESCRITORIO='agenda@bvek.com.br';
-let v45Ok=true,agendaMes=[],agendaProx=[],cronoHoje=[],pessoasAgenda=null,escEditId=null,escConvidados=new Set(),escSincronizando=false;
+let v45Ok=true,agendaMes=[],agendaProx=[],cronoHoje=[],pessoasAgenda=null,escEditId=null,escConvidados=new Set(),escSincronizando=false,escAvisos=[];
 const escSincronizados=new Set();
 const FUSO_BR='America/Sao_Paulo';
 function diaBR(ts){return new Intl.DateTimeFormat('en-CA',{timeZone:FUSO_BR,year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(ts));}
@@ -8885,10 +8889,14 @@ async function abrirEventoEscritorio(id=null,dia=null){
     :`${e.situacao==='cancelado'?'<span class="badge badge-cinza">cancelado</span> ':''}Marcado ${e.criado_por&&e.criado_por!=='Outlook'?'no CRM por <strong>'+esc(e.criado_por)+'</strong>':'na agenda do escritório'} · Outlook: ${statusOutlookEsc(e)}`;
   $('esc-btn-cancelar').style.display=e&&!doOutlook&&e.situacao==='ativo'?'':'none';
   $('esc-btn-salvar').textContent=e&&e.situacao==='cancelado'?'Reativar e salvar':'Salvar';
+  // v53: WhatsApp dos convidados
+  escAvisos=[];$('esc-whats').checked=false;$('esc-avisos-box').style.display='none';
+  $('esc-btn-whats').style.display=e&&e.situacao==='ativo'?'':'none';
   mudouDiaInteiroEsc();
   modoLeitura('modal-escritorio',doOutlook);
   abrirModal('modal-escritorio');
   await carregarPessoasAgenda();renderConvidadosEsc(doOutlook,e);
+  if(e)await renderAvisosEsc(e.id);
 }
 function mudouDiaInteiroEsc(){const di=$('esc-dia-inteiro').checked;['esc-hini','esc-hfim'].forEach(i=>$(i).style.display=di?'none':'');}
 function renderConvidadosEsc(trava,e){
@@ -8898,7 +8906,7 @@ function renderConvidadosEsc(trava,e){
   ((e&&e.participantes)||[]).forEach(p=>{const em=String(p.email||'').toLowerCase();if(em&&!lista.some(x=>x.email===em))lista.push({nome:p.nome||em,email:em});});
   escConvidados.forEach(em=>{if(!lista.some(x=>x.email===em))lista.push({nome:em,email:em});});
   const vis=lista.filter(p=>!busca||norm(p.nome+' '+p.email).includes(busca));
-  box.innerHTML=vis.length?vis.map(p=>`<label><input type="checkbox" data-conv="${esc(p.email)}" ${escConvidados.has(p.email)?'checked':''} ${trava?'disabled':''}>${esc(p.nome)} <span class="dica" style="margin:0">${esc(p.email)}</span></label>`).join(''):'<p class="vazio">Ninguém encontrado.</p>';
+  box.innerHTML=vis.length?vis.map(p=>`<label><input type="checkbox" data-conv="${esc(p.email)}" ${escConvidados.has(p.email)?'checked':''} ${trava?'disabled':''}>${esc(p.nome)}${p.tem_celular?' <span title="tem celular na ficha: pode receber no WhatsApp">📱</span>':''} <span class="dica" style="margin:0">${esc(p.email)}</span></label>`).join(''):'<p class="vazio">Ninguém encontrado.</p>';
   box.querySelectorAll('[data-conv]').forEach(c=>c.onchange=()=>{c.checked?escConvidados.add(c.dataset.conv):escConvidados.delete(c.dataset.conv);});
 }
 function marcarTodosEsc(){(pessoasAgenda||[]).forEach(p=>escConvidados.add(p.email));renderConvidadosEsc(false,null);}
@@ -8916,6 +8924,7 @@ async function salvarEventoEscritorio(){
   const antNomes=Object.fromEntries(((ant&&ant.participantes)||[]).map(p=>[String(p.email||'').toLowerCase(),p.nome]));
   const dados={titulo:tit,inicio,fim,dia_inteiro:di,local:$('esc-local').value.trim()||null,descricao:$('esc-desc').value.trim()||null,
     participantes:[...escConvidados].map(em=>({nome:nomes[em]||antNomes[em]||em,email:em})),situacao:'ativo',atualizado_em:new Date().toISOString()};
+  const whats=$('esc-whats').checked;
   const btn=$('esc-btn-salvar');btn.disabled=true;
   try{
     let id=escEditId;
@@ -8927,15 +8936,18 @@ async function salvarEventoEscritorio(){
     }
     fecharModal('modal-escritorio');
     await enviarEventoEscritorio(id,'salvo');
+    if(whats)await avisarWhatsEscritorio(id);
     await recarregarAgendas();
   }finally{btn.disabled=false;}
 }
 async function cancelarEventoEscritorio(){
   if(!PERM.cronograma||!escEditId)return;
-  if(!confirm('Cancelar este evento? Ele sai da agenda do escritório e os convidados recebem o cancelamento. Nada é apagado no CRM.'))return;
+  const avisadosWhats=escAvisos.some(a=>a.ok&&a.tipo!=='cancelamento');
+  if(!confirm('Cancelar este evento? Ele sai da agenda do escritório e os convidados recebem o cancelamento'+(avisadosWhats?' (no Outlook e no WhatsApp)':'')+'. Nada é apagado no CRM.'))return;
   const{error}=await sb.from('agenda_escritorio').update({situacao:'cancelado',atualizado_em:new Date().toISOString()}).eq('id',escEditId);if(erroSB(error))return;
   fecharModal('modal-escritorio');
   await enviarEventoEscritorio(escEditId,'cancelado');
+  if(avisadosWhats)await avisarWhatsEscritorio(escEditId);
   await recarregarAgendas();
 }
 async function enviarEventoEscritorio(id,oque){
@@ -8944,6 +8956,48 @@ async function enviarEventoEscritorio(id,oque){
     if(error||!data||!data.ok){const m=await erroDaFuncao(error,data);console.warn('Agenda do escritório',m);toast(`Evento ${oque} no CRM — ⚠️ não foi para o Outlook: `+m.slice(0,90));return;}
     toast(data.feito==='cancelado'?'Evento cancelado — os convidados recebem o aviso':'Evento salvo na agenda do escritório — os convidados recebem o convite');
   }catch(e){console.warn(e);toast(`Evento ${oque} no CRM — ⚠️ não foi para o Outlook`);}
+}
+/* v53: evento do escritório → aviso no WhatsApp dos convidados (função "convocacao", mesmo número da Meta).
+   O servidor decide: quem entrou recebe o convite, quem já sabia recebe só se algo mudou, quem saiu recebe o cancelamento. */
+const TIPO_ESC={convite:'convite',alteracao:'alteração',cancelamento:'cancelamento'};
+async function avisarWhatsEscritorio(id,reenviar=false){
+  try{
+    const{data,error}=await sb.functions.invoke('convocacao',{body:{escritorio_id:id,reenviar}});
+    if(error||!data||!data.ok){
+      let m=(data&&data.erro)||'',st=0;
+      if(!m&&error){try{st=error.context&&error.context.status||0;const j=await error.context.json();m=j.erro||'';}catch(e){}m=m||error.message||'erro';}
+      if(st===404&&!/não encontrado/i.test(m)||/Failed to send|FunctionsFetchError|FunctionsRelayError/i.test(m))m='a função "convocacao" não está publicada (ou está desatualizada) no Supabase (Edge Functions → convocacao, com o conteúdo de supabase/functions/convocacao/index.ts).';
+      console.warn('WhatsApp do escritório',m);alert('O evento foi salvo, mas os convidados NÃO foram avisados no WhatsApp:\n'+m);return null;}
+    if(data.pulado){if(reenviar||/terminou/.test(data.pulado))toast(data.pulado);return data;}
+    const r=data.resultado||[],ok=r.filter(x=>x.whatsapp==='ok'),falhas=r.filter(x=>x.whatsapp!=='ok');
+    if(!falhas.length)toast(`📲 WhatsApp enviado: ${ok.map(x=>`${nomeCurtoTxt(x.nome)} (${TIPO_ESC[x.tipo]||x.tipo})`).join(', ')}`);
+    else alert(`WhatsApp do evento — ${data.enviados} de ${data.total} pessoa(s) receberam:\n\n`+r.map(x=>`• ${x.nome} (${TIPO_ESC[x.tipo]||x.tipo}): ${x.whatsapp}`).join('\n')+
+      (falhas.some(x=>/sem celular/.test(x.whatsapp))?'\n\nQuem está "sem celular na ficha": cadastre o celular em RH → ficha → Dados (a ficha precisa ter o mesmo e-mail ou o mesmo nome do acesso ao CRM) e use “📲 Avisar no WhatsApp” no evento.':''));
+    if(data.sem_modelo)console.warn('WhatsApp sem modelo aprovado: a Meta só entrega a quem falou com o número nas últimas 24h.');
+    return data;
+  }catch(e){console.warn(e);alert('O evento foi salvo, mas o aviso no WhatsApp falhou: '+(e.message||e));return null;}
+}
+async function reenviarWhatsEscritorio(){
+  const id=escEditId;if(!id)return;
+  const b=$('esc-btn-whats');b.disabled=true;
+  try{
+    const d=await avisarWhatsEscritorio(id);
+    if(d&&d.pulado&&/já estavam avisados/.test(d.pulado)&&confirm('Todos os convidados já foram avisados no WhatsApp e nada mudou.\n\nMandar o convite de novo para TODOS os convidados?'))await avisarWhatsEscritorio(id,true);
+    else if(d&&d.pulado)toast(d.pulado);
+    await renderAvisosEsc(id);
+  }finally{b.disabled=false;}
+}
+async function renderAvisosEsc(id){
+  const{data,error}=await sb.rpc('bvek_escritorio_avisos',{p_id:id});
+  if(escEditId!==id)return;
+  const box=$('esc-avisos-box');
+  if(error){escAvisos=[];if(/bvek_escritorio_avisos|schema cache|does not exist|Could not find/i.test(error.message||'')){box.style.display='';$('esc-avisos').innerHTML='<p class="dica">Para avisar no WhatsApp, rode antes a migração <strong>v53</strong> no Supabase (<code>supabase/migracao_crm_v53_escritorio_whatsapp.sql</code>).</p>';}return;}
+  escAvisos=data||[];
+  if(escAvisos.some(a=>a.ok&&a.tipo!=='cancelamento')&&!$('esc-whats').disabled)$('esc-whats').checked=true;
+  if(!escAvisos.length){box.style.display='none';return;}
+  const porEmail=new Map();escAvisos.forEach(a=>{if(!porEmail.has(a.email))porEmail.set(a.email,a);});
+  box.style.display='';
+  $('esc-avisos').innerHTML='<div class="sub-lista">'+[...porEmail.values()].map(a=>`<div class="sub-item"><span><strong>${esc(a.nome||a.email)}</strong> · ${esc(TIPO_ESC[a.tipo]||a.tipo)} · ${esc(fmtDataHora(a.enviado_em))}${a.enviado_por?' por '+esc(a.enviado_por):''}</span><span>${a.ok?'<span class="badge badge-ok">📱 WhatsApp ✓</span>':`<span class="badge badge-atraso" title="${esc(a.erro||'')}">📱 WhatsApp: erro</span>`}</span></div>`).join('')+'</div>';
 }
 async function recarregarAgendas(){
   await carregarAgendaPainelSemSync();
