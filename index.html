@@ -507,7 +507,7 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
     </div>
     <div id="cc-conteudo">
     <div class="cc-ola"><h2 id="cc-nome">Meus contracheques</h2><p id="cc-dica">Toque em <strong>Abrir</strong> para ver o contracheque do mês ou em <strong>Baixar</strong> para salvar o PDF.</p></div>
-    <div class="cc-abas"><button id="cc-aba-cc" class="ativo" onclick="ccAba('cc')">📄 Contracheques</button><button id="cc-aba-ponto" onclick="ccAba('ponto')">🕒 Meu ponto</button><button id="cc-aba-avisos" onclick="ccAba('avisos')">📢 Avisos</button><button id="cc-aba-premios" onclick="ccAba('premios')">🏆 Premiações</button><button id="cc-aba-politicas" onclick="ccAba('politicas')">📘 Políticas</button><button id="cc-aba-denuncia" onclick="ccAba('denuncia')">🛡️ Denúncias</button></div>
+    <div class="cc-abas"><button id="cc-aba-cc" class="ativo" onclick="ccAba('cc')">📄 Contracheques</button><button id="cc-aba-ponto" onclick="ccAba('ponto')">🕒 Meu ponto</button><button id="cc-aba-avisos" onclick="ccAba('avisos')">📢 Avisos</button><button id="cc-aba-premios" onclick="ccAba('premios')">🏆 Premiações</button><button id="cc-aba-politicas" onclick="ccAba('politicas')">📘 Políticas</button><button id="cc-aba-denuncia" onclick="ccAba('denuncia')">🛡️ Denúncias</button><button id="cc-aba-diario" onclick="ccAba('diario')" style="display:none">📒 Diário de obra</button></div>
     <div class="cc-lista" id="cc-lista"><div class="cc-vazio">Carregando…</div></div>
     <div id="cc-ponto" style="display:none">
       <div class="cc-ola" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><label for="cc-ponto-mes" style="font-size:13px;font-weight:600">Mês</label><select id="cc-ponto-mes" onchange="carregarMeuPonto()" style="padding:8px;border:1.5px solid var(--borda);border-radius:8px;font-size:14px"></select><span id="cc-ponto-per" style="font-size:12px;color:var(--texto2)"></span></div>
@@ -515,6 +515,7 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
       <div id="cc-ponto-ass"></div>
     </div>
     <div id="cc-avisos" class="cc-lista" style="display:none"></div>
+    <div id="cc-diario" style="display:none"></div>
     <div id="cc-premios" class="cc-lista" style="display:none"></div>
     <!-- v42: políticas da empresa (o RH edita na aba RH → Políticas) -->
     <div id="cc-politicas" class="cc-lista" style="display:none"></div>
@@ -581,6 +582,7 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
     <div class="tab" data-tab="clientes" data-comercial>Clientes</div>
     <div class="tab" data-tab="projetos" data-comercial>Projetos</div>
     <div class="tab" data-tab="cronograma" id="tab-btn-cronograma" style="display:none">Cronograma</div>
+    <div class="tab" data-tab="diario" id="tab-btn-diario" style="display:none">Diário de obra <span id="tab-diario-badge"></span></div>
     <div class="tab" data-tab="fornecedores" data-comercial>Fornecedores</div>
     <div class="tab" data-tab="inventario" data-comercial>Inventário <span id="tab-inv-badge"></span></div>
     <div class="tab" data-tab="documentos">Documentos <span id="tab-docs-badge"></span></div>
@@ -723,6 +725,33 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
       <div class="tabela-wrap rolagem"><table class="tabela" id="tabela-projetos"></table></div>
     </div>
 
+
+    <!-- DIÁRIO DE OBRA (v51): um diário por projeto e dia com equipe no Cronograma; o encarregado preenche pelo celular -->
+    <div id="tab-diario" style="display:none">
+      <div class="barra-acoes">
+        <h2>Diário de obra</h2>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn-sec" onclick="abrirRelatorioDiario()">📄 Relatório para o cliente</button>
+          <button class="btn-novo" onclick="novoDiarioAvulso()">+ Diário avulso</button>
+        </div>
+      </div>
+      <div class="info-box" id="dio-info" style="display:block;line-height:1.5"></div>
+      <div class="filtros">
+        <select id="dio-projeto" onchange="renderDiarios()"></select>
+        <label class="dica" style="margin:0">de</label><input type="date" id="dio-ini" onchange="abrirDiarios()">
+        <label class="dica" style="margin:0">até</label><input type="date" id="dio-fim" onchange="abrirDiarios()">
+        <select id="dio-sit" onchange="renderDiarios()">
+          <option value="">Todas as situações</option>
+          <option value="pendente">⏳ Pendentes (sem preenchimento)</option>
+          <option value="preenchido">✍️ Preenchidos (falta conferir)</option>
+          <option value="fechado">✅ Fechados</option>
+          <option value="divergencia">⚠️ Com divergência da OS</option>
+          <option value="cancelado">Cancelados</option>
+        </select>
+        <span class="dica" id="dio-cont" style="margin:0"></span>
+      </div>
+      <div class="tabela-wrap"><table class="tabela" id="tabela-diarios"></table></div>
+    </div>
     <!-- CRONOGRAMA (v41): funcionários alocados por projeto/cliente, ligado ao Outlook e à folha do mês -->
     <div id="tab-cronograma" style="display:none">
       <div class="barra-acoes">
@@ -956,6 +985,7 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
         <span class="dica" id="doc-contagem"></span>
       </div>
       <div class="tabela-wrap"><table class="tabela" id="tabela-docs"></table></div>
+      <div id="docs-sp"></div>
     </div>
 
     <!-- v34: barra do grupo RH (funcionários, benefícios, vales, contracheques, envio, comunicação, ponto, currículos) -->
@@ -1345,6 +1375,7 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
       <button class="btn-versao so-edicao" id="btn-versao" style="display:none" onclick="criarNovaVersao()">+ Nova versão</button>
       <button class="btn-projeto so-edicao" id="btn-projeto" style="display:none" onclick="abrirModalProjeto(null,cardEditandoId)">Gerar projeto</button>
       <button class="btn-pdf" id="btn-pdf" style="display:none" onclick="gerarPDF()">📄 Gerar Proposta</button>
+      <button class="btn-sec so-edicao" id="btn-os-det" style="display:none" onclick="abrirOSDetalhe()" title="O que a equipe precisa saber para executar: condições do local, o que está e o que não está incluído, como deve ficar no final (só sai na OS)">🧭 Detalhar execução (OS)</button>
       <button class="btn-pdf" id="btn-os" style="display:none;background:var(--verde)" onclick="gerarOS()" title="Ordem de serviço para a equipe, montada a partir da proposta (sem valores)">📋 Ordem de Serviço</button>
       <button class="btn-cancelar" onclick="fecharModal('modal-card')">Cancelar</button>
       <button class="btn-salvar so-edicao" id="btn-salvar-card" onclick="salvarCard()">Salvar</button>
@@ -2371,6 +2402,60 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
   </div>
 </div>
 <!-- MODAL ALOCAÇÃO DO CRONOGRAMA (v41) -->
+<!-- v51: DETALHE DA EXECUÇÃO (sai só na Ordem de Serviço) -->
+<div class="modal-overlay" id="modal-os-det">
+  <div class="modal" style="max-width:860px">
+    <h2>🧭 Detalhar a execução — Ordem de Serviço</h2>
+    <p class="modal-sub">O que a equipe precisa saber para executar <strong>exatamente o combinado</strong>. Sai só na OS (não aparece na proposta) e vira o checklist do Diário de obra. O que ficar em branco sai na OS como <strong>“⚠️ não informado — confirmar com o responsável antes de começar”</strong>.</p>
+    <div class="form-grid">
+      <div class="campo full"><label>Condições encontradas no local (vistoria)</label><textarea id="osd-condicoes" rows="3" placeholder="Ex.: parede de alvenaria de 15 cm até a laje. Lado A tem forro de gesso a 2,60 m; lado B laje aparente a 3,10 m. Há tomada e interruptor embutidos na parede."></textarea></div>
+      <div class="campo"><label>O que está incluído</label><textarea id="osd-incluido" rows="3" placeholder="Ex.: demolição da parede inteira, do piso até a laje; retirada do entulho; regularização do piso."></textarea></div>
+      <div class="campo"><label>O que NÃO está incluído</label><textarea id="osd-nao" rows="3" placeholder="Ex.: recomposição do forro; pintura; remanejamento elétrico."></textarea></div>
+      <div class="campo full"><label>Como deve ficar no final (critério de aceite)</label><textarea id="osd-final" rows="3" placeholder="Ex.: sem nenhum resto de alvenaria acima do forro nem preso à laje; vão livre do piso à laje; área limpa."></textarea></div>
+      <div class="campo full"><label>Pare e consulte o responsável antes de seguir, se…</label><textarea id="osd-parada" rows="3" placeholder="Ex.: o forro e a laje estiverem em alturas diferentes; aparecer viga, pilar, tubulação ou fiação; o cliente pedir algo fora desta OS."></textarea></div>
+      <div class="campo full"><label>Segurança (riscos e cuidados)</label><textarea id="osd-seguranca" rows="2" placeholder="Ex.: nunca deixar alvenaria solta ou em balanço (“bandeira”); isolar a área; EPI: capacete, óculos, luvas, máscara."></textarea></div>
+      <div class="campo"><label>Responsável técnico pela OS</label><input type="text" id="osd-resp" placeholder="Nome"></div>
+      <div class="campo"><label>Contato do responsável (para dúvidas na obra)</label><input type="text" id="osd-contato" placeholder="(21) 99999-9999"></div>
+      <div class="campo full"><label>Como executar / como deve ficar — item a item</label><div id="osd-itens"></div></div>
+    </div>
+    <div class="modal-btns">
+      <button class="btn-cancelar" onclick="fecharModal('modal-os-det')">Fechar</button>
+      <button class="btn-sec" onclick="salvarOSDetalhe(true)">Salvar e gerar a OS</button>
+      <button class="btn-salvar" onclick="salvarOSDetalhe(false)">Salvar</button>
+    </div>
+  </div>
+</div>
+<!-- v51: DIÁRIO DE OBRA (um dia de um projeto) -->
+<div class="modal-overlay" id="modal-diario">
+  <div class="modal" style="max-width:900px">
+    <h2 id="dio-m-titulo">Diário de obra</h2>
+    <p class="modal-sub" id="dio-m-sub"></p>
+    <div class="info-box" id="dio-m-status" style="display:none;line-height:1.5"></div>
+    <div id="dio-m-corpo"></div>
+    <div class="modal-btns">
+      <button class="btn-excluir" id="dio-m-reabrir" style="display:none" onclick="fecharDiario(false)">Reabrir</button>
+      <button class="btn-sec" id="dio-m-pdf" onclick="pdfDiarioDia()">📄 PDF do dia</button>
+      <button class="btn-cancelar" onclick="fecharModal('modal-diario')">Fechar</button>
+      <button class="btn-sec" id="dio-m-fechar" style="display:none" onclick="fecharDiario(true)" title="Conferido pelo escritório: o diário fica travado">✅ Conferir e fechar o dia</button>
+      <button class="btn-salvar" id="dio-m-salvar" onclick="salvarDiario()">Salvar</button>
+    </div>
+  </div>
+</div>
+<!-- v51: RELATÓRIO DOS SERVIÇOS (para o cliente) -->
+<div class="modal-overlay" id="modal-diario-rel">
+  <div class="modal">
+    <h2>📄 Relatório dos serviços</h2>
+    <p class="modal-sub">Junta os diários do período num PDF com a identidade da empresa executora, sem valores, com o andamento de cada serviço, as divergências encontradas e o espaço para a ciência do cliente.</p>
+    <div class="form-grid">
+      <div class="campo full"><label>Projeto *</label><select id="dio-r-proj"></select></div>
+      <div class="campo"><label>De *</label><input type="date" id="dio-r-ini"></div>
+      <div class="campo"><label>Até *</label><input type="date" id="dio-r-fim"></div>
+      <div class="campo full campo-check"><input type="checkbox" id="dio-r-fotos" checked><label for="dio-r-fotos">Incluir as fotos</label></div>
+      <div class="campo full campo-check"><input type="checkbox" id="dio-r-sofech"><label for="dio-r-sofech">Só os dias já conferidos e fechados pelo escritório</label></div>
+    </div>
+    <div class="modal-btns"><button class="btn-cancelar" onclick="fecharModal('modal-diario-rel')">Fechar</button><button class="btn-salvar" onclick="gerarRelatorioDiario()">Gerar relatório</button></div>
+  </div>
+</div>
 <div class="modal-overlay" id="modal-alocacao">
   <div class="modal">
     <h2 id="crg-titulo-modal">Nova alocação</h2>
@@ -2747,6 +2832,8 @@ function calcularPermissoes(p){
     // v41: cronograma de funcionários (liga ao Outlook e à folha do mês)
     // v45: todos os perfis do escritório veem, criam e alteram (só o administrador apaga) + agenda do escritório
     cronograma:adm||com||admv||cont,
+    // v51: diário de obra (todos do cronograma preenchem; só administrador e administrativo fecham/reabrem)
+    diarioFechar:adm||admv,
     // v45: o Painel completo (funil, valores, contratos) é só do administrador; os outros veem o Painel da equipe
     painelCompleto:adm};
 }
@@ -3061,6 +3148,7 @@ async function iniciarContracheques(){
   if(precisaPrimeiroAcesso()){mostrarPrimeiroAcesso();return;}
   $('cc-primeiro').style.display='none';$('cc-conteudo').style.display='';
   mostrarBotaoAvisos();
+  carregarMeusDiarios(false);
   const[n,l]=await Promise.all([sb.rpc('bvek_meu_nome_funcionario'),sb.rpc('bvek_meus_contracheques')]);
   const nome=(n&&n.data)||meuPerfil.nome||'';
   $('cc-nome').dataset.nome=nome||'';
@@ -3079,12 +3167,13 @@ async function iniciarContracheques(){
 // v28: o funcionário também vê as próprias marcações do ponto (Secullum), período de 26 a 25
 // v30: 3 abas (contracheques, ponto com assinatura do mês, avisos/comunicados)
 function ccAba(a){
-  ['cc','ponto','avisos','premios','politicas','denuncia'].forEach(k=>$('cc-aba-'+k).classList.toggle('ativo',k===a));
+  ['cc','ponto','avisos','premios','politicas','denuncia','diario'].forEach(k=>$('cc-aba-'+k).classList.toggle('ativo',k===a));
+  $('cc-diario').style.display=a==='diario'?'':'none';if(a==='diario')renderMeusDiarios();
   $('cc-lista').style.display=a==='cc'?'':'none';$('cc-ponto').style.display=a==='ponto'?'':'none';$('cc-avisos').style.display=a==='avisos'?'':'none';$('cc-premios').style.display=a==='premios'?'':'none';
   $('cc-politicas').style.display=a==='politicas'?'':'none';$('cc-denuncia').style.display=a==='denuncia'?'':'none';
   if(a==='premios')carregarMinhasPremiacoes();
   if(a==='politicas')carregarMinhasPoliticas();
-  $('cc-dica').innerHTML=a==='politicas'?'As políticas e regras da empresa. Toque no título para ler.':a==='denuncia'?'Canal anônimo: o que você escrever aqui vai direto para o RH, sem o seu nome.':a==='premios'?'Premiações e valores extras que você recebeu. Confira e <strong>assine a declaração</strong> de recebimento.':a==='ponto'?'Suas marcações de entrada e saída, como estão no ponto (Secullum). O mês vai do dia 26 do mês anterior ao dia 25. Confira e <strong>assine</strong> no fim da página. Se algo estiver errado, marque “não concordo” e explique.'
+  $('cc-dica').innerHTML=a==='diario'?'Diário de obra dos serviços em que você está alocado. Preencha <strong>todo dia</strong>: o que foi feito, as fotos e, principalmente, <strong>tudo o que estiver diferente da Ordem de Serviço</strong> e quem autorizou.':a==='politicas'?'As políticas e regras da empresa. Toque no título para ler.':a==='denuncia'?'Canal anônimo: o que você escrever aqui vai direto para o RH, sem o seu nome.':a==='premios'?'Premiações e valores extras que você recebeu. Confira e <strong>assine a declaração</strong> de recebimento.':a==='ponto'?'Suas marcações de entrada e saída, como estão no ponto (Secullum). O mês vai do dia 26 do mês anterior ao dia 25. Confira e <strong>assine</strong> no fim da página. Se algo estiver errado, marque “não concordo” e explique.'
     :a==='avisos'?'Comunicados do RH para a equipe.'
     :'Toque em <strong>Abrir</strong> para ver o contracheque do mês ou em <strong>Baixar</strong> para salvar o PDF.';
   if(a==='ponto'&&!$('cc-ponto-mes').options.length){
@@ -3271,7 +3360,7 @@ function aplicarPermissoes(){
   mostra('rh-sub-beneficios',PERM.rh);
   mostra('rh-sub-curriculos',PERM.curriculos);
   mostra('tab-btn-financeiro',PERM.financeiro);
-  mostra('tab-btn-cronograma',PERM.cronograma);
+  mostra('tab-btn-cronograma',PERM.cronograma);mostra('tab-btn-diario',PERM.cronograma);
   mostra('fin-sub-pagamentos',PERM.pagamentos);
   mostra('pg-btn-config',PERM.admin);
   mostra('btn-tipos-benef',PERM.rhEditar);
@@ -3300,6 +3389,7 @@ async function carregarTudo(){
   await carregarEmpresas();
   await Promise.all([carregarClientes(),carregarCards(),carregarAtividades(),carregarProjetos(),carregarPerfis(),carregarDocsTudo(),carregarBeneficiosTudo(),carregarRH(),carregarCurriculos(),carregarFinanceiro(),carregarSaidas(),carregarContratosFixos(),carregarPremiacoes(),carregarFornecedores(),carregarPrecoCfg(),carregarComunicados(),carregarInventario(),carregarPoliticasDenuncias(),carregarAgendaPainel()]);
   atualizarBadgeRH();
+  await carregarDocsSP();carregarDiariosBadge();
   await verificarV24();
   await verificarV34();
   await concluirServicosVencidos();
@@ -3436,6 +3526,7 @@ function abrirTab(tab){
   if(tab==='curriculos'&&!PERM.curriculos)tab='painel';
   if(tab==='financeiro'&&!PERM.financeiro)tab='painel';
   if(tab==='cronograma'&&!PERM.cronograma)tab='painel';
+  if(tab==='diario'&&!PERM.cronograma)tab='painel';
   if(tab==='funil'&&!PERM.funilVer)tab='painel';
   if(!PERM.comercialVer&&['painel','funil','clientes','projetos','fornecedores','inventario','atividades','empresas'].includes(tab))tab='documentos';
   tabAtual=tab;medirTopoFixo();
@@ -3445,13 +3536,13 @@ function abrirTab(tab){
   // v34.2: Benefícios sempre no mesmo mês do RH
   if(grupoRH&&$('rh-mes').value&&$('bn-mes').value!==$('rh-mes').value){$('bn-mes').value=$('rh-mes').value;carregarCompetenciaAtual().then(()=>{if(tabAtual==='beneficios')renderBeneficios();});}
   if(grupoRH)document.querySelectorAll('#rh-subabas .subaba').forEach(s=>s.classList.toggle('ativo',s.dataset.rh===(tab==='rh'?rhSub:tab)));
-  ['painel','documentos','beneficios','rh','curriculos','financeiro','fornecedores','inventario','funil','clientes','projetos','cronograma','atividades','empresas','usuarios'].forEach(t=>{$('tab-'+t).style.display=t===tab?'block':'none';});
+  ['painel','documentos','beneficios','rh','curriculos','financeiro','fornecedores','inventario','funil','clientes','projetos','cronograma','diario','atividades','empresas','usuarios'].forEach(t=>{$('tab-'+t).style.display=t===tab?'block':'none';});
   const marca=grupoRH?'rh':tab==='empresas'?'usuarios':tab;
   document.querySelectorAll('#tabs .tab').forEach(el=>el.classList.toggle('ativo',el.dataset.tab===marca));
   renderTabAtual();
 }
 function renderTabAtual(){
-  ({painel:renderPainel,documentos:renderDocumentos,beneficios:renderBeneficios,rh:renderRH,curriculos:renderCurriculos,financeiro:renderFinanceiro,fornecedores:renderFornecedoresTab,inventario:renderInventario,funil:renderFunil,clientes:renderClientes,projetos:renderProjetos,cronograma:abrirCronograma,atividades:renderAtividades,empresas:renderEmpresas,usuarios:renderUsuarios}[tabAtual]||(()=>{}))();
+  ({painel:renderPainel,documentos:renderDocumentos,beneficios:renderBeneficios,rh:renderRH,curriculos:renderCurriculos,financeiro:renderFinanceiro,fornecedores:renderFornecedoresTab,inventario:renderInventario,funil:renderFunil,clientes:renderClientes,projetos:renderProjetos,cronograma:abrirCronograma,diario:abrirDiarios,atividades:renderAtividades,empresas:renderEmpresas,usuarios:renderUsuarios}[tabAtual]||(()=>{}))();
 }
 function trocarEmpresa(){
   empresaAtual=$('select-empresa').value;
@@ -3940,7 +4031,7 @@ async function abrirModalCard(id=null){
   document.querySelectorAll('#modal-card .campo-preenchido').forEach(e=>e.classList.remove('campo-preenchido'));
   $('card-prob').value='';$('card-origem').value='';$('card-motivo-perda').value='';
   $('card-recorrente').checked=false;$('campo-recorrencia').style.display='none';
-  ['btn-excluir','btn-versao','btn-pdf','btn-os','btn-projeto'].forEach(b=>$(b).style.display='none');
+  ['btn-excluir','btn-versao','btn-pdf','btn-os','btn-os-det','btn-projeto'].forEach(b=>$(b).style.display='none');
   $('etapa-box').style.display='none';$('numero-box').style.display='none';$('perda-box').style.display='none';$('aceite-box').style.display='none';$('card-colinha').innerHTML='';
   $('card-extras').style.display='none';$('novo-contato-box').style.display='none';
   $('cobranca-box').style.display='none';$('card-prox-cobranca').value='';$('cobranca-info').textContent='';
@@ -3953,7 +4044,7 @@ async function abrirModalCard(id=null){
     cardOriginal=card;
     composicaoLocal=card.composicao||null;resumoComposicaoNoCard();
     $('modal-titulo').textContent='Editar Atendimento';
-    ['btn-versao','btn-pdf','btn-os'].forEach(b=>$(b).style.display='inline-block');
+    ['btn-versao','btn-pdf','btn-os','btn-os-det'].forEach(b=>$(b).style.display='inline-block');
     if(!PERM.gerarPDF)$('btn-pdf').style.display='none';
     colinhaCard(card);
     $('btn-excluir').style.display=PERM.excluir?'inline-block':'none';
@@ -4674,9 +4765,12 @@ function renderDocumentos(){
       <td>${esc(titularDoc(d))}${d.funcionario_id&&empresaPorId(d.empresa_id)?`<div style="font-size:12px;color:var(--texto2)">${esc(empresaPorId(d.empresa_id).sigla||'')}</div>`:''}</td>
       <td style="white-space:nowrap">${d.data_validade?esc(fmtData(d.data_validade)):'—'}${d.data_validade&&s.k!=='vencido'&&sit==='vigente'?`<div style="font-size:11px;color:var(--texto2)">aviso ${esc(d.dias_aviso)} dias antes</div>`:''}</td>
       <td>${esc(d.numero||'')}</td><td>${esc(d.responsavel||'')}</td>
-      <td>${d.arquivo?`<a href="#" onclick="abrirArquivoDoc('${esc(d.arquivo)}');return false">📎 abrir</a>`:''}</td></tr>`).join(''):
+      <td style="white-space:nowrap">${d.arquivo?`<a href="#" onclick="abrirArquivoDoc('${esc(d.arquivo)}');event.stopPropagation();return false">📎 abrir</a>`:''}${(()=>{const x=spDoDocumento(d);return x?`${d.arquivo?' · ':''}<a href="${esc(x.url||'#')}" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="Mesmo arquivo, na pasta do funcionário no SharePoint">☁️ SharePoint</a>`:'';})()}</td></tr>`).join(''):
       `<tr><td colspan="7" class="vazio">${todosDocumentos.length?'Nenhum documento com estes filtros.':'Nenhum documento cadastrado ainda.'}</td></tr>`)+'</tbody>';
   ligarCliques($('tabela-docs'));
+  // v51: arquivos das pastas dos funcionários no SharePoint (espelho, sem duplicar)
+  renderDocsSP();
+  if(PERM.rhPessoal&&v51SPOk&&!spSincronizando&&Date.now()-spTentouEm>15*60*1000&&(!spSync||!spSync.ultima_em||Date.now()-new Date(spSync.ultima_em).getTime()>15*60*1000))sincronizarDocsSP(true);
 }
 function opcoesTipos(cat){return todosTipos.filter(t=>t.categoria===cat&&t.ativo!==false).map(t=>[t.id,t.nome]);}
 function titularSelecionado(){return(document.querySelector('input[name=md-titular]:checked')||{}).value||'empresa';}
@@ -4716,7 +4810,7 @@ function sugerirValidadeDoc(){
 function abrirLinkDoc(){let u=$('md-link').value.trim();if(!u){alert('Informe o link.');return;}if(!/^https?:\/\//i.test(u))u='https://'+u;window.open(u,'_blank','noopener');}
 function abrirModalDocumento(id=null){
   if(!v11Ok){avisarMigracaoV11();return;}
-  docEditandoId=id;docRenovandoDe=null;
+  docEditandoId=id;docRenovandoDe=null;spLigarId=null;
   ['md-desc','md-orgao','md-numero','md-emissao','md-validade','md-resp','md-link','md-obs'].forEach(i=>$(i).value='');
   $('md-arquivo').value='';arquivoDocNovo=null;$('md-aviso').value=30;$('md-sem-validade').checked=false;$('md-validade').disabled=false;
   document.querySelectorAll('#modal-documento .campo-preenchido').forEach(e=>e.classList.remove('campo-preenchido'));
@@ -4848,6 +4942,7 @@ async function salvarDocumento(){
       if(funcId&&sg)enviarAoSharePoint({bucket:BUCKET_DOCS,caminho,pasta:sg.pasta,nome:limpo});
     }
     fecharModal('modal-documento');
+    await ligarDocSP(id);
     await carregarDocumentos();atualizarDatalists();renderTabAtual();
     toast(docRenovandoDe||outras.length?'Documento atualizado — a versão anterior foi para o histórico':'Documento salvo');
     docRenovandoDe=null;arquivoDocNovo=null;
@@ -6065,7 +6160,10 @@ async function montarOS(win){
   // v30: itens do inventário separados na proposta
   const{data:invOS}=await sb.from('inventario_os').select('*,inventario_itens(*)').eq('card_id',cardEditandoId);
   const inv=(invOS||[]).filter(x=>x.inventario_itens).map(x=>{const i=x.inventario_itens;return[esc(i.codigo||''),esc(i.nome)+(i.marca_modelo||i.numero_serie?`<br><small>${esc([i.marca_modelo,i.numero_serie&&'série '+i.numero_serie].filter(Boolean).join(' · '))}</small>`:''),esc(i.unidade||''),esc(fmtNum(x.quantidade)),esc(i.localizacao||''),'',''];});
-  const its=(itens||[]).map(i=>[esc(i.item||''),esc(i.descricao||''),esc(i.unidade||''),esc(fmtNum(i.quantidade)),'']);
+  // v51: detalhe da execução (condições do local, incluído / não incluído, como deve ficar, item a item)
+  const det=await lerOSDetalhe(card.id,card.card_pai_id);
+  const sec=secoesOSDetalhe(det&&!det.falta?det:null,itens,br);
+  const its=sec.itens;
   const nomeArquivo=semAcento(`${emp.sigla||'BVK'}-COM-OS-${cli.codigo||'C000'} ${cli.nome||''} ${card.titulo||''} ${num}`).toUpperCase().replace(/[\\/:*?"<>|]/g,' ').replace(/\s+/g,' ').trim();
   const linha=(rot,v)=>v?`<tr><th>${rot}</th><td>${v}</td></tr>`:'';
   const html=`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>${esc(nomeArquivo)}</title>
@@ -6093,7 +6191,8 @@ async function montarOS(win){
     ${linha('Serviço',esc(card.titulo||''))}${linha('Responsável',esc(card.responsavel||''))}
     ${linha('Prazo de execução',card.prazo_execucao_meses?esc('até '+textoPrazo(card.prazo_execucao_meses,card.prazo_execucao_unidade)):'')}${linha('Período e turno',esc(periodo))}</table>
   ${card.escopo?`<h2>Escopo dos serviços</h2><p>${br(card.escopo)}</p>`:''}
-  ${its.length?`<h2>Itens a executar</h2>${tabela(['Item','Descrição','Und','Qtd','Executado ✓'],its)}`:''}
+  ${sec.antes}
+  ${its.length?`<h2>3. Itens a executar — como executar e como deve ficar</h2>${tabela(['Item','Descrição','Und','Qtd','Executado ✓'],its)}`:''}
   ${equipe.length?`<h2>Equipe</h2>${tabela(['Função','Pessoas','Dias'],equipe)}`:''}
   ${mats.length?`<h2>Materiais</h2>${tabela(['Material','Und','Qtd prevista','Qtd usada'],mats)}`:''}
   ${inv.length?`<h2>Materiais e equipamentos do inventário</h2>${tabela(['Código','Item','Und','Qtd','Retirar em','Saiu ✓','Voltou ✓'],inv)}`:''}
@@ -6101,7 +6200,9 @@ async function montarOS(win){
   ${ters.length?`<h2>Serviços de terceiros</h2>${tabela(['Serviço'],ters)}`:''}
   ${docs.length?`<h2>Documentação exigida</h2>${tabela(['Documento / exigência','Qtd','Entregue ✓'],docs)}`:''}
   ${(card.observacoes||cp&&cp.obs||card.nota1||card.nota2)?`<h2>Observações</h2>${card.observacoes?`<p>${br(card.observacoes)}</p>`:''}${cp&&cp.obs?`<p>${br(cp.obs)}</p>`:''}${card.nota1?`<p><strong>Nota 1:</strong> ${esc(card.nota1)}</p>`:''}${card.nota2?`<p><strong>Nota 2:</strong> ${esc(card.nota2)}</p>`:''}`:''}
+  ${sec.final}
   <h2>Execução</h2>
+  <p style="margin:2px 0 6px">Registre <strong>cada dia</strong> no Diário de obra do CRM (celular → 📒 Diário de obra): o que foi feito, fotos e <strong>tudo o que for diferente desta OS, com o nome de quem autorizou</strong>.</p>
   <table class="dados"><tr><th>Início</th><td>____/____/______ às ____:____</td></tr><tr><th>Término</th><td>____/____/______ às ____:____</td></tr><tr><th>Encarregado</th><td></td></tr></table>
   <div class="grade2" style="margin-top:8px"><div><strong>Ocorrências</strong><div class="campo-livre"></div></div><div><strong>Pendências</strong><div class="campo-livre"></div></div></div>
   <div class="assin"><div>Encarregado / responsável pela execução<br><small>${esc(emp.nome||'')}</small></div><div>${esc(quem.nome||'Cliente')} — aceite do serviço<br><small>${esc(nomeCliente)} · data ____/____/______</small></div></div>
@@ -6110,6 +6211,658 @@ async function montarOS(win){
   win.document.open();win.document.write(html);win.document.close();
   imprimirQuandoCarregar(win);
   toast('Ordem de serviço gerada a partir da proposta');
+}
+
+/* ================= v51: ORDEM DE SERVIÇO DETALHADA ================= */
+// Detalhe da execução (só sai na OS, nunca na proposta): condições do local, incluído / não incluído,
+// como deve ficar no final, quando parar e consultar, segurança e o "como executar" de cada item.
+// Os itens são regravados a cada salvamento da proposta, por isso a chave é número + descrição.
+const MSG_V51='Rode antes a migração v51 (supabase/migracao_crm_v51_os_detalhada_diario_obra_sharepoint.sql) no Supabase.';
+const faltaV51=e=>e&&/os_detalhes|diarios_obra|documentos_sharepoint|sharepoint_sync|bvek_diarios_gerar|bvek_os_do_projeto|bvek_meus_diarios|bvek_diario_salvar|schema cache|does not exist|Could not find/i.test(e.message||'');
+function chaveItemOS(item,desc){const l=t=>semAcento(String(t||'').toLowerCase()).replace(/[^a-z0-9]/g,'');return l(item)+'|'+l(desc);}
+let osDetItens=[];
+async function lerOSDetalhe(cardId,paiId){
+  const ids=[cardId,paiId].filter(Boolean);
+  const{data,error}=await sb.from('os_detalhes').select('*').in('card_id',ids);
+  if(error){if(faltaV51(error))return{falta:true};console.warn(error);return{};}
+  return(data||[]).find(x=>x.card_id===cardId)||(data||[])[0]||{};
+}
+async function abrirOSDetalhe(){
+  if(!cardEditandoId)return;
+  const d=await lerOSDetalhe(cardEditandoId,cardOriginal&&cardOriginal.card_pai_id);
+  if(d.falta){alert(MSG_V51);return;}
+  const{data:itens}=await lerItens(cardEditandoId);osDetItens=itens||[];
+  [['osd-condicoes','condicoes_local'],['osd-incluido','incluido'],['osd-nao','nao_incluido'],['osd-final','resultado_final'],['osd-parada','pontos_parada'],['osd-seguranca','seguranca'],['osd-resp','responsavel_tecnico'],['osd-contato','contato_responsavel']]
+    .forEach(([i,c])=>$(i).value=d[c]||'');
+  if(!$('osd-resp').value&&cardOriginal)$('osd-resp').value=cardOriginal.responsavel||'';
+  const como=d.itens||{};
+  $('osd-itens').innerHTML=osDetItens.length?osDetItens.map(i=>`<div style="border:1px solid var(--borda);border-radius:8px;padding:8px;margin-bottom:6px"><div><strong>${esc(i.item||'')}</strong> ${esc(i.descricao||'')} <span class="dica" style="display:inline">${esc([i.quantidade,i.unidade].filter(x=>x!=null&&x!=='').join(' '))}</span></div>
+    <textarea rows="2" data-osd="${esc(chaveItemOS(i.item,i.descricao))}" placeholder="Como executar e como deve ficar este item (ex.: demolir até a laje dos dois lados; não deixar alvenaria acima do forro)">${esc(como[chaveItemOS(i.item,i.descricao)]||'')}</textarea></div>`).join(''):'<p class="vazio">Salve os itens da proposta primeiro para detalhar item a item.</p>';
+  abrirModal('modal-os-det');
+}
+async function salvarOSDetalhe(gerar){
+  if(!cardEditandoId)return;
+  const win=gerar?window.open('','_blank'):null; // abre antes (o navegador bloqueia janela aberta depois de esperar)
+  const itens={};document.querySelectorAll('#osd-itens [data-osd]').forEach(t=>{if(t.value.trim())itens[t.dataset.osd]=t.value.trim();});
+  const v=i=>$(i).value.trim()||null;
+  const dados={card_id:cardEditandoId,projeto_id:(cardOriginal&&cardOriginal.projeto_id)||null,condicoes_local:v('osd-condicoes'),incluido:v('osd-incluido'),nao_incluido:v('osd-nao'),
+    resultado_final:v('osd-final'),pontos_parada:v('osd-parada'),seguranca:v('osd-seguranca'),responsavel_tecnico:v('osd-resp'),contato_responsavel:v('osd-contato'),
+    itens,atualizado_por:(meuPerfil&&meuPerfil.nome)||(usuario&&usuario.email)||null,atualizado_em:new Date().toISOString()};
+  const{error}=await sb.from('os_detalhes').upsert(dados,{onConflict:'card_id'});
+  if(error){if(win)win.close();if(faltaV51(error)){alert(MSG_V51);return;}erroSB(error);return;}
+  fecharModal('modal-os-det');toast('Detalhe da execução salvo — sai na Ordem de Serviço');
+  if(win){win.document.write('<p style="font-family:Arial;padding:30px">Gerando a ordem de serviço…</p>');try{await montarOS(win);}catch(e){console.error(e);win.close();alert('Não foi possível gerar a ordem de serviço:\n'+(e&&e.message||e));}}
+}
+// seções novas da OS (montarOS chama)
+function secoesOSDetalhe(det,itens,br){
+  const nao='<span style="color:#b00020;font-weight:700">⚠️ Não informado — confirmar com o responsável antes de começar.</span>';
+  const txt=v=>v?br(v):nao;
+  const como=(det&&det.itens)||{};
+  const linhasItens=(itens||[]).map(i=>[esc(i.item||''),esc(i.descricao||'')+(como[chaveItemOS(i.item,i.descricao)]?`<div style="margin-top:4px;padding:4px 6px;background:#fffbea;border-left:3px solid #e0a800"><strong>Como executar / como deve ficar:</strong> ${br(como[chaveItemOS(i.item,i.descricao)])}</div>`:''),esc(i.unidade||''),esc(i.quantidade!=null?Number(i.quantidade).toLocaleString('pt-BR',{maximumFractionDigits:2}):''),'']);
+  return{
+    antes:`<h2>1. Antes de começar — conferir no local</h2>
+      <table class="dados"><tr><th>Condições encontradas na vistoria</th><td>${txt(det&&det.condicoes_local)}</td></tr>
+      <tr><th style="color:#b00020">PARE e consulte o responsável se…</th><td>${det&&det.pontos_parada?br(det.pontos_parada):'<strong>…o que encontrar no local for diferente do descrito acima</strong> (alturas, forro × laje, vigas, tubulações, fiação) ou o cliente pedir algo fora desta OS.'}
+        ${det&&(det.responsavel_tecnico||det.contato_responsavel)?`<div style="margin-top:4px">📞 ${esc([det.responsavel_tecnico,det.contato_responsavel].filter(Boolean).join(' — '))}</div>`:''}</td></tr></table>
+      <h2>2. O que está e o que NÃO está incluído</h2>
+      <div class="grade2"><div><strong>✅ Incluído</strong><div class="campo-livre" style="min-height:0">${txt(det&&det.incluido)}</div></div><div><strong>⛔ NÃO incluído (não executar sem nova OS)</strong><div class="campo-livre" style="min-height:0">${txt(det&&det.nao_incluido)}</div></div></div>`,
+    itens:linhasItens,
+    final:`<h2>Como deve ficar no final (critério de aceite)</h2><div class="campo-livre" style="min-height:0">${txt(det&&det.resultado_final)}</div>
+      <h2>Segurança</h2><div class="campo-livre" style="min-height:0">${det&&det.seguranca?br(det.seguranca):'Nunca deixar alvenaria, forro ou peças soltas ou em balanço. Isolar a área. Usar os EPIs.'}</div>
+      <h2>Conferência final (antes de liberar a área)</h2>
+      <table><tbody>
+        <tr><td style="width:24px">☐</td><td>Tudo o que está em “Incluído” foi feito, e nada do “NÃO incluído”.</td></tr>
+        <tr><td>☐</td><td>O resultado está como descrito no critério de aceite (sem sobras, sem peças soltas ou em balanço).</td></tr>
+        <tr><td>☐</td><td>Toda diferença encontrada no local foi registrada no Diário de obra com a decisão de quem autorizou.</td></tr>
+        <tr><td>☐</td><td>Fotos de antes, durante e depois registradas no Diário de obra.</td></tr>
+        <tr><td>☐</td><td>Área limpa e liberada ao cliente.</td></tr></tbody></table>`};
+}
+
+/* ================= v51: DIÁRIO DE OBRA ================= */
+// Um diário por projeto e dia. O CRM cria sozinho o diário de cada dia em que há equipe alocada no
+// Cronograma num projeto (bvek_diarios_gerar). O encarregado preenche pelo celular (login CPF) e o
+// escritório confere e fecha. O relatório junta os diários do período para o cliente (sem valores).
+const DIO_SIT={pendente:['⏳ Pendente','badge-atraso'],preenchido:['✍️ Preenchido — conferir','badge-hoje'],fechado:['✅ Fechado','badge-ok'],cancelado:['Cancelado','badge-cinza']};
+const DIO_CLIMA=[['','—'],['bom','☀️ Bom'],['nublado','⛅ Nublado'],['chuva','🌧️ Chuva'],['chuva_forte','⛈️ Chuva forte']];
+const DIO_COND=[['','—'],['normal','Trabalho normal'],['parcial','Trabalho parcial (parou parte do dia)'],['parado','Parado (sem trabalho)']];
+const DIO_SERV=[['nao_iniciado','Não iniciado'],['em_andamento','Em andamento'],['concluido','Concluído'],['nao_se_aplica','Não se aplica']];
+const DIO_MOM=[['antes','Antes'],['durante','Durante'],['depois','Depois']];
+const rotulo=(l,v)=>(l.find(x=>x[0]===v)||['',v||'—'])[1];
+const diaSemana=iso=>['dom','seg','ter','qua','qui','sex','sáb'][new Date(iso+'T12:00:00').getDay()];
+let todosDiarios=[],v51DiarioOk=true,dioAtual=null;
+function projetoRotulo(p){if(!p)return'(projeto)';const c=clientePorId(p.cliente_id);return`${p.codigo} — ${p.nome}${c?' · '+c.nome:''}`;}
+function nomesEquipe(ids){return(ids||[]).map(id=>{const f=funcPorId(id);return f?f.nome:'(funcionário)';});}
+function primeiroNome(n){const p=String(n||'').trim().split(/\s+/);return p.length>1?p[0]+' '+p[p.length-1]:p[0]||'';}
+async function gerarDiarios(ini,fim){
+  const r=await sb.rpc('bvek_diarios_gerar',{p_ini:ini,p_fim:fim});
+  if(r.error){if(faltaV51(r.error))v51DiarioOk=false;else console.warn(r.error);}
+}
+async function carregarDiariosBadge(){
+  if(!PERM.cronograma)return;
+  await gerarDiarios(somarDias(hojeISO(),-14),hojeISO());if(!v51DiarioOk)return;
+  const{data}=await sb.from('diarios_obra').select('id').eq('situacao','pendente').gte('data',somarDias(hojeISO(),-14)).lt('data',hojeISO());
+  const n=(data||[]).length;$('tab-diario-badge').innerHTML=n?`<span class="badge badge-atraso">${n}</span>`:'';
+}
+async function abrirDiarios(){
+  if(!$('dio-ini').value){$('dio-ini').value=somarDias(hojeISO(),-14);$('dio-fim').value=hojeISO();}
+  const ini=$('dio-ini').value,fim=$('dio-fim').value||hojeISO();
+  $('tabela-diarios').innerHTML='<tbody><tr><td class="vazio">Carregando…</td></tr></tbody>';
+  await gerarDiarios(ini,fim);
+  if(!v51DiarioOk){$('dio-info').innerHTML='<strong>Falta atualizar o banco de dados (v51).</strong> '+esc(MSG_V51);$('tabela-diarios').innerHTML='';return;}
+  const{data,error}=await sb.from('diarios_obra').select('*').gte('data',ini).lte('data',fim).order('data',{ascending:false});
+  if(error){if(faltaV51(error)){v51DiarioOk=false;abrirDiarios();return;}console.error(error);}
+  todosDiarios=data||[];
+  const sel=$('dio-projeto'),atual=sel.value,ids=[...new Set(todosDiarios.map(d=>d.projeto_id))];
+  preencherSelect(sel,todosProjetos.filter(p=>ids.includes(p.id)).map(p=>[p.id,projetoRotulo(p)]),'Todos os projetos');
+  if([...sel.options].some(o=>o.value===atual))sel.value=atual;
+  renderDiarios();carregarDiariosBadge();
+}
+function renderDiarios(){
+  if(!v51DiarioOk)return;
+  const pj=$('dio-projeto').value,st=$('dio-sit').value,hoje=hojeISO();
+  const l=todosDiarios.filter(d=>(!pj||d.projeto_id===pj)&&(st==='divergencia'?!!d.divergencias:st?d.situacao===st:d.situacao!=='cancelado'));
+  const vivos=todosDiarios.filter(d=>d.situacao!=='cancelado');
+  const pend=vivos.filter(d=>d.situacao==='pendente'&&d.data<hoje).length,conf=vivos.filter(d=>d.situacao==='preenchido').length,div=vivos.filter(d=>d.divergencias).length;
+  $('dio-info').innerHTML=`Todo dia com equipe alocada num <strong>projeto</strong> no Cronograma ganha um diário sozinho. O encarregado (ou qualquer um da equipe) preenche pelo celular, no login dele (CPF) → <strong>📒 Diário de obra</strong>, vendo o que a Ordem de Serviço pede; o escritório confere e fecha. O <strong>📄 Relatório para o cliente</strong> junta os dias num PDF sem valores.
+    ${pend?`<br><span class="badge badge-atraso">${pend} dia(s) já passados sem diário</span>`:''}${conf?` <span class="badge badge-hoje">${conf} para conferir e fechar</span>`:''}${div?` <span class="badge badge-atraso">⚠️ ${div} com divergência da OS</span>`:''}`;
+  $('dio-cont').textContent=`${l.length} diário(s)`;
+  $('tabela-diarios').innerHTML=`<thead><tr><th>Data</th><th>Projeto</th><th>Equipe</th><th>Situação</th><th>O que foi feito</th><th></th></tr></thead><tbody>`+
+    (l.length?l.map(d=>{const p=todosProjetos.find(x=>x.id===d.projeto_id),s=DIO_SIT[d.situacao]||[d.situacao,'badge-cinza'],eq=nomesEquipe(d.presentes||d.equipe);
+      return`<tr class="clicavel" data-dio="${esc(d.id)}"><td style="white-space:nowrap"><strong>${esc(fmtData(d.data))}</strong> <span class="dica" style="display:inline">${diaSemana(d.data)}</span></td>
+      <td>${esc(projetoRotulo(p))}</td><td style="font-size:12px">${esc(eq.map(primeiroNome).join(', '))}</td>
+      <td><span class="badge ${s[1]}">${esc(s[0])}</span>${d.preenchido_por?`<div class="dica" style="margin:0">por ${esc(d.preenchido_por)}</div>`:''}</td>
+      <td style="font-size:12px">${esc(String(d.atividades||'').slice(0,110))}${String(d.atividades||'').length>110?'…':''}${resumoRegistros(d)?`<div class="dica" style="margin:0">${esc(resumoRegistros(d))}${!d.atividades?' — falta o resumo escrito':''}</div>`:''}</td>
+      <td style="white-space:nowrap">${d.divergencias?'<span title="Divergência da OS registrada">⚠️</span>':''}${(d.fotos||[]).length?` 📷${d.fotos.length}`:''}</td></tr>`;}).join(''):
+      `<tr><td colspan="6" class="vazio">Nenhum diário neste período. Os diários aparecem sozinhos nos dias em que há equipe alocada num projeto no Cronograma (ou use “+ Diário avulso”).</td></tr>`)+'</tbody>';
+  $('tabela-diarios').querySelectorAll('[data-dio]').forEach(tr=>tr.onclick=()=>abrirDiario(tr.dataset.dio));
+}
+// formulário do dia (usado no CRM e no celular do funcionário)
+function blocoOSHTML(os,aberto){
+  return os&&(os.condicoes_local||os.incluido||os.nao_incluido||os.resultado_final||os.pontos_parada||os.seguranca||os.escopo)?`<details class="info-box" style="display:block;background:#fffbea"${aberto===false?'':' open'}><summary style="cursor:pointer"><strong>📋 O que a Ordem de Serviço pede${os.numero_os?' — '+esc(os.numero_os):''}</strong></summary>
+    ${[['Escopo',os.escopo],['Condições do local',os.condicoes_local],['✅ Incluído',os.incluido],['⛔ NÃO incluído',os.nao_incluido],['Como deve ficar no final',os.resultado_final],['🛑 Pare e consulte o responsável se…',os.pontos_parada],['Segurança',os.seguranca],['Responsável',[os.responsavel_tecnico,os.contato_responsavel].filter(Boolean).join(' — ')]]
+      .filter(x=>x[1]).map(([t,v])=>`<div style="margin-top:6px"><strong>${t}:</strong> ${esc(v).replace(/\n/g,'<br>')}</div>`).join('')}</details>`
+    :`<div class="info-box" style="display:block">Este projeto ainda não tem Ordem de Serviço detalhada no CRM. Registre abaixo o que foi combinado e tudo o que for diferente no local.</div>`;
+}
+function formDiarioHTML(d,os,px,equipe){
+  const opt=(l,v)=>l.map(([k,t])=>`<option value="${esc(k)}"${k===(v||'')?' selected':''}>${esc(t)}</option>`).join('');
+  const pres=d.presentes||d.equipe||[];
+  const serv=servicosDoDiario(d,os);
+  return`<div class="form-grid">
+    <div class="campo"><label>Início</label><input type="time" id="${px}-hini" value="${esc(String(d.hora_inicio||'').slice(0,5))}"></div>
+    <div class="campo"><label>Término</label><input type="time" id="${px}-hfim" value="${esc(String(d.hora_fim||'').slice(0,5))}"></div>
+    <div class="campo"><label>Tempo — manhã</label><select id="${px}-cm">${opt(DIO_CLIMA,d.clima_manha)}</select></div>
+    <div class="campo"><label>Tempo — tarde</label><select id="${px}-ct">${opt(DIO_CLIMA,d.clima_tarde)}</select></div>
+    <div class="campo full"><label>Como foi o dia</label><select id="${px}-cond">${opt(DIO_COND,d.condicao)}</select></div>
+    <div class="campo full"><label>Quem trabalhou hoje</label><div style="display:flex;gap:6px 16px;flex-wrap:wrap">${(equipe||[]).map(f=>`<label class="campo-check" style="margin:0"><input type="checkbox" data-${px}-pres="${esc(f.id)}"${pres.includes(f.id)?' checked':''}> ${esc(f.nome)}</label>`).join('')||'<span class="dica">sem equipe</span>'}</div></div>
+    <div class="campo full"><label>Serviços da OS — situação hoje</label><div id="${px}-serv">${serv.map((x,i)=>linhaServDiario(px,x,i)).join('')}</div>
+      <button type="button" class="btn-link" onclick="addServDiario('${px}')">+ outro serviço</button></div>
+    <div class="campo full"><label>O que foi feito hoje *</label><textarea id="${px}-ativ" rows="3" placeholder="Ex.: demolição de 6 m² da parede, do lado do forro; entulho ensacado.">${esc(d.atividades||'')}</textarea></div>
+    <div class="campo full"><label style="color:var(--vermelho)">⚠️ O que estava diferente da OS no local — e o que foi decidido (por quem)</label><textarea id="${px}-div" rows="3" placeholder="Ex.: lado A tem forro e lado B laje aparente. Liguei para o André às 10h: demolir até a laje dos dois lados, sem deixar alvenaria acima do forro.">${esc(d.divergencias||'')}</textarea></div>
+    <div class="campo"><label>Ocorrências</label><textarea id="${px}-oco" rows="2" placeholder="Atrasos, falta de material, acidentes, paralisações…">${esc(d.ocorrencias||'')}</textarea></div>
+    <div class="campo"><label>Pendências para amanhã</label><textarea id="${px}-pen" rows="2">${esc(d.pendencias||'')}</textarea></div>
+    <div class="campo"><label>Segurança</label><textarea id="${px}-seg" rows="2" placeholder="Isolamento, EPI, riscos encontrados">${esc(d.seguranca||'')}</textarea></div>
+    <div class="campo"><label>Visitas e pedidos do cliente / fiscal</label><textarea id="${px}-vis" rows="2" placeholder="Quem esteve no local e o que pediu">${esc(d.visitas||'')}</textarea></div>
+  </div>`;
+}
+// lista de serviços: os da OS + os já registrados no diário (situação puxada do último diário do projeto)
+function servicosDoDiario(d,os,anterior){
+  const salvos=d.servicos||[],ant=(anterior||dioAtual&&dioAtual.anterior||{}).servicos||[];
+  const daOS=(os&&os.itens||[]).map(i=>{const s=salvos.find(x=>x.ref===i.ref)||{},a=ant.find(x=>x.ref===i.ref)||{};
+    return{ref:i.ref,item:i.item||'',descricao:i.descricao||'',qtd:[i.quantidade,i.unidade].filter(x=>x!=null&&x!=='').join(' '),como:i.como||'',situacao:s.situacao||a.situacao||'nao_iniciado',pct:s.pct??a.pct??'',obs:s.obs||'',daOS:true};});
+  const extras=salvos.filter(x=>!daOS.some(o=>o.ref===x.ref));
+  return[...daOS,...extras];
+}
+function linhaServDiario(px,x,i){
+  const opt=DIO_SERV.map(([k,t])=>`<option value="${k}"${k===x.situacao?' selected':''}>${t}</option>`).join('');
+  return`<div data-${px}-serv="${i}" data-ref="${esc(x.ref||'')}" data-item="${esc(x.item||'')}" style="border:1px solid var(--borda);border-radius:8px;padding:6px 8px;margin-bottom:6px">
+    ${x.daOS?`<div><strong>${esc(x.item)}</strong> ${esc(x.descricao)} <span class="dica" style="display:inline">${esc(x.qtd||'')}</span></div>${x.como?`<div class="dica" style="margin:2px 0;color:#7a5a00">Como deve ficar: ${esc(x.como)}</div>`:''}<input type="hidden" data-campo="descricao" value="${esc(x.descricao)}">`
+      :`<input type="text" data-campo="descricao" value="${esc(x.descricao||'')}" placeholder="Serviço" style="width:100%;margin-bottom:4px">`}
+    <div style="display:flex;gap:6px;flex-wrap:wrap"><select data-campo="situacao">${opt}</select><input type="number" data-campo="pct" min="0" max="100" value="${esc(x.pct)}" placeholder="% feito" style="width:90px"><input type="text" data-campo="obs" value="${esc(x.obs||'')}" placeholder="observação" style="flex:1;min-width:140px"></div></div>`;
+}
+function addServDiario(px){const box=$(px+'-serv'),i=box.children.length;box.insertAdjacentHTML('beforeend',linhaServDiario(px,{ref:'livre-'+Date.now(),descricao:'',situacao:'em_andamento',pct:''},i));}
+function lerFormDiario(px){
+  const v=i=>{const e=$(px+'-'+i);return e?e.value.trim():'';};
+  const servicos=[...document.querySelectorAll(`[data-${px}-serv]`)].map(el=>{const c=k=>{const e=el.querySelector(`[data-campo=${k}]`);return e?e.value.trim():'';};
+    const pct=c('pct');return{ref:el.dataset.ref,item:el.dataset.item||'',descricao:c('descricao'),situacao:c('situacao'),pct:pct===''?null:Math.max(0,Math.min(100,Number(pct))),obs:c('obs')};})
+    .filter(x=>x.descricao||x.item);
+  return{hora_inicio:v('hini')||null,hora_fim:v('hfim')||null,clima_manha:v('cm')||null,clima_tarde:v('ct')||null,condicao:v('cond')||null,
+    presentes:[...document.querySelectorAll(`[data-${px}-pres]`)].filter(c=>c.checked).map(c=>c.getAttribute(`data-${px}-pres`)),
+    servicos,atividades:v('ativ')||null,divergencias:v('div')||null,ocorrencias:v('oco')||null,pendencias:v('pen')||null,seguranca:v('seg')||null,visitas:v('vis')||null,
+    fotos:(dioAtual&&dioAtual.fotos)||[]};
+}
+// fotos: reduz para no máximo 1600 px (JPEG) antes de enviar — fica leve para o celular
+function reduzirImagem(arq){return new Promise(res=>{
+  if(!/^image\//.test(arq.type)){res(arq);return;}
+  const img=new Image(),u=URL.createObjectURL(arq);
+  img.onload=()=>{const m=1600,k=Math.min(1,m/Math.max(img.width,img.height)),c=document.createElement('canvas');c.width=Math.round(img.width*k);c.height=Math.round(img.height*k);
+    c.getContext('2d').drawImage(img,0,0,c.width,c.height);URL.revokeObjectURL(u);c.toBlob(b=>res(b||arq),'image/jpeg',0.8);};
+  img.onerror=()=>{URL.revokeObjectURL(u);res(arq);};img.src=u;});}
+async function enviarFotosDiario(files,px){
+  if(!dioAtual||!files||!files.length)return;
+  const box=$(px+'-fotos');box.insertAdjacentHTML('beforeend','<span class="dica" id="'+px+'-fotos-env">Enviando fotos…</span>');
+  for(const f of[...files].slice(0,20)){
+    try{const b=await reduzirImagem(f),caminho=`${dioAtual.d.id}/${Date.now()}_${Math.random().toString(36).slice(2,7)}.jpg`;
+      const{error}=await sb.storage.from('diarios').upload(caminho,b,{contentType:'image/jpeg',upsert:false});
+      if(error){console.error(error);alert('Não foi possível enviar uma foto: '+(error.message||error));continue;}
+      dioAtual.fotos.push({caminho,legenda:'',momento:'durante'});}catch(e){console.error(e);}
+  }
+  renderFotosDiario(px);
+}
+async function urlsFotos(fotos,seg){
+  if(!fotos||!fotos.length)return{};
+  const{data}=await sb.storage.from('diarios').createSignedUrls(fotos.map(f=>f.caminho),seg||3600);
+  const m={};(data||[]).forEach(x=>{if(x.signedUrl)m[x.path]=x.signedUrl;});return m;
+}
+async function renderFotosDiario(px){
+  const box=$(px+'-fotos');if(!box||!dioAtual)return;const fs=dioAtual.fotos,u=await urlsFotos(fs);
+  box.innerHTML=fs.map((f,i)=>`<div style="width:150px;border:1px solid var(--borda);border-radius:8px;padding:4px;font-size:12px">${u[f.caminho]?`<a href="${esc(u[f.caminho])}" target="_blank" rel="noopener"><img src="${esc(u[f.caminho])}" style="width:100%;height:100px;object-fit:cover;border-radius:6px"></a>`:'📷'}
+    <select onchange="dioAtual.fotos[${i}].momento=this.value" style="width:100%;margin-top:3px">${DIO_MOM.map(([k,t])=>`<option value="${k}"${k===f.momento?' selected':''}>${t}</option>`).join('')}</select>
+    <input type="text" value="${esc(f.legenda||'')}" placeholder="legenda" oninput="dioAtual.fotos[${i}].legenda=this.value" style="width:100%;margin-top:3px">
+    ${dioAtual.travado?'':`<button type="button" class="btn-link" onclick="dioAtual.fotos.splice(${i},1);renderFotosDiario('${px}')">tirar</button>`}</div>`).join('');
+}
+async function osDoProjeto(pid){const r=await sb.rpc('bvek_os_do_projeto',{p_projeto:pid});if(r.error){console.warn(r.error);return null;}return r.data||null;}
+async function abrirDiario(id){
+  const d=todosDiarios.find(x=>x.id===id);if(!d)return;
+  const p=todosProjetos.find(x=>x.id===d.projeto_id);
+  const[os,ant]=await Promise.all([osDoProjeto(d.projeto_id),sb.from('diarios_obra').select('servicos,data').eq('projeto_id',d.projeto_id).lt('data',d.data).neq('situacao','cancelado').order('data',{ascending:false}).limit(1)]);
+  const travado=d.situacao==='fechado'&&!PERM.diarioFechar;
+  dioAtual={d,os,anterior:(ant.data||[])[0]||null,fotos:JSON.parse(JSON.stringify(d.fotos||[])),travado,px:'dio'};
+  $('dio-m-titulo').textContent=`Diário de obra — ${fmtData(d.data)} (${diaSemana(d.data)})`;
+  $('dio-m-sub').textContent=projetoRotulo(p)+(p&&p.local?' · '+p.local:'');
+  const s=DIO_SIT[d.situacao]||[d.situacao,''];
+  $('dio-m-status').style.display='block';
+  $('dio-m-status').innerHTML=`<span class="badge ${s[1]}">${esc(s[0])}</span> ${d.preenchido_por?`Preenchido por <strong>${esc(d.preenchido_por)}</strong>${d.preenchido_em?' em '+esc(fmtDataHora(d.preenchido_em)):''}. `:''}${d.fechado_por?`Fechado por <strong>${esc(d.fechado_por)}</strong> em ${esc(fmtDataHora(d.fechado_em))}.`:''}${d.situacao==='fechado'?' Diário fechado: só o Administrador ou o Administrativo reabrem.':''}`;
+  const equipe=[...new Set([...(d.equipe||[]),...(d.presentes||[])])].map(id=>({id,nome:(funcPorId(id)||{}).nome||'(funcionário)'}));
+  const fechado=d.situacao==='fechado';
+  $('dio-m-corpo').innerHTML=blocoOSHTML(os,!(d.registros||[]).length)+`<div class="secao">Relatos e fotos do dia (linha do tempo)</div>`+registrosHTML('dio',fechado)+
+    `<div class="secao">Resumo do dia (sai no relatório do cliente)</div><div class="dica">Ouça os relatos e escreva aqui o resumo — o áudio não vai para o PDF.</div>`+formDiarioHTML(d,os,'dio',equipe);
+  renderRegistros('dio');
+  modoLeitura('modal-diario',fechado);
+  $('dio-m-salvar').style.display=fechado?'none':'';
+  $('dio-m-fechar').style.display=!fechado&&PERM.diarioFechar?'':'none';
+  $('dio-m-reabrir').style.display=fechado&&PERM.diarioFechar?'':'none';
+  abrirModal('modal-diario');
+}
+async function salvarDiario(fechar){
+  if(!dioAtual)return false;const d=dioAtual.d,f=lerFormDiario('dio');
+  if(!f.atividades&&f.condicao!=='parado'&&!(d.registros||[]).length){alert('Escreva o que foi feito no dia (ou marque “Parado”).');return false;}
+  const dados={...f,situacao:fechar?'fechado':'preenchido',preenchido_por:d.preenchido_por||(meuPerfil&&meuPerfil.nome)||(usuario&&usuario.email),preenchido_em:d.preenchido_em||new Date().toISOString()};
+  if(fechar){dados.fechado_por=(meuPerfil&&meuPerfil.nome)||(usuario&&usuario.email);dados.fechado_em=new Date().toISOString();}
+  const{error}=await sb.from('diarios_obra').update(dados).eq('id',d.id);
+  if(erroSB(error,'Não foi possível salvar o diário'))return false;
+  fecharModal('modal-diario');toast(fechar?'Diário conferido e fechado':'Diário salvo');await abrirDiarios();return true;
+}
+async function fecharDiario(fechar){
+  if(!dioAtual||!PERM.diarioFechar)return;
+  if(fechar){if(!confirm('Conferiu o diário? Depois de fechado, só o Administrador ou o Administrativo podem reabrir.'))return;await salvarDiario(true);return;}
+  const{error}=await sb.from('diarios_obra').update({situacao:'preenchido',fechado_por:null,fechado_em:null}).eq('id',dioAtual.d.id);
+  if(erroSB(error))return;fecharModal('modal-diario');toast('Diário reaberto');abrirDiarios();
+}
+// diário avulso (dia sem alocação no Cronograma, ou projeto antigo)
+function novoDiarioAvulso(){
+  if(!v51DiarioOk){alert(MSG_V51);return;}
+  dioAtual=null;
+  $('dio-m-titulo').textContent='Novo diário avulso';$('dio-m-sub').textContent='Para um dia sem equipe alocada no Cronograma. Escolha o projeto, o dia e quem pode preencher pelo celular.';
+  $('dio-m-status').style.display='none';
+  const ativos=todosFuncionarios.filter(f=>f.ativo!==false).sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
+  $('dio-m-corpo').innerHTML=`<div class="form-grid"><div class="campo full"><label>Projeto *</label><select id="dio-a-proj"><option value="">Selecione</option>${todosProjetos.slice().sort((a,b)=>String(b.codigo).localeCompare(String(a.codigo))).map(p=>`<option value="${esc(p.id)}">${esc(projetoRotulo(p))}</option>`).join('')}</select><div class="dica">O projeto não está na lista? Cadastre em Projetos primeiro.</div></div>
+    <div class="campo"><label>Dia *</label><input type="date" id="dio-a-data" value="${hojeISO()}" max="${hojeISO()}"></div>
+    <div class="campo full"><label>Equipe (quem pode preencher pelo celular)</label><div style="display:flex;gap:6px 16px;flex-wrap:wrap;max-height:180px;overflow:auto">${ativos.map(f=>`<label class="campo-check" style="margin:0"><input type="checkbox" data-dio-a="${esc(f.id)}"> ${esc(f.nome)}</label>`).join('')}</div></div></div>`;
+  modoLeitura('modal-diario',false);
+  $('dio-m-salvar').style.display='none';$('dio-m-fechar').style.display='none';$('dio-m-reabrir').style.display='none';
+  $('dio-m-corpo').insertAdjacentHTML('beforeend','<div class="modal-btns"><button class="btn-salvar" onclick="criarDiarioAvulso()">Criar o diário</button></div>');
+  abrirModal('modal-diario');
+}
+async function criarDiarioAvulso(){
+  const pid=$('dio-a-proj').value,dia=$('dio-a-data').value;
+  if(!pid||!dia){alert('Escolha o projeto e o dia.');return;}
+  const equipe=[...document.querySelectorAll('[data-dio-a]')].filter(c=>c.checked).map(c=>c.dataset.dioA);
+  const{data:ja}=await sb.from('diarios_obra').select('id').eq('projeto_id',pid).eq('data',dia).maybeSingle();
+  let id=ja&&ja.id;
+  if(!id){const{data,error}=await sb.from('diarios_obra').insert({projeto_id:pid,data:dia,equipe,criado_por:(meuPerfil&&meuPerfil.nome)||(usuario&&usuario.email)}).select().single();if(erroSB(error))return;id=data.id;}
+  else toast('Já existia um diário deste projeto neste dia — abrindo o existente');
+  fecharModal('modal-diario');
+  if($('dio-ini').value>dia)$('dio-ini').value=dia;
+  await abrirDiarios();abrirDiario(id);
+}
+// relatório (PDF) — um dia ou um período
+function abrirRelatorioDiario(){
+  if(!v51DiarioOk){alert(MSG_V51);return;}
+  const ids=[...new Set(todosDiarios.map(d=>d.projeto_id))];
+  preencherSelect($('dio-r-proj'),todosProjetos.filter(p=>ids.includes(p.id)).concat(todosProjetos.filter(p=>!ids.includes(p.id))).map(p=>[p.id,projetoRotulo(p)]),'Selecione');
+  if($('dio-projeto').value)$('dio-r-proj').value=$('dio-projeto').value;
+  $('dio-r-ini').value=$('dio-ini').value||somarDias(hojeISO(),-14);$('dio-r-fim').value=$('dio-fim').value||hojeISO();
+  abrirModal('modal-diario-rel');
+}
+async function gerarRelatorioDiario(){
+  const pid=$('dio-r-proj').value,ini=$('dio-r-ini').value,fim=$('dio-r-fim').value;
+  if(!pid||!ini||!fim){alert('Escolha o projeto e o período.');return;}
+  const win=window.open('','_blank');if(!win){alert('O navegador bloqueou a janela do relatório. Permita pop-ups para este site.');return;}
+  win.document.write('<p style="font-family:Arial;padding:30px">Montando o relatório…</p>');
+  try{
+    const{data,error}=await sb.from('diarios_obra').select('*').eq('projeto_id',pid).gte('data',ini).lte('data',fim).neq('situacao','cancelado').order('data');
+    if(error)throw error;
+    const so=$('dio-r-sofech').checked;
+    await montarRelatorioDiario(win,pid,(data||[]).filter(d=>so?d.situacao==='fechado':true),{ini,fim,fotos:$('dio-r-fotos').checked});
+    fecharModal('modal-diario-rel');
+  }catch(e){console.error(e);win.close();alert('Não foi possível gerar o relatório:\n'+(e&&e.message||e));}
+}
+async function pdfDiarioDia(){
+  if(!dioAtual)return;const win=window.open('','_blank');if(!win)return;
+  win.document.write('<p style="font-family:Arial;padding:30px">Montando…</p>');
+  const d={...dioAtual.d,...lerFormDiario('dio')};
+  try{await montarRelatorioDiario(win,d.projeto_id,[d],{ini:d.data,fim:d.data,fotos:true,os:dioAtual.os});}catch(e){console.error(e);win.close();alert(e.message||e);}
+}
+async function montarRelatorioDiario(win,pid,dias,o){
+  const p=todosProjetos.find(x=>x.id===pid)||{},cli=clientePorId(p.cliente_id)||{},emp=empresaPorId(p.empresa_id)||{},T=temaEmpresa(emp.sigla);
+  const os=o.os!==undefined?o.os:await osDoProjeto(pid);
+  const br=s=>esc(s).replace(/\n/g,'<br>');
+  const regs=dias.filter(d=>d.situacao!=='pendente'),semReg=dias.filter(d=>d.situacao==='pendente');
+  const urls=o.fotos?await urlsFotos([...regs.flatMap(d=>d.fotos||[]),...regs.flatMap(d=>(d.registros||[]).filter(r=>r.foto).map(r=>({caminho:r.foto})))],7*24*3600):{};
+  // andamento: a situação mais recente de cada serviço
+  const ult=new Map();regs.forEach(d=>(d.servicos||[]).forEach(s=>ult.set(s.ref||s.descricao,{...s,data:d.data})));
+  const itensOS=(os&&os.itens)||[];
+  const andamento=[...itensOS.map(i=>({i,s:ult.get(i.ref)})),...[...ult.values()].filter(s=>!itensOS.some(i=>i.ref===s.ref)).map(s=>({i:{item:s.item,descricao:s.descricao},s}))];
+  const cont=k=>regs.filter(d=>d.condicao===k).length,pessoasDia=regs.reduce((t,d)=>t+((d.presentes||d.equipe||[]).length),0);
+  const fmtH=h=>h?String(h).slice(0,5):'';
+  const titulo=dias.length===1?`Diário de obra — ${fmtData(dias[0].data)}`:'Relatório de serviços executados';
+  const nomeArq=semAcento(`${p.codigo||'C000-0000'}-RVT-DIARIO_${String(o.ini).replace(/-/g,'')}${o.fim!==o.ini?'_'+String(o.fim).replace(/-/g,''):''}`).toUpperCase();
+  const html=`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>${esc(nomeArq)}</title><style>
+    body{font-family:Arial,sans-serif;font-size:11px;color:#222;margin:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    .pagina{padding:26px 36px;max-width:800px;margin:0 auto}
+    .topo{display:flex;justify-content:space-between;align-items:flex-end;padding-bottom:10px;border-bottom:2px solid #${T.destaque};margin-bottom:14px}
+    .topo img{height:56px}.topo .os{text-align:right;color:#5F6B7A}.topo .os strong{display:block;font-size:14px;color:#${T.principal}}.topo .tit{font-weight:700;letter-spacing:.08em;color:#${T.principal}}
+    h2{color:#${T.principal};font-size:12px;margin:16px 0 6px;border-bottom:1.5px solid #${T.principal};padding-bottom:3px;text-transform:uppercase}
+    h3{font-size:11.5px;margin:12px 0 4px;color:#${T.principal}}
+    table{width:100%;border-collapse:collapse;margin:4px 0;font-size:10.5px}th,td{border:1px solid #${T.linha};padding:5px 7px;text-align:left;vertical-align:top}
+    thead th{background:#${T.claro};color:#${T.principal}}table.dados th{width:150px;background:#${T.claro};color:#${T.principal};font-weight:600}
+    .div{background:#fff4e5;border-left:3px solid #e07a00;padding:5px 8px;margin:4px 0}
+    .dia{border:1px solid #${T.linha};border-radius:6px;padding:8px 10px;margin:8px 0;break-inside:avoid}
+    .fotos{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}.fotos figure{margin:0;width:31%;break-inside:avoid}.fotos img{width:100%;height:150px;object-fit:cover;border-radius:4px}.fotos figcaption{font-size:9.5px;color:#555}
+    .assin{display:flex;gap:30px;margin-top:40px}.assin div{flex:1;text-align:center;border-top:1px solid #222;padding-top:5px}
+    .rodape{margin-top:20px;font-size:9px;color:#999;text-align:center}
+    @media print{.pagina{padding:14px}h2{break-after:avoid}tr{break-inside:avoid}}</style></head><body><div class="pagina">
+  <div class="topo"><div><img src="${urlLogo(T.sigla,'logo')}" alt="${esc(emp.nome||'')}"><div style="color:#5F6B7A">Emitido em ${esc(new Date().toLocaleDateString('pt-BR'))}</div></div>
+    <div class="os"><span class="tit">${esc(titulo.toUpperCase())}</span><strong>${esc(p.codigo||'')}</strong>${os&&os.numero_os?'Ref. OS '+esc(os.numero_os)+'<br>':''}${o.ini===o.fim?esc(fmtData(o.ini)):esc(fmtData(o.ini))+' a '+esc(fmtData(o.fim))}</div></div>
+  <table class="dados"><tr><th>Cliente</th><td>${esc([cli.codigo,cli.razao_social||cli.nome].filter(Boolean).join(' — '))}</td></tr><tr><th>Projeto</th><td>${esc(p.nome||'')}</td></tr>
+    ${p.local?`<tr><th>Local</th><td>${esc(p.local)}</td></tr>`:''}${os&&os.servico?`<tr><th>Serviço</th><td>${esc(os.servico)}</td></tr>`:''}<tr><th>Executora</th><td>${esc(emp.nome||'')}</td></tr></table>
+  ${dias.length>1?`<h2>Resumo do período</h2><table class="dados"><tr><th>Dias com registro</th><td>${regs.length}${semReg.length?` · <span style="color:#b00020">${semReg.length} dia(s) programado(s) sem registro: ${esc(semReg.map(d=>fmtData(d.data).slice(0,5)).join(', '))}</span>`:''}</td></tr>
+    <tr><th>Trabalho</th><td>${cont('normal')} normal · ${cont('parcial')} parcial · ${cont('parado')} parado</td></tr><tr><th>Mão de obra</th><td>${pessoasDia} pessoa(s)·dia</td></tr></table>`:''}
+  ${andamento.length?`<h2>Andamento dos serviços</h2><table><thead><tr><th>Item</th><th>Serviço</th><th>Situação</th><th>%</th><th>Observação</th></tr></thead><tbody>${andamento.map(({i,s})=>`<tr><td>${esc(i.item||'')}</td><td>${esc(i.descricao||'')}</td><td>${esc(s?rotulo(DIO_SERV,s.situacao):'Sem registro')}</td><td>${s&&s.pct!=null&&s.pct!==''?esc(s.pct)+'%':''}</td><td>${esc(s&&s.obs||'')}</td></tr>`).join('')}</tbody></table>`:''}
+  ${regs.some(d=>d.divergencias)?`<h2>Diferenças entre o previsto e o encontrado no local — e o que foi decidido</h2>${regs.filter(d=>d.divergencias).map(d=>`<div class="div"><strong>${esc(fmtData(d.data))}:</strong> ${br(d.divergencias)}</div>`).join('')}`:''}
+  ${(()=>{const u=[...regs].reverse().find(d=>d.pendencias);return u?`<h2>Pendências em aberto</h2><p>${br(u.pendencias)} <span style="color:#777">(registro de ${esc(fmtData(u.data))})</span></p>`:'';})()}
+  <h2>Registro diário</h2>
+  ${regs.length?regs.map(d=>{const eq=nomesEquipe(d.presentes||d.equipe);const fs=(d.fotos||[]).filter(f=>urls[f.caminho]);
+    return`<div class="dia"><h3>${esc(fmtData(d.data))} (${diaSemana(d.data)})${d.hora_inicio?` · ${fmtH(d.hora_inicio)}–${fmtH(d.hora_fim)}`:''} · ${esc(rotulo(DIO_COND,d.condicao))} · tempo: manhã ${esc(rotulo(DIO_CLIMA,d.clima_manha))}, tarde ${esc(rotulo(DIO_CLIMA,d.clima_tarde))}</h3>
+      <div><strong>Equipe (${eq.length}):</strong> ${esc(eq.join(', '))}</div>
+      ${d.atividades?`<div style="margin-top:4px"><strong>Executado:</strong> ${br(d.atividades)}</div>`:''}
+      ${(()=>{const rs=(d.registros||[]).slice().sort((a,b)=>String(a.em).localeCompare(String(b.em)));if(!rs.length)return'';
+        const tx=rs.filter(r=>r.texto||(r.audio&&!r.foto)),fr=rs.filter(r=>r.foto&&urls[r.foto]);
+        return`${tx.length?`<div style="margin-top:4px"><strong>Registros do dia:</strong><br>${tx.map(r=>`${esc(horaReg(r))} — ${r.texto?br(r.texto):'<em>relato em áudio</em>'}${r.audio?` 🎙️${r.duracao?' '+mmss(r.duracao):''}`:''} <span style="color:#888">(${esc(r.autor||'')})</span>`).join('<br>')}</div>`:''}
+          ${fr.length?`<div class="fotos">${fr.map(r=>`<figure><img src="${esc(urls[r.foto])}"><figcaption>${esc(horaReg(r))}${r.texto?' — '+esc(r.texto):''}${r.audio?' 🎙️':''}</figcaption></figure>`).join('')}</div>`:''}`;})()}
+      ${(d.servicos||[]).length?`<div style="margin-top:4px">${d.servicos.map(s=>`• ${esc(s.item?s.item+' ':'')}${esc(s.descricao)} — ${esc(rotulo(DIO_SERV,s.situacao))}${s.pct!=null&&s.pct!==''?' ('+esc(s.pct)+'%)':''}${s.obs?' · '+esc(s.obs):''}`).join('<br>')}</div>`:''}
+      ${d.divergencias?`<div class="div"><strong>Diferente da OS:</strong> ${br(d.divergencias)}</div>`:''}
+      ${[['Ocorrências',d.ocorrencias],['Visitas / pedidos do cliente',d.visitas],['Segurança',d.seguranca],['Pendências',d.pendencias]].filter(x=>x[1]).map(([t,v])=>`<div style="margin-top:4px"><strong>${t}:</strong> ${br(v)}</div>`).join('')}
+      ${fs.length?`<div class="fotos">${fs.map(f=>`<figure><img src="${esc(urls[f.caminho])}"><figcaption>${esc(rotulo(DIO_MOM,f.momento))}${f.legenda?' — '+esc(f.legenda):''}</figcaption></figure>`).join('')}</div>`:''}
+      <div style="color:#888;font-size:9.5px;margin-top:4px">${d.preenchido_por?'Registrado por '+esc(d.preenchido_por):''}${d.fechado_por?' · conferido por '+esc(d.fechado_por):''}</div></div>`;}).join(''):'<p>Nenhum dia registrado no período.</p>'}
+  <div class="assin"><div>Responsável pela execução<br><small>${esc(emp.nome||'')}${os&&os.responsavel_tecnico?' — '+esc(os.responsavel_tecnico):''}</small></div><div>Ciência do cliente<br><small>${esc(cli.razao_social||cli.nome||'')} · nome e data: ____/____/______</small></div></div>
+  <div class="rodape">${esc(nomeArq)} · gerado pelo CRM a partir dos diários de obra — não contém valores${regs.some(d=>(d.registros||[]).some(r=>r.audio))?' · 🎙️ = há relato em áudio guardado no CRM':''}</div></div></body></html>`;
+  win.document.open();win.document.write(html);win.document.close();imprimirQuandoCarregar(win);
+}
+
+/* ---- v51: diário de obra no celular do funcionário (login CPF) ---- */
+let meusDiarios=[];
+async function carregarMeusDiarios(mostrarAba){
+  const g=await sb.rpc('bvek_diarios_gerar',{p_ini:somarDias(hojeISO(),-7),p_fim:hojeISO()});
+  if(g.error&&faltaV51(g.error))return;
+  const{data,error}=await sb.rpc('bvek_meus_diarios');
+  if(error){if(!faltaV51(error))console.warn(error);return;}
+  meusDiarios=data||[];
+  if(meusDiarios.length)$('cc-aba-diario').style.display='';
+  processarFila();
+  // v52: tem diário de hoje aberto? o celular já abre no diário
+  if(!mostrarAba&&meusDiarios.some(d=>d.data===hojeISO()&&d.situacao!=='fechado')){ccAba('diario');return;}
+  if(mostrarAba)renderMeusDiarios();
+}
+function renderMeusDiarios(){
+  if(grav)pararGravacao();dioAtual=null;
+  const box=$('cc-diario'),hoje=hojeISO();
+  if(!meusDiarios.length){box.innerHTML='<div class="cc-vazio">Nenhum diário para preencher. Ele aparece aqui nos dias em que você está alocado num serviço no Cronograma.</div>';return;}
+  box.innerHTML='<div class="cc-lista">'+meusDiarios.map((d,i)=>{const s=DIO_SIT[d.situacao]||[d.situacao,''];
+    return`<div class="cc-item"><div><strong>${esc(fmtData(d.data))} (${diaSemana(d.data)})${d.data===hoje?' · hoje':''}</strong><div class="cc-sub">${esc(d.projeto_codigo||'')} — ${esc(d.projeto_nome||'')}${d.cliente_nome?' · '+esc(d.cliente_nome):''}</div><span class="badge ${s[1]}">${esc(s[0])}</span>${resumoRegistros(d)?` <span class="cc-sub">${esc(resumoRegistros(d))}</span>`:''}</div>
+    <div class="cc-btns"><button class="cc-prim" onclick="abrirMeuDiario(${i})">${d.situacao==='fechado'?'Ver':'Abrir'}</button></div></div>`;}).join('')+'</div>';
+}
+async function abrirMeuDiario(i){
+  const d=meusDiarios[i];if(!d)return;
+  const os=await osDoProjeto(d.projeto_id);
+  const ant=meusDiarios.filter(x=>x.projeto_id===d.projeto_id&&x.data<d.data&&(x.servicos||[]).length).sort((a,b)=>b.data.localeCompare(a.data))[0]||null;
+  const fechado=d.situacao==='fechado';
+  dioAtual={d,os,anterior:ant,fotos:JSON.parse(JSON.stringify(d.fotos||[])),travado:fechado,px:'mdo'};
+  const box=$('cc-diario');
+  box.innerHTML=`<div class="cc-ola"><button onclick="renderMeusDiarios()" style="padding:6px 10px;border-radius:8px;border:1.5px solid var(--borda);background:#fff">◀ Voltar</button>
+    <h3 style="margin:10px 0 2px">${esc(fmtData(d.data))} — ${esc(d.projeto_codigo||'')} ${esc(d.projeto_nome||'')}</h3><p>${esc(d.projeto_local||d.cliente_nome||'')}</p>
+    ${fechado?'<p style="color:var(--verde);font-weight:600">✅ Conferido e fechado pelo escritório (só leitura).</p>':''}</div>
+    ${registrosHTML('mdo',fechado)}
+    ${blocoOSHTML(os,!(d.registros||[]).length)}
+    <details style="margin-top:12px"><summary style="cursor:pointer;font-weight:700;padding:10px 0">📋 Mais detalhes do dia (opcional): horário, tempo, equipe, serviços</summary>
+    <div id="mdo-form">${formDiarioHTML(d,os,'mdo',d.equipe_nomes||[])}</div>
+    ${fechado?'':'<button class="cc-prim" style="width:100%;padding:14px;font-size:16px;margin-top:10px;border-radius:10px;border:none;background:var(--verde);color:#fff" onclick="salvarMeuDiario()">Salvar detalhes</button>'}</details>`;
+  if(fechado)$('mdo-form').querySelectorAll('input,select,textarea').forEach(e=>e.disabled=true);
+  renderRegistros('mdo');window.scrollTo(0,0);
+}
+async function salvarMeuDiario(){
+  if(!dioAtual)return;const f=lerFormDiario('mdo');
+  if(!f.atividades&&f.condicao!=='parado'&&!(dioAtual.d.registros||[]).length){alert('Grave um relato, tire uma foto ou escreva o que foi feito hoje (ou marque “Parado”).');return;}
+  const{data,error}=await sb.rpc('bvek_diario_salvar',{p_id:dioAtual.d.id,p_dados:f});
+  if(error){console.error(error);alert('Não foi possível salvar: '+(error.message||error));return;}
+  const i=meusDiarios.findIndex(x=>x.id===dioAtual.d.id);if(i>=0)meusDiarios[i]={...meusDiarios[i],...data};
+  toast('Diário salvo. Obrigado!');renderMeusDiarios();
+}
+
+/* ================= v52: DIÁRIO PELO CELULAR — relatos em áudio e fotos na hora ================= */
+// A linha do tempo do dia (diarios_obra.registros): cada registro tem foto e/ou áudio e/ou texto, com hora e
+// autor. Cada um vai na hora para o CRM. Sem sinal na obra, fica guardado no celular (IndexedDB) e sobe
+// sozinho quando a internet voltar. O id do registro nasce no celular: reenviar nunca duplica (o banco confere).
+const FILA_DB='bvek-diario',FILA_ST='fila';let filaMem=[],filaSemIDB=false,filaRodando=false;
+function filaAbrir(){return new Promise((res,rej)=>{try{const r=indexedDB.open(FILA_DB,1);r.onupgradeneeded=()=>r.result.createObjectStore(FILA_ST,{keyPath:'k',autoIncrement:true});r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);}catch(e){rej(e);}});}
+async function filaOp(modo,fn){const db=await filaAbrir();return new Promise((res,rej)=>{const tx=db.transaction(FILA_ST,modo),r=fn(tx.objectStore(FILA_ST));tx.oncomplete=()=>res(r&&r.result);tx.onerror=()=>rej(tx.error);});}
+async function filaAdd(it){if(!filaSemIDB){try{return await filaOp('readwrite',st=>st.add(it));}catch(e){console.warn('IndexedDB indisponível — fila só na memória',e);filaSemIDB=true;}}it.k=Date.now()+Math.random();filaMem.push(it);return it.k;}
+async function filaTodos(){if(!filaSemIDB){try{return(await filaOp('readonly',st=>st.getAll()))||[];}catch(e){filaSemIDB=true;}}return filaMem.slice();}
+async function filaPut(it){if(!filaSemIDB){try{return await filaOp('readwrite',st=>st.put(it));}catch(e){filaSemIDB=true;}}}
+async function filaDel(k){if(!filaSemIDB){try{return await filaOp('readwrite',st=>st.delete(k));}catch(e){filaSemIDB=true;}}filaMem=filaMem.filter(x=>x.k!==k);}
+const novoId=()=>(window.crypto&&crypto.randomUUID)?crypto.randomUUID():'r'+Date.now().toString(36)+Math.random().toString(36).slice(2,10);
+const extAudio=t=>/mp4|m4a|aac/.test(t)?'m4a':/ogg/.test(t)?'ogg':/mpeg/.test(t)?'mp3':'webm';
+const agoraLocal=()=>{const d=new Date();return isoLocal(d)+'T'+[d.getHours(),d.getMinutes(),d.getSeconds()].map(pad2).join(':');};
+const erroDeRede=e=>!navigator.onLine||/Failed to fetch|NetworkError|Load failed|network|timeout|fetch/i.test(String((e&&(e.message||e.error))||e));
+async function subirArquivoDiario(diario,nome,blob,tipo){
+  const caminho=`${diario}/${nome}`;
+  const{error}=await sb.storage.from('diarios').upload(caminho,blob,{contentType:tipo,upsert:false});
+  if(error&&!/already exists|duplicate|409/i.test(String(error.message||'')+String(error.statusCode||'')))throw error;
+  return caminho;
+}
+async function enviarItemFila(it){
+  if(it.tipo==='novo'){
+    const reg={...it.reg};
+    if(it.foto)reg.foto=await subirArquivoDiario(it.diario,it.reg.id+'.jpg',it.foto,'image/jpeg');
+    if(it.audio){reg.audio=await subirArquivoDiario(it.diario,it.reg.id+'.'+extAudio(it.audioTipo),it.audio,it.audioTipo);reg.duracao=it.duracao;}
+    const{data,error}=await sb.rpc('bvek_diario_registrar',{p_id:it.diario,p_reg:reg});if(error)throw error;return data;
+  }
+  const dados={};
+  if(it.audio){dados.audio=await subirArquivoDiario(it.diario,it.reg_id+'_narr_'+it.nid+'.'+extAudio(it.audioTipo),it.audio,it.audioTipo);dados.duracao=it.duracao;}
+  const{data,error}=await sb.rpc('bvek_diario_registro_alterar',{p_id:it.diario,p_reg:it.reg_id,p_dados:dados});if(error)throw error;return data;
+}
+// atualiza o diário na tela (celular ou escritório) com os registros que o banco devolveu
+function aplicarRegistros(diario,regs){
+  if(!Array.isArray(regs))return;
+  [meusDiarios,todosDiarios].forEach(l=>(l||[]).forEach(d=>{if(d.id===diario){d.registros=regs;if(d.situacao==='pendente')d.situacao='preenchido';}}));
+  if(dioAtual&&dioAtual.d.id===diario){dioAtual.d.registros=regs;}
+}
+async function processarFila(){
+  if(filaRodando)return;filaRodando=true;
+  try{
+    const itens=(await filaTodos()).sort((a,b)=>a.k-b.k);
+    for(const it of itens){
+      if(it.erro&&!it.tentarDeNovo)continue;
+      try{const regs=await enviarItemFila(it);await filaDel(it.k);aplicarRegistros(it.diario,regs);}
+      catch(e){
+        if(erroDeRede(e))break; // sem sinal: tenta tudo de novo depois, na mesma ordem
+        if(/ainda não chegou/i.test(e.message||''))continue; // narração de foto que ainda está na fila
+        it.erro=String(e.message||e);it.tentarDeNovo=false;await filaPut(it);console.warn('diário: não enviado',e);
+      }
+    }
+  }finally{filaRodando=false;if(dioAtual)renderRegistros(dioAtual.px);}
+}
+window.addEventListener('online',()=>processarFila());
+setInterval(()=>{if(navigator.onLine)processarFila();},60000);
+async function novoRegistro(dados){
+  if(!dioAtual)return;
+  const it={diario:dioAtual.d.id,tipo:'novo',reg:{id:novoId(),em:agoraLocal(),texto:dados.texto||undefined},foto:dados.foto||null,audio:dados.audio||null,audioTipo:dados.audioTipo||null,duracao:dados.duracao||null,criado:Date.now()};
+  await filaAdd(it);renderRegistros(dioAtual.px);processarFila();
+  return it.reg.id;
+}
+async function narrarRegistro(regId,audio,tipo,dur){
+  if(!dioAtual)return;
+  await filaAdd({diario:dioAtual.d.id,tipo:'narrar',reg_id:regId,nid:novoId().slice(0,8),audio,audioTipo:tipo,duracao:dur,criado:Date.now()});
+  renderRegistros(dioAtual.px);processarFila();
+}
+// gravação de áudio (MediaRecorder): um toque grava, outro toque para e salva
+let grav=null;
+async function gravarAudio(alvoRegId){
+  if(grav){pararGravacao();return;}
+  if(!dioAtual)return;
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia||!window.MediaRecorder){alert('Este celular não grava áudio pelo navegador. Atualize o Chrome (Android) ou o iPhone, ou escreva o relato.');return;}
+  let stream;
+  try{stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true}});}
+  catch(e){alert('O CRM precisa do microfone. Toque no cadeado ao lado do endereço do site → Microfone → Permitir, e tente de novo.');return;}
+  const tipo=['audio/webm;codecs=opus','audio/mp4','audio/webm','audio/ogg;codecs=opus'].find(t=>MediaRecorder.isTypeSupported&&MediaRecorder.isTypeSupported(t))||'';
+  let rec;try{rec=new MediaRecorder(stream,tipo?{mimeType:tipo,audioBitsPerSecond:32000}:undefined);}catch(e){rec=new MediaRecorder(stream);}
+  grav={rec,stream,chunks:[],ini:Date.now(),alvo:alvoRegId||null,px:dioAtual.px};
+  rec.ondataavailable=e=>{if(grav&&e.data&&e.data.size)grav.chunks.push(e.data);};
+  rec.onstop=finalizarGravacao;
+  rec.start(1000);
+  grav.timer=setInterval(()=>{botaoGravacao();if(grav&&Date.now()-grav.ini>10*60*1000)pararGravacao();},500);
+  if(navigator.vibrate)navigator.vibrate(60);
+  botaoGravacao();
+}
+function pararGravacao(){if(grav&&grav.rec.state!=='inactive')grav.rec.stop();}
+async function finalizarGravacao(){
+  const g=grav;grav=null;if(!g)return;
+  clearInterval(g.timer);g.stream.getTracks().forEach(t=>t.stop());
+  const tipo=String(g.rec.mimeType||'audio/webm').split(';')[0]||'audio/webm',dur=Math.round((Date.now()-g.ini)/1000);
+  const blob=new Blob(g.chunks,{type:tipo});
+  if(navigator.vibrate)navigator.vibrate([40,40,40]);
+  if(dur<1||!blob.size){botaoGravacao();toast('Gravação muito curta — segure um pouco mais.');return;}
+  if(g.alvo)await narrarRegistro(g.alvo,blob,tipo,dur);else await novoRegistro({audio:blob,audioTipo:tipo,duracao:dur});
+  toast('🎙️ Relato salvo');botaoGravacao();
+}
+const mmss=s=>Math.floor(s/60)+':'+pad2(Math.floor(s%60));
+function botaoGravacao(){
+  if(!dioAtual)return;const b=$(dioAtual.px+'-bt-grav');if(!b)return;
+  if(grav){const s=(Date.now()-grav.ini)/1000;b.innerHTML=`⏹️ Parar e salvar <span style="font-variant-numeric:tabular-nums">${mmss(s)}</span>${grav.alvo?'<br><small>narrando a foto</small>':''}`;b.style.background='#c62828';b.style.color='#fff';}
+  else{b.innerHTML='🎙️ Gravar relato';b.style.background='';b.style.color='';}
+}
+async function fotosEscolhidas(input,camera){
+  const fs=[...(input.files||[])].slice(0,20);input.value='';if(!fs.length)return;
+  let ultimo=null;
+  for(const f of fs){if(!/^image\//.test(f.type))continue;const b=await reduzirImagem(f);ultimo=await novoRegistro({foto:b});}
+  if(camera&&ultimo){dioAtual.realce=ultimo;renderRegistros(dioAtual.px);toast('📷 Foto salva — toque em 🎙️ Narrar para explicar o que ela mostra');}
+  else toast(fs.length>1?`📷 ${fs.length} fotos salvas`:'📷 Foto salva');
+}
+async function escreverRegistro(regId){
+  const r=((dioAtual&&dioAtual.d.registros)||[]).find(x=>x.id===regId);
+  const t=prompt(regId?'Texto deste registro:':'Escreva o relato:',r&&r.texto||'');if(t===null)return;
+  if(!regId){if(t.trim())await novoRegistro({texto:t.trim()});return;}
+  const{data,error}=await sb.rpc('bvek_diario_registro_alterar',{p_id:dioAtual.d.id,p_reg:regId,p_dados:{texto:t.trim()}});
+  if(error){alert('Não foi possível salvar: '+(error.message||error));return;}
+  aplicarRegistros(dioAtual.d.id,data);renderRegistros(dioAtual.px);
+}
+async function tirarRegistro(regId){
+  if(!confirm('Tirar este registro do diário?'))return;
+  const{data,error}=await sb.rpc('bvek_diario_registro_alterar',{p_id:dioAtual.d.id,p_reg:regId,p_dados:{remover:true}});
+  if(error){alert('Não foi possível tirar: '+(error.message||error));return;}
+  aplicarRegistros(dioAtual.d.id,data);renderRegistros(dioAtual.px);
+}
+async function descartarFila(k){if(!confirm('Descartar este registro que não foi enviado?'))return;await filaDel(k);renderRegistros(dioAtual.px);}
+async function tentarFila(k){const l=await filaTodos(),it=l.find(x=>x.k===k);if(it){it.tentarDeNovo=true;delete it.erro;await filaPut(it);}processarFila();}
+// botões grandes + linha do tempo
+function registrosHTML(px,fechado){
+  const bt='flex:1 1 45%;min-height:64px;font-size:17px;font-weight:700;border-radius:12px;border:2px solid var(--verde);background:#fff;color:var(--verde);cursor:pointer;padding:10px';
+  return`<div style="margin:6px 0 12px">
+    ${fechado?'':`<div style="display:flex;gap:10px;flex-wrap:wrap">
+      <button type="button" id="${px}-bt-grav" style="${bt}" onclick="gravarAudio()">🎙️ Gravar relato</button>
+      <button type="button" style="${bt}" onclick="$('${px}-in-cam').click()">📷 Tirar foto</button>
+      <input type="file" id="${px}-in-cam" accept="image/*" capture="environment" style="display:none" onchange="fotosEscolhidas(this,true)">
+      <input type="file" id="${px}-in-gal" accept="image/*" multiple style="display:none" onchange="fotosEscolhidas(this,false)">
+    </div>
+    <div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:8px;font-size:14px"><button type="button" class="btn-link" onclick="$('${px}-in-gal').click()">🖼️ Enviar fotos da galeria</button><button type="button" class="btn-link" onclick="escreverRegistro()">✏️ Escrever um relato</button></div>
+    <div class="dica" style="margin-top:6px">Grave quantas vezes quiser ao longo do dia. Conte: o que foi feito, <strong>o que estava diferente da OS</strong> e <strong>quem autorizou</strong>. Cada registro é salvo na hora — sem sinal, fica guardado no celular e sobe sozinho depois.</div>`}
+    <div id="${px}-regs" style="margin-top:10px"></div></div>`;
+}
+const urlCacheDiario={};
+async function urlsDiario(caminhos){
+  const falta=caminhos.filter(c=>c&&!(urlCacheDiario[c]&&urlCacheDiario[c].ate>Date.now()));
+  if(falta.length){const{data}=await sb.storage.from('diarios').createSignedUrls(falta,3600);(data||[]).forEach(x=>{if(x.signedUrl)urlCacheDiario[x.path]={u:x.signedUrl,ate:Date.now()+50*60*1000};});}
+  const m={};caminhos.forEach(c=>{if(urlCacheDiario[c])m[c]=urlCacheDiario[c].u;});return m;
+}
+const horaReg=r=>String(r.em||'').slice(11,16);
+async function renderRegistros(px){
+  const box=$(px+'-regs');if(!box||!dioAtual)return;
+  const d=dioAtual.d,regs=(d.registros||[]).slice().sort((a,b)=>String(a.em).localeCompare(String(b.em)));
+  const fila=(await filaTodos()).filter(x=>x.diario===d.id).sort((a,b)=>a.k-b.k);
+  const urls=await urlsDiario(regs.flatMap(r=>[r.foto,r.audio]).filter(Boolean));
+  const meu=($('cc-nome')&&$('cc-nome').dataset.nome)||'';
+  const fechado=d.situacao==='fechado',escr=!!(PERM&&PERM.cronograma);
+  const narrPend=new Set(fila.filter(x=>x.tipo==='narrar').map(x=>x.reg_id));
+  const card=(inner,destaque)=>`<div style="border:1.5px solid ${destaque?'var(--verde)':'var(--borda)'};border-radius:12px;padding:10px;margin-bottom:10px;background:#fff">${inner}</div>`;
+  const bl='font-size:14px;padding:6px 10px;border-radius:8px;border:1.5px solid var(--borda);background:#fff;cursor:pointer';
+  // revoga as prévias antigas (fotos/áudios ainda no celular)
+  (dioAtual.previas||[]).forEach(u=>URL.revokeObjectURL(u));dioAtual.previas=[];
+  const prev=b=>{const u=URL.createObjectURL(b);dioAtual.previas.push(u);return u;};
+  let h=regs.map(r=>{const meuReg=escr||(r.autor&&r.autor===meu);
+    return card(`<div style="display:flex;justify-content:space-between;gap:8px;font-size:13px;color:var(--texto2)"><strong style="color:var(--texto)">${esc(horaReg(r))}</strong><span>${esc(r.autor||'')}</span></div>
+      ${r.foto&&urls[r.foto]?`<a href="${esc(urls[r.foto])}" target="_blank" rel="noopener"><img src="${esc(urls[r.foto])}" style="width:100%;max-height:300px;object-fit:cover;border-radius:8px;margin-top:6px"></a>`:r.foto?'<div>📷 foto</div>':''}
+      ${r.audio&&urls[r.audio]?`<audio controls preload="none" src="${esc(urls[r.audio])}" style="width:100%;margin-top:6px"></audio><div class="dica" style="margin:0">🎙️ ${r.duracao?mmss(r.duracao):''}</div>`:''}
+      ${r.texto?`<div style="margin-top:6px;white-space:pre-wrap">${esc(r.texto)}</div>`:''}
+      ${fechado||!meuReg?'':`<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+        ${r.foto&&!r.audio?(narrPend.has(r.id)?'<span class="dica" style="margin:0">⏳ narração aguardando sinal</span>':`<button type="button" style="${bl};${dioAtual.realce===r.id?'border-color:var(--verde);color:var(--verde);font-weight:700':''}" onclick="gravarAudio('${esc(r.id)}')">🎙️ Narrar</button>`):''}
+        <button type="button" style="${bl}" onclick="escreverRegistro('${esc(r.id)}')">✏️ ${r.texto?'Mudar texto':'Escrever'}</button>
+        <button type="button" style="${bl};color:var(--vermelho)" onclick="tirarRegistro('${esc(r.id)}')">🗑️</button></div>`}`,dioAtual.realce===r.id);}).join('');
+  h+=fila.filter(x=>x.tipo==='novo').map(x=>card(`<div style="font-size:13px;color:var(--texto2)"><strong>${esc(String(x.reg.em).slice(11,16))}</strong> · ${x.erro?`<span style="color:var(--vermelho)">⚠️ não enviado: ${esc(x.erro)}</span>`:'⏳ aguardando sinal para enviar (fica guardado no celular)'}</div>
+      ${x.foto?`<img src="${prev(x.foto)}" style="width:100%;max-height:220px;object-fit:cover;border-radius:8px;margin-top:6px;opacity:.75">`:''}
+      ${x.audio?`<audio controls src="${prev(x.audio)}" style="width:100%;margin-top:6px"></audio>`:''}${x.reg.texto?`<div style="margin-top:6px">${esc(x.reg.texto)}</div>`:''}
+      <div style="display:flex;gap:8px;margin-top:6px"><button type="button" style="${bl}" onclick="tentarFila(${x.k})">🔄 Enviar agora</button>${x.erro?`<button type="button" style="${bl}" onclick="descartarFila(${x.k})">Descartar</button>`:''}</div>`)).join('');
+  box.innerHTML=h||'<div class="dica" style="text-align:center;padding:10px">Nenhum registro ainda hoje. Toque em 🎙️ ou 📷 para começar.</div>';
+  botaoGravacao();
+}
+function resumoRegistros(d){const r=d.registros||[],a=r.filter(x=>x.audio).length,f=r.filter(x=>x.foto).length,t=r.filter(x=>x.texto&&!x.audio&&!x.foto).length;
+  return[a?`🎙️ ${a}`:'',f?`📷 ${f}`:'',t?`✏️ ${t}`:''].filter(Boolean).join(' · ');}
+
+/* ================= v51: DOCUMENTOS DOS FUNCIONÁRIOS NO SHAREPOINT (espelho) ================= */
+// A função "sharepoint" (sincronizar_colaboradores) lê as pastas 01.2.1.1_ATIVOS e 01.2.1.2_DESLIGADOS e grava
+// um registro por arquivo (identificação única do SharePoint: nunca duplica; renomear/mover atualiza o mesmo).
+// O arquivo que o próprio CRM mandou fica ligado ao documento do CRM e aparece uma vez só (na linha do documento).
+let todosDocsSP=[],spSync=null,v51SPOk=true,spSincronizando=false,spLigarId=null,spTentouEm=0;
+async function carregarDocsSP(){
+  if(!(PERM.rhPessoal||PERM.docs))return;
+  const[a,b]=await Promise.all([sb.from('documentos_sharepoint').select('*').eq('situacao','ativo').order('nome'),sb.from('sharepoint_sync').select('*').eq('id','colaboradores').maybeSingle()]);
+  if(a.error){if(faltaV51(a.error))v51SPOk=false;else console.warn(a.error);todosDocsSP=[];return;}
+  v51SPOk=true;todosDocsSP=a.data||[];spSync=b.data||null;
+}
+function spDoDocumento(d){return todosDocsSP.find(x=>x.documento_id===d.id);}
+async function sincronizarDocsSP(silencioso){
+  if(spSincronizando||!v51SPOk)return;
+  spTentouEm=Date.now();
+  if(!await sharePointLigado()){if(!silencioso)alert('A ligação com o SharePoint ainda não está ativa (veja supabase/functions/sharepoint/LEIA-ME.md).');return;}
+  spSincronizando=true;if(tabAtual==='documentos')renderDocsSP();
+  try{
+    const{data,error}=await sb.functions.invoke('sharepoint',{body:{acao:'sincronizar_colaboradores'}});
+    if(error||!data||!data.ok){let m=(data&&data.erro)||(error&&error.message)||'erro';try{const r=error&&error.context&&await error.context.json();if(r&&r.erro)m=r.erro;}catch(e){}
+      if(!silencioso)alert('Não foi possível sincronizar com o SharePoint:\n'+m);else console.warn('SharePoint',m);return;}
+    await carregarDocsSP();
+    if(!silencioso)toast(`SharePoint sincronizado: ${data.arquivos} arquivo(s), ${data.novos} novo(s), ${data.removidos} removido(s)`);
+  }finally{spSincronizando=false;if(tabAtual==='documentos')renderDocumentos();}
+}
+function renderDocsSP(){
+  const box=$('docs-sp');if(!box)return;
+  if(!(PERM.rhPessoal||PERM.docs)){box.innerHTML='';return;}
+  if(!v51SPOk){box.innerHTML=`<div class="info-box" style="display:block">Para ver aqui os arquivos das pastas dos funcionários no SharePoint: ${esc(MSG_V51)}</div>`;return;}
+  const busca=norm($('doc-busca').value),tit=$('doc-titular').value,sit=$('doc-situacao').value;
+  if(tit==='empresa'||sit!=='vigente'){box.innerHTML='';return;}
+  const r=spSync&&spSync.resultado||{};
+  const soltos=todosDocsSP.filter(x=>!x.documento_id).filter(x=>{const f=x.funcionario_id&&funcPorId(x.funcionario_id);return!busca||norm([x.nome,f&&f.nome,x.raiz.split('/').pop()].join(' ')).includes(busca);});
+  const ligados=todosDocsSP.filter(x=>x.documento_id).length;
+  const avisos=[(r.pastas_sem_funcionario||[]).length?`${r.pastas_sem_funcionario.length} pasta(s) sem funcionário com o mesmo nome no CRM: ${esc(r.pastas_sem_funcionario.map(x=>x.split('/').pop()).join(', '))}`:'',
+    (r.funcionarios_com_nome_repetido||[]).length?`nome repetido no cadastro (não dá para saber de quem é): ${esc(r.funcionarios_com_nome_repetido.join(', '))}`:'',
+    (r.pastas_com_erro||[]).length?`${r.pastas_com_erro.length} pasta(s) não puderam ser lidas agora (nada delas foi removido): ${esc(r.pastas_com_erro.join(' · '))}`:''].filter(Boolean);
+  const porRaiz=new Map();soltos.forEach(x=>{if(!porRaiz.has(x.raiz))porRaiz.set(x.raiz,[]);porRaiz.get(x.raiz).push(x);});
+  box.innerHTML=`<div class="secao" style="margin-top:18px">☁️ Arquivos nas pastas dos funcionários no SharePoint</div>
+    <div class="dica" style="line-height:1.5">${spSincronizando?'🔄 Sincronizando com o SharePoint…':spSync&&spSync.ultima_em?`Última sincronização: <strong>${esc(fmtDataHora(spSync.ultima_em))}</strong>${spSync.por?' ('+esc(spSync.por)+')':''} · ${todosDocsSP.length} arquivo(s) espelhado(s), ${ligados} já ligado(s) a um documento do CRM (aparecem só na linha do documento, com ☁️).`:'Ainda não sincronizado.'}
+      ${PERM.rhPessoal?` <button class="btn-link" onclick="sincronizarDocsSP(false)"${spSincronizando?' disabled':''}>🔄 Sincronizar agora</button>`:''}
+      <br>Cada arquivo aparece uma vez só (pela identificação única dele no SharePoint). Arquivo apagado lá some daqui na próxima sincronização; renomeado ou movido, é atualizado. A sincronização roda sozinha ao abrir esta aba (no máximo a cada 15 minutos).</div>
+    ${avisos.length?`<div class="info-box" style="display:block;background:#fffbea">${avisos.map(a=>'⚠️ '+a).join('<br>')}</div>`:''}
+    <div class="tabela-wrap"><table class="tabela"><thead><tr><th>Funcionário (pasta)</th><th>Arquivo no SharePoint</th><th>Alterado</th><th></th></tr></thead><tbody>${soltos.length?[...porRaiz.entries()].map(([raiz,l])=>{
+      const f=l[0].funcionario_id&&funcPorId(l[0].funcionario_id);
+      return l.map((x,i)=>`<tr>${i===0?`<td rowspan="${l.length}"><strong>${esc(f?f.nome:raiz.split('/').pop())}</strong>${f?'':'<div class="dica" style="margin:0;color:var(--vermelho)">pasta sem funcionário no CRM</div>'}${/DESLIGADOS/.test(raiz)?'<div class="dica" style="margin:0">desligado</div>':''}</td>`:''}
+        <td>📄 <a href="${esc(x.url||'#')}" target="_blank" rel="noopener">${esc(x.nome)}</a>${x.pasta!==x.raiz?`<div class="dica" style="margin:0">${esc(x.pasta.slice(x.raiz.length+1))}</div>`:''}</td>
+        <td style="white-space:nowrap">${esc(fmtData(x.alterado_em))}</td>
+        <td>${PERM.docs&&x.funcionario_id&&!/-HOL-/i.test(x.nome)?`<button class="btn-link" onclick="cadastrarDocDoSP('${esc(x.id)}')" title="Cadastrar como documento com validade (ASO, NR…) — o arquivo continua só no SharePoint">+ cadastrar com validade</button>`:/-HOL-/i.test(x.nome)?'<span class="dica" style="margin:0">contracheque</span>':''}</td></tr>`).join('');}).join(''):
+      `<tr><td colspan="4" class="vazio">${todosDocsSP.length?'Todos os arquivos das pastas já estão ligados a documentos do CRM (ou nenhum com este filtro).':'Nenhum arquivo espelhado ainda.'}</td></tr>`}</tbody></table></div>`;
+}
+function cadastrarDocDoSP(id){
+  const x=todosDocsSP.find(s=>s.id===id);if(!x)return;
+  abrirModalDocumento(null);spLigarId=id;
+  document.querySelector('input[name=md-titular][value=funcionario]').checked=true;mudouTitularDoc();
+  preencherSelectFuncionarios('md-func',x.funcionario_id);
+  const cod=(x.nome.match(/^[A-Z]{2,3}-[A-Z]{2,3}-([A-Z]{3})-/i)||[])[1];
+  const t=cod&&todosTipos.find(t=>t.categoria==='funcionario'&&t.ativo!==false&&norm(t.nome).includes(norm(cod)));
+  if(t){$('md-tipo').value=t.id;mudouTipoDoc();}
+  $('md-link').value=x.url||'';
+  $('md-arquivo-info').innerHTML=`☁️ Arquivo no SharePoint: <a href="${esc(x.url||'#')}" target="_blank" rel="noopener">${esc(x.nome)}</a> — fica ligado a este documento (não precisa anexar de novo).`;
+}
+async function ligarDocSP(docId){
+  if(!spLigarId||!docId)return;const id=spLigarId;spLigarId=null;
+  const{error}=await sb.from('documentos_sharepoint').update({documento_id:docId,ligado_manual:true,atualizado_em:new Date().toISOString()}).eq('id',id);
+  if(error)console.warn('ligar ao SharePoint',error);else await carregarDocsSP();
 }
 
 /* ================= RH (v14): ficha, uniformes, contracheques, vales, adiantamentos, envio ================= */
@@ -7629,7 +8382,7 @@ function renderCronograma(){
     ['crg-grade','crg-intermitentes','crg-lista'].forEach(id=>$(id).innerHTML='');return;
   }
   const ini=mesCrono(),fim=fimDoMes(ini),hoje=hojeISO();
-  $('crg-info').innerHTML=`A linha <strong>🏢 Escritório</strong> mostra as reuniões e eventos da agenda do escritório (${esc(CAIXA_ESCRITORIO)}) — eles <strong>não</strong> entram na folha. ${crgVisao==='projeto'?'Cada linha é um <strong>projeto</strong> (agrupado por cliente); o bloco mostra quem trabalhou no dia (iniciais, ou quantas pessoas — passe o mouse para ver os nomes). Clique num dia vazio para alocar a equipe naquele projeto':'Clique num dia vazio para alocar o funcionário'}, ou num bloco colorido para abrir a alocação. Cada alocação vira um evento na <strong>sua agenda do Outlook</strong> (e-mail do seu login); para os <strong>intermitentes</strong>, os dias do mês (de 1 a ${fim.slice(8)}) entram sozinhos na <strong>folha de ${esc(nomeMes(ini))}</strong>.`;
+  $('crg-info').innerHTML=`A linha <strong>🏢 Escritório</strong> mostra as reuniões e eventos da agenda do escritório (${esc(CAIXA_ESCRITORIO)}) — eles <strong>não</strong> entram na folha. <strong>Reunião do escritório marcada no Outlook:</strong> convide <strong>${esc(CAIXA_ESCRITORIO)}</strong> (senão, com colegas convidados, ela vira alocação “sem cliente”; se isso já aconteceu, acrescente a agenda como convidada no Outlook e clique em 🔄 Sincronizar). ${crgVisao==='projeto'?'Cada linha é um <strong>projeto</strong> (agrupado por cliente); o bloco mostra quem trabalhou no dia (iniciais, ou quantas pessoas — passe o mouse para ver os nomes). Clique num dia vazio para alocar a equipe naquele projeto':'Clique num dia vazio para alocar o funcionário'}, ou num bloco colorido para abrir a alocação. Cada alocação vira um evento na <strong>sua agenda do Outlook</strong> (e-mail do seu login); para os <strong>intermitentes</strong>, os dias do mês (de 1 a ${fim.slice(8)}) entram sozinhos na <strong>folha de ${esc(nomeMes(ini))}</strong>.`;
   $('crg-outlook').innerHTML=cronoOutlook.ok===true?`🟢 Outlook ligado${cronoOutlook.caixa?' — agenda de '+esc(cronoOutlook.caixa):''}`:cronoOutlook.ok===false?`⚪ Outlook não ligado (o cronograma funciona igual)${cronoOutlook.msg?`<br><span style="color:var(--vermelho)">Motivo: ${esc(cronoOutlook.msg)}</span>`:''}`:'';
   // v42: filtros de projeto e de funcionário valem para as duas visões
   $('crg-visao').value=crgVisao;$('crg-projmodo').value=crgProjModo;

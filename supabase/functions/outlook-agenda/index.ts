@@ -267,6 +267,14 @@ async function sincronizar(adm: SupabaseClient, inicio: string, fim: string, min
           l = { ...l, outlook_id: ev.id, outlook_caixa: minhaCaixa };
         }
         if (l.situacao === "cancelado") continue; // será apagado no passo 4
+        // v51: evento que veio do Outlook e depois recebeu a agenda do escritório como convidada:
+        // sai do cronograma (fica só na agenda do escritório). O evento NÃO é apagado no Outlook.
+        if (l.origem === "outlook" && ehDoEscritorio(ev)) {
+          await adm.from("cronograma").update({ situacao: "cancelado", outlook_id: null, outlook_icaluid: null,
+            outlook_erro: "passou para a agenda do escritório", outlook_sync_em: new Date().toISOString() }).eq("id", l.id);
+          res.cancelados_no_crm++; marcaMeses(l.data_inicio, l.data_fim);
+          continue;
+        }
         const mudouOutlook = new Date(ev.lastModifiedDateTime).getTime() > new Date(l.outlook_alterado_em || 0).getTime() + 2000;
         const mudouCrm = !l.outlook_sync_em || new Date(l.atualizado_em).getTime() > new Date(l.outlook_sync_em).getTime() + 2000;
         const outlookMaisNovo = new Date(ev.lastModifiedDateTime).getTime() > new Date(l.atualizado_em).getTime();
