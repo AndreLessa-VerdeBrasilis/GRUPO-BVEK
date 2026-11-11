@@ -1,6 +1,6 @@
 # Site do Grupo BVEK (www.bvek.com.br e www.grupobvek.com.br)
 
-Página única que apresenta o Grupo BVEK e as três empresas (Engekat, Verde Brasilis e BrasiLimp).
+Página única que apresenta o Grupo BVEK e as quatro empresas (Engekat, Verde Brasilis, BrasiLimp e Kat Seguros).
 Tudo está nesta pasta `site/`: `index.html` (textos e visual), `img/` (logos), `vercel.json`.
 
 ## Publicar (uma vez só)

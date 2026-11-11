@@ -50,7 +50,7 @@ Boa parte disto já foi implementada nas versões v11 a v18 (acessos, documentos
 - Funil, propostas, valores e contratos: só o Administrador (v46). Os outros sabem os clientes e projetos, e só isso.
 - Cadastro completo dos funcionários (CPF, PIS, e-mail…) e documentos dos funcionários: só Administrador, Administrativo e Contabilidade (v46). Os outros perfis recebem só nome, cargo e empresa (`bvek_funcionarios_basico`).
 - Contabilidade: vê só RH e documentos (ponto, VA, VT, academia, odonto etc.).
-- Estagiário (v55): vê só Painel da equipe, Tarefas (as da equipe), Cronograma (cria e altera, não apaga), Inventário e Fornecedores (cadastra e altera). Regras próprias no banco (`bvek_estag_*`), sem mexer nas dos outros perfis.
+- Estagiário (v55; sem Painel desde a v56.2, entra direto em Tarefas): vê só Tarefas (as da equipe), Cronograma (cria e altera, não apaga), Inventário e Fornecedores (cadastra e altera). Regras próprias no banco (`bvek_estag_*`), sem mexer nas dos outros perfis.
 - "Funcionário (contracheque e ponto)": login por CPF + senha, vê todos os contracheques do CPF e as próprias marcações do ponto (Secullum, ação `meu_ponto`).
 - Objetivo: abrir o CRM deve ser o primeiro movimento dos funcionários ao chegar no escritório.
 - Painel completo (funil, valores, contratos, ganhos × custos) só para o Administrador (v45). Os outros perfis veem o "Painel da equipe": tarefas, agenda do escritório, quem está onde hoje e documentos — nunca propostas, valores ou contratos.

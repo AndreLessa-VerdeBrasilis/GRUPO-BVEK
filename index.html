@@ -780,7 +780,7 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
         </select>
         <button class="btn-sec" id="crg-btn-projsel" onclick="abrirFiltroCrono('proj')">🏗️ Escolher contratos</button>
         <button class="btn-sec" id="crg-btn-funcsel" onclick="abrirFiltroCrono('func')">👷 Escolher funcionários</button>
-        <input type="search" id="crg-busca" placeholder="Buscar funcionário, cliente ou projeto" oninput="renderCronograma()">
+        <input type="search" id="crg-busca" placeholder="Buscar funcionário, cliente ou contrato" oninput="renderCronograma()">
         <select id="crg-quem" onchange="renderCronograma()">
           <option value="">Todos os funcionários</option>
           <option value="alocados">Só quem tem alocação no mês</option>
@@ -1251,7 +1251,7 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
         <div><strong>Comercial</strong>Clientes, contatos, contratos, tarefas, cronograma e agenda do escritório. Documentos das empresas só consulta. Não vê funil, propostas, valores, contratos recorrentes nem RH.</div>
         <div><strong>Administrativo</strong>Documentos e certidões, funcionários, RH (ficha, uniformes, contracheques, vales, adiantamentos, envio à contabilidade), currículos, contratos, tarefas, cronograma e agenda do escritório. Clientes só consulta. Não vê funil, propostas, valores nem contratos recorrentes.</div>
         <div><strong>Contabilidade</strong>Funcionários, benefícios, RH (salários, contracheques, vales e adiantamentos), documentos/certidões, cronograma e agenda do escritório. Não vê funil, propostas, clientes nem currículos.</div>
-        <div><strong>Estagiário</strong>Painel da equipe, tarefas da equipe, cronograma e agenda do escritório (cria e altera, não apaga), inventário e fornecedores. Não vê funil, valores, clientes, contratos, financeiro, RH nem documentos.</div>
+        <div><strong>Estagiário</strong>Tarefas da equipe, cronograma e agenda do escritório (cria e altera, não apaga), inventário e fornecedores. Não vê painel, funil, valores, clientes, contratos, financeiro, RH nem documentos.</div>
         <div><strong>Funcionário (contracheque e ponto)</strong>Entra com CPF e senha e vê somente os próprios contracheques (todos os meses guardados para o CPF) e as próprias marcações do ponto (Secullum). Não vê nada mais do CRM.</div>
       </div>
       <div class="barra-acoes" style="margin-top:18px"><h2>Acesso dos intermitentes ao contracheque</h2>
@@ -2990,10 +2990,10 @@ const PERFIS=[['administrador','Administrador'],['comercial','Comercial'],['admi
 const DOMINIO_FUNC='funcionario.bvek.com.br';
 // v46: o perfil Consulta foi removido (quem era Consulta passou para Aguardando liberação)
 const PERFIL_LABEL=Object.assign(Object.fromEntries(PERFIS),{consulta:'Consulta (removido)'});
-const ABAS_ESTAGIARIO=['painel','atividades','cronograma','fornecedores','inventario'];
+const ABAS_ESTAGIARIO=['atividades','cronograma','fornecedores','inventario'];
 function calcularPermissoes(p){
   const adm=p==='administrador',com=p==='comercial',admv=p==='administrativo',cont=p==='contabilidade',est=p==='estagiario';
-  // v55: estagiário = só Painel da equipe, Tarefas, Cronograma, Inventário e Fornecedores (cadastra e altera, não apaga)
+  // v55: estagiário = só Tarefas, Cronograma, Inventário e Fornecedores (cadastra e altera, não apaga) — sem Painel desde a v56.2
   // comercialVer: vê funil, clientes, projetos, atividades e empresas (a contabilidade não vê)
   // rh: vê benefícios e ponto (v28: o comercial não acessa o RH) · rhEditar: altera benefícios
   // v42: o Comercial não vê mais o funil de propostas (nem os valores do painel); só o administrador altera o funil
@@ -3179,6 +3179,7 @@ async function iniciarApp(){
   $('rh-mes').value=hojeISO().slice(0,7);
   try{const v=localStorage.getItem('bvek_tarefas_visao');if(v)$('ativ-visao').value=v;}catch(e){}
   if(!PERM.comercialVer)abrirTab('documentos');
+  if(PERM.estagiario)abrirTab('atividades');
   // link do lembrete do WhatsApp: …/#financeiro abre direto a aba
   if(/^#(financeiro|pagamentos)/.test(location.hash)&&PERM.financeiro)abrirTab('financeiro');
   await carregarTudo();
@@ -3718,7 +3719,7 @@ function abrirTab(tab){
   if(tab==='financeiro'&&!PERM.financeiro)tab='painel';
   if(tab==='cronograma'&&!PERM.cronograma)tab='painel';
   if(tab==='diario'&&!PERM.diario)tab='painel';
-  if(PERM.estagiario&&!ABAS_ESTAGIARIO.includes(tab))tab='painel';
+  if(PERM.estagiario&&!ABAS_ESTAGIARIO.includes(tab))tab='atividades';
   if(tab==='funil'&&!PERM.funilVer)tab='painel';
   if(!PERM.comercialVer&&['painel','funil','clientes','projetos','fornecedores','inventario','atividades','empresas'].includes(tab))tab='documentos';
   tabAtual=tab;medirTopoFixo();
@@ -5443,7 +5444,7 @@ async function alternarTipo(id){
 function chaveAvisos(){return'bvek_avisos_'+(usuario?usuario.id:'')+'_'+hojeISO();}
 function mostrarAvisosDoDia(){
   try{if(localStorage.getItem(chaveAvisos()))return;}catch(e){}
-  const docs=filtraEmpresaDocs(todosDocumentos.filter(d=>(d.situacao||'vigente')==='vigente')).map(d=>({d,s:statusDoc(d)})).filter(x=>x.s.k==='vencido'||x.s.k==='aviso').sort((a,b)=>a.s.n-b.s.n);
+  const docs=PERM.estagiario?[]:filtraEmpresaDocs(todosDocumentos.filter(d=>(d.situacao||'vigente')==='vigente')).map(d=>({d,s:statusDoc(d)})).filter(x=>x.s.k==='vencido'||x.s.k==='aviso').sort((a,b)=>a.s.n-b.s.n);
   const cobr=PERM.funil?cobrancasDoDia():[];
   const rhPend=pendenciasRH(),finAv=avisosFinGestao();
   if(!docs.length&&!cobr.length&&!rhPend.length&&!finAv.length)return;
