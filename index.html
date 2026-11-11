@@ -2506,9 +2506,11 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
         Nos eventos do escritório, {{6}} recebe o assunto e {{7}} a pauta.<br>
         Sem modelo aprovado, a Meta só entrega a mensagem a quem mandou mensagem para o número da empresa nas últimas 24 horas.</div></div>
       <div class="campo"><label>Celular para o teste</label><input type="tel" id="wc-teste" placeholder="(21) 99999-9999" oninput="mascaraTel(this)"></div>
+      <div class="campo full" id="wc-diag" style="display:none"></div>
     </div>
     <div class="modal-btns">
       <button class="btn-cancelar" onclick="fecharModal('modal-wa-conv')">Fechar</button>
+      <button class="btn-sec" onclick="diagnosticarConvocacao()" title="Confere na Meta o token, o número e o modelo, sem mandar mensagem">🩺 Diagnosticar</button>
       <button class="btn-sec" onclick="testarConfigConvocacao()">📲 Enviar teste</button>
       <button class="btn-salvar" onclick="salvarConfigConvocacao()">Salvar</button>
     </div>
@@ -2809,18 +2811,20 @@ const CADENCIA_COBRANCA={enviada:3,cobranca1:4,cobranca2:7,negociacao:7};
 const ETAPAS_COBRANCA=Object.keys(CADENCIA_COBRANCA);
 const PROXIMA_ETAPA_COBRANCA={enviada:'cobranca1',cobranca1:'cobranca2'};
 // Perfis de acesso (as regras valem no banco; aqui só ajustam a tela)
-const PERFIS=[['administrador','Administrador'],['comercial','Comercial'],['administrativo','Administrativo'],['contabilidade','Contabilidade'],['funcionario','Funcionário (contracheque e ponto)'],['pendente','Aguardando liberação']];
+const PERFIS=[['administrador','Administrador'],['comercial','Comercial'],['administrativo','Administrativo'],['contabilidade','Contabilidade'],['estagiario','Estagiário (tarefas, cronograma, inventário e fornecedores)'],['funcionario','Funcionário (contracheque e ponto)'],['pendente','Aguardando liberação']];
 // v17: login por CPF do perfil Funcionário → e-mail interno CPF@funcionario.bvek.com.br
 const DOMINIO_FUNC='funcionario.bvek.com.br';
 // v46: o perfil Consulta foi removido (quem era Consulta passou para Aguardando liberação)
 const PERFIL_LABEL=Object.assign(Object.fromEntries(PERFIS),{consulta:'Consulta (removido)'});
+const ABAS_ESTAGIARIO=['painel','atividades','cronograma','fornecedores','inventario'];
 function calcularPermissoes(p){
-  const adm=p==='administrador',com=p==='comercial',admv=p==='administrativo',cont=p==='contabilidade';
+  const adm=p==='administrador',com=p==='comercial',admv=p==='administrativo',cont=p==='contabilidade',est=p==='estagiario';
+  // v55: estagiário = só Painel da equipe, Tarefas, Cronograma, Inventário e Fornecedores (cadastra e altera, não apaga)
   // comercialVer: vê funil, clientes, projetos, atividades e empresas (a contabilidade não vê)
   // rh: vê benefícios e ponto (v28: o comercial não acessa o RH) · rhEditar: altera benefícios
   // v42: o Comercial não vê mais o funil de propostas (nem os valores do painel); só o administrador altera o funil
   // v46: funil, propostas, valores e contratos só para o administrador
-  return{admin:adm,funil:adm,funilVer:adm,clientes:adm||com,projetos:adm||com||admv,ativ:adm||com||admv,docs:adm||admv,excluir:adm,
+  return{admin:adm,estagiario:est,funil:adm,funilVer:adm,clientes:adm||com,projetos:adm||com||admv,ativ:adm||com||admv||est,docs:adm||admv,excluir:adm,
     comercialVer:!cont,rh:adm||admv||cont,rhEditar:adm||admv,
     // v14: rhPessoal = salário, contracheques, vales, uniformes, envio à contabilidade · curriculos = banco de currículos
     rhPessoal:adm||admv||cont,curriculos:adm||admv,
@@ -2829,16 +2833,16 @@ function calcularPermissoes(p){
     // v21: saídas · saidasTodas = vê todas, importa fatura e confere (o comercial vê só os próprios cartões)
     saidasTodas:adm||admv,
     // v22: fornecedores e preços (todos da área comercial veem; administrador e comercial editam)
-    fornEditar:adm||com,
+    fornEditar:adm||com||est,
     // v30: inventário (administrador, comercial e administrativo cadastram; consulta só vê)
-    invEditar:adm||com||admv,
+    invEditar:adm||com||admv||est,
     // v34: o comercial não vê valores de propostas nem gera o PDF; custo/lucro (composição, ganhos × custos) só administrador
     verValores:adm,gerarPDF:adm,verLucro:adm,
     // v36: contratos fixos no funil (Comercial e Administrativo preenchem; valores só para quem vê valores)
     contratosEditar:adm,
     // v41: cronograma de funcionários (liga ao Outlook e à folha do mês)
     // v45: todos os perfis do escritório veem, criam e alteram (só o administrador apaga) + agenda do escritório
-    cronograma:adm||com||admv||cont,
+    cronograma:adm||com||admv||cont||est,diario:adm||com||admv||cont,
     // v51: diário de obra (todos do cronograma preenchem; só administrador e administrativo fecham/reabrem)
     diarioFechar:adm||admv,
     // v45: o Painel completo (funil, valores, contratos) é só do administrador; os outros veem o Painel da equipe
@@ -3367,7 +3371,7 @@ function aplicarPermissoes(){
   mostra('rh-sub-beneficios',PERM.rh);
   mostra('rh-sub-curriculos',PERM.curriculos);
   mostra('tab-btn-financeiro',PERM.financeiro);
-  mostra('tab-btn-cronograma',PERM.cronograma);mostra('tab-btn-diario',PERM.cronograma);
+  mostra('tab-btn-cronograma',PERM.cronograma);mostra('tab-btn-diario',PERM.diario);
   mostra('fin-sub-pagamentos',PERM.pagamentos);
   mostra('pg-btn-config',PERM.admin);
   mostra('btn-tipos-benef',PERM.rhEditar);
@@ -3378,6 +3382,8 @@ function aplicarPermissoes(){
   mostra('crg-inter-box',PERM.rhPessoal);
   mostra('mc-cards-tit',PERM.funilVer);mostra('mc-cards',PERM.funilVer);mostra('tf-m-card-campo',PERM.funilVer);
   if(!PERM.funil)$('pa-cobr').style.display='none';
+  // v55: o estagiário só vê as abas dele
+  if(PERM.estagiario)document.querySelectorAll('#tabs .tab').forEach(t=>{if(!ABAS_ESTAGIARIO.includes(t.dataset.tab))t.style.display='none';});
   $('funil-dica').textContent=PERM.funil?'Arraste os cards entre as colunas para mudar a etapa.':'🔒 Seu perfil só consulta o funil.';
 }
 function abrirModalSenha(){$('ns-1').value='';$('ns-2').value='';abrirModal('modal-senha');setTimeout(()=>$('ns-1').focus(),50);}
@@ -3533,7 +3539,8 @@ function abrirTab(tab){
   if(tab==='curriculos'&&!PERM.curriculos)tab='painel';
   if(tab==='financeiro'&&!PERM.financeiro)tab='painel';
   if(tab==='cronograma'&&!PERM.cronograma)tab='painel';
-  if(tab==='diario'&&!PERM.cronograma)tab='painel';
+  if(tab==='diario'&&!PERM.diario)tab='painel';
+  if(PERM.estagiario&&!ABAS_ESTAGIARIO.includes(tab))tab='painel';
   if(tab==='funil'&&!PERM.funilVer)tab='painel';
   if(!PERM.comercialVer&&['painel','funil','clientes','projetos','fornecedores','inventario','atividades','empresas'].includes(tab))tab='documentos';
   tabAtual=tab;medirTopoFixo();
@@ -6305,7 +6312,7 @@ async function gerarDiarios(ini,fim){
   if(r.error){if(faltaV51(r.error))v51DiarioOk=false;else console.warn(r.error);}
 }
 async function carregarDiariosBadge(){
-  if(!PERM.cronograma)return;
+  if(!PERM.diario)return;
   await gerarDiarios(somarDias(hojeISO(),-14),hojeISO());if(!v51DiarioOk)return;
   const{data}=await sb.from('diarios_obra').select('id').eq('situacao','pendente').gte('data',somarDias(hojeISO(),-14)).lt('data',hojeISO());
   const n=(data||[]).length;$('tab-diario-badge').innerHTML=n?`<span class="badge badge-atraso">${n}</span>`:'';
@@ -8695,7 +8702,7 @@ async function abrirConfigConvocacao(){
   if(error){alert(/whatsapp_convocacao_config|schema cache|does not exist/i.test(error.message||'')?'Falta atualizar o banco de dados: rode no Supabase as migrações v47 e v48 (supabase/migracao_crm_v48_whatsapp_convocacao_separado.sql).':error.message);return;}
   const c=waConvConfig=data||{};
   $('wc-ativo').checked=c.ativo!==false;$('wc-token').value=c.meta_token||'';$('wc-phone').value=c.meta_phone_id||'';
-  $('wc-modelo').value=c.meta_modelo||'';$('wc-idioma').value=c.meta_idioma||'pt_BR';$('wc-teste').value='';
+  $('wc-modelo').value=c.meta_modelo||'';$('wc-idioma').value=c.meta_idioma||'pt_BR';$('wc-teste').value='';$('wc-diag').style.display='none';
   abrirModal('modal-wa-conv');
 }
 async function salvarConfigConvocacao(silencioso){
@@ -8719,6 +8726,18 @@ async function testarConfigConvocacao(){
       alert('O teste não foi enviado:\n'+m);return;}
     alert('Teste enviado. Confira o WhatsApp.'+(data.sem_modelo?'\n\nAtenção: sem modelo aprovado, a mensagem só chega se esse número mandou mensagem para o número da empresa nas últimas 24 horas.':''));
   }catch(e){console.warn(e);alert('Não foi possível enviar o teste.');}
+}
+// v55: diagnóstico da Meta (token, número e modelo) — não manda mensagem
+async function diagnosticarConvocacao(){
+  if(!await salvarConfigConvocacao(true))return;
+  const box=$('wc-diag');box.style.display='';box.innerHTML='<div class="info-box" style="display:block">🩺 Conferindo na Meta…</div>';
+  try{
+    const{data,error}=await sb.functions.invoke('convocacao',{body:{diagnostico:true}});
+    if(error||!data||!data.ok){let m=(data&&data.erro)||'';if(!m&&error){try{const j=await error.context.json();m=j.erro||'';}catch(e){}m=m||error.message||'erro';}if(/Failed to send|FunctionsFetchError|FunctionsRelayError|not found/i.test(m))m='a função "convocacao" não está publicada no Supabase (ou está na versão antiga, sem o diagnóstico).';box.innerHTML=`<div class="info-box" style="display:block;color:var(--vermelho)">Não foi possível conferir: ${esc(m)}</div>`;return;}
+    const ic=v=>v===true?'✅':v===false?'❌':'⚠️';
+    const it=data.itens||[];
+    box.innerHTML=`<div class="info-box" style="display:block;line-height:1.55"><strong>Resultado do diagnóstico</strong>${it.map(x=>`<div style="margin-top:6px">${ic(x.ok)} <strong>${esc(x.item)}:</strong> ${esc(x.texto)}</div>`).join('')}${it.some(x=>x.ok===false)?'<div style="margin-top:8px">Corrija os itens com ❌ e clique de novo em 🩺 Diagnosticar.</div>':'<div style="margin-top:8px">Nada bloqueando do lado da Meta. Se ainda falhar, clique em 📲 Enviar teste e copie a mensagem de erro.</div>'}</div>`;
+  }catch(e){console.warn(e);box.innerHTML='<div class="info-box" style="display:block;color:var(--vermelho)">Não foi possível conferir agora.</div>';}
 }
 let cronoSincronizando=false;
 async function sincronizarOutlook(silencioso){

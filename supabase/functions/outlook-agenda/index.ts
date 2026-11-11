@@ -343,7 +343,7 @@ async function sincronizar(adm: SupabaseClient, inicio: string, fim: string, min
 // =====================================================================
 // v45: AGENDA DO ESCRITÓRIO (caixa agenda@bvek.com.br)
 // =====================================================================
-const PERFIS_OK = ["administrador", "comercial", "administrativo", "contabilidade"];
+const PERFIS_OK = ["administrador", "comercial", "administrativo", "contabilidade", "estagiario"];
 function caixaEscritorio(): string {
   return (Deno.env.get("OUTLOOK_ESCRITORIO") || "agenda@bvek.com.br").trim();
 }
