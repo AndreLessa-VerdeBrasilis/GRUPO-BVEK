@@ -125,7 +125,7 @@ const escH = (s: unknown) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "
 function corpoEvento(l: Linha, proj: Linha | null, cli: Linha | null, nomes: string[]): string {
   const dias = ["Segunda a sexta", l.sabado ? "sábado" : "", l.domingo ? "domingo" : ""].filter(Boolean).join(", ");
   return `<p><strong>Cronograma do Grupo BVEK</strong></p>
-<p>${proj ? `Projeto: <strong>${escH(proj.codigo)}</strong> ${escH(proj.nome)}<br>` : ""}${cli ? `Cliente: ${escH(cli.codigo || "")} ${escH(cli.nome)}<br>` : ""}${l.local ? `Local: ${escH(l.local)}<br>` : ""}${l.hora_inicio ? `Horário: ${escH(String(l.hora_inicio).slice(0, 5))}${l.hora_fim ? " às " + escH(String(l.hora_fim).slice(0, 5)) : ""}<br>` : ""}Dias de trabalho: ${escH(dias)}<br>Equipe: ${escH(nomes.join(", ") || "—")}</p>
+<p>${proj ? `Contrato: <strong>${escH(proj.codigo)}</strong> ${escH(proj.nome)}<br>` : ""}${cli ? `Cliente: ${escH(cli.codigo || "")} ${escH(cli.nome)}<br>` : ""}${l.local ? `Local: ${escH(l.local)}<br>` : ""}${l.hora_inicio ? `Horário: ${escH(String(l.hora_inicio).slice(0, 5))}${l.hora_fim ? " às " + escH(String(l.hora_fim).slice(0, 5)) : ""}<br>` : ""}Dias de trabalho: ${escH(dias)}<br>Equipe: ${escH(nomes.join(", ") || "—")}</p>
 ${l.observacoes ? `<p>${escH(l.observacoes)}</p>` : ""}
 <p style="color:#888;font-size:11px">Gerado pelo CRM Grupo BVEK. Pode mudar datas e convidados aqui: o CRM traz a mudança na próxima sincronização.</p>`;
 }
@@ -343,7 +343,7 @@ async function sincronizar(adm: SupabaseClient, inicio: string, fim: string, min
 // =====================================================================
 // v45: AGENDA DO ESCRITÓRIO (caixa agenda@bvek.com.br)
 // =====================================================================
-const PERFIS_OK = ["administrador", "comercial", "administrativo", "contabilidade"];
+const PERFIS_OK = ["administrador", "comercial", "administrativo", "contabilidade", "estagiario"];
 function caixaEscritorio(): string {
   return (Deno.env.get("OUTLOOK_ESCRITORIO") || "agenda@bvek.com.br").trim();
 }

@@ -26,7 +26,7 @@ Sempre responda em português. O dono do sistema é o André Lessa (sócio do Gr
 1. **Antes de mexer**, leia o `index.html` atual e as migrações em `supabase/`. Não reescreva o que já funciona; faça a menor mudança que resolve.
 2. **Decisões do André**: se algo exigir regra de negócio, nome, campo novo ou mudança de comportamento visível, pergunte antes de implementar.
 3. **Banco de dados**:
-   - Toda mudança de banco vira um arquivo novo em `supabase/` no formato `migracao_crm_vNN_descricao.sql`, com o próximo número (confira o maior existente; em 06/nov/2026 a última era a v54).
+   - Toda mudança de banco vira um arquivo novo em `supabase/` no formato `migracao_crm_vNN_descricao.sql`, com o próximo número (confira o maior existente; em 11/nov/2026 a última era a v56).
    - A migração precisa poder rodar mais de uma vez sem duplicar nada (`if not exists`, `where not exists`, `create or replace`, `on conflict do nothing`).
    - Termine o arquivo com um `select` que permita ao André conferir o resultado.
    - **Funil só do administrador (desde a v46):** propostas (`cards`, `itens_proposta`, histórico), contratos fixos, valores e PDFs das propostas só chegam ao Administrador — o banco não manda para os outros perfis. Antes (v36) a regra era: o perfil Comercial não recebe `cards.valor_estimado`, `cards.composicao`, `itens_proposta.valor_unitario/valor_total` nem `contratos_recorrentes.valor_mensal/custo_mensal`. O front-end lê propostas, itens e contratos pelas funções `bvek_cards`, `bvek_itens_proposta` e `bvek_contratos` (nunca `select('*')` direto nessas tabelas). Migração que criar coluna nova nessas três tabelas deve terminar com `select public.bvek_proteger_valores();`.
@@ -50,6 +50,7 @@ Boa parte disto já foi implementada nas versões v11 a v18 (acessos, documentos
 - Funil, propostas, valores e contratos: só o Administrador (v46). Os outros sabem os clientes e projetos, e só isso.
 - Cadastro completo dos funcionários (CPF, PIS, e-mail…) e documentos dos funcionários: só Administrador, Administrativo e Contabilidade (v46). Os outros perfis recebem só nome, cargo e empresa (`bvek_funcionarios_basico`).
 - Contabilidade: vê só RH e documentos (ponto, VA, VT, academia, odonto etc.).
+- Estagiário (v55): vê só Painel da equipe, Tarefas (as da equipe), Cronograma (cria e altera, não apaga), Inventário e Fornecedores (cadastra e altera). Regras próprias no banco (`bvek_estag_*`), sem mexer nas dos outros perfis.
 - "Funcionário (contracheque e ponto)": login por CPF + senha, vê todos os contracheques do CPF e as próprias marcações do ponto (Secullum, ação `meu_ponto`).
 - Objetivo: abrir o CRM deve ser o primeiro movimento dos funcionários ao chegar no escritório.
 - Painel completo (funil, valores, contratos, ganhos × custos) só para o Administrador (v45). Os outros perfis veem o "Painel da equipe": tarefas, agenda do escritório, quem está onde hoje e documentos — nunca propostas, valores ou contratos.
@@ -63,6 +64,14 @@ Boa parte disto já foi implementada nas versões v11 a v18 (acessos, documentos
 - Textos fixos do modelo ficam em ⚙️ Parâmetros (`precificacao_config.dados.proposta`). Dados bancários só no banco — o repositório é público.
 - Impostos na composição de preço: preço = custo total ÷ 0,85 (15% sobre o preço).
 - Ordem de serviço: número da proposta com OS no lugar de PRP (`C###-NNNN-OS-SSSS`), sem valores.
+
+**Nomes na tela (v56)**
+- A aba "Projetos" se chama **Contratos** na tela (e nos avisos de WhatsApp/e-mail e PDFs). O banco (`projetos`, `projeto_id`), o código `C###-NNNN`, as pastas `x0.2_PROJETOS` e a planilha continuam iguais. Os antigos "Contratos fixos" do funil agora se chamam **Contratos recorrentes**. Termos de engenharia ("projeto executivo", "projetos técnicos") não mudam.
+
+**Gestão (v56, só administrador)**
+- Aba **Gestão**: 📜 Normas ISO 9001/14001 (`iso_requisitos` = matriz de requisitos legais; `iso_novidades` = leis novas achadas pela função `normas-iso` no LexML, toda segunda via pg_cron, palavras em `iso_config`; foco federal + estado e município do Rio) e 🔐 Contas e acessos (`contas_acessos`, **sem senha** — as senhas ficam no McAfee, 2 etapas no Microsoft Authenticator).
+- Financeiro → 📆 Mensalidades e débito automático (`mensalidades`, administrador e administrativo): domínios (Registro.br), sistemas, assinaturas, com alerta antes do vencimento.
+- Currículos: certidões **entregues pelo candidato** só quando a função justifica (colunas `curriculos.certidoes*`). O André decidiu não consultar CPF em Serasa/polícia/tribunais (risco trabalhista/LGPD).
 
 **Controle de documentos**
 - Certidões das empresas do grupo, documentos de funcionários e renovação do CAU, com alertas de vencimento (já houve renovações em cima da hora).
