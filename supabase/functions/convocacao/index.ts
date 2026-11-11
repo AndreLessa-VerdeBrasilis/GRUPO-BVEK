@@ -97,7 +97,7 @@ function textoWhats(tipo: Tipo, nome: string, d: Det): string {
   const icone = tipo === "cancelamento" ? "❌" : tipo === "alteracao" ? "🔄" : "📢";
   const l = [`${icone} *${CABECALHO[tipo]} — Grupo BVEK*`, `Olá, ${nome}! ${ABERTURA[tipo]}`, "",
     `📅 *Data:* ${d.data}`, `🕗 *Horário:* ${d.horario}`, `📍 *Local:* ${d.local}`];
-  if (d.projeto) l.push(`🏗️ *Projeto:* ${d.projeto}`);
+  if (d.projeto) l.push(`🏗️ *Contrato:* ${d.projeto}`);
   if (d.cliente) l.push(`🏢 *Cliente:* ${d.cliente}`);
   if (d.servico) l.push(`🛠️ *Serviço:* ${d.servico}`);
   if (tipo !== "cancelamento" && d.equipe) l.push(`👥 *Equipe:* ${d.equipe}`);
@@ -117,7 +117,7 @@ function emailHtml(tipo: Tipo, nome: string, d: Det): string {
   <p>Olá, ${escH(nome)}!<br>${escH(ABERTURA[tipo])}</p>
   <table style="border-collapse:collapse;font-size:15px">
     ${linha("📅 Data", d.data)}${linha("🕗 Horário", d.horario)}${linha("📍 Local", d.local)}
-    ${linha("🏗️ Projeto", d.projeto)}${linha("🏢 Cliente", d.cliente)}${linha("🛠️ Serviço", d.servico)}
+    ${linha("🏗️ Contrato", d.projeto)}${linha("🏢 Cliente", d.cliente)}${linha("🛠️ Serviço", d.servico)}
     ${tipo !== "cancelamento" ? linha("👥 Equipe", d.equipe) + linha("📝 Observações", d.obs) : ""}
   </table>
   <p style="margin-top:24px;font-size:12px;color:#777">Aviso automático do cronograma do Grupo BVEK. Em caso de dúvida, fale com o escritório.</p></div>`;
