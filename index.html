@@ -6128,7 +6128,7 @@ const TEMAS_EMPRESA={
   EK:{sigla:'EK',principal:'1E3A5F',destaque:'2E6DB4',claro:'EAF1F9',zebra:'F5F8FC',linha:'C9D6E6',marca:true},
   VB:{sigla:'VB',principal:'03450A',destaque:'E9792A',claro:'EDF5EC',zebra:'F6FAF5',linha:'CFE0CC',marca:true},
   BL:{sigla:'BL',principal:'0B4A76',destaque:'2FA3DA',claro:'E7F3FA',zebra:'F4F9FD',linha:'C6DFEE',marca:true},
-  KS:{sigla:'KS',principal:'1E3A5F',destaque:'2E6DB4',claro:'EAF1F9',zebra:'F5F8FC',linha:'C9D6E6',marca:false},
+  KS:{sigla:'KS',principal:'1E3A5F',destaque:'2E6DB4',claro:'EAF1F9',zebra:'F5F8FC',linha:'C9D6E6',marca:true},
   BVK:{sigla:'BVK',principal:'0C4982',destaque:'329948',claro:'EAF2F8',zebra:'F5F8FB',linha:'C8D7E5',marca:true}};
 function temaEmpresa(sigla){return TEMAS_EMPRESA[String(sigla||'').toUpperCase()]||TEMAS_EMPRESA.BVK;}
 function urlLogo(sigla,tipo){return new URL(`img/logos/${String(sigla).toLowerCase()}-${tipo}.png`,location.href).href;}
