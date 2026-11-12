@@ -6012,9 +6012,11 @@ async function salvarRedefinirSenha(){
   $('mrs-btn').disabled=true;
   const{data,error}=await sb.rpc('bvek_redefinir_senha_usuario',{p_usuario:redefinirSenhaId,p_senha:senha});
   $('mrs-btn').disabled=false;
-  if(error){console.error(error);alert(/function|schema cache/i.test(error.message||'')
-    ?'Falta rodar no Supabase a migração supabase/migracao_crm_v38_redefinir_senha_escritorio.sql.'
-    :'Não foi possível: '+(error.message||error));return;}
+  if(error){console.error(error);const m=error.message||String(error);
+    // v58.2: só diz "falta a migração" quando a função não existe mesmo; senão mostra o erro real
+    alert(/bvek_redefinir_senha_usuario/i.test(m)&&/schema cache|does not exist|Could not find/i.test(m)
+      ?'Falta rodar no Supabase a migração supabase/migracao_crm_v39_redefinir_senha_conferencia.sql.\n\nMensagem do banco: '+m
+      :'Não foi possível redefinir a senha.\n\nMensagem do banco: '+m);return;}
   fecharModal('modal-redefinir-senha');redefinirSenhaId=null;
   await carregarPerfis();renderUsuarios();
   // mostra exatamente o que foi gravado (maiúsculas/minúsculas contam)
