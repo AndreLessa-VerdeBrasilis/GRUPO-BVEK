@@ -7075,7 +7075,9 @@ async function ptFotosDia(k,id){
 }
 
 /* ---- v58: administrador — logins do cliente (Clientes → abrir o cliente) ---- */
-const faltaV58=e=>e&&/portal_|bvek_criar_acesso_cliente|bvek_portal|cliente_id|schema cache|does not exist|Could not find/i.test(e.message||'');
+// v58.1: só conta como "falta a migração" quando a tabela/função/pasta do portal não existe; nos outros erros mostra a mensagem real
+const faltaV58=e=>e&&/((portal_contratos|portal_arquivos|bvek_criar_acesso_cliente|bvek_portal_dados)\b[^]*(does not exist|schema cache|Could not find))|((does not exist|schema cache|Could not find)[^]*\b(portal_contratos|portal_arquivos|bvek_criar_acesso_cliente|bvek_portal_dados))|Bucket not found/i.test(e.message||'');
+const msgV58=e=>'O banco ainda não reconhece o portal do cliente (migração v58).\n\nSe você já rodou a v58: no Supabase, abra o SQL Editor e rode só esta linha:\nnotify pgrst, \'reload schema\';\ne recarregue o CRM.\n\nMensagem do banco: '+((e&&e.message)||e);
 function renderAcessosPortalCliente(c){
   const box=$('mc-portal-box');if(!PERM.admin||!c){box.style.display='none';return;}box.style.display='';
   const l=todosPerfis.filter(p=>p.perfil==='cliente'&&p.cliente_id===c.id);
@@ -7101,7 +7103,7 @@ async function criarAcessoPortal(){
   const btn=$('pa2-btn');btn.disabled=true;
   try{
     const{error}=await sb.rpc('bvek_criar_acesso_cliente',{p_cliente:c.id,p_nome:nome,p_email:email,p_senha:senha});
-    if(error){if(faltaV58(error)){alert('Rode antes a migração v58 (supabase/migracao_crm_v58_portal_do_cliente.sql) no Supabase.');return;}alert('Não foi possível criar o acesso:\n'+(error.message||error));return;}
+    if(error){if(faltaV58(error)){alert(msgV58(error));return;}alert('Não foi possível criar o acesso:\n'+(error.message||error));return;}
     fecharModal('modal-portal-acesso');await carregarPerfis();renderAcessosPortalCliente(c);
     alert(`Acesso criado. Passe para ${nome}:\n\nEndereço: ${location.origin}\nLogin: ${email}\nSenha provisória: ${senha}\n\nNo primeiro acesso a pessoa cria a própria senha. Libere os contratos em Contratos → abrir o contrato → 🌐 Portal do cliente.`);
   }finally{btn.disabled=false;}
@@ -7118,7 +7120,7 @@ let pcProjeto=null,pcArquivos=[];
 async function abrirPortalContrato(pid){
   if(!PERM.admin)return;const p=todosProjetos.find(x=>x.id===pid);if(!p)return;
   const[a,b]=await Promise.all([sb.from('portal_contratos').select('*').eq('projeto_id',pid).maybeSingle(),sb.from('portal_arquivos').select('*').eq('projeto_id',pid).order('data_documento',{ascending:false,nullsFirst:false})]);
-  const e=a.error||b.error;if(e){if(faltaV58(e)){alert('Rode antes a migração v58 (supabase/migracao_crm_v58_portal_do_cliente.sql) no Supabase.');return;}erroSB(e);return;}
+  const e=a.error||b.error;if(e){if(faltaV58(e)){alert(msgV58(e));return;}erroSB(e);return;}
   pcProjeto=p;pcArquivos=b.data||[];const r=a.data||{};
   const cli=clientePorId(p.cliente_id),emp=empresaPorId(p.empresa_id);
   $('pc-titulo').textContent=`🌐 Portal do cliente — ${p.codigo}`;
@@ -7165,7 +7167,7 @@ async function addPcArquivo(){
     const limpo=semAcento(f.name).replace(/[^\w.\- ]+/g,'_').replace(/\s+/g,' ').trim(),caminho=`${pcProjeto.id}/${Date.now()}_${limpo}`;
     const tipo=f.type||(/\.xml$/i.test(f.name)?'application/xml':undefined);
     const up=await sb.storage.from('portal').upload(caminho,f,{contentType:tipo,upsert:false});
-    if(up.error){if(faltaV58(up.error)||/bucket/i.test(up.error.message||'')){alert('Rode antes a migração v58 no Supabase.');return;}erroSB(up.error,'Não foi possível enviar o arquivo');return;}
+    if(up.error){if(faltaV58(up.error)){alert(msgV58(up.error));return;}erroSB(up.error,'Não foi possível enviar o arquivo');return;}
     const{data,error}=await sb.from('portal_arquivos').insert({projeto_id:pcProjeto.id,categoria:$('pc-a-cat').value,titulo,numero:$('pc-a-num').value.trim()||null,data_documento:$('pc-a-data').value||null,caminho,arquivo_nome:f.name,visivel:true,criado_por:quemSou()}).select().single();
     if(erroSB(error))return;
     pcArquivos.unshift(data);renderPcArquivos();['pc-a-titulo','pc-a-num','pc-a-data'].forEach(i=>$(i).value='');$('pc-a-arq').value='';toast('Arquivo adicionado');
