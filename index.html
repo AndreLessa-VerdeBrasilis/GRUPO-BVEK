@@ -507,7 +507,7 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
     </div>
     <div id="cc-conteudo">
     <div class="cc-ola"><h2 id="cc-nome">Meus contracheques</h2><p id="cc-dica">Toque em <strong>Abrir</strong> para ver o contracheque do mês ou em <strong>Baixar</strong> para salvar o PDF.</p></div>
-    <div class="cc-abas"><button id="cc-aba-cc" class="ativo" onclick="ccAba('cc')">📄 Contracheques</button><button id="cc-aba-ponto" onclick="ccAba('ponto')">🕒 Meu ponto</button><button id="cc-aba-avisos" onclick="ccAba('avisos')">📢 Avisos</button><button id="cc-aba-premios" onclick="ccAba('premios')">🏆 Premiações</button><button id="cc-aba-politicas" onclick="ccAba('politicas')">📘 Políticas</button><button id="cc-aba-denuncia" onclick="ccAba('denuncia')">🛡️ Denúncias</button><button id="cc-aba-diario" onclick="ccAba('diario')" style="display:none">📒 Diário de obra</button></div>
+    <div class="cc-abas"><button id="cc-aba-cc" class="ativo" onclick="ccAba('cc')">📄 Contracheques</button><button id="cc-aba-ponto" onclick="ccAba('ponto')">🕒 Meu ponto</button><button id="cc-aba-avisos" onclick="ccAba('avisos')">📢 Avisos</button><button id="cc-aba-premios" onclick="ccAba('premios')">🏆 Premiações</button><button id="cc-aba-politicas" onclick="ccAba('politicas')">📘 Políticas</button><button id="cc-aba-denuncia" onclick="ccAba('denuncia')">🛡️ Denúncias</button><button id="cc-aba-os" onclick="ccAba('os')" style="display:none">🧾 Ordens de serviço</button></div>
     <div class="cc-lista" id="cc-lista"><div class="cc-vazio">Carregando…</div></div>
     <div id="cc-ponto" style="display:none">
       <div class="cc-ola" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><label for="cc-ponto-mes" style="font-size:13px;font-weight:600">Mês</label><select id="cc-ponto-mes" onchange="carregarMeuPonto()" style="padding:8px;border:1.5px solid var(--borda);border-radius:8px;font-size:14px"></select><span id="cc-ponto-per" style="font-size:12px;color:var(--texto2)"></span></div>
@@ -515,7 +515,7 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
       <div id="cc-ponto-ass"></div>
     </div>
     <div id="cc-avisos" class="cc-lista" style="display:none"></div>
-    <div id="cc-diario" style="display:none"></div>
+    <div id="cc-os" style="display:none"></div>
     <div id="cc-premios" class="cc-lista" style="display:none"></div>
     <!-- v42: políticas da empresa (o RH edita na aba RH → Políticas) -->
     <div id="cc-politicas" class="cc-lista" style="display:none"></div>
@@ -880,7 +880,7 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
       <div class="barra-acoes"><h2>Gestão</h2></div>
       <div class="subabas" id="gs-subabas">
         <div class="subaba ativo" data-gs="iso">📜 Normas ISO 9001 / 14001 <span id="gs-iso-badge"></span></div>
-        <div class="subaba" data-gs="acessos">🔐 Contas e acessos</div>
+        <div class="subaba" data-gs="acessos" id="gs-sub-acessos">🔐 Contas e acessos</div>
       </div>
       <div class="painel-rh ativo" id="gs-p-iso">
         <div class="info-box" style="display:block;line-height:1.5">Lista das leis, normas e requisitos que as empresas precisam cumprir para a <strong>ISO 9001</strong> (qualidade) e a <strong>ISO 14001</strong> (meio ambiente) — a "matriz de requisitos legais" que o auditor pede. Para cada item: se se aplica, como cumprimos, o comprovante e a próxima revisão.<br>
@@ -895,7 +895,7 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
           <input type="search" id="iso-busca" placeholder="Buscar lei, órgão, assunto" oninput="renderISO()">
           <button class="btn-novo" onclick="abrirRequisito(null)">+ Requisito</button>
           <button class="btn-sec" id="iso-btn-buscar" onclick="buscarNormasAgora()">🔎 Buscar novidades agora</button>
-          <button class="btn-sec" onclick="abrirConfigISO()">⚙️ Palavras da busca</button>
+          <button class="btn-sec" id="iso-btn-config" onclick="abrirConfigISO()">⚙️ Palavras da busca</button>
           <button class="btn-sec" onclick="exportarISO()">⬇️ Excel</button>
         </div>
         <div class="dica" id="iso-ultima" style="margin:4px 0 8px"></div>
@@ -967,6 +967,7 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
         <select id="inv-f-estado" onchange="renderInventario()"></select>
         <select id="inv-f-cat" onchange="renderInventario()"></select>
         <label class="rot-filtro" style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="inv-baixo" onchange="renderInventario()"> só estoque baixo</label>
+        <label class="rot-filtro" style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="inv-epi-venc" onchange="renderInventario()"> só EPI vencido / a vencer</label>
         <label class="rot-filtro" style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="inv-inativos" onchange="renderInventario()"> mostrar desativados</label>
       </div>
       <div class="tabela-wrap"><table class="tabela" id="tabela-inventario"></table></div>
@@ -1252,7 +1253,8 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
         <div><strong>Administrativo</strong>Documentos e certidões, funcionários, RH (ficha, uniformes, contracheques, vales, adiantamentos, envio à contabilidade), currículos, contratos, tarefas, cronograma e agenda do escritório. Clientes só consulta. Não vê funil, propostas, valores nem contratos recorrentes.</div>
         <div><strong>Contabilidade</strong>Funcionários, benefícios, RH (salários, contracheques, vales e adiantamentos), documentos/certidões, cronograma e agenda do escritório. Não vê funil, propostas, clientes nem currículos.</div>
         <div><strong>Estagiário</strong>Tarefas da equipe, cronograma e agenda do escritório (cria e altera, não apaga), inventário e fornecedores. Não vê painel, funil, valores, clientes, contratos, financeiro, RH nem documentos.</div>
-        <div><strong>Funcionário (contracheque e ponto)</strong>Entra com CPF e senha e vê somente os próprios contracheques (todos os meses guardados para o CPF) e as próprias marcações do ponto (Secullum). Não vê nada mais do CRM.</div>
+        <div><strong>Consultoria ISO</strong>Só a aba Gestão → Normas ISO 9001 / 14001: cadastra e altera requisitos e avalia as leis novas (não apaga, não muda as palavras da busca). Não vê Contas e acessos nem nada do resto do CRM.</div>
+        <div><strong>Funcionário (contracheque e ponto)</strong>Entra com CPF e senha e vê somente os próprios contracheques (todos os meses guardados para o CPF) as próprias marcações do ponto (Secullum), avisos, premiações, políticas e as <strong>Ordens de Serviço</strong> em que está escalado no Cronograma (sem valores). Não vê o diário de obra nem nada mais do CRM.</div>
       </div>
       <div class="barra-acoes" style="margin-top:18px"><h2>Acesso dos intermitentes ao contracheque</h2>
         <label class="dica" style="display:flex;gap:6px;align-items:center;font-size:12px"><input type="checkbox" id="u-todos-func" onchange="renderAcessosFunc()"> mostrar todos os funcionários ativos</label></div>
@@ -2224,6 +2226,7 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
     <div id="av-cobr" class="grupo-aviso"></div>
     <div id="av-rh" class="grupo-aviso"></div>
     <div id="av-fin" class="grupo-aviso"></div>
+    <div id="av-epi" class="grupo-aviso"></div>
     <div class="modal-btns">
       <button class="btn-sec" id="av-btn-cobr" onclick="fecharAvisos(true);abrirTab('funil')">Ver funil</button>
       <button class="btn-sec" id="av-btn-rh" onclick="fecharAvisos(true);abrirTab('rh')">Ver RH</button>
@@ -2361,7 +2364,7 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
     <div class="aviso-leitura">🔒 Seu perfil só consulta o inventário.</div>
     <div class="form-grid">
       <div class="campo full"><label>Nome *</label><input type="text" id="inv-nome" placeholder="Ex.: Roçadeira Stihl FS 220"></div>
-      <div class="campo"><label>Tipo</label><select id="inv-tipo"></select></div>
+      <div class="campo"><label>Tipo</label><select id="inv-tipo" onchange="mostrarValidadeEPI()"></select></div>
       <div class="campo"><label>Categoria</label><input type="text" id="inv-categoria" list="dl-inv-cat" placeholder="Ex.: Jardinagem"></div>
       <div class="campo"><label>Quantidade em estoque</label><input type="number" min="0" step="any" id="inv-qtd" value="1"></div>
       <div class="campo"><label>Unidade</label><input type="text" id="inv-unidade" value="un" list="dl-inv-un"></div>
@@ -2373,6 +2376,8 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
       <div class="campo"><label>Empresa dona</label><select id="inv-empresa"></select></div>
       <div class="campo"><label>Valor unitário (R$)</label><input type="text" inputmode="numeric" id="inv-valor" oninput="mascaraMoeda(this)" placeholder="0,00"></div>
       <div class="campo"><label>Data de aquisição</label><input type="date" id="inv-data"></div>
+      <div class="campo inv-epi-box"><label>🦺 Validade do EPI *</label><input type="date" id="inv-validade"><div class="dica">Validade do lote / do CA. Antes de vencer, o CRM avisa para comprar.</div></div>
+      <div class="campo inv-epi-box"><label>Avisar quantos dias antes</label><input type="number" min="0" max="365" step="1" id="inv-aviso-dias" value="30"></div>
       <div class="campo full"><label>Observações</label><textarea id="inv-obs" rows="2"></textarea></div>
     </div>
     <div id="inv-uso"></div>
@@ -2380,6 +2385,23 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
       <button class="btn-excluir" id="inv-btn-desativar" style="display:none" onclick="alternarItemInventario()">Desativar</button>
       <button class="btn-cancelar" onclick="fecharModal('modal-inventario')">Cancelar</button>
       <button class="btn-salvar so-edicao" onclick="salvarItemInventario()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- v57: desligamento do funcionário -->
+<div class="modal-overlay" id="modal-desligar">
+  <div class="modal modal-sm">
+    <h2 id="dlg-titulo">🚪 Desligar funcionário</h2>
+    <p class="modal-sub">O funcionário sai da lista de ativos, da folha e dos avisos; os documentos dele são arquivados. <strong>Nada é apagado</strong> — a ficha, os contracheques e o histórico continuam guardados (filtro <em>Desligados</em>). Lembre de mover a pasta para <em>01.2.1.2_DESLIGADOS</em> e de dar baixa no Secullum e na contabilidade.</p>
+    <div class="form-grid" style="grid-template-columns:1fr">
+      <div class="campo"><label>Data do desligamento (último dia trabalhado) *</label><input type="date" id="dlg-data"></div>
+      <div class="campo"><label>Motivo *</label><select id="dlg-motivo"></select></div>
+      <div class="campo"><label>Observações (aviso prévio, acerto, devolução de uniforme/EPI…)</label><textarea id="dlg-obs" rows="3"></textarea></div>
+    </div>
+    <div class="modal-btns">
+      <button class="btn-cancelar" onclick="fecharModal('modal-desligar')">Cancelar</button>
+      <button class="btn-excluir" onclick="confirmarDesligamento()">Desligar</button>
     </div>
   </div>
 </div>
@@ -2985,27 +3007,28 @@ const CADENCIA_COBRANCA={enviada:3,cobranca1:4,cobranca2:7,negociacao:7};
 const ETAPAS_COBRANCA=Object.keys(CADENCIA_COBRANCA);
 const PROXIMA_ETAPA_COBRANCA={enviada:'cobranca1',cobranca1:'cobranca2'};
 // Perfis de acesso (as regras valem no banco; aqui só ajustam a tela)
-const PERFIS=[['administrador','Administrador'],['comercial','Comercial'],['administrativo','Administrativo'],['contabilidade','Contabilidade'],['estagiario','Estagiário (tarefas, cronograma, inventário e fornecedores)'],['funcionario','Funcionário (contracheque e ponto)'],['pendente','Aguardando liberação']];
+const PERFIS=[['administrador','Administrador'],['comercial','Comercial'],['administrativo','Administrativo'],['contabilidade','Contabilidade'],['estagiario','Estagiário (tarefas, cronograma, inventário e fornecedores)'],['consultoria_iso','Consultoria ISO (só as normas ISO 9001 / 14001)'],['funcionario','Funcionário (contracheque e ponto)'],['pendente','Aguardando liberação']];
 // v17: login por CPF do perfil Funcionário → e-mail interno CPF@funcionario.bvek.com.br
 const DOMINIO_FUNC='funcionario.bvek.com.br';
 // v46: o perfil Consulta foi removido (quem era Consulta passou para Aguardando liberação)
 const PERFIL_LABEL=Object.assign(Object.fromEntries(PERFIS),{consulta:'Consulta (removido)'});
 const ABAS_ESTAGIARIO=['atividades','cronograma','fornecedores','inventario'];
 function calcularPermissoes(p){
-  const adm=p==='administrador',com=p==='comercial',admv=p==='administrativo',cont=p==='contabilidade',est=p==='estagiario';
+  const adm=p==='administrador',com=p==='comercial',admv=p==='administrativo',cont=p==='contabilidade',est=p==='estagiario',iso=p==='consultoria_iso';
+  // v57: consultoria ISO = só Gestão → Normas ISO 9001 / 14001 (cadastra e altera requisitos, avalia leis novas; não apaga)
   // v55: estagiário = só Tarefas, Cronograma, Inventário e Fornecedores (cadastra e altera, não apaga) — sem Painel desde a v56.2
   // comercialVer: vê funil, clientes, projetos, atividades e empresas (a contabilidade não vê)
   // rh: vê benefícios e ponto (v28: o comercial não acessa o RH) · rhEditar: altera benefícios
   // v42: o Comercial não vê mais o funil de propostas (nem os valores do painel); só o administrador altera o funil
   // v46: funil, propostas, valores e contratos só para o administrador
-  return{admin:adm,estagiario:est,funil:adm,funilVer:adm,clientes:adm||com,projetos:adm||com||admv,ativ:adm||com||admv||est,docs:adm||admv,excluir:adm,
-    comercialVer:!cont,rh:adm||admv||cont,rhEditar:adm||admv,
+  return{admin:adm,estagiario:est,isoConsultor:iso,funil:adm,funilVer:adm,clientes:adm||com,projetos:adm||com||admv,ativ:adm||com||admv||est,docs:adm||admv,excluir:adm,
+    comercialVer:!cont&&!iso,rh:adm||admv||cont,rhEditar:adm||admv,
     // v14: rhPessoal = salário, contracheques, vales, uniformes, envio à contabilidade · curriculos = banco de currículos
     rhPessoal:adm||admv||cont,curriculos:adm||admv,
     // v20: financeiro · pagamentos = lança pagamentos a autorizar · autorizar = marca como autorizado (André)
     financeiro:adm||admv||com,pagamentos:adm||admv,autorizar:adm,
     // v56: mensalidades e débito automático (Financeiro) · gestao = normas ISO e contas e acessos (só administrador)
-    mensalidades:adm||admv,gestao:adm,
+    mensalidades:adm||admv,gestao:adm||iso,gestaoAcessos:adm,
     // v21: saídas · saidasTodas = vê todas, importa fatura e confere (o comercial vê só os próprios cartões)
     saidasTodas:adm||admv,
     // v22: fornecedores e preços (todos da área comercial veem; administrador e comercial editam)
@@ -3167,6 +3190,10 @@ async function iniciarApp(){
   $('user-nome').innerHTML=`${esc(meuPerfil.nome||user.email)}<span class="perfil-tag">${esc(PERFIL_LABEL[meuPerfil.perfil]||meuPerfil.perfil)}</span>`;
   $('user-nome').title=user.email;
   aplicarPermissoes();
+  if(PERM.isoConsultor){
+    document.querySelectorAll('#tabs .tab').forEach(t=>t.onclick=()=>abrirTab(t.dataset.tab));
+    gsSub='iso';await carregarEmpresas();await carregarGestao();abrirTab('gestao');return;
+  }
   $('btn-montador').style.display='';mostrarBotaoAvisos();
   preencherSelect($('card-etapa-select'),ETAPAS.map(e=>[e.id,e.label]));
   preencherSelect($('card-motivo-perda'),MOTIVOS_PERDA.map(m=>[m,m]),'Selecione');
@@ -3336,7 +3363,7 @@ async function iniciarContracheques(){
   if(precisaPrimeiroAcesso()){mostrarPrimeiroAcesso();return;}
   $('cc-primeiro').style.display='none';$('cc-conteudo').style.display='';
   mostrarBotaoAvisos();
-  carregarMeusDiarios(false);
+  carregarMinhasOS();
   const[n,l]=await Promise.all([sb.rpc('bvek_meu_nome_funcionario'),sb.rpc('bvek_meus_contracheques')]);
   const nome=(n&&n.data)||meuPerfil.nome||'';
   $('cc-nome').dataset.nome=nome||'';
@@ -3355,13 +3382,13 @@ async function iniciarContracheques(){
 // v28: o funcionário também vê as próprias marcações do ponto (Secullum), período de 26 a 25
 // v30: 3 abas (contracheques, ponto com assinatura do mês, avisos/comunicados)
 function ccAba(a){
-  ['cc','ponto','avisos','premios','politicas','denuncia','diario'].forEach(k=>$('cc-aba-'+k).classList.toggle('ativo',k===a));
-  $('cc-diario').style.display=a==='diario'?'':'none';if(a==='diario')renderMeusDiarios();
+  ['cc','ponto','avisos','premios','politicas','denuncia','os'].forEach(k=>$('cc-aba-'+k).classList.toggle('ativo',k===a));
+  $('cc-os').style.display=a==='os'?'':'none';if(a==='os')renderMinhasOS();
   $('cc-lista').style.display=a==='cc'?'':'none';$('cc-ponto').style.display=a==='ponto'?'':'none';$('cc-avisos').style.display=a==='avisos'?'':'none';$('cc-premios').style.display=a==='premios'?'':'none';
   $('cc-politicas').style.display=a==='politicas'?'':'none';$('cc-denuncia').style.display=a==='denuncia'?'':'none';
   if(a==='premios')carregarMinhasPremiacoes();
   if(a==='politicas')carregarMinhasPoliticas();
-  $('cc-dica').innerHTML=a==='diario'?'Diário de obra dos serviços em que você está alocado. Preencha <strong>todo dia</strong>: o que foi feito, as fotos e, principalmente, <strong>tudo o que estiver diferente da Ordem de Serviço</strong> e quem autorizou.':a==='politicas'?'As políticas e regras da empresa. Toque no título para ler.':a==='denuncia'?'Canal anônimo: o que você escrever aqui vai direto para o RH, sem o seu nome.':a==='premios'?'Premiações e valores extras que você recebeu. Confira e <strong>assine a declaração</strong> de recebimento.':a==='ponto'?'Suas marcações de entrada e saída, como estão no ponto (Secullum). O mês vai do dia 26 do mês anterior ao dia 25. Confira e <strong>assine</strong> no fim da página. Se algo estiver errado, marque “não concordo” e explique.'
+  $('cc-dica').innerHTML=a==='os'?'As <strong>Ordens de Serviço</strong> dos serviços em que você está escalado no Cronograma. Leia antes de começar: o que fazer, o que <strong>não</strong> está incluído, como deve ficar e quando parar e consultar o responsável.':a==='politicas'?'As políticas e regras da empresa. Toque no título para ler.':a==='denuncia'?'Canal anônimo: o que você escrever aqui vai direto para o RH, sem o seu nome.':a==='premios'?'Premiações e valores extras que você recebeu. Confira e <strong>assine a declaração</strong> de recebimento.':a==='ponto'?'Suas marcações de entrada e saída, como estão no ponto (Secullum). O mês vai do dia 26 do mês anterior ao dia 25. Confira e <strong>assine</strong> no fim da página. Se algo estiver errado, marque “não concordo” e explique.'
     :a==='avisos'?'Comunicados do RH para a equipe.'
     :'Toque em <strong>Abrir</strong> para ver o contracheque do mês ou em <strong>Baixar</strong> para salvar o PDF.';
   if(a==='ponto'&&!$('cc-ponto-mes').options.length){
@@ -3562,6 +3589,9 @@ function aplicarPermissoes(){
   if(!PERM.funil)$('pa-cobr').style.display='none';
   // v55: o estagiário só vê as abas dele
   if(PERM.estagiario)document.querySelectorAll('#tabs .tab').forEach(t=>{if(!ABAS_ESTAGIARIO.includes(t.dataset.tab))t.style.display='none';});
+  // v57: a consultoria ISO só vê a aba Gestão, só com as normas ISO
+  if(PERM.isoConsultor)document.querySelectorAll('#tabs .tab').forEach(t=>t.style.display=t.dataset.tab==='gestao'?'':'none');
+  mostra('gs-sub-acessos',PERM.gestaoAcessos);mostra('iso-btn-buscar',PERM.admin);mostra('iso-btn-config',PERM.admin);
   $('funil-dica').textContent=PERM.funil?'Arraste os cards entre as colunas para mudar a etapa.':'🔒 Seu perfil só consulta o funil.';
 }
 function abrirModalSenha(){$('ns-1').value='';$('ns-2').value='';abrirModal('modal-senha');setTimeout(()=>$('ns-1').focus(),50);}
@@ -3720,6 +3750,7 @@ function abrirTab(tab){
   if(tab==='cronograma'&&!PERM.cronograma)tab='painel';
   if(tab==='diario'&&!PERM.diario)tab='painel';
   if(PERM.estagiario&&!ABAS_ESTAGIARIO.includes(tab))tab='atividades';
+  if(PERM.isoConsultor)tab='gestao';
   if(tab==='funil'&&!PERM.funilVer)tab='painel';
   if(!PERM.comercialVer&&['painel','funil','clientes','projetos','fornecedores','inventario','atividades','empresas'].includes(tab))tab='documentos';
   tabAtual=tab;medirTopoFixo();
@@ -5283,7 +5314,7 @@ function renderFuncionarios(){
   $('mf-sem-cpf').textContent=semCpf?`${semCpf} funcionário(s) ativo(s) sem CPF`:'';
   const l=todosFuncionarios.filter(f=>(f.ativo!==false)===ativos);
   const nDocs={};todosDocumentos.filter(d=>d.situacao==='vigente'&&d.funcionario_id).forEach(d=>{const s=statusDoc(d);const x=nDocs[d.funcionario_id]=nDocs[d.funcionario_id]||{t:0,a:0};x.t++;if(s.k==='vencido'||s.k==='aviso')x.a++;});
-  $('mf-lista').innerHTML=l.length?'<div class="sub-lista">'+l.map(f=>{const e=empresaPorId(f.empresa_id),n=nDocs[f.id]||{t:0,a:0};return`<div class="sub-item"><div><strong>${esc(f.nome)}</strong>${f.cargo?` — ${esc(f.cargo)}`:''}${e?` <span class="card-empresa-tag tag-${esc(e.sigla)}">${esc(e.sigla)}</span>`:''}<div style="font-size:12px;color:var(--texto2)">${n.t} documento(s)${n.a?` · <span style="color:var(--vermelho);font-weight:600">${n.a} precisando de atenção</span>`:''}</div></div>
+  $('mf-lista').innerHTML=l.length?'<div class="sub-lista">'+l.map(f=>{const e=empresaPorId(f.empresa_id),n=nDocs[f.id]||{t:0,a:0};return`<div class="sub-item"><div><strong>${esc(f.nome)}</strong>${f.cargo?` — ${esc(f.cargo)}`:''}${e?` <span class="card-empresa-tag tag-${esc(e.sigla)}">${esc(e.sigla)}</span>`:''}<div style="font-size:12px;color:var(--texto2)">${f.ativo===false&&f.data_desligamento?`desligado em ${esc(fmtData(f.data_desligamento))}${f.motivo_desligamento?' — '+esc(f.motivo_desligamento):''} · `:''}${n.t} documento(s)${n.a?` · <span style="color:var(--vermelho);font-weight:600">${n.a} precisando de atenção</span>`:''}</div></div>
     <div class="acoes">${f.pasta_url?`<a class="btn-link" href="${esc(f.pasta_url)}" target="_blank" rel="noopener">📁 abrir pasta</a>`:''}${PERM.rhPessoal?`<button class="btn-link" onclick="fecharModal('modal-funcionarios');abrirFicha('${esc(f.id)}')">ficha RH</button>`:''}<button class="btn-link" onclick="verDocsFuncionario('${esc(f.id)}')">ver documentos</button>${PERM.docs?`<button class="btn-link" onclick="editarFuncionario('${esc(f.id)}')">editar</button><button class="btn-link" style="color:var(--texto2)" onclick="alternarFuncionario('${esc(f.id)}')">${f.ativo!==false?'desligar':'reativar'}</button>`:''}</div></div>`;}).join('')+'</div>':`<p class="vazio">${ativos?'Nenhum funcionário cadastrado.':'Nenhum funcionário desligado.'}</p>`;
 }
 function editarFuncionario(id){
@@ -5317,12 +5348,48 @@ async function salvarFuncionario(){
   limparFormFuncionario();renderFuncionarios();
 }
 async function alternarFuncionario(id){
-  const f=funcPorId(id);if(!f)return;const novo=f.ativo===false;
-  if(!novo&&!confirm(`Marcar ${f.nome} como desligado? Os documentos dele deixam de gerar avisos.`))return;
-  const{error}=await sb.from('funcionarios').update({ativo:novo}).eq('id',id);if(erroSB(error))return;
-  if(!novo)await sb.from('documentos').update({situacao:'arquivado',atualizado_em:new Date().toISOString()}).eq('funcionario_id',id).eq('situacao','vigente');
+  const f=funcPorId(id);if(!f)return;
+  if(f.ativo!==false){abrirDesligamento(id);return;}
+  await reativarFuncionario(id);
+}
+/* v57: desligamento do funcionário (RH → ficha → 🚪 Desligar), com data e motivo */
+const MOTIVOS_DESLIG=['Pedido de demissão','Dispensa sem justa causa','Dispensa por justa causa','Término do contrato de experiência','Término do contrato (prazo determinado / intermitente)','Acordo entre as partes (art. 484-A)','Aposentadoria','Falecimento','Outro'];
+let desligId=null;
+function abrirDesligamento(id){
+  const f=funcPorId(id);if(!f||!PERM.docs)return;desligId=id;
+  $('dlg-titulo').textContent='🚪 Desligar '+f.nome;
+  preencherSelect($('dlg-motivo'),MOTIVOS_DESLIG.map(m=>[m,m]),'Selecione');
+  $('dlg-data').value=hojeISO();$('dlg-obs').value='';
+  abrirModal('modal-desligar');
+}
+async function recarregarFuncionariosRH(){
   const{data}=await sb.from('funcionarios').select('*').order('nome');todosFuncionarios=data||[];
-  await carregarDocumentos();renderFuncionarios();renderTabAtual();
+  await carregarDocumentos();
+  if($('modal-funcionarios').classList.contains('aberto'))renderFuncionarios();
+  if($('modal-ficha').classList.contains('aberto'))preencherFichaDados();
+  renderTabAtual();
+}
+async function confirmarDesligamento(){
+  const f=funcPorId(desligId);if(!f)return;
+  const data=$('dlg-data').value,motivo=$('dlg-motivo').value,obs=$('dlg-obs').value.trim();
+  if(!data){alert('Informe a data do desligamento (último dia trabalhado).');return;}
+  if(!motivo){alert('Escolha o motivo do desligamento.');return;}
+  let r=await sb.from('funcionarios').update({ativo:false,data_desligamento:data,motivo_desligamento:motivo,obs_desligamento:obs||null}).eq('id',f.id);
+  if(r.error&&/desligamento/i.test(r.error.message||'')){
+    if(!confirm('A migração v57 ainda não foi rodada no Supabase: a data e o motivo NÃO serão guardados.\n\nDesligar mesmo assim?'))return;
+    r=await sb.from('funcionarios').update({ativo:false}).eq('id',f.id);
+  }
+  if(erroSB(r.error))return;
+  await sb.from('documentos').update({situacao:'arquivado',atualizado_em:new Date().toISOString()}).eq('funcionario_id',f.id).eq('situacao','vigente');
+  fecharModal('modal-desligar');await recarregarFuncionariosRH();
+  toast(`${f.nome} desligado(a) em ${fmtData(data)}`);
+}
+async function reativarFuncionario(id){
+  const f=funcPorId(id);if(!f||!PERM.docs)return;
+  if(!confirm(`Reativar ${f.nome}? Ele(a) volta para a lista de ativos (os documentos arquivados continuam arquivados).`))return;
+  const dados={ativo:true};if('data_desligamento' in f)Object.assign(dados,{data_desligamento:null,motivo_desligamento:null,obs_desligamento:null});
+  const{error}=await sb.from('funcionarios').update(dados).eq('id',id);if(erroSB(error))return;
+  await recarregarFuncionariosRH();toast(`${f.nome} reativado(a)`);
 }
 function verDocsFuncionario(id){
   const f=funcPorId(id);if(!f)return;
@@ -5446,16 +5513,18 @@ function mostrarAvisosDoDia(){
   try{if(localStorage.getItem(chaveAvisos()))return;}catch(e){}
   const docs=PERM.estagiario?[]:filtraEmpresaDocs(todosDocumentos.filter(d=>(d.situacao||'vigente')==='vigente')).map(d=>({d,s:statusDoc(d)})).filter(x=>x.s.k==='vencido'||x.s.k==='aviso').sort((a,b)=>a.s.n-b.s.n);
   const cobr=PERM.funil?cobrancasDoDia():[];
-  const rhPend=pendenciasRH(),finAv=avisosFinGestao();
-  if(!docs.length&&!cobr.length&&!rhPend.length&&!finAv.length)return;
+  const rhPend=pendenciasRH(),finAv=avisosFinGestao(),epis=avisosEPI();
+  if(!docs.length&&!cobr.length&&!rhPend.length&&!finAv.length&&!epis.length)return;
   const nV=docs.filter(x=>x.s.k==='vencido').length;
-  $('av-sub').textContent=[docs.length?`${docs.length} documento(s) ${nV?`(${nV} vencido${nV>1?'s':''}) `:''}precisando de renovação`:'',cobr.length?`${cobr.length} proposta(s) para cobrar retorno`:'',rhPend.length?`${rhPend.length} pendência(s) do RH`:'',finAv.length?`${finAv.length} aviso(s) de mensalidades / normas`:''].filter(Boolean).join(' · ');
+  $('av-sub').textContent=[docs.length?`${docs.length} documento(s) ${nV?`(${nV} vencido${nV>1?'s':''}) `:''}precisando de renovação`:'',cobr.length?`${cobr.length} proposta(s) para cobrar retorno`:'',rhPend.length?`${rhPend.length} pendência(s) do RH`:'',finAv.length?`${finAv.length} aviso(s) de mensalidades / normas`:'',epis.length?`${epis.length} EPI para comprar`:''].filter(Boolean).join(' · ');
   $('av-docs').innerHTML=docs.length?`<h4>📄 Documentos e certidões</h4><div class="lista-mini">${docs.map(itemDocMini).join('')}</div>`:'';
   $('av-cobr').innerHTML=cobr.length?`<h4>📞 Cobrar retorno de propostas</h4><div class="lista-mini">${cobr.map(itemCobrancaMini).join('')}</div>`:'';
   $('av-btn-cobr').style.display=cobr.length?'':'none';
   $('av-rh').innerHTML=rhPend.length?`<h4>👷 RH</h4><div class="lista-mini">${rhPend.map(p=>`<div class="item" data-av-rh="${esc(p.ir)}"><span>${esc(p.txt)}</span>${p.atraso?'<span class="badge badge-atraso">hoje</span>':''}</div>`).join('')}</div>`:'';
   $('av-btn-rh').style.display=rhPend.length?'':'none';
   $('av-fin').innerHTML=finAv.length?`<h4>📆 Mensalidades e normas</h4><div class="lista-mini">${finAv.map(p=>`<div class="item" data-av-fin="${esc(p.ir)}"><span>${esc(p.txt)}</span>${p.atraso?'<span class="badge badge-atraso">atenção</span>':''}</div>`).join('')}</div>`:'';
+  $('av-epi').innerHTML=epis.length?`<h4>🦺 Comprar EPI (validade vencendo)</h4><div class="lista-mini">${epis.map(i=>`<div class="item" data-av-epi="${esc(i.id)}"><span>${esc(i.nome)}${i.marca_modelo?' ('+esc(i.marca_modelo)+')':''} — ${esc(textoValidadeEPI(i))} · estoque ${esc(fmtQtd(i.quantidade))} ${esc(i.unidade||'')}</span><span class="badge ${diasAte(i.data_validade)<0?'badge-atraso':'badge-hoje'}">${diasAte(i.data_validade)<0?'vencido':'comprar'}</span></div>`).join('')}</div>`:'';
+  $('av-epi').querySelectorAll('[data-av-epi]').forEach(el=>el.onclick=()=>{fecharAvisos(true);abrirTab('inventario');abrirItemInventario(el.dataset.avEpi);});
   $('av-fin').querySelectorAll('[data-av-fin]').forEach(el=>el.onclick=()=>{fecharAvisos(true);irParaAvisoFin(el.dataset.avFin);});
   $('av-rh').querySelectorAll('[data-av-rh]').forEach(el=>el.onclick=()=>{fecharAvisos(true);irParaPendenciaRH(el.dataset.avRh);});
   ligarCliques($('modal-avisos'));
@@ -6397,7 +6466,7 @@ async function montarOS(win){
   ${(card.observacoes||cp&&cp.obs||card.nota1||card.nota2)?`<h2>Observações</h2>${card.observacoes?`<p>${br(card.observacoes)}</p>`:''}${cp&&cp.obs?`<p>${br(cp.obs)}</p>`:''}${card.nota1?`<p><strong>Nota 1:</strong> ${esc(card.nota1)}</p>`:''}${card.nota2?`<p><strong>Nota 2:</strong> ${esc(card.nota2)}</p>`:''}`:''}
   ${sec.final}
   <h2>Execução</h2>
-  <p style="margin:2px 0 6px">Registre <strong>cada dia</strong> no Diário de obra do CRM (celular → 📒 Diário de obra): o que foi feito, fotos e <strong>tudo o que for diferente desta OS, com o nome de quem autorizou</strong>.</p>
+  <p style="margin:2px 0 6px">Registre <strong>cada dia</strong> no Diário de obra (o escritório lança no CRM): o que foi feito, fotos e <strong>tudo o que for diferente desta OS, com o nome de quem autorizou</strong>.</p>
   <table class="dados"><tr><th>Início</th><td>____/____/______ às ____:____</td></tr><tr><th>Término</th><td>____/____/______ às ____:____</td></tr><tr><th>Encarregado</th><td></td></tr></table>
   <div class="grade2" style="margin-top:8px"><div><strong>Ocorrências</strong><div class="campo-livre"></div></div><div><strong>Pendências</strong><div class="campo-livre"></div></div></div>
   <div class="assin"><div>Encarregado / responsável pela execução<br><small>${esc(emp.nome||'')}</small></div><div>${esc(quem.nome||'Cliente')} — aceite do serviço<br><small>${esc(nomeCliente)} · data ____/____/______</small></div></div>
@@ -6518,7 +6587,7 @@ function renderDiarios(){
   const l=todosDiarios.filter(d=>(!pj||d.projeto_id===pj)&&(st==='divergencia'?!!d.divergencias:st?d.situacao===st:d.situacao!=='cancelado'));
   const vivos=todosDiarios.filter(d=>d.situacao!=='cancelado');
   const pend=vivos.filter(d=>d.situacao==='pendente'&&d.data<hoje).length,conf=vivos.filter(d=>d.situacao==='preenchido').length,div=vivos.filter(d=>d.divergencias).length;
-  $('dio-info').innerHTML=`Todo dia com equipe alocada num <strong>contrato</strong> no Cronograma ganha um diário sozinho. O encarregado (ou qualquer um da equipe) preenche pelo celular, no login dele (CPF) → <strong>📒 Diário de obra</strong>, vendo o que a Ordem de Serviço pede; o escritório confere e fecha. O <strong>📄 Relatório para o cliente</strong> junta os dias num PDF sem valores.
+  $('dio-info').innerHTML=`Todo dia com equipe alocada num <strong>contrato</strong> no Cronograma ganha um diário sozinho. Quem preenche é o escritório (o login por CPF dos funcionários não tem mais o diário — desde a v57 ele mostra só as <strong>Ordens de Serviço</strong> em que a pessoa está escalada); Administrador e Administrativo conferem e fecham. O <strong>📄 Relatório para o cliente</strong> junta os dias num PDF sem valores.
     ${pend?`<br><span class="badge badge-atraso">${pend} dia(s) já passados sem diário</span>`:''}${conf?` <span class="badge badge-hoje">${conf} para conferir e fechar</span>`:''}${div?` <span class="badge badge-atraso">⚠️ ${div} com divergência da OS</span>`:''}`;
   $('dio-cont').textContent=`${l.length} diário(s)`;
   $('tabela-diarios').innerHTML=`<thead><tr><th>Data</th><th>Contrato</th><th>Equipe</th><th>Situação</th><th>O que foi feito</th><th></th></tr></thead><tbody>`+
@@ -6763,6 +6832,54 @@ async function montarRelatorioDiario(win,pid,dias,o){
   <div class="assin"><div>Responsável pela execução<br><small>${esc(emp.nome||'')}${os&&os.responsavel_tecnico?' — '+esc(os.responsavel_tecnico):''}</small></div><div>Ciência do cliente<br><small>${esc(cli.razao_social||cli.nome||'')} · nome e data: ____/____/______</small></div></div>
   <div class="rodape">${esc(nomeArq)} · gerado pelo CRM a partir dos diários de obra — não contém valores${regs.some(d=>(d.registros||[]).some(r=>r.audio))?' · 🎙️ = há relato em áudio guardado no CRM':''}</div></div></body></html>`;
   win.document.open();win.document.write(html);win.document.close();imprimirQuandoCarregar(win);
+}
+
+/* ---- v57: ordens de serviço no login CPF (o diário de obra saiu do login do funcionário) ---- */
+// Uma OS por contrato em que o funcionário está escalado no Cronograma (últimos 30 dias, hoje e futuras). Sem valores.
+let minhasOS=[];
+async function carregarMinhasOS(){
+  const{data,error}=await sb.rpc('bvek_minhas_os');
+  if(error){if(!/bvek_minhas_os|schema cache|does not exist|Could not find/i.test(error.message||''))console.warn(error);return;}
+  minhasOS=data||[];
+  $('cc-aba-os').style.display=minhasOS.length?'':'none';
+}
+const periodoTxt=(i,f)=>fmtData(i)+(f&&f!==i?' a '+fmtData(f):'');
+function renderMinhasOS(){
+  const box=$('cc-os'),hoje=hojeISO();
+  if(!minhasOS.length){box.innerHTML='<div class="cc-vazio">Você não está escalado em nenhum serviço agora. Quando o escritório te escalar no Cronograma, a Ordem de Serviço aparece aqui.</div>';return;}
+  box.innerHTML='<div class="cc-lista">'+minhasOS.map((x,i)=>{
+    const os=x.os||{},agora=x.inicio<=hoje&&x.fim>=hoje,passou=x.fim<hoje;
+    return`<div class="cc-item"><div><strong>${esc(os.numero_os||x.projeto_codigo||'')}</strong> ${agora?'<span class="badge badge-hoje">em andamento</span>':passou?'<span class="badge badge-cinza">encerrado</span>':'<span class="badge badge-ok">próximo</span>'}
+      <div class="cc-sub">${esc(x.projeto_codigo||'')} — ${esc(x.projeto_nome||'')}${x.cliente_nome?' · '+esc(x.cliente_nome):''}</div>
+      <div class="cc-sub">📅 ${esc(periodoTxt(x.inicio,x.fim))}</div></div>
+      <div class="cc-btns"><button class="cc-prim" onclick="abrirMinhaOS(${i})">Abrir</button></div></div>`;}).join('')+'</div>';
+}
+function abrirMinhaOS(i){
+  const x=minhasOS[i];if(!x)return;const os=x.os,box=$('cc-os');
+  const br=v=>esc(v).replace(/\n/g,'<br>');
+  const NI='<span style="color:var(--vermelho)">⚠️ não informado — confirmar com o responsável antes de começar</span>';
+  const sec=(t,v,obrig,cor)=>v||obrig?`<div style="margin-top:12px"><strong${cor?` style="color:${cor}"`:''}>${t}</strong><div style="margin-top:2px;line-height:1.45">${v?br(v):NI}</div></div>`:'';
+  const aloc=(x.alocacoes||[]).map(a=>`<li style="margin:4px 0">${esc(periodoTxt(a.inicio,a.fim))}${a.sabado?' · com sábado':''}${a.domingo?' · com domingo':''}${a.local?' — '+esc(a.local):''}${a.observacoes?`<div class="cc-sub">${br(a.observacoes)}</div>`:''}</li>`).join('');
+  const itens=os&&(os.itens||[]).length?`<div style="margin-top:14px"><strong>Itens a executar</strong>${os.itens.map(it=>`<div style="border-top:1px solid var(--borda);padding:8px 0"><strong>${esc(it.item||'')}</strong> ${esc(it.descricao||'')}${it.quantidade!=null?`<div class="cc-sub">${esc(fmtQtd(it.quantidade))} ${esc(it.unidade||'')}</div>`:''}${it.como?`<div style="margin-top:3px">👉 ${br(it.como)}</div>`:''}</div>`).join('')}</div>`:'';
+  box.innerHTML=`<div class="cc-ola"><button onclick="renderMinhasOS()" style="padding:6px 10px;border-radius:8px;border:1.5px solid var(--borda);background:#fff">◀ Voltar</button>
+    <h3 style="margin:10px 0 2px">🧾 ${esc(os&&os.numero_os||'Ordem de serviço')}</h3>
+    <p>${esc(x.projeto_codigo||'')} — ${esc(x.projeto_nome||'')}${x.cliente_nome?' · '+esc(x.cliente_nome):''}</p></div>
+    <div style="background:#fff;border:1.5px solid var(--borda);border-radius:12px;padding:14px;margin-top:8px">
+      <strong>📅 Quando você está escalado</strong><ul style="margin:4px 0 0;padding-left:20px">${aloc}</ul>
+      ${x.projeto_local?`<div style="margin-top:8px"><strong>📍 Local:</strong> ${esc(x.projeto_local)}</div>`:''}
+      ${os?`${os.servico?`<div style="margin-top:8px"><strong>Serviço:</strong> ${esc(os.servico)}</div>`:''}
+        ${sec('Escopo',os.escopo)}
+        ${sec('Condições do local',os.condicoes_local,true)}
+        ${sec('✅ O que está incluído',os.incluido,true)}
+        ${sec('⛔ O que NÃO está incluído',os.nao_incluido,true,'var(--vermelho)')}
+        ${sec('Como deve ficar no final',os.resultado_final,true)}
+        ${sec('🛑 Pare e consulte o responsável se…',os.pontos_parada,true,'var(--vermelho)')}
+        ${sec('🦺 Segurança',os.seguranca,true)}
+        ${sec('Responsável',[os.responsavel_tecnico,os.contato_responsavel].filter(Boolean).join(' — '),true)}
+        ${itens}`
+      :'<div class="info-box" style="display:block;margin-top:10px">Este contrato ainda não tem Ordem de Serviço no CRM. <strong>Confirme com o responsável</strong> o que deve ser feito antes de começar.</div>'}
+    </div>`;
+  window.scrollTo(0,0);
 }
 
 /* ---- v51: diário de obra no celular do funcionário (login CPF) ---- */
@@ -7293,8 +7410,8 @@ function preencherFichaDados(){
   $('fi-kit').value=r.kit_recebido_em||'';$('fi-termo').value=r.termo_assinatura_em||'';
   $('fi-titulo').textContent=f?f.nome:'Novo funcionário';
   const e=f&&empresaPorId(f.empresa_id);
-  $('fi-resumo').textContent=f?[f.cargo,e&&e.sigla,f.cpf&&'CPF '+f.cpf,f.data_admissao&&'admissão '+fmtData(f.data_admissao),f.ativo===false&&'DESLIGADO'].filter(Boolean).join(' · '):'Preencha os dados e salve; depois as outras abas da ficha ficam liberadas.';
-  $('fi-links').innerHTML=f?`${f.pasta_url?`<a class="btn-sec" style="text-decoration:none" href="${esc(f.pasta_url)}" target="_blank" rel="noopener">📁 Pasta na rede</a>`:''}<button class="btn-sec" onclick="fecharModal('modal-ficha');verDocsFuncionario('${esc(f.id)}')">📄 Documentos (ASO, NRs…)</button>`:'';
+  $('fi-resumo').textContent=f?[f.cargo,e&&e.sigla,f.cpf&&'CPF '+f.cpf,f.data_admissao&&'admissão '+fmtData(f.data_admissao),f.ativo===false&&('DESLIGADO'+(f.data_desligamento?' em '+fmtData(f.data_desligamento):'')+(f.motivo_desligamento?' — '+f.motivo_desligamento:''))].filter(Boolean).join(' · '):'Preencha os dados e salve; depois as outras abas da ficha ficam liberadas.';
+  $('fi-links').innerHTML=f?`${f.pasta_url?`<a class="btn-sec" style="text-decoration:none" href="${esc(f.pasta_url)}" target="_blank" rel="noopener">📁 Pasta na rede</a>`:''}<button class="btn-sec" onclick="fecharModal('modal-ficha');verDocsFuncionario('${esc(f.id)}')">📄 Documentos (ASO, NRs…)</button>${PERM.docs?(f.ativo!==false?`<button class="btn-excluir" onclick="abrirDesligamento('${esc(f.id)}')">🚪 Desligar funcionário</button>`:`<button class="btn-sec" onclick="reativarFuncionario('${esc(f.id)}')">↩️ Reativar</button>`):''}`:'';
 }
 function renderFicha(){
   document.querySelectorAll('#fi-subabas .subaba').forEach(s=>{s.classList.toggle('ativo',s.dataset.fi===fichaSub);s.style.opacity=!fichaId&&s.dataset.fi!=='dados'?'.45':'';});
@@ -10724,6 +10841,11 @@ function qtdEmPropostas(itemId){
   return todoInvOS.filter(x=>x.item_id===itemId&&!perdidos.has(x.card_id)).reduce((s,x)=>s+Number(x.quantidade||0),0);
 }
 const estoqueBaixo=i=>i.ativo!==false&&i.quantidade_minima!=null&&Number(i.quantidade)<=Number(i.quantidade_minima);
+// v57: EPI com validade — alerta de compra a partir de N dias antes de vencer (padrão 30)
+const epiVencendo=i=>i.ativo!==false&&i.tipo==='epi'&&!!i.data_validade&&diasAte(i.data_validade)<=Number(i.aviso_validade_dias??30);
+function textoValidadeEPI(i){const d=diasAte(i.data_validade);return d<0?`venceu em ${fmtData(i.data_validade)}`:d===0?'vence hoje':`vence em ${d} dia(s) (${fmtData(i.data_validade)})`;}
+function mostrarValidadeEPI(){const epi=$('inv-tipo').value==='epi';document.querySelectorAll('#modal-inventario .inv-epi-box').forEach(b=>b.style.display=epi?'':'none');}
+function avisosEPI(){return PERM.comercialVer?todoInventario.filter(epiVencendo).sort((a,b)=>String(a.data_validade).localeCompare(String(b.data_validade))):[];}
 const fmtQtd=v=>Number(v||0).toLocaleString('pt-BR',{maximumFractionDigits:2});
 function atualizarListasInventario(){
   const uniq=k=>[...new Set(todoInventario.map(i=>String(i[k]||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'pt-BR'));
@@ -10731,7 +10853,8 @@ function atualizarListasInventario(){
   $('dl-inv-cat').innerHTML=[...new Set(['Jardinagem','Limpeza','Construção civil','Elétrica','Hidráulica','Pintura','Altura / alpinismo','Solda','Informática','Escritório',...uniq('categoria')])].map(x=>`<option value="${esc(x)}">`).join('');
   $('dl-inv-un').innerHTML=[...new Set(['un','par','jogo','kit','m','m²','L','kg','cx','rolo','pç',...uniq('unidade')])].map(x=>`<option value="${esc(x)}">`).join('');
   $('dl-inv-local').innerHTML=[...new Set(['Depósito','Escritório',...uniq('localizacao')])].map(x=>`<option value="${esc(x)}">`).join('');
-  const n=todoInventario.filter(estoqueBaixo).length,bdg=$('tab-inv-badge');if(bdg)bdg.innerHTML=n?`<span class="badge badge-hoje" title="Itens com estoque baixo">${n}</span>`:'';
+  const n=todoInventario.filter(estoqueBaixo).length,ne=todoInventario.filter(epiVencendo).length,bdg=$('tab-inv-badge');
+  if(bdg)bdg.innerHTML=(n?`<span class="badge badge-hoje" title="Itens com estoque baixo">${n}</span>`:'')+(ne?` <span class="badge badge-atraso" title="EPI vencido ou a vencer — comprar">🦺 ${ne}</span>`:'');
 }
 function renderInventario(){
   if(!PERM.comercialVer)return;
@@ -10741,20 +10864,20 @@ function renderInventario(){
   const sel=(id,ops,todos)=>{const s=$(id),v=s.value;preencherSelect(s,ops,todos);s.value=v;};
   sel('inv-f-tipo',TIPOS_INV,'Todos os tipos');sel('inv-f-estado',ESTADOS_INV,'Todos os estados');
   sel('inv-f-cat',[...new Set(todoInventario.map(i=>i.categoria).filter(Boolean))].sort().map(c=>[c,c]),'Todas as categorias');
-  const q=norm($('inv-busca').value),tp=$('inv-f-tipo').value,es=$('inv-f-estado').value,ct=$('inv-f-cat').value,baixo=$('inv-baixo').checked,inat=$('inv-inativos').checked;
+  const q=norm($('inv-busca').value),tp=$('inv-f-tipo').value,es=$('inv-f-estado').value,ct=$('inv-f-cat').value,baixo=$('inv-baixo').checked,inat=$('inv-inativos').checked,epiV=$('inv-epi-venc').checked;
   const base=todoInventario.filter(i=>empresaAtual==='todas'||!i.empresa_id||i.empresa_id===empresaAtual);
   const ativos=base.filter(i=>i.ativo!==false);
-  const l=base.filter(i=>(inat||i.ativo!==false)&&(!tp||i.tipo===tp)&&(!es||i.estado===es)&&(!ct||i.categoria===ct)&&(!baixo||estoqueBaixo(i))
+  const l=base.filter(i=>(inat||i.ativo!==false)&&(!tp||i.tipo===tp)&&(!es||i.estado===es)&&(!ct||i.categoria===ct)&&(!baixo||estoqueBaixo(i))&&(!epiV||epiVencendo(i))
     &&(!q||norm([i.codigo,i.nome,i.marca_modelo,i.numero_serie,i.localizacao,i.categoria,i.observacoes].join(' ')).includes(q)));
   const valor=ativos.reduce((s,i)=>s+Number(i.valor_unitario||0)*Number(i.quantidade||0),0);
   $('inv-kpis').innerHTML=[['Itens cadastrados',String(ativos.length),nomeEmpresaAtual()],['Estoque baixo',String(ativos.filter(estoqueBaixo).length),'no mínimo ou abaixo'],
-    ['Em manutenção',String(ativos.filter(i=>i.estado==='manutencao').length),'fora de uso'],['Valor estimado',valor?fmtCurto(valor):'—','quantidade × valor unitário']]
+    ['Em manutenção',String(ativos.filter(i=>i.estado==='manutencao').length),'fora de uso'],['🦺 EPI a comprar',String(ativos.filter(epiVencendo).length),'vencido ou perto de vencer'],['Valor estimado',valor?fmtCurto(valor):'—','quantidade × valor unitário']]
     .map(([r,v,s])=>`<div class="kpi"><div class="rot">${esc(r)}</div><div class="val">${esc(v)}</div><div class="sub">${esc(s)}</div></div>`).join('');
   $('tabela-inventario').innerHTML=`<thead><tr><th>Código</th><th>Item</th><th>Tipo</th><th class="num">Estoque</th><th class="num" title="Separado em propostas não perdidas">Em propostas</th><th>Estado</th><th>Onde está</th><th>Empresa</th></tr></thead><tbody>${l.length?l.map(i=>{
     const e=i.empresa_id&&empresaPorId(i.empresa_id),uso=qtdEmPropostas(i.id);
     return`<tr class="clicavel ${i.ativo===false?'inativo':''}" data-inv="${esc(i.id)}" style="cursor:pointer"><td style="white-space:nowrap"><strong>${esc(i.codigo||'')}</strong></td>
       <td><strong>${esc(i.nome)}</strong>${i.marca_modelo||i.numero_serie?`<div class="dica" style="margin:0">${esc([i.marca_modelo,i.numero_serie&&'série '+i.numero_serie].filter(Boolean).join(' · '))}</div>`:''}${i.categoria?`<div class="dica" style="margin:0">${esc(i.categoria)}</div>`:''}</td>
-      <td>${esc(TIPO_INV_LABEL[i.tipo]||i.tipo)}</td>
+      <td>${esc(TIPO_INV_LABEL[i.tipo]||i.tipo)}${i.tipo==='epi'&&i.data_validade?`<div class="dica" style="margin:0">validade ${esc(fmtData(i.data_validade))}</div>${epiVencendo(i)?` <span class="badge badge-atraso" title="${esc(textoValidadeEPI(i))}">${diasAte(i.data_validade)<0?'vencido':'comprar'}</span>`:''}`:i.tipo==='epi'&&i.ativo!==false?'<div class="dica" style="margin:0;color:var(--vermelho)">sem validade</div>':''}</td>
       <td class="num"><strong>${esc(fmtQtd(i.quantidade))}</strong> ${esc(i.unidade||'')}${estoqueBaixo(i)?` <span class="badge badge-hoje" title="Mínimo: ${esc(fmtQtd(i.quantidade_minima))}">baixo</span>`:''}</td>
       <td class="num">${uso?`${esc(fmtQtd(uso))}${uso>Number(i.quantidade||0)?' <span class="badge badge-atraso" title="Separado mais do que tem em estoque">falta</span>':''}`:'—'}</td>
       <td><span class="badge ${COR_ESTADO_INV[i.estado]||'badge-cinza'}">${esc(ESTADO_INV_LABEL[i.estado]||i.estado)}</span></td>
@@ -10773,6 +10896,7 @@ function abrirItemInventario(id){
   $('inv-estado').value=i?i.estado:'bom';$('inv-marca').value=i&&i.marca_modelo||'';$('inv-serie').value=i&&i.numero_serie||'';$('inv-local').value=i&&i.localizacao||'';
   $('inv-empresa').value=i?(i.empresa_id||''):(empresaAtual!=='todas'?empresaAtual:'');
   $('inv-valor').value=i&&i.valor_unitario!=null?fmtMoeda(i.valor_unitario):'';$('inv-data').value=i&&i.data_aquisicao||'';$('inv-obs').value=i&&i.observacoes||'';
+  $('inv-validade').value=i&&i.data_validade||'';$('inv-aviso-dias').value=i&&i.aviso_validade_dias!=null?i.aviso_validade_dias:30;mostrarValidadeEPI();
   const usos=i?todoInvOS.filter(x=>x.item_id===i.id).map(x=>({x,c:todosCards.find(c=>c.id===x.card_id)})).filter(u=>u.c):[];
   $('inv-uso').innerHTML=usos.length?`<div class="secao">Separado nestas propostas</div><div class="sub-lista">${usos.map(u=>`<div class="sub-item clicavel" data-inv-card="${esc(u.c.id)}"><span><strong>${esc(numeroProposta(u.c)||'')}</strong> ${esc(u.c.titulo||'')}</span><span>${esc(fmtQtd(u.x.quantidade))} ${esc(i.unidade||'')} · ${esc(ETAPA_LABEL[u.c.etapa]||u.c.etapa)}</span></div>`).join('')}</div>`:'';
   $('inv-uso').querySelectorAll('[data-inv-card]').forEach(el=>el.onclick=()=>{fecharModal('modal-inventario');abrirModalCard(el.dataset.invCard);});
@@ -10787,8 +10911,13 @@ async function salvarItemInventario(){
     quantidade_minima:num($('inv-min').value),estado:$('inv-estado').value,marca_modelo:$('inv-marca').value.trim()||null,numero_serie:$('inv-serie').value.trim()||null,
     localizacao:$('inv-local').value.trim()||null,empresa_id:$('inv-empresa').value||null,valor_unitario:parseMoeda($('inv-valor').value),data_aquisicao:$('inv-data').value||null,
     observacoes:$('inv-obs').value.trim()||null,atualizado_em:new Date().toISOString()};
+  if(dados.tipo==='epi'){
+    if(!$('inv-validade').value&&!confirm('EPI sem data de validade: o CRM não vai conseguir avisar quando precisar comprar.\n\nSalvar mesmo assim?'))return;
+    dados.data_validade=$('inv-validade').value||null;dados.aviso_validade_dias=Math.min(365,Math.max(0,Math.round(Number($('inv-aviso-dias').value)||30)));
+  }else if(todoInventario.some(x=>'data_validade' in x))dados.data_validade=null;
   if(!invEditandoId&&todoInventario.some(i=>norm(i.nome)===norm(nome)&&norm(i.numero_serie)===norm(dados.numero_serie))&&!confirm(`Já existe "${nome}" no inventário. Cadastrar outro mesmo assim?`))return;
   const r=invEditandoId?await sb.from('inventario_itens').update(dados).eq('id',invEditandoId):await sb.from('inventario_itens').insert({...dados,criado_por:quemSou()});
+  if(r.error&&/data_validade|aviso_validade/i.test(r.error.message||'')){alert('Para guardar a validade do EPI, rode antes a migração v57 (supabase/migracao_crm_v57_os_funcionario_consultoria_iso_desligamento_epi.sql) no Supabase.');return;}
   if(erroSB(r.error))return;
   fecharModal('modal-inventario');await carregarInventario();renderInventario();toast('Item salvo');
 }
@@ -11728,6 +11857,7 @@ function exportarMensalidades(){
 let gsSub='iso';
 function renderGestao(){
   if(!PERM.gestao)return;
+  if(!PERM.gestaoAcessos)gsSub='iso';
   document.querySelectorAll('#gs-subabas .subaba').forEach(s=>s.classList.toggle('ativo',s.dataset.gs===gsSub));
   document.querySelectorAll('#tab-gestao .painel-rh').forEach(p=>p.classList.toggle('ativo',p.id==='gs-p-'+gsSub));
   (gsSub==='iso'?renderISO:renderAcessos)();
@@ -11738,7 +11868,7 @@ async function carregarGestao(){
     sb.from('iso_requisitos').select('*').order('titulo'),
     sb.from('iso_novidades').select('*').eq('situacao','avaliar').order('data_publicacao',{ascending:false,nullsFirst:false}).limit(200),
     sb.from('iso_config').select('id,termos,localidades,dias_busca,ultima_busca,ultimo_resultado').eq('id',1).maybeSingle(),
-    sb.from('contas_acessos').select('*').order('servico')]);
+    PERM.gestaoAcessos?sb.from('contas_acessos').select('*').order('servico'):Promise.resolve({data:[]})]);
   const e=r.error||n.error||c.error||a.error;
   if(e){if(faltaV56(e))v56Ok=false;else console.warn(e);return;}
   todosRequisitos=r.data||[];isoNovidades=n.data||[];isoConfig=c.data||{};todosAcessos=a.data||[];
@@ -11815,7 +11945,7 @@ function abrirRequisito(id,base){
   const sel=new Set(r&&r.empresas||[]);
   $('rq-empresas').innerHTML=todasEmpresas.map(e=>`<label style="display:inline-flex;gap:6px;align-items:center;font-weight:500"><input type="checkbox" value="${esc(e.id)}" ${sel.has(e.id)?'checked':''}> ${esc(e.sigla)} — ${esc(e.nome)}</label>`).join('');
   $('rq-titulo-modal').textContent=id?r.titulo:'Novo requisito';
-  $('rq-btn-excluir').style.display=id?'':'none';$('rq-btn-revisado').style.display=id?'':'none';
+  $('rq-btn-excluir').style.display=id&&PERM.admin?'':'none';$('rq-btn-revisado').style.display=id?'':'none';
   abrirModal('modal-requisito');
 }
 function dadosRequisito(){
