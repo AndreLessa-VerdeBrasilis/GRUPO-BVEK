@@ -65,6 +65,14 @@ button{font-family:inherit}
 .cc-btn-ass{width:100%;margin-top:10px;padding:13px;border-radius:10px;border:0;background:var(--verde);color:#fff;font-weight:700;font-size:15px;cursor:pointer}
 .cc-aviso{background:#fff;border-radius:12px;padding:14px 16px;box-shadow:0 1px 4px rgba(0,0,0,.06);border-left:4px solid var(--verde)}.cc-aviso strong{font-size:15px}.cc-aviso p{font-size:14px;margin-top:6px;line-height:1.5}
 .cc-termo{max-height:220px;overflow:auto;border:1px solid var(--borda);border-radius:8px;padding:10px 12px;font-size:12.5px;line-height:1.5;color:var(--texto2);background:#fafafa}.cc-termo p{margin:0 0 6px}
+#tela-portal{display:none;min-height:100vh;background:var(--cinza)}
+@media(max-width:560px){.pt-topo-tit{display:none}}
+.pt-wrap{max-width:900px;margin:0 auto;padding:20px 16px 40px}
+.pt-sec{background:#fff;border-radius:12px;padding:16px 18px;box-shadow:0 1px 4px rgba(0,0,0,.06);margin-bottom:12px;line-height:1.5;font-size:14px}
+.pt-sec h3{font-size:15px;margin:0 0 8px}.pt-sec table{border-collapse:collapse;width:100%;font-size:13.5px}.pt-sec th{text-align:left;color:var(--texto2);font-weight:600;padding:5px 10px 5px 0;width:150px;vertical-align:top}.pt-sec td{padding:5px 0;vertical-align:top}
+.pt-fotos{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}.pt-fotos figure{margin:0;width:calc(33.3% - 6px);min-width:110px}.pt-fotos img{width:100%;height:140px;object-fit:cover;border-radius:6px;cursor:zoom-in;background:#eee}.pt-fotos figcaption{font-size:11px;color:var(--texto2)}
+.pt-arq{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:10px 0;border-top:1px solid var(--borda);flex-wrap:wrap}.pt-arq:first-child{border-top:0}
+.pt-dia{border-top:1px solid var(--borda);padding:10px 0}.pt-dia:first-child{border-top:0}.pt-dia summary{cursor:pointer;font-weight:700}
 .cc-vazio{background:#fff;border-radius:12px;padding:28px 20px;text-align:center;color:var(--texto2);font-size:14px;line-height:1.6}
 /* v42: canal de denúncias e políticas da empresa (acesso por CPF) */
 .den-hero{background:linear-gradient(135deg,#f3f7fb,#eef6ee);border:1px solid var(--borda);border-radius:14px;padding:22px 20px;margin-bottom:14px;text-align:center}
@@ -557,6 +565,28 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
       </div>
     </div>
     </div>
+  </div>
+</div>
+
+<!-- v58: PORTAL DO CLIENTE (perfil "cliente": e-mail + senha) -->
+<div id="tela-portal">
+  <div class="topbar">
+    <div class="topbar-logo"><img src="img/icone-192.png" alt="">GRUPO BVEK<span class="pt-topo-tit">&nbsp;· Portal do cliente</span></div>
+    <div class="topbar-right">
+      <button class="btn-topo" onclick="abrirModalSenha()" title="Trocar minha senha">🔑 Senha</button>
+      <button class="btn-sair" onclick="sair()">Sair</button>
+    </div>
+  </div>
+  <div class="pt-wrap">
+    <div class="cc-ola"><h2 id="pt-nome">Portal do cliente</h2><p id="pt-sub"></p></div>
+    <div id="pt-primeiro" class="cc-ola" style="display:none">
+      <h3 style="margin:0 0 6px">Crie a sua senha</h3>
+      <p>Este é o seu primeiro acesso. Troque a senha provisória por uma só sua (pelo menos 8 caracteres).</p>
+      <div class="campo" style="margin-top:10px"><label for="pt-s1">Nova senha</label><input type="password" id="pt-s1" autocomplete="new-password"></div>
+      <div class="campo" style="margin-top:10px"><label for="pt-s2">Repita a nova senha</label><input type="password" id="pt-s2" autocomplete="new-password" onkeydown="if(event.key==='Enter')ptCriarSenha()"></div>
+      <button class="cc-btn-ass" id="pt-btn-senha" onclick="ptCriarSenha()">Criar minha senha e entrar</button>
+    </div>
+    <div id="pt-corpo"></div>
   </div>
 </div>
 
@@ -1254,6 +1284,7 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
         <div><strong>Contabilidade</strong>Funcionários, benefícios, RH (salários, contracheques, vales e adiantamentos), documentos/certidões, cronograma e agenda do escritório. Não vê funil, propostas, clientes nem currículos.</div>
         <div><strong>Estagiário</strong>Tarefas da equipe, cronograma e agenda do escritório (cria e altera, não apaga), inventário e fornecedores. Não vê painel, funil, valores, clientes, contratos, financeiro, RH nem documentos.</div>
         <div><strong>Consultoria ISO</strong>Só a aba Gestão → Normas ISO 9001 / 14001: cadastra e altera requisitos e avalia as leis novas (não apaga, não muda as palavras da busca). Não vê Contas e acessos nem nada do resto do CRM.</div>
+        <div><strong>Cliente (portal)</strong>Login de um contato do cliente, criado em Clientes → abrir o cliente → 🌐 Portal do cliente. Vê os dados do próprio cadastro e só os contratos liberados, com o que foi marcado em cada um (Contratos → abrir o contrato → 🌐 Portal do cliente). Não vê nada mais do CRM.</div>
         <div><strong>Funcionário (contracheque e ponto)</strong>Entra com CPF e senha e vê somente os próprios contracheques (todos os meses guardados para o CPF) as próprias marcações do ponto (Secullum), avisos, premiações, políticas e as <strong>Ordens de Serviço</strong> em que está escalado no Cronograma (sem valores). Não vê o diário de obra nem nada mais do CRM.</div>
       </div>
       <div class="barra-acoes" style="margin-top:18px"><h2>Acesso dos intermitentes ao contracheque</h2>
@@ -1547,6 +1578,7 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
       <div id="mc-cards"></div>
       <div class="secao">Contratos <button class="btn-sec so-edicao" id="mc-btn-proj">+ Contrato</button></div>
       <div id="mc-projetos"></div>
+      <div id="mc-portal-box" style="display:none"><div class="secao">🌐 Portal do cliente — logins <button class="btn-sec" onclick="abrirNovoAcessoPortal()">+ Criar acesso</button></div><div id="mc-portal"></div></div>
       <div class="secao">Atividades</div>
       <div id="mc-atividades"></div>
       <div class="ativ-form so-edicao">
@@ -1614,6 +1646,7 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
       <div class="campo full" id="mpj-pasta-box" style="display:none"><label>Pasta na rede</label><input type="text" id="mpj-pasta" readonly></div>
     </div>
     <div class="modal-btns">
+      <button class="btn-sec" id="mpj-portal" style="display:none" onclick="abrirPortalContrato(projetoEditandoId)">🌐 Portal do cliente</button>
       <button class="btn-cancelar" onclick="fecharModal('modal-projeto')">Cancelar</button>
       <button class="btn-salvar so-edicao" id="mpj-salvar" onclick="salvarProjeto()">Criar contrato</button>
     </div>
@@ -2389,6 +2422,59 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
   </div>
 </div>
 
+<!-- v58: portal do cliente — criar login -->
+<div class="modal-overlay" id="modal-portal-acesso">
+  <div class="modal modal-sm">
+    <h2>🌐 Novo acesso ao portal</h2>
+    <p class="modal-sub" id="pa2-sub"></p>
+    <div class="form-grid" style="grid-template-columns:1fr">
+      <div class="campo"><label>Nome da pessoa *</label><input type="text" id="pa2-nome" list="dl-pa2-contatos" placeholder="Ex.: João Silva (fiscal do contrato)"><datalist id="dl-pa2-contatos"></datalist></div>
+      <div class="campo"><label>E-mail (é o login) *</label><input type="email" id="pa2-email" autocomplete="off"></div>
+      <div class="campo"><label>Senha provisória *</label><input type="text" id="pa2-senha" autocomplete="off"><div class="dica">No primeiro acesso a pessoa troca por uma senha dela.</div></div>
+    </div>
+    <div class="modal-btns">
+      <button class="btn-cancelar" onclick="fecharModal('modal-portal-acesso')">Cancelar</button>
+      <button class="btn-salvar" id="pa2-btn" onclick="criarAcessoPortal()">Criar acesso</button>
+    </div>
+  </div>
+</div>
+
+<!-- v58: portal do cliente — o que cada contrato mostra -->
+<div class="modal-overlay" id="modal-portal-contrato">
+  <div class="modal">
+    <h2 id="pc-titulo">🌐 Portal do cliente</h2>
+    <p class="modal-sub" id="pc-sub"></p>
+    <div class="info-box" id="pc-logins" style="display:block"></div>
+    <div class="campo-check" style="margin:10px 0"><input type="checkbox" id="pc-liberado" onchange="pcMostrar()"><label for="pc-liberado"><strong>Mostrar este contrato no portal do cliente</strong></label></div>
+    <div id="pc-opcoes">
+      <div class="secao">O que o cliente vê neste contrato</div>
+      <div class="campo-check"><input type="checkbox" id="pc-ver-proposta" onchange="pcMostrar()"><label for="pc-ver-proposta">📄 Proposta (o PDF guardado na proposta)</label></div>
+      <div class="campo" id="pc-card-box" style="margin:4px 0 10px 26px"><select id="pc-card" onchange="pcMostrar()"></select><div class="dica" id="pc-card-info"></div></div>
+      <div class="campo-check"><input type="checkbox" id="pc-ver-os"><label for="pc-ver-os">🧾 Ordem de serviço (sem valores)</label></div>
+      <div class="campo-check"><input type="checkbox" id="pc-ver-diario"><label for="pc-ver-diario">📒 Diário de obra — só os dias <strong>conferidos e fechados</strong> pelo escritório, com fotos (o áudio não vai)</label></div>
+      <div class="campo-check"><input type="checkbox" id="pc-ver-docs" onchange="pcMostrar()"><label for="pc-ver-docs">📑 Documentos da empresa (escolha quais)</label></div>
+      <div id="pc-docs" style="margin:4px 0 10px 26px;max-height:220px;overflow:auto;border:1px solid var(--borda);border-radius:8px;padding:8px 10px"></div>
+      <div class="campo-check"><input type="checkbox" id="pc-ver-inicio"><label for="pc-ver-inicio">📂 Documentos de início (contrato assinado, ART/RRT, ordem de início…)</label></div>
+      <div class="campo-check"><input type="checkbox" id="pc-ver-medicoes"><label for="pc-ver-medicoes">💰 Medições e notas fiscais</label></div>
+      <div class="secao">Arquivos do contrato para o portal</div>
+      <div class="dica" style="margin-bottom:6px">Documentos de início, medições e notas fiscais. Só aparecem para o cliente os marcados como <em>visível</em>, e só se a caixinha da categoria acima estiver marcada.</div>
+      <div id="pc-arquivos"></div>
+      <div class="form-grid" style="margin-top:8px">
+        <div class="campo"><label>Categoria</label><select id="pc-a-cat"><option value="inicio">Documento de início</option><option value="medicao">Medição</option><option value="nota_fiscal">Nota fiscal</option></select></div>
+        <div class="campo"><label>Título *</label><input type="text" id="pc-a-titulo" placeholder="Ex.: Contrato assinado · 1ª medição · ART"></div>
+        <div class="campo"><label>Número</label><input type="text" id="pc-a-num" placeholder="Ex.: NF 1234 · BM 01"></div>
+        <div class="campo"><label>Data</label><input type="date" id="pc-a-data"></div>
+        <div class="campo full"><label>Arquivo (PDF, imagem, planilha, XML da nota) *</label><input type="file" id="pc-a-arq" accept=".pdf,.jpg,.jpeg,.png,.webp,.xlsx,.docx,.xml"></div>
+        <div class="campo full"><button class="btn-sec" id="pc-a-btn" onclick="addPcArquivo()">+ Adicionar arquivo</button></div>
+      </div>
+    </div>
+    <div class="modal-btns">
+      <button class="btn-cancelar" onclick="fecharModal('modal-portal-contrato')">Cancelar</button>
+      <button class="btn-salvar" onclick="salvarPortalContrato()">Salvar</button>
+    </div>
+  </div>
+</div>
+
 <!-- v57: desligamento do funcionário -->
 <div class="modal-overlay" id="modal-desligar">
   <div class="modal modal-sm">
@@ -3007,7 +3093,7 @@ const CADENCIA_COBRANCA={enviada:3,cobranca1:4,cobranca2:7,negociacao:7};
 const ETAPAS_COBRANCA=Object.keys(CADENCIA_COBRANCA);
 const PROXIMA_ETAPA_COBRANCA={enviada:'cobranca1',cobranca1:'cobranca2'};
 // Perfis de acesso (as regras valem no banco; aqui só ajustam a tela)
-const PERFIS=[['administrador','Administrador'],['comercial','Comercial'],['administrativo','Administrativo'],['contabilidade','Contabilidade'],['estagiario','Estagiário (tarefas, cronograma, inventário e fornecedores)'],['consultoria_iso','Consultoria ISO (só as normas ISO 9001 / 14001)'],['funcionario','Funcionário (contracheque e ponto)'],['pendente','Aguardando liberação']];
+const PERFIS=[['administrador','Administrador'],['comercial','Comercial'],['administrativo','Administrativo'],['contabilidade','Contabilidade'],['estagiario','Estagiário (tarefas, cronograma, inventário e fornecedores)'],['consultoria_iso','Consultoria ISO (só as normas ISO 9001 / 14001)'],['cliente','Cliente (portal — crie pelo cadastro do cliente)'],['funcionario','Funcionário (contracheque e ponto)'],['pendente','Aguardando liberação']];
 // v17: login por CPF do perfil Funcionário → e-mail interno CPF@funcionario.bvek.com.br
 const DOMINIO_FUNC='funcionario.bvek.com.br';
 // v46: o perfil Consulta foi removido (quem era Consulta passou para Aguardando liberação)
@@ -3166,7 +3252,7 @@ async function fazerLogin(){
       :'Não foi possível entrar: '+m;return;}
   iniciarApp();
 }
-async function sair(){$('btn-montador').style.display='none';await sb.auth.signOut();$('app').style.display='none';$('tela-cc').style.display='none';$('tela-login').style.display='flex';}
+async function sair(){$('btn-montador').style.display='none';await sb.auth.signOut();$('app').style.display='none';$('tela-cc').style.display='none';$('tela-portal').style.display='none';portal=null;$('tela-login').style.display='flex';}
 // Lê o perfil de quem entrou. null = a migração v11 ainda não rodou (mantém o acesso de antes)
 async function carregarMeuPerfil(user){
   const{data,error}=await sb.from('perfis').select('*').eq('id',user.id).maybeSingle();
@@ -3185,6 +3271,7 @@ async function iniciarApp(){
     return;
   }
   if(meuPerfil.perfil==='funcionario'){iniciarContracheques();return;}
+  if(meuPerfil.perfil==='cliente'){iniciarPortal();return;}
   PERM=calcularPermissoes(meuPerfil.perfil);
   $('tela-login').style.display='none';$('app').style.display='block';
   $('user-nome').innerHTML=`${esc(meuPerfil.nome||user.email)}<span class="perfil-tag">${esc(PERFIL_LABEL[meuPerfil.perfil]||meuPerfil.perfil)}</span>`;
@@ -4682,8 +4769,8 @@ async function abrirModalCliente(id=null,voltarParaCard=false){
     $('mc-btn-inativar').textContent=c.ativo===false?'Reativar':'Inativar';
     $('mc-btn-proj').onclick=()=>{fecharModal('modal-cliente');abrirModalProjeto(null,null,c.id);};
     $('mc-referencias').innerHTML=c.referencias_rede?`<strong>Onde estavam os arquivos antes da reorganização:</strong> ${esc(c.referencias_rede)}`:'';
-    renderDetalheCliente(c);
-  }else{
+    renderDetalheCliente(c);renderAcessosPortalCliente(c);
+  }else{$('mc-portal-box').style.display='none';
     $('mc-titulo').textContent='Novo Cliente';
     $('mc-codigo').value='será gerado: '+await proximoCodigo();
     checksEmpresas(empresaAtual!=='todas'?(empresaPorId(empresaAtual)||{}).sigla:'');
@@ -4842,6 +4929,7 @@ function abrirModalProjeto(id=null,cardId=null,clienteId=null){
     if(!$('mpj-empresa').value&&empresaAtual!=='todas')$('mpj-empresa').value=empresaAtual;
   }
   modoLeitura('modal-projeto',!PERM.projetos);
+  $('mpj-portal').style.display=id&&PERM.admin?'':'none';
   abrirModal('modal-projeto');
 }
 async function salvarProjeto(){
@@ -6880,6 +6968,219 @@ function abrirMinhaOS(i){
       :'<div class="info-box" style="display:block;margin-top:10px">Este contrato ainda não tem Ordem de Serviço no CRM. <strong>Confirme com o responsável</strong> o que deve ser feito antes de começar.</div>'}
     </div>`;
   window.scrollTo(0,0);
+}
+
+/* ================= v58: PORTAL DO CLIENTE ================= */
+// Login de um contato do cliente (perfil "cliente", e-mail + senha). Vê o próprio cadastro e só os contratos
+// liberados em Contratos → 🌐 Portal do cliente, com o que estiver marcado em cada um. Tudo vem de
+// bvek_portal_dados (o banco já filtra); os arquivos abrem por link temporário.
+let portal=null,ptAtual=null,ptAba=null;
+const PT_ABAS=[['proposta','📄 Proposta'],['os','🧾 Ordem de serviço'],['diario','📒 Diário de obra'],['documentos','📑 Documentos da empresa'],['inicio','📂 Documentos de início'],['medicoes','💰 Medições e notas fiscais']];
+const PT_CAT={inicio:'Documento de início',medicao:'Medição',nota_fiscal:'Nota fiscal'};
+const nomeCurtoPt=n=>{const p=String(n||'').trim().split(/\s+/)[0]||'';return p?p.charAt(0).toUpperCase()+p.slice(1).toLowerCase():'';};
+const brPt=v=>esc(v||'').replace(/\n/g,'<br>');
+async function iniciarPortal(){
+  $('tela-login').style.display='none';$('app').style.display='none';$('tela-cc').style.display='none';$('tela-portal').style.display='block';
+  const n=nomeCurtoPt(meuPerfil&&meuPerfil.nome);$('pt-nome').textContent=n?`Olá, ${n}`:'Portal do cliente';
+  if(!meuPerfil.senha_definida_em){$('pt-primeiro').style.display='';$('pt-corpo').innerHTML='';$('pt-sub').textContent='';return;}
+  $('pt-primeiro').style.display='none';
+  $('pt-corpo').innerHTML='<div class="cc-vazio">Carregando…</div>';
+  const{data,error}=await sb.rpc('bvek_portal_dados');
+  if(error){console.error(error);$('pt-corpo').innerHTML='<div class="cc-vazio">Não foi possível carregar agora. Tente de novo mais tarde.</div>';return;}
+  portal=data||{cliente:null,contratos:[]};renderPortal();
+}
+async function ptCriarSenha(){
+  const a=$('pt-s1').value,b=$('pt-s2').value;
+  if(a.length<8){alert('A senha precisa ter pelo menos 8 caracteres.');return;}
+  if(a!==b){alert('As duas senhas não são iguais.');return;}
+  const btn=$('pt-btn-senha');btn.disabled=true;
+  try{
+    const{error}=await sb.auth.updateUser({password:a});if(erroSB(error,'Não foi possível criar a senha'))return;
+    await sb.rpc('bvek_primeiro_acesso_concluido',{p_termo_versao:null});
+    meuPerfil.senha_definida_em=new Date().toISOString();$('pt-s1').value='';$('pt-s2').value='';toast('Senha criada. Bem-vindo(a)!');iniciarPortal();
+  }finally{btn.disabled=false;}
+}
+function renderPortal(){
+  ptAtual=null;const c=portal.cliente||{},l=portal.contratos||[];
+  $('pt-sub').textContent=[c.codigo,c.razao_social||c.nome].filter(Boolean).join(' — ');
+  const linhas=[['Código',c.codigo],['Nome',c.nome],['Razão social',c.razao_social],['CPF / CNPJ',c.documento],['Endereço',c.endereco],['E-mail',c.email],['Telefone',c.telefone]].filter(x=>x[1]);
+  const dados=`<details class="pt-sec"><summary style="cursor:pointer;font-weight:700">🏢 Seus dados cadastrais</summary><table style="margin-top:8px">${linhas.map(([t,v])=>`<tr><th>${t}</th><td>${esc(v)}</td></tr>`).join('')}</table>
+    <p class="dica" style="margin-top:8px">Algum dado errado? Avise o seu contato no Grupo BVEK.</p></details>`;
+  const lista=l.length?'<div class="cc-lista">'+l.map((k,i)=>{const T=temaEmpresa(k.empresa_sigla),per=k.periodo&&k.periodo.inicio?periodoTxt(k.periodo.inicio,k.periodo.fim):'';
+    return`<div class="cc-item" style="border-left-color:#${T.destaque};cursor:pointer" onclick="ptAbrir(${i})"><div style="display:flex;gap:12px;align-items:center">${k.empresa_sigla?`<img src="${urlLogo(T.sigla,'logo')}" alt="${esc(k.empresa_sigla)}" style="height:34px;max-width:90px;object-fit:contain">`:''}
+      <div><strong style="text-transform:none">${esc(k.codigo)} — ${esc(k.nome)}</strong><div class="cc-sub">${esc([k.empresa_nome,k.status,k.local].filter(Boolean).join(' · '))}</div>${per?`<div class="cc-sub">📅 ${esc(per)}</div>`:''}</div></div>
+      <div class="cc-btns"><button class="cc-prim">Abrir</button></div></div>`;}).join('')+'</div>'
+    :'<div class="cc-vazio">Ainda não há contratos liberados para você no portal.<br>Assim que o Grupo BVEK liberar, eles aparecem aqui.</div>';
+  $('pt-corpo').innerHTML=dados+'<h3 style="margin:16px 4px 8px;font-size:15px">Seus contratos</h3>'+lista;
+}
+function ptAbasDe(k){return PT_ABAS.filter(([id])=>id==='proposta'?!!k.proposta:id==='os'?!!k.ver_os:id==='diario'?!!k.ver_diario:id==='documentos'?Array.isArray(k.documentos):id==='inicio'?!!k.ver_inicio:!!k.ver_medicoes);}
+function ptAbrir(i,aba){
+  const k=(portal.contratos||[])[i];if(!k)return;ptAtual=i;
+  const abas=ptAbasDe(k);ptAba=aba||(abas[0]||[])[0]||null;
+  const T=temaEmpresa(k.empresa_sigla),per=k.periodo&&k.periodo.inicio?periodoTxt(k.periodo.inicio,k.periodo.fim):'';
+  $('pt-corpo').innerHTML=`<div class="pt-sec" style="border-top:4px solid #${T.destaque}">
+      <button onclick="renderPortal();window.scrollTo(0,0)" style="padding:6px 10px;border-radius:8px;border:1.5px solid var(--borda);background:#fff;cursor:pointer">◀ Meus contratos</button>
+      <div style="display:flex;gap:14px;align-items:center;margin-top:10px;flex-wrap:wrap">${k.empresa_sigla?`<img src="${urlLogo(T.sigla,'logo')}" alt="" style="height:46px;max-width:130px;object-fit:contain">`:''}
+        <div><h3 style="margin:0;color:#${T.principal}">${esc(k.codigo)} — ${esc(k.nome)}</h3><div class="cc-sub">${esc([k.empresa_nome,k.status,k.local].filter(Boolean).join(' · '))}${per?' · 📅 '+esc(per):''}</div></div></div></div>
+    ${abas.length?`<div class="cc-abas">${abas.map(([id,t])=>`<button class="${id===ptAba?'ativo':''}" onclick="ptAbrir(${i},'${id}')">${t}</button>`).join('')}</div><div id="pt-aba"></div>`
+      :'<div class="cc-vazio">Ainda não há informações liberadas neste contrato.</div>'}`;
+  if(ptAba)ptRenderAba(k);
+}
+async function ptArquivo(bucket,caminho){
+  const w=window.open('','_blank');
+  const{data,error}=await sb.storage.from(bucket).createSignedUrl(caminho,600);
+  if(error||!data){if(w)w.close();alert('Não foi possível abrir o arquivo agora. Tente de novo.');return;}
+  if(w)w.location.href=data.signedUrl;else location.href=data.signedUrl;
+}
+const ptBtnArq=(bucket,caminho)=>caminho?`<div class="cc-btns"><button class="cc-prim" data-pt-b="${esc(bucket)}" data-pt-c="${esc(caminho)}">Abrir</button></div>`:'<span class="dica">sem arquivo</span>';
+function ptRenderAba(k){
+  const box=$('pt-aba');let h='';
+  if(ptAba==='proposta'){const p=k.proposta||{};
+    h=`<div class="pt-sec"><div class="pt-arq"><div><strong>${esc(p.numero||'Proposta')}</strong><div class="cc-sub">${esc(p.titulo||'')}</div></div>${p.arquivo?ptBtnArq('propostas',p.arquivo):'<span class="dica">O PDF desta proposta ainda não foi disponibilizado.</span>'}</div></div>`;}
+  else if(ptAba==='os'){const o=k.os;
+    if(!o)h='<div class="cc-vazio">A ordem de serviço deste contrato ainda não está disponível.</div>';
+    else{const sec=(t,v)=>v?`<div style="margin-top:10px"><strong>${t}</strong><div>${brPt(v)}</div></div>`:'';
+      h=`<div class="pt-sec"><h3>🧾 ${esc(o.numero_os||'Ordem de serviço')}</h3>${o.servico?`<div><strong>Serviço:</strong> ${esc(o.servico)}</div>`:''}
+        ${sec('Escopo',o.escopo)}${sec('Condições do local',o.condicoes_local)}${sec('✅ Incluído',o.incluido)}${sec('⛔ Não incluído',o.nao_incluido)}${sec('Como deve ficar no final',o.resultado_final)}${sec('Quando parar e consultar',o.pontos_parada)}${sec('🦺 Segurança',o.seguranca)}${sec('Responsável',[o.responsavel_tecnico,o.contato_responsavel].filter(Boolean).join(' — '))}
+        ${(o.itens||[]).length?`<div style="margin-top:12px"><strong>Itens</strong>${o.itens.map(it=>`<div class="pt-arq"><div><strong>${esc(it.item||'')}</strong> ${esc(it.descricao||'')}${it.como?`<div class="cc-sub">${brPt(it.como)}</div>`:''}</div><span class="cc-sub">${it.quantidade!=null?esc(fmtQtd(it.quantidade))+' '+esc(it.unidade||''):''}</span></div>`).join('')}</div>`:''}</div>`;}}
+  else if(ptAba==='diario'){const ds=k.diarios||[];
+    h=ds.length?`<div class="pt-sec"><p class="dica" style="margin-top:0">Dias conferidos pelo nosso escritório. Toque no dia para ver o que foi feito e as fotos.</p>${ds.map(d=>{const sv=(d.servicos||[]);
+      return`<details class="pt-dia" data-pt-dia="${esc(d.id)}"><summary>${esc(fmtData(d.data))} (${diaSemana(d.data)}) · ${esc(rotulo(DIO_COND,d.condicao))}</summary>
+        <div style="margin-top:6px">${d.hora_inicio?`🕒 ${esc(String(d.hora_inicio).slice(0,5))}–${esc(String(d.hora_fim||'').slice(0,5))} · `:''}Tempo: manhã ${esc(rotulo(DIO_CLIMA,d.clima_manha))}, tarde ${esc(rotulo(DIO_CLIMA,d.clima_tarde))}</div>
+        ${(d.equipe||[]).length?`<div><strong>Equipe (${d.equipe.length}):</strong> ${esc(d.equipe.join(', '))}</div>`:''}
+        ${d.atividades?`<div style="margin-top:4px"><strong>Executado:</strong> ${brPt(d.atividades)}</div>`:''}
+        ${(d.registros||[]).filter(r=>r.texto).map(r=>`<div class="cc-sub">${esc(horaReg(r))} — ${brPt(r.texto)}</div>`).join('')}
+        ${sv.length?`<div style="margin-top:4px">${sv.map(x=>`• ${esc(x.item?x.item+' ':'')}${esc(x.descricao||'')} — ${esc(rotulo(DIO_SERV,x.situacao))}${x.pct!=null&&x.pct!==''?' ('+esc(x.pct)+'%)':''}${x.obs?' · '+esc(x.obs):''}`).join('<br>')}</div>`:''}
+        ${[['Diferenças do previsto e o que foi decidido',d.divergencias],['Ocorrências',d.ocorrencias],['Visitas / pedidos do cliente',d.visitas],['Segurança',d.seguranca],['Pendências',d.pendencias]].filter(x=>x[1]).map(([t,v])=>`<div style="margin-top:4px"><strong>${t}:</strong> ${brPt(v)}</div>`).join('')}
+        <div class="pt-fotos" data-pt-fotos="${esc(d.id)}"></div></details>`;}).join('')}</div>`
+      :'<div class="cc-vazio">Ainda não há dias de diário conferidos neste contrato.</div>';}
+  else if(ptAba==='documentos'){const ds=k.documentos||[],hoje=hojeISO();
+    h=ds.length?`<div class="pt-sec">${ds.map(d=>`<div class="pt-arq"><div><strong>${esc(d.tipo||'Documento')}${d.descricao?' — '+esc(d.descricao):''}</strong>${d.empresa_sigla?` <span class="card-empresa-tag tag-${esc(d.empresa_sigla)}">${esc(d.empresa_sigla)}</span>`:''}
+        <div class="cc-sub">${esc([d.orgao,d.numero&&'nº '+d.numero,d.emissao&&'emitido em '+fmtData(d.emissao)].filter(Boolean).join(' · '))}${d.validade?` · válido até ${esc(fmtData(d.validade))}${d.validade<hoje?' <span class="badge badge-atraso">vencido</span>':''}`:''}</div></div>${ptBtnArq('documentos',d.arquivo)}</div>`).join('')}</div>`
+      :'<div class="cc-vazio">Nenhum documento disponível neste contrato.</div>';}
+  else{const cats=ptAba==='inicio'?['inicio']:['medicao','nota_fiscal'],as=(k.arquivos||[]).filter(a=>cats.includes(a.categoria));
+    h=as.length?`<div class="pt-sec">${as.map(a=>`<div class="pt-arq"><div><strong>${esc(a.titulo)}</strong><div class="cc-sub">${esc([PT_CAT[a.categoria],a.numero,a.data&&fmtData(a.data)].filter(Boolean).join(' · '))}</div></div>${ptBtnArq('portal',a.caminho)}</div>`).join('')}</div>`
+      :`<div class="cc-vazio">Nenhum arquivo ${ptAba==='inicio'?'de início':'de medição ou nota fiscal'} disponível ainda.</div>`;}
+  box.innerHTML=h;
+  box.querySelectorAll('[data-pt-b]').forEach(b=>b.onclick=()=>ptArquivo(b.dataset.ptB,b.dataset.ptC));
+  box.querySelectorAll('[data-pt-dia]').forEach(el=>el.addEventListener('toggle',()=>{if(el.open)ptFotosDia(k,el.dataset.ptDia);}));
+}
+async function ptFotosDia(k,id){
+  const d=(k.diarios||[]).find(x=>x.id===id),alvo=document.querySelector(`[data-pt-fotos="${id}"]`);if(!d||!alvo||alvo.dataset.ok)return;alvo.dataset.ok='1';
+  const fs=[...(d.fotos||[]).map(f=>({c:f.caminho,t:[rotulo(DIO_MOM,f.momento),f.legenda].filter(x=>x&&x!=='—').join(' — ')})),...(d.registros||[]).filter(r=>r.foto).map(r=>({c:r.foto,t:[horaReg(r),r.texto].filter(Boolean).join(' — ')}))].filter(f=>f.c);
+  if(!fs.length)return;
+  const{data}=await sb.storage.from('diarios').createSignedUrls(fs.map(f=>f.c),3600);
+  const url={};(data||[]).forEach(x=>{if(x.signedUrl)url[x.path]=x.signedUrl;});
+  alvo.innerHTML=fs.filter(f=>url[f.c]).map(f=>`<figure><a href="${esc(url[f.c])}" target="_blank" rel="noopener"><img src="${esc(url[f.c])}" alt="" loading="lazy"></a>${f.t?`<figcaption>${esc(f.t)}</figcaption>`:''}</figure>`).join('');
+}
+
+/* ---- v58: administrador — logins do cliente (Clientes → abrir o cliente) ---- */
+const faltaV58=e=>e&&/portal_|bvek_criar_acesso_cliente|bvek_portal|cliente_id|schema cache|does not exist|Could not find/i.test(e.message||'');
+function renderAcessosPortalCliente(c){
+  const box=$('mc-portal-box');if(!PERM.admin||!c){box.style.display='none';return;}box.style.display='';
+  const l=todosPerfis.filter(p=>p.perfil==='cliente'&&p.cliente_id===c.id);
+  $('mc-portal').innerHTML=l.length?'<div class="sub-lista">'+l.map(p=>`<div class="sub-item"><div><strong>${esc(p.nome||'')}</strong> ${p.ativo===false?'<span class="badge badge-cinza">desativado</span>':'<span class="badge badge-ok">ativo</span>'}${p.senha_definida_em?'':' <span class="badge badge-hoje">ainda não entrou</span>'}<div style="font-size:12px;color:var(--texto2)">${esc(p.email||'')}</div></div>
+    <div class="acoes"><button class="btn-link" onclick="abrirRedefinirSenha('${esc(p.id)}')">🔑 senha</button><button class="btn-link" style="color:var(--texto2)" onclick="alternarAcessoPortal('${esc(p.id)}')">${p.ativo===false?'reativar':'desativar'}</button></div></div>`).join('')+'</div>'
+    :'<p class="vazio">Nenhum login no portal. O cliente só vê os contratos liberados em Contratos → abrir o contrato → 🌐 Portal do cliente.</p>';
+}
+async function abrirNovoAcessoPortal(){
+  const c=clientePorId(clienteEditandoId);if(!c||!PERM.admin)return;
+  $('pa2-sub').textContent=`${c.codigo?c.codigo+' · ':''}${c.nome} — a pessoa vê só os contratos deste cliente que você liberar.`;
+  $('pa2-nome').value='';$('pa2-email').value='';
+  $('pa2-senha').value='Bvek'+Math.random().toString(36).slice(2,8)+Math.floor(10+Math.random()*89);
+  const{data:cts}=await sb.from('contatos').select('nome,email').eq('cliente_id',c.id);
+  window._pa2Contatos=cts||[];$('dl-pa2-contatos').innerHTML=(cts||[]).map(x=>`<option value="${esc(x.nome)}">`).join('');
+  $('pa2-nome').onchange=()=>{const x=window._pa2Contatos.find(y=>y.nome===$('pa2-nome').value);if(x&&x.email&&!$('pa2-email').value)$('pa2-email').value=x.email;};
+  abrirModal('modal-portal-acesso');setTimeout(()=>$('pa2-nome').focus(),50);
+}
+async function criarAcessoPortal(){
+  const c=clientePorId(clienteEditandoId);if(!c)return;
+  const nome=$('pa2-nome').value.trim(),email=$('pa2-email').value.trim().toLowerCase(),senha=$('pa2-senha').value.trim();
+  if(!nome||!email){alert('Informe o nome e o e-mail.');return;}
+  if(senha.length<8){alert('A senha provisória precisa ter pelo menos 8 caracteres.');return;}
+  const btn=$('pa2-btn');btn.disabled=true;
+  try{
+    const{error}=await sb.rpc('bvek_criar_acesso_cliente',{p_cliente:c.id,p_nome:nome,p_email:email,p_senha:senha});
+    if(error){if(faltaV58(error)){alert('Rode antes a migração v58 (supabase/migracao_crm_v58_portal_do_cliente.sql) no Supabase.');return;}alert('Não foi possível criar o acesso:\n'+(error.message||error));return;}
+    fecharModal('modal-portal-acesso');await carregarPerfis();renderAcessosPortalCliente(c);
+    alert(`Acesso criado. Passe para ${nome}:\n\nEndereço: ${location.origin}\nLogin: ${email}\nSenha provisória: ${senha}\n\nNo primeiro acesso a pessoa cria a própria senha. Libere os contratos em Contratos → abrir o contrato → 🌐 Portal do cliente.`);
+  }finally{btn.disabled=false;}
+}
+async function alternarAcessoPortal(id){
+  const p=todosPerfis.find(x=>x.id===id);if(!p)return;const novo=p.ativo===false;
+  if(!novo&&!confirm(`Desativar o login de ${p.nome||p.email}? A pessoa deixa de entrar no portal.`))return;
+  const{error}=await sb.from('perfis').update({ativo:novo}).eq('id',id);if(erroSB(error))return;
+  await carregarPerfis();renderAcessosPortalCliente(clientePorId(clienteEditandoId));toast(novo?'Login reativado':'Login desativado');
+}
+
+/* ---- v58: administrador — o que cada contrato mostra (Contratos → abrir o contrato → 🌐) ---- */
+let pcProjeto=null,pcArquivos=[];
+async function abrirPortalContrato(pid){
+  if(!PERM.admin)return;const p=todosProjetos.find(x=>x.id===pid);if(!p)return;
+  const[a,b]=await Promise.all([sb.from('portal_contratos').select('*').eq('projeto_id',pid).maybeSingle(),sb.from('portal_arquivos').select('*').eq('projeto_id',pid).order('data_documento',{ascending:false,nullsFirst:false})]);
+  const e=a.error||b.error;if(e){if(faltaV58(e)){alert('Rode antes a migração v58 (supabase/migracao_crm_v58_portal_do_cliente.sql) no Supabase.');return;}erroSB(e);return;}
+  pcProjeto=p;pcArquivos=b.data||[];const r=a.data||{};
+  const cli=clientePorId(p.cliente_id),emp=empresaPorId(p.empresa_id);
+  $('pc-titulo').textContent=`🌐 Portal do cliente — ${p.codigo}`;
+  $('pc-sub').textContent=`${p.nome} · ${cli?cli.nome:''}${emp?' · executora '+emp.sigla:''}`;
+  const logins=todosPerfis.filter(x=>x.perfil==='cliente'&&x.cliente_id===p.cliente_id&&x.ativo!==false);
+  $('pc-logins').innerHTML=logins.length?`👤 Quem vê: ${logins.map(x=>esc(x.nome||x.email)).join(', ')}`:'⚠️ Este cliente ainda não tem login no portal. Crie em <strong>Clientes → abrir o cliente → 🌐 Portal do cliente → + Criar acesso</strong>.';
+  const ck=(id,v)=>$(id).checked=!!v;
+  ck('pc-liberado',r.liberado);ck('pc-ver-proposta',r.ver_proposta);ck('pc-ver-os',r.ver_os);ck('pc-ver-diario',r.ver_diario);ck('pc-ver-docs',r.ver_documentos);ck('pc-ver-inicio',r.ver_inicio);ck('pc-ver-medicoes',r.ver_medicoes);
+  const cards=todosCards.filter(c=>c.projeto_id===p.id||c.id===p.card_id).sort((x,y)=>(ganha(y)-ganha(x))||String(y.criado_em||'').localeCompare(String(x.criado_em||'')));
+  preencherSelect($('pc-card'),cards.map(c=>[c.id,`${numeroProposta(c)||'(sem número)'} — ${c.titulo||''}${c.arquivo_proposta?'':' (sem PDF guardado)'}`]),cards.length?null:'— nenhuma proposta ligada a este contrato —');
+  $('pc-card').value=r.card_id&&cards.some(c=>c.id===r.card_id)?r.card_id:(cards[0]?cards[0].id:'');
+  const sel=new Set(r.documentos||[]);
+  const docs=todosDocumentos.filter(d=>!d.funcionario_id&&(d.situacao||'vigente')==='vigente')
+    .sort((x,y)=>((y.empresa_id===p.empresa_id)-(x.empresa_id===p.empresa_id))||nomeDoc(x).localeCompare(nomeDoc(y),'pt-BR'));
+  $('pc-docs').innerHTML=docs.length?docs.map(d=>{const e2=empresaPorId(d.empresa_id),s=statusDoc(d);return`<label style="display:flex;gap:8px;align-items:flex-start;font-weight:500;margin:4px 0"><input type="checkbox" value="${esc(d.id)}" ${sel.has(d.id)?'checked':''}>
+    <span>${e2?`<span class="card-empresa-tag tag-${esc(e2.sigla)}">${esc(e2.sigla)}</span> `:''}${esc(nomeDoc(d))}${d.data_validade?` · até ${esc(fmtData(d.data_validade))}`:''}${s.k==='vencido'?' <span class="badge badge-atraso">vencido</span>':''}${d.arquivo?'':' <span class="dica">(sem arquivo)</span>'}</span></label>`;}).join('')
+    :'<span class="dica">Nenhum documento das empresas cadastrado (aba Documentos e certidões).</span>';
+  ['pc-a-titulo','pc-a-num','pc-a-data'].forEach(i=>$(i).value='');$('pc-a-arq').value='';
+  renderPcArquivos();pcMostrar();abrirModal('modal-portal-contrato');
+}
+function pcMostrar(){
+  const lib=$('pc-liberado').checked;$('pc-opcoes').style.opacity=lib?'':'.55';
+  $('pc-card-box').style.display=$('pc-ver-proposta').checked?'':'none';$('pc-docs').style.display=$('pc-ver-docs').checked?'':'none';
+  const c=todosCards.find(x=>x.id===$('pc-card').value);
+  $('pc-card-info').innerHTML=c?(c.arquivo_proposta?`📎 ${esc(c.arquivo_proposta_nome||'PDF guardado')}`:'<span style="color:var(--vermelho)">⚠️ Esta proposta não tem PDF guardado: anexe o PDF na proposta (funil) para o cliente conseguir abrir.</span>'):'';
+}
+function renderPcArquivos(){
+  $('pc-arquivos').innerHTML=pcArquivos.length?`<div class="tabela-wrap"><table class="tabela"><thead><tr><th>Categoria</th><th>Título</th><th>Nº</th><th>Data</th><th>Visível</th><th></th></tr></thead><tbody>${pcArquivos.map(a=>`<tr><td>${esc(PT_CAT[a.categoria]||a.categoria)}</td><td>${esc(a.titulo)}</td><td>${esc(a.numero||'')}</td><td>${a.data_documento?esc(fmtData(a.data_documento)):''}</td>
+    <td><input type="checkbox" data-pca-vis="${esc(a.id)}" ${a.visivel?'checked':''}></td><td style="white-space:nowrap"><button class="btn-link" data-pca-ab="${esc(a.id)}">abrir</button> <button class="btn-link" style="color:var(--vermelho)" data-pca-ex="${esc(a.id)}">excluir</button></td></tr>`).join('')}</tbody></table></div>`
+    :'<p class="vazio">Nenhum arquivo ainda.</p>';
+  const ach=id=>pcArquivos.find(x=>x.id===id);
+  $('pc-arquivos').querySelectorAll('[data-pca-vis]').forEach(c=>c.onchange=async()=>{const{error}=await sb.from('portal_arquivos').update({visivel:c.checked}).eq('id',c.dataset.pcaVis);if(erroSB(error)){c.checked=!c.checked;return;}ach(c.dataset.pcaVis).visivel=c.checked;});
+  $('pc-arquivos').querySelectorAll('[data-pca-ab]').forEach(b=>b.onclick=()=>ptArquivo('portal',ach(b.dataset.pcaAb).caminho));
+  $('pc-arquivos').querySelectorAll('[data-pca-ex]').forEach(b=>b.onclick=async()=>{const a=ach(b.dataset.pcaEx);if(!a||!confirm(`Excluir "${a.titulo}" do portal?`))return;
+    const{error}=await sb.from('portal_arquivos').delete().eq('id',a.id);if(erroSB(error))return;await sb.storage.from('portal').remove([a.caminho]);
+    pcArquivos=pcArquivos.filter(x=>x.id!==a.id);renderPcArquivos();toast('Arquivo excluído');});
+}
+async function addPcArquivo(){
+  if(!pcProjeto)return;const f=$('pc-a-arq').files[0],titulo=$('pc-a-titulo').value.trim();
+  if(!titulo){alert('Informe o título do arquivo.');return;}if(!f){alert('Escolha o arquivo.');return;}
+  if(f.size>25*1024*1024){alert('O arquivo passa de 25 MB.');return;}
+  const btn=$('pc-a-btn');btn.disabled=true;
+  try{
+    const limpo=semAcento(f.name).replace(/[^\w.\- ]+/g,'_').replace(/\s+/g,' ').trim(),caminho=`${pcProjeto.id}/${Date.now()}_${limpo}`;
+    const tipo=f.type||(/\.xml$/i.test(f.name)?'application/xml':undefined);
+    const up=await sb.storage.from('portal').upload(caminho,f,{contentType:tipo,upsert:false});
+    if(up.error){if(faltaV58(up.error)||/bucket/i.test(up.error.message||'')){alert('Rode antes a migração v58 no Supabase.');return;}erroSB(up.error,'Não foi possível enviar o arquivo');return;}
+    const{data,error}=await sb.from('portal_arquivos').insert({projeto_id:pcProjeto.id,categoria:$('pc-a-cat').value,titulo,numero:$('pc-a-num').value.trim()||null,data_documento:$('pc-a-data').value||null,caminho,arquivo_nome:f.name,visivel:true,criado_por:quemSou()}).select().single();
+    if(erroSB(error))return;
+    pcArquivos.unshift(data);renderPcArquivos();['pc-a-titulo','pc-a-num','pc-a-data'].forEach(i=>$(i).value='');$('pc-a-arq').value='';toast('Arquivo adicionado');
+  }finally{btn.disabled=false;}
+}
+async function salvarPortalContrato(){
+  if(!pcProjeto)return;
+  const dados={projeto_id:pcProjeto.id,liberado:$('pc-liberado').checked,ver_proposta:$('pc-ver-proposta').checked,card_id:$('pc-card').value||null,
+    ver_os:$('pc-ver-os').checked,ver_diario:$('pc-ver-diario').checked,ver_documentos:$('pc-ver-docs').checked,
+    documentos:[...$('pc-docs').querySelectorAll('input:checked')].map(i=>i.value),ver_inicio:$('pc-ver-inicio').checked,ver_medicoes:$('pc-ver-medicoes').checked,
+    atualizado_por:quemSou(),atualizado_em:new Date().toISOString()};
+  if(dados.ver_proposta&&!dados.card_id){alert('Escolha a proposta que o cliente vai ver (ou desmarque “Proposta”).');return;}
+  if(dados.ver_documentos&&!dados.documentos.length){alert('Marque quais documentos da empresa o cliente vai ver (ou desmarque “Documentos da empresa”).');return;}
+  const{error}=await sb.from('portal_contratos').upsert(dados,{onConflict:'projeto_id'});if(erroSB(error))return;
+  fecharModal('modal-portal-contrato');toast(dados.liberado?'Portal do cliente atualizado':'Contrato fora do portal');
 }
 
 /* ---- v51: diário de obra no celular do funcionário (login CPF) ---- */
