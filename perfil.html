@@ -65,12 +65,12 @@ const chave='bvek_perfil_'+token;
 function mensagem(icone,titulo,texto){$('pagina').innerHTML=`<div class="caixa centro"><div class="icone">${icone}</div><h2>${esc(titulo)}</h2><p>${texto}</p></div>`;}
 
 async function iniciar(){
-  if(!/^[0-9a-f-]{36}$/i.test(token)){mensagem('🔗','Link incompleto','Abra o link exatamente como recebeu. Se o problema continuar, peça um novo link ao RH do Grupo BVEK.');return;}
+  if(!/^[0-9a-f-]{36}$/i.test(token)){mensagem('','Link incompleto','Abra o link exatamente como recebeu. Se o problema continuar, peça um novo link ao RH do Grupo BVEK.');return;}
   const{data,error}=await sb.rpc('bvek_perfil_form',{p_token:token});
-  if(error){console.error(error);mensagem('⚠️','Não foi possível abrir o questionário','Tente de novo em alguns minutos.');return;}
-  if(!data){mensagem('🔗','Link inválido','Este link não existe mais. Peça um novo link ao RH do Grupo BVEK.');return;}
-  if(data.respondido){mensagem('✅','Questionário já respondido','Obrigado! Suas respostas já estão com o RH do Grupo BVEK.');return;}
-  if(data.expirado){mensagem('⏰','Link vencido','Este link valia por 30 dias. Peça um novo link ao RH do Grupo BVEK.');return;}
+  if(error){console.error(error);mensagem('','Não foi possível abrir o questionário','Tente de novo em alguns minutos.');return;}
+  if(!data){mensagem('','Link inválido','Este link não existe mais. Peça um novo link ao RH do Grupo BVEK.');return;}
+  if(data.respondido){mensagem('','Questionário já respondido','Obrigado! Suas respostas já estão com o RH do Grupo BVEK.');return;}
+  if(data.expirado){mensagem('','Link vencido','Este link valia por 30 dias. Peça um novo link ao RH do Grupo BVEK.');return;}
   montar(data.nome);
 }
 
@@ -131,7 +131,7 @@ async function enviar(){
   }
   try{localStorage.removeItem(chave);}catch(e){}
   window.scrollTo(0,0);
-  mensagem('✅','Respostas enviadas!','Obrigado pelo seu tempo. O RH do Grupo BVEK vai analisar e entrar em contato.');
+  mensagem('','Respostas enviadas!','Obrigado pelo seu tempo. O RH do Grupo BVEK vai analisar e entrar em contato.');
 }
 iniciar();
 </script>

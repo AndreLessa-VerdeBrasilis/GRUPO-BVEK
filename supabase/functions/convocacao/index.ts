@@ -1,7 +1,7 @@
 // =====================================================================
 // CRM Grupo BVEK — função "convocacao" (Supabase Edge Function) — v47
 // Cronograma → avisa cada funcionário da equipe pelo WhatsApp (API oficial
-// da Meta, configurada em Cronograma → ⚙️ WhatsApp — tabela
+// da Meta, configurada em Cronograma → WhatsApp — tabela
 // whatsapp_convocacao_config, v48, separada do lembrete de pagamentos) e pelo e-mail
 // (Microsoft 365, mesmos segredos da "email-comunicado":
 //   MS_TENANT_ID, MS_CLIENT_ID, MS_CLIENT_SECRET, MS_REMETENTE).
@@ -94,14 +94,13 @@ const ABERTURA: Record<Tipo, string> = {
 };
 
 function textoWhats(tipo: Tipo, nome: string, d: Det): string {
-  const icone = tipo === "cancelamento" ? "❌" : tipo === "alteracao" ? "🔄" : "📢";
-  const l = [`${icone} *${CABECALHO[tipo]} — Grupo BVEK*`, `Olá, ${nome}! ${ABERTURA[tipo]}`, "",
-    `📅 *Data:* ${d.data}`, `🕗 *Horário:* ${d.horario}`, `📍 *Local:* ${d.local}`];
-  if (d.projeto) l.push(`🏗️ *Contrato:* ${d.projeto}`);
-  if (d.cliente) l.push(`🏢 *Cliente:* ${d.cliente}`);
-  if (d.servico) l.push(`🛠️ *Serviço:* ${d.servico}`);
-  if (tipo !== "cancelamento" && d.equipe) l.push(`👥 *Equipe:* ${d.equipe}`);
-  if (tipo !== "cancelamento" && d.obs) l.push(`📝 *Obs.:* ${d.obs}`);
+  const l = [`*${CABECALHO[tipo]} — Grupo BVEK*`, `Olá, ${nome}! ${ABERTURA[tipo]}`, "",
+    `*Data:* ${d.data}`, `*Horário:* ${d.horario}`, `*Local:* ${d.local}`];
+  if (d.projeto) l.push(`*Contrato:* ${d.projeto}`);
+  if (d.cliente) l.push(`*Cliente:* ${d.cliente}`);
+  if (d.servico) l.push(`*Serviço:* ${d.servico}`);
+  if (tipo !== "cancelamento" && d.equipe) l.push(`*Equipe:* ${d.equipe}`);
+  if (tipo !== "cancelamento" && d.obs) l.push(`*Obs.:* ${d.obs}`);
   l.push("", "Dúvidas? Fale com o escritório.");
   return l.join("\n");
 }
@@ -116,9 +115,9 @@ function emailHtml(tipo: Tipo, nome: string, d: Det): string {
   </div>
   <p>Olá, ${escH(nome)}!<br>${escH(ABERTURA[tipo])}</p>
   <table style="border-collapse:collapse;font-size:15px">
-    ${linha("📅 Data", d.data)}${linha("🕗 Horário", d.horario)}${linha("📍 Local", d.local)}
-    ${linha("🏗️ Contrato", d.projeto)}${linha("🏢 Cliente", d.cliente)}${linha("🛠️ Serviço", d.servico)}
-    ${tipo !== "cancelamento" ? linha("👥 Equipe", d.equipe) + linha("📝 Observações", d.obs) : ""}
+    ${linha("Data", d.data)}${linha("Horário", d.horario)}${linha("Local", d.local)}
+    ${linha("Contrato", d.projeto)}${linha("Cliente", d.cliente)}${linha("Serviço", d.servico)}
+    ${tipo !== "cancelamento" ? linha("Equipe", d.equipe) + linha("Observações", d.obs) : ""}
   </table>
   <p style="margin-top:24px;font-size:12px;color:#777">Aviso automático do cronograma do Grupo BVEK. Em caso de dúvida, fale com o escritório.</p></div>`;
 }
@@ -127,7 +126,7 @@ function emailHtml(tipo: Tipo, nome: string, d: Det): string {
 const GRAPH = "https://graph.facebook.com/v24.0";
 // o que cada código de erro da Meta quer dizer e o que fazer (os mais comuns na convocação)
 const ERROS_META: Record<string, string> = {
-  "190": "o token de acesso venceu ou é inválido. O token temporário do painel da Meta dura só 24 horas: gere um token PERMANENTE (Usuário do sistema no Gerenciador de Negócios, com a permissão whatsapp_business_messaging) e cole em Cronograma → ⚙️ WhatsApp",
+  "190": "o token de acesso venceu ou é inválido. O token temporário do painel da Meta dura só 24 horas: gere um token PERMANENTE (Usuário do sistema no Gerenciador de Negócios, com a permissão whatsapp_business_messaging) e cole em Cronograma → WhatsApp",
   "10": "o token não tem permissão para este número. Ao gerar o token do Usuário do sistema, marque o app e as permissões whatsapp_business_messaging e whatsapp_business_management, e dê ao usuário acesso à conta do WhatsApp",
   "200": "o token não tem permissão para este número (veja as permissões whatsapp_business_messaging e whatsapp_business_management do Usuário do sistema)",
   "100": "algum dado está errado — confira o ID do número (Phone number ID, não é o número de telefone nem o ID da conta)",
@@ -140,7 +139,7 @@ const ERROS_META: Record<string, string> = {
   "131056": "muitas mensagens seguidas para o mesmo celular — espere alguns minutos",
   "130429": "limite de envios da Meta atingido — espere alguns minutos e tente de novo",
   "131008": "o modelo pede um dado que não foi mandado",
-  "132000": "o modelo aprovado na Meta não tem 7 variáveis ({{1}} a {{7}}) no corpo — o CRM manda sempre 7. Crie o modelo como o exemplo da tela ⚙️ WhatsApp",
+  "132000": "o modelo aprovado na Meta não tem 7 variáveis ({{1}} a {{7}}) no corpo — o CRM manda sempre 7. Crie o modelo como o exemplo da tela WhatsApp",
   "132001": "o modelo não existe com esse nome e idioma. Confira o nome exato (minúsculas, com _) e o idioma (pt_BR) em Gerenciador do WhatsApp → Modelos de mensagem",
   "132005": "o texto do modelo com os dados ficou grande demais",
   "132007": "o modelo foi recusado pela política da Meta",
@@ -250,11 +249,10 @@ function detalhesEsc(e: Linha) {
   return { data, horario, local: String(e.local || "").trim() || "a combinar com o escritório", titulo: String(e.titulo || "").trim(), pauta: String(e.descricao || "").trim(), fim: d2 };
 }
 function textoWhatsEsc(tipo: TipoEsc, nome: string, d: ReturnType<typeof detalhesEsc>, quem: string): string {
-  const icone = tipo === "cancelamento" ? "❌" : tipo === "alteracao" ? "🔄" : "🏢";
-  const l = [`${icone} *${CAB_ESC[tipo]} — Grupo BVEK*`, `Olá, ${nome}! ${ABRE_ESC[tipo]}`, "",
-    `📌 *Assunto:* ${d.titulo}`, `📅 *Data:* ${d.data}`, `🕗 *Horário:* ${d.horario}`, `📍 *Local:* ${d.local}`];
-  if (tipo !== "cancelamento" && d.pauta) l.push(`📝 *Pauta:* ${d.pauta}`);
-  if (quem) l.push(`👤 *Marcado por:* ${quem}`);
+  const l = [`*${CAB_ESC[tipo]} — Grupo BVEK*`, `Olá, ${nome}! ${ABRE_ESC[tipo]}`, "",
+    `*Assunto:* ${d.titulo}`, `*Data:* ${d.data}`, `*Horário:* ${d.horario}`, `*Local:* ${d.local}`];
+  if (tipo !== "cancelamento" && d.pauta) l.push(`*Pauta:* ${d.pauta}`);
+  if (quem) l.push(`*Marcado por:* ${quem}`);
   l.push("", "O convite também está no seu Outlook.");
   return l.join("\n");
 }
@@ -343,7 +341,7 @@ async function avisarEscritorio(adm: any, p: Linha, quem: string, cfg: Linha): P
     if (!f && x.funcId) r.whatsapp = "funcionário não encontrado";
     else if (f && f.ativo === false && x.tipo !== "cancelamento") r.whatsapp = "funcionário inativo";
     else if (!fone) r.whatsapp = "sem celular na ficha";
-    else if (!temWhats) r.whatsapp = cfg.ativo === false ? "WhatsApp desligado (Cronograma → ⚙️ WhatsApp)" : "WhatsApp (Meta) não configurado";
+    else if (!temWhats) r.whatsapp = cfg.ativo === false ? "WhatsApp desligado (Cronograma → WhatsApp)" : "WhatsApp (Meta) não configurado";
     else if (jaMandado.has(fone) && jaMandado.get(fone) === x.tipo) {
       // registra como avisado sem mandar de novo
       r.whatsapp = "ok";
