@@ -233,6 +233,11 @@ body.tela-larga .conteudo{max-width:none}
 .ie-editando .ie-caixa.ie-sobre{box-shadow:0 0 0 3px var(--verde);transform:scale(1.01)}
 .ie-escondidas{display:none;margin:0 0 14px;padding:10px 12px;border:1.5px dashed var(--borda);border-radius:10px;font-size:13px;gap:8px;flex-wrap:wrap;align-items:center}
 .ie-editando .ie-escondidas{display:flex}
+.ie-grade>.ie-caixa.painel{margin:0}.ie-grade .kpis{margin-bottom:0}
+.ie-sem-moldura{background:transparent;border:none;padding:0}
+.ie-editando .ie-sem-moldura{border:1.5px dashed var(--verde);padding:14px 16px}
+.ie-caixa.ie-oculta{display:none!important}
+.ie-ferr .ie-nome{font-weight:700;color:var(--verde);margin-right:4px}
 .ie-escondidas button{border:1px solid var(--borda);background:#fff;border-radius:16px;padding:4px 12px;cursor:pointer;font-size:12px}
 .ie-num{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
 .ie-num .ie-n{border-radius:10px;padding:10px 12px;cursor:pointer;border:2px solid transparent}
@@ -713,10 +718,14 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
           <span class="pd-atualizado" id="pd-atualizado"></span>
           <button class="btn-sec" onclick="atualizarPainel()" title="Buscar os dados mais recentes">🔄 Atualizar</button>
           <select id="painel-ano" onchange="renderPainel()"></select>
+          <button class="btn-sec" id="pd-btn-editar" onclick="alternarEdicaoPainel()" title="Mudar a ordem, o tamanho e quais caixas aparecem">Personalizar painel</button>
         </div>
       </div>
-      <div class="kpis pd-kpis" id="kpis"></div>
-      <div class="paineis pd-topo">
+      <!-- v62.1: caixas do painel personalizáveis (ordem, largura, altura, esconder) -->
+      <div class="aviso" id="pd-dica-edicao" style="display:none">Arraste as caixas pelo <strong>⠿</strong> (ou use as setas) para mudar a ordem. Escolha a <strong>largura</strong> e a <strong>altura</strong> de cada uma, ou esconda as que não usa. Tudo fica salvo no seu login.</div>
+      <div class="ie-escondidas" id="pd-escondidas"></div>
+      <div class="ie-grade" id="pd-grade">
+      <div class="ie-caixa ie-sem-moldura" id="pd-cx-kpis"><div class="kpis pd-kpis" id="kpis"></div></div>
         <!-- v32: tarefas ativas pendentes -->
         <div class="painel pd-tarefas" id="pa-tarefas">
           <h3>✅ Tarefas ativas pendentes <span class="contagem" id="pa-tf-cont"></span></h3>
@@ -734,14 +743,11 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
         <div class="painel" id="pa-campo" style="display:none"><h3>👷 Quem está onde hoje <span class="contagem" id="pa-campo-cont"></span></h3><div id="p-campo" class="lista-mini"></div></div>
         <div class="painel" id="pa-docs"><h3>📄 Documentos e certidões <span class="contagem" id="pa-docs-cont"></span></h3><div id="p-docs-resumo" class="resumo-docs"></div><div id="p-docs" class="lista-mini"></div></div>
         <div class="painel" id="pa-cobr" style="display:none"><h3>📞 Cobrar retorno de propostas <span class="contagem" id="pa-cobr-cont"></span></h3><div id="p-cobr" class="lista-mini"></div></div>
-      </div>
-      <div class="paineis" id="pa-funil-paineis">
-        <div class="painel"><h3>Funil — propostas em aberto por etapa</h3><div id="p-funil"></div></div>
-        <div class="painel"><h3>Fechamentos por mês</h3><div id="p-meses"></div></div>
-        <div class="painel"><h3>Propostas paradas há mais de 15 dias</h3><div id="p-parados" class="lista-mini"></div></div>
-        <div class="painel"><h3>Motivos de perda</h3><div id="p-perdas"></div></div>
-        <div class="painel"><h3>Maiores clientes (valor fechado)</h3><div id="p-clientes"></div></div>
-      </div>
+        <div class="painel pd-cx-funil" id="pa-f-funil"><h3>Funil — propostas em aberto por etapa</h3><div id="p-funil"></div></div>
+        <div class="painel pd-cx-funil" id="pa-f-meses"><h3>Fechamentos por mês</h3><div id="p-meses"></div></div>
+        <div class="painel pd-cx-funil" id="pa-f-parados"><h3>Propostas paradas há mais de 15 dias</h3><div id="p-parados" class="lista-mini"></div></div>
+        <div class="painel pd-cx-funil" id="pa-f-perdas"><h3>Motivos de perda</h3><div id="p-perdas"></div></div>
+        <div class="painel pd-cx-funil" id="pa-f-clientes"><h3>Maiores clientes (valor fechado)</h3><div id="p-clientes"></div></div>
     <!-- v34: GANHOS × CUSTOS (só administradores) -->
     <div class="painel gxc" id="pa-gxc" style="display:none">
       <div class="barra-acoes" style="margin-bottom:8px">
@@ -757,6 +763,7 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
       <div class="tabela-wrap"><table class="tabela" id="gxc-tabela"></table></div>
       <p class="dica" id="gxc-dica"></p>
     </div>
+      </div>
     </div>
 
     <!-- v62: PAINEL DO ESTAGIÁRIO (caixas editáveis) -->
@@ -3972,7 +3979,7 @@ function aplicarPermissoes(){
   mostra('btn-tipos-benef',PERM.rhEditar);
   document.querySelectorAll('#tabs [data-comercial]').forEach(t=>t.style.display=PERM.comercialVer?'':'none');
   // v42: funil de propostas fora do perfil Comercial
-  mostra('tab-btn-funil',PERM.funilVer);mostra('pa-funil-paineis',PERM.funilVer&&PERM.painelCompleto);mostra('painel-ano',PERM.funilVer&&PERM.painelCompleto);
+  mostra('tab-btn-funil',PERM.funilVer);document.querySelectorAll('.pd-cx-funil').forEach(e=>e.style.display=PERM.funilVer&&PERM.painelCompleto?'':'none');mostra('painel-ano',PERM.funilVer&&PERM.painelCompleto);
   mostra('pa-agenda',PERM.cronograma);mostra('pa-campo',PERM.cronograma);
   mostra('crg-inter-box',PERM.rhPessoal);
   mostra('mc-cards-tit',PERM.funilVer);mostra('mc-cards',PERM.funilVer);mostra('tf-m-card-campo',PERM.funilVer);
@@ -4239,6 +4246,7 @@ function renderPainel(){
   ligarCliques($('tab-painel'));
   animarBarras($('tab-painel'));
   renderGanhosCustos();
+  pdAplicarLayout();
 }
 /* ================= v34: GANHOS × CUSTOS + CONTRATOS FIXOS (só administrador) ================= */
 let todosContratosFixos=[],contratoFixoId=null,v34ContratosOk=true,arquivoContratoNovo=null;
@@ -4465,7 +4473,7 @@ async function atualizarPainel(silencioso){
 // atualiza sozinho a cada 5 minutos enquanto o painel está na tela
 function ligarAtualizacaoPainel(){
   if(painelTimer)return;
-  painelTimer=setInterval(()=>{if(tabAtual==='painel'&&!document.hidden&&!document.querySelector('.modal-overlay.aberto'))atualizarPainel(true);},5*60*1000);
+  painelTimer=setInterval(()=>{if(tabAtual==='painel'&&!pdEditando&&!document.hidden&&!document.querySelector('.modal-overlay.aberto'))atualizarPainel(true);},5*60*1000);
 }
 /* ================= v62: PAINEL DO ESTAGIÁRIO ================= */
 // Só com o que o estagiário acessa: Tarefas, Cronograma (agenda do escritório e quem está onde), Inventário e Fornecedores.
@@ -4692,6 +4700,107 @@ async function atualizarInicioEst(silencioso){
 function ligarAtualizacaoInicioEst(){
   if(ieTimer||!PERM.estagiario)return;
   ieTimer=setInterval(()=>{if(tabAtual==='inicio'&&!ieEditando&&!document.hidden&&!document.querySelector('.modal-overlay.aberto')&&!(document.activeElement&&document.activeElement.closest&&document.activeElement.closest('#tab-inicio input')))atualizarInicioEst(true);},3*60*1000);
+}
+/* ================= v62.1: PAINEL PRINCIPAL PERSONALIZÁVEL ================= */
+// As mesmas caixas de antes (o que cada perfil vê não muda); a pessoa só escolhe ordem, largura, altura e quais esconder.
+// Arranjo salvo no login (user_metadata.painel_principal) e, de reserva, no navegador.
+const PD_CAIXAS=[
+  {id:'kpis',el:'pd-cx-kpis',titulo:'Indicadores',tam:4,alt:'livre'},
+  {id:'tarefas',el:'pa-tarefas',titulo:'Tarefas ativas pendentes',tam:4,alt:'livre'},
+  {id:'agenda',el:'pa-agenda',titulo:'Agenda do escritório',tam:2,alt:'livre',perm:()=>PERM.cronograma},
+  {id:'campo',el:'pa-campo',titulo:'Quem está onde hoje',tam:2,alt:'livre',perm:()=>PERM.cronograma},
+  {id:'docs',el:'pa-docs',titulo:'Documentos e certidões',tam:2,alt:'livre'},
+  {id:'cobr',el:'pa-cobr',titulo:'Cobrar retorno de propostas',tam:2,alt:'livre',perm:()=>PERM.funil},
+  {id:'funil',el:'pa-f-funil',titulo:'Funil por etapa',tam:2,alt:'livre',perm:()=>PERM.funilVer&&PERM.painelCompleto},
+  {id:'meses',el:'pa-f-meses',titulo:'Fechamentos por mês',tam:2,alt:'livre',perm:()=>PERM.funilVer&&PERM.painelCompleto},
+  {id:'parados',el:'pa-f-parados',titulo:'Propostas paradas',tam:2,alt:'livre',perm:()=>PERM.funilVer&&PERM.painelCompleto},
+  {id:'perdas',el:'pa-f-perdas',titulo:'Motivos de perda',tam:2,alt:'livre',perm:()=>PERM.funilVer&&PERM.painelCompleto},
+  {id:'clientes',el:'pa-f-clientes',titulo:'Maiores clientes',tam:2,alt:'livre',perm:()=>PERM.funilVer&&PERM.painelCompleto},
+  {id:'gxc',el:'pa-gxc',titulo:'Ganhos × Custos',tam:4,alt:'livre',perm:()=>PERM.verLucro},
+];
+let pdLayout=null,pdEditando=false,pdArrastada=null,pdSalvarTimer=null,pdPreparado=false;
+function pdChaveLocal(){return'bvek_painel_principal_'+((usuario&&usuario.id)||'');}
+function pdPadrao(){return PD_CAIXAS.map(c=>({id:c.id,tam:c.tam,alt:c.alt,oculta:false}));}
+function pdCarregarLayout(){
+  let l=null;
+  try{l=usuario&&usuario.user_metadata&&usuario.user_metadata.painel_principal;}catch(e){}
+  if(!Array.isArray(l)){try{l=JSON.parse(localStorage.getItem(pdChaveLocal())||'null');}catch(e){l=null;}}
+  if(!Array.isArray(l))l=pdPadrao();
+  const ids=new Set(PD_CAIXAS.map(c=>c.id));l=l.filter(x=>x&&ids.has(x.id));
+  PD_CAIXAS.forEach((c,i)=>{if(!l.some(x=>x.id===c.id))l.splice(Math.min(i,l.length),0,{id:c.id,tam:c.tam,alt:c.alt,oculta:false});});
+  l.forEach(x=>{x.tam=Math.min(4,Math.max(1,+x.tam||2));if(!IE_ALTS.some(a=>a[0]===x.alt))x.alt='livre';});
+  pdLayout=l;
+}
+function pdSalvarLayout(){
+  try{localStorage.setItem(pdChaveLocal(),JSON.stringify(pdLayout));}catch(e){}
+  clearTimeout(pdSalvarTimer);
+  pdSalvarTimer=setTimeout(async()=>{
+    const{data,error}=await sb.auth.updateUser({data:{painel_principal:pdLayout}});
+    if(error)console.warn('Arranjo do painel salvo só neste navegador',error);else if(data&&data.user)usuario=data.user;
+  },800);
+}
+const pdDef=id=>PD_CAIXAS.find(c=>c.id===id);
+const pdPode=id=>{const d=pdDef(id);return!!d&&(!d.perm||d.perm());};
+// prepara uma vez: barra de ferramentas e área com altura limitada em cada caixa
+function pdPreparar(){
+  if(pdPreparado)return;pdPreparado=true;
+  PD_CAIXAS.forEach(d=>{
+    const cx=$(d.el);if(!cx)return;cx.classList.add('ie-caixa');cx.dataset.pdCaixa=d.id;
+    const corpo=document.createElement('div');corpo.className='ie-corpo';
+    const filhos=[...cx.children],manter=d.id==='kpis'?0:1;filhos.slice(manter).forEach(f=>corpo.appendChild(f));cx.appendChild(corpo);
+    const fe=document.createElement('div');fe.className='ie-ferr';
+    fe.innerHTML=`<span class="ie-puxar" draggable="true" title="Arraste para mudar de lugar">⠿</span><span class="ie-nome">${esc(d.titulo)}</span>
+      <button data-pd-mover="-1" title="Mover para antes">◀</button><button data-pd-mover="1" title="Mover para depois">▶</button>
+      <label>Largura <select data-pd-tam>${IE_TAMS.map(([v,r])=>`<option value="${v}">${r}</option>`).join('')}</select></label>
+      <label>Altura <select data-pd-alt>${IE_ALTS.map(([v,r])=>`<option value="${v}">${r}</option>`).join('')}</select></label>
+      <span style="flex:1"></span><button data-pd-ocultar title="Esconder esta caixa">Esconder</button>`;
+    cx.insertBefore(fe,cx.firstChild);
+    const x=()=>pdLayout.find(c=>c.id===d.id);
+    fe.querySelectorAll('[data-pd-mover]').forEach(b=>b.onclick=()=>pdMover(d.id,+b.dataset.pdMover));
+    fe.querySelector('[data-pd-tam]').onchange=ev=>{x().tam=+ev.target.value;pdSalvarLayout();pdAplicarLayout();};
+    fe.querySelector('[data-pd-alt]').onchange=ev=>{x().alt=ev.target.value;pdSalvarLayout();pdAplicarLayout();};
+    fe.querySelector('[data-pd-ocultar]').onclick=()=>{x().oculta=true;pdSalvarLayout();pdAplicarLayout();};
+    const puxa=fe.querySelector('.ie-puxar');
+    puxa.addEventListener('dragstart',ev=>{pdArrastada=d.id;ev.dataTransfer.setData('text/plain',d.id);ev.dataTransfer.effectAllowed='move';cx.classList.add('arrastando');});
+    puxa.addEventListener('dragend',()=>{cx.classList.remove('arrastando');pdArrastada=null;document.querySelectorAll('#pd-grade .ie-sobre').forEach(e=>e.classList.remove('ie-sobre'));});
+    cx.addEventListener('dragover',ev=>{if(!pdEditando||!pdArrastada)return;ev.preventDefault();cx.classList.add('ie-sobre');});
+    cx.addEventListener('dragleave',ev=>{if(!cx.contains(ev.relatedTarget))cx.classList.remove('ie-sobre');});
+    cx.addEventListener('drop',ev=>{if(!pdEditando||!pdArrastada)return;ev.preventDefault();cx.classList.remove('ie-sobre');pdSoltarAntes(pdArrastada,d.id);});
+  });
+}
+// caixa que aparece agora (permissão do perfil e conteúdo do momento — ex.: cobrança só quando há o que cobrar)
+const pdNaTela=x=>{const d=pdDef(x.id),cx=d&&$(d.el);return!x.oculta&&pdPode(x.id)&&cx&&cx.style.display!=='none';};
+function pdAplicarLayout(){
+  const grade=$('pd-grade');if(!grade)return;
+  if(!pdLayout)pdCarregarLayout();pdPreparar();
+  $('tab-painel').classList.toggle('ie-editando',pdEditando);
+  const vis=pdLayout.filter(pdNaTela);
+  pdLayout.forEach(x=>{const cx=$(pdDef(x.id).el);if(!cx)return;grade.appendChild(cx);
+    cx.classList.remove('tam-1','tam-2','tam-3','tam-4','alt-p','alt-m','alt-g','alt-livre');cx.classList.add('tam-'+x.tam,'alt-'+x.alt);cx.classList.toggle('ie-oculta',!!x.oculta);
+    cx.querySelector('[data-pd-tam]').value=String(x.tam);cx.querySelector('[data-pd-alt]').value=x.alt;
+    const i=vis.indexOf(x);cx.querySelector('[data-pd-mover="-1"]').disabled=i<=0;cx.querySelector('[data-pd-mover="1"]').disabled=i<0||i===vis.length-1;});
+  const ocultas=pdLayout.filter(x=>x.oculta&&pdPode(x.id));
+  $('pd-escondidas').innerHTML=`<span><strong>Caixas escondidas:</strong></span>${ocultas.length?ocultas.map(x=>`<button data-pd-mostrar="${esc(x.id)}" title="Mostrar de novo">+ ${esc(pdDef(x.id).titulo)}</button>`).join(''):'<span class="dica" style="margin:0">nenhuma</span>'}<span style="flex:1"></span><button onclick="pdRestaurar()">Restaurar arrumação original</button>`;
+  $('pd-escondidas').querySelectorAll('[data-pd-mostrar]').forEach(b=>b.onclick=()=>{const x=pdLayout.find(c=>c.id===b.dataset.pdMostrar);if(x){x.oculta=false;pdSalvarLayout();pdAplicarLayout();}});
+}
+function alternarEdicaoPainel(){
+  pdEditando=!pdEditando;
+  $('pd-btn-editar').textContent=pdEditando?'Concluir personalização':'Personalizar painel';
+  $('pd-btn-editar').className=pdEditando?'btn-novo':'btn-sec';
+  $('pd-dica-edicao').style.display=pdEditando?'block':'none';
+  pdAplicarLayout();
+}
+function pdRestaurar(){if(!confirm('Voltar o painel para a arrumação original?'))return;pdLayout=pdPadrao();pdSalvarLayout();pdAplicarLayout();}
+function pdMover(id,passo){
+  const vis=pdLayout.filter(pdNaTela),i=vis.findIndex(x=>x.id===id),j=i+passo;
+  if(i<0||j<0||j>=vis.length)return;
+  const a=pdLayout.indexOf(vis[i]),b=pdLayout.indexOf(vis[j]);[pdLayout[a],pdLayout[b]]=[pdLayout[b],pdLayout[a]];
+  pdSalvarLayout();pdAplicarLayout();
+}
+function pdSoltarAntes(id,alvo){
+  if(id===alvo)return;const x=pdLayout.find(c=>c.id===id);if(!x)return;
+  pdLayout=pdLayout.filter(c=>c.id!==id);const k=pdLayout.findIndex(c=>c.id===alvo);pdLayout.splice(k<0?pdLayout.length:k,0,x);
+  pdSalvarLayout();pdAplicarLayout();
 }
 function itemAtividadeMini(a){
   const atras=new Date(a.data_prevista)<inicioDoDia();
