@@ -84,7 +84,8 @@ Deno.serve(async (req) => {
             if (pr && pr.length) partes.push(`${pr.length} declaração(ões) de premiação para assinar`);
           }
         } else {
-          const minhas = (ativ || []).filter((a: any) => norm(a.responsavel) && norm(a.responsavel) === norm(pf.nome));
+          // v58.3: a tarefa pode ter mais de um responsável ("Nome A, Nome B")
+          const minhas = (ativ || []).filter((a: any) => norm(pf.nome) && String(a.responsavel || "").split(/[,;]/).some((r) => norm(r) === norm(pf.nome)));
           if (minhas.length) {
             const atras = minhas.filter((a: any) => String(a.data_prevista).slice(0, 10) < hoje).length;
             partes.push(`${minhas.length} tarefa(s) para hoje${atras ? ` (${atras} atrasada${atras > 1 ? "s" : ""})` : ""}`);

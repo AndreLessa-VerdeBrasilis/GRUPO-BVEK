@@ -992,7 +992,7 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
       <div class="info-box" id="inv-info" style="display:block;line-height:1.5"></div>
       <div class="kpis" id="inv-kpis"></div>
       <div class="filtros">
-        <input type="search" id="inv-busca" placeholder="Buscar nome, código, série, local" oninput="renderInventario()">
+        <input type="search" id="inv-busca" placeholder="Buscar nome, código, série/CA, local" oninput="renderInventario()">
         <select id="inv-f-tipo" onchange="renderInventario()"></select>
         <select id="inv-f-estado" onchange="renderInventario()"></select>
         <select id="inv-f-cat" onchange="renderInventario()"></select>
@@ -1678,7 +1678,8 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
       <div class="campo full"><label>O que precisa ser feito? *</label><input type="text" id="tf-m-desc" placeholder="Ex.: Enviar revisão R01 da proposta para a Vibra"></div>
       <div class="campo"><label>Coluna</label><select id="tf-m-status"></select></div>
       <div class="campo"><label>Prioridade</label><select id="tf-m-prio"></select></div>
-      <div class="campo"><label>Responsável</label><input type="text" id="tf-m-resp" list="dl-responsaveis" onchange="mudouRespTarefa()"></div>
+      <div class="campo"><label>Responsáveis <small style="color:var(--texto2)">(pode marcar mais de um)</small></label><div id="tf-m-resps" class="chips-cat"></div>
+        <div class="linha-flex so-edicao" style="margin-top:6px"><input type="text" id="tf-m-resp" list="dl-responsaveis" placeholder="Outra pessoa…" onkeydown="if(event.key==='Enter')addRespTarefa()" onchange="addRespTarefa()"><button class="btn-sec" style="flex:0 0 auto" onclick="addRespTarefa()">+</button></div></div>
       <div class="campo"><label>Prazo</label><input type="datetime-local" id="tf-m-prazo"></div>
       <div class="campo"><label>Tipo</label><select id="tf-m-tipo"></select></div>
       <div class="campo"><label>Cliente</label><input type="text" id="tf-m-cliente" list="dl-clientes" placeholder="Opcional" onchange="mudouClienteTarefa()"></div>
@@ -2404,7 +2405,7 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
       <div class="campo"><label>Estoque mínimo (alerta)</label><input type="number" min="0" step="any" id="inv-min"></div>
       <div class="campo"><label>Estado</label><select id="inv-estado"></select></div>
       <div class="campo"><label>Marca / modelo</label><input type="text" id="inv-marca"></div>
-      <div class="campo"><label>Nº de série / patrimônio</label><input type="text" id="inv-serie"></div>
+      <div class="campo"><label>Nº de série / CA</label><input type="text" id="inv-serie" placeholder="Nº de série, patrimônio ou CA do EPI"></div>
       <div class="campo"><label>Onde está</label><input type="text" id="inv-local" list="dl-inv-local" placeholder="Ex.: Depósito, obra Vibra, veículo..."></div>
       <div class="campo"><label>Empresa dona</label><select id="inv-empresa"></select></div>
       <div class="campo"><label>Valor unitário (R$)</label><input type="text" inputmode="numeric" id="inv-valor" oninput="mascaraMoeda(this)" placeholder="0,00"></div>
@@ -3308,7 +3309,7 @@ let notifDepois=null;
 // tarefas pendentes com o meu nome como responsável
 function minhasTarefasPendentes(){
   const eu=norm(meuPerfil&&meuPerfil.nome);if(!eu)return[];
-  return todasAtividades.filter(a=>a.tipo!=='nota'&&!a.concluida&&norm(a.responsavel)===eu)
+  return todasAtividades.filter(a=>a.tipo!=='nota'&&!a.concluida&&temResp(a,eu))
     .sort((a,b)=>String(a.data_prevista||'9999').localeCompare(String(b.data_prevista||'9999')));
 }
 // pagamentos que o André precisa autorizar (dentro do prazo de aviso)
@@ -3808,7 +3809,8 @@ function avisarMigracao(){
 function atualizarDatalists(){
   $('dl-clientes').innerHTML=todosClientes.filter(c=>c.ativo!==false).map(c=>`<option value="${esc(rotuloCliente(c))}">`).join('');
   const nomesUsuarios=todosPerfis.filter(p=>p.ativo&&p.perfil!=='pendente'&&p.perfil!=='funcionario').map(p=>p.nome);
-  const resps=[...new Set([...todosCards.map(c=>c.responsavel),...todasAtividades.map(a=>a.responsavel),...todosDocumentos.map(d=>d.responsavel),...nomesUsuarios].filter(Boolean).map(s=>s.trim()))].sort((a,b)=>a.localeCompare(b,'pt-BR'));
+  const vistos={},resps=[...todosCards.map(c=>c.responsavel),...todasAtividades.flatMap(a=>listaResp(a.responsavel)),...todosDocumentos.map(d=>d.responsavel),...nomesUsuarios]
+    .map(nomePessoa).filter(r=>{const k=norm(r);if(!k||vistos[k])return false;vistos[k]=1;return true;}).sort((a,b)=>a.localeCompare(b,'pt-BR'));
   $('dl-responsaveis').innerHTML=resps.map(r=>`<option value="${esc(r)}">`).join('');
   ['funil-resp','ativ-resp'].forEach(id=>{const s=$(id),v=s.value;preencherSelect(s,resps.map(r=>[r,r]),'Todos os responsáveis');s.value=v;});
 }
@@ -4107,7 +4109,7 @@ function tarefasPendentesPainel(cards){
 function grupoTarefa(a){if(!a.data_prevista)return'semdata';const d=new Date(a.data_prevista);return d<inicioDoDia()?'atrasadas':d<=fimDoDia()?'hoje':'proximas';}
 function renderTarefasPainel(todas){
   const eu=norm(meuPerfil&&meuPerfil.nome);
-  let l=pdTfFiltro==='minhas'?todas.filter(a=>norm(a.responsavel)===eu):todas;
+  let l=pdTfFiltro==='minhas'?todas.filter(a=>temResp(a,eu)):todas;
   $('pd-tf-abas').querySelectorAll('[data-pdtf]').forEach(b=>{b.classList.toggle('ativo',b.dataset.pdtf===pdTfFiltro);b.onclick=()=>{pdTfFiltro=b.dataset.pdtf;pdTfResp='';renderTarefasPainel(todas);};});
   $('pa-tf-cont').textContent=l.length?`${l.length} pendente(s)`:'';
   const G=[['atrasadas','Atrasadas','#c0392b','#fdecea'],['hoje','Para hoje','#b9770e','#fff6e0'],['proximas','Próximas','#1565c0','#e8f1fb'],['semdata','Sem prazo','#555','#f2f2f2']];
@@ -4115,12 +4117,12 @@ function renderTarefasPainel(todas){
   $('p-tf-resumo').innerHTML=G.map(([k,r,cor,bg])=>`<div class="pd-ch ${pdTfGrupo===k?'marcado':''}" data-pdg="${k}" style="color:${cor};background:${bg}" title="Filtrar"><b data-contar="${cont[k]}">${cont[k]}</b><span>${esc(r)}</span></div>`).join('');
   $('p-tf-resumo').querySelectorAll('[data-pdg]').forEach(el=>el.onclick=()=>{pdTfGrupo=pdTfGrupo===el.dataset.pdg?'':el.dataset.pdg;renderTarefasPainel(todas);});
   // por responsável
-  const porResp={};l.forEach(a=>{const r=(a.responsavel||'').trim()||'Sem responsável';porResp[r]=(porResp[r]||0)+1;});
+  const porResp={};l.forEach(a=>{const rs=listaResp(a.responsavel);(rs.length?rs:['Sem responsável']).forEach(r=>{porResp[r]=(porResp[r]||0)+1;});});
   const rs=Object.entries(porResp).sort((a,b)=>b[1]-a[1]);
-  $('p-tf-resp').innerHTML=rs.length>1||pdTfResp?`<div class="pd-resp">${rs.map(([r,q])=>`<span class="pilula ${pdTfResp===r?'verde marcada':'cinza'}" data-pdr="${esc(r)}" style="cursor:pointer">${r==='Sem responsável'?'—':avatarPessoa(r,18)} ${esc(r.split(/\s+/)[0])} · ${q}</span>`).join('')}</div>`:'';
+  $('p-tf-resp').innerHTML=rs.length>1||pdTfResp?`<div class="pd-resp">${rs.map(([r,q])=>`<span class="pilula ${pdTfResp===r?'verde marcada':'cinza'}" data-pdr="${esc(r)}" style="cursor:pointer">${r==='Sem responsável'?'—':avatarPessoa(r,18)} ${esc(primeiroNome(r))} · ${q}</span>`).join('')}</div>`:'';
   $('p-tf-resp').querySelectorAll('[data-pdr]').forEach(el=>el.onclick=()=>{pdTfResp=pdTfResp===el.dataset.pdr?'':el.dataset.pdr;renderTarefasPainel(todas);});
   if(pdTfGrupo)l=l.filter(a=>grupoTarefa(a)===pdTfGrupo);
-  if(pdTfResp)l=l.filter(a=>(((a.responsavel||'').trim())||'Sem responsável')===pdTfResp);
+  if(pdTfResp)l=l.filter(a=>pdTfResp==='Sem responsável'?!listaResp(a.responsavel).length:temResp(a,pdTfResp));
   const ordemG={atrasadas:0,hoje:1,proximas:2,semdata:3},ordemP={urgente:0,alta:1,normal:2,baixa:3};
   l=[...l].sort((a,b)=>ordemG[grupoTarefa(a)]-ordemG[grupoTarefa(b)]||String(a.data_prevista||'').localeCompare(String(b.data_prevista||''))||(ordemP[a.prioridade]??2)-(ordemP[b.prioridade]??2));
   const mostra=l.slice(0,12);
@@ -4128,7 +4130,7 @@ function renderTarefasPainel(todas){
     const card=a.card_id?todosCards.find(c=>c.id===a.card_id):null,cli=a.cliente_id?clientePorId(a.cliente_id):(card&&card.clientes),g=grupoTarefa(a);
     const badge=g==='atrasadas'?`<span class="badge badge-atraso">atrasada · ${esc(fmtData(a.data_prevista))}</span>`:g==='hoje'?'<span class="badge badge-hoje">hoje</span>':g==='proximas'?`<span class="badge badge-cinza">${esc(fmtData(a.data_prevista))}</span>`:'<span class="badge badge-cinza">sem prazo</span>';
     const st=typeof STATUS_TAREFA_LABEL!=='undefined'&&a.status&&a.status!=='a_fazer'?` · ${esc(STATUS_TAREFA_LABEL[a.status]||a.status)}`:'';
-    return`<div class="item" data-pd-tarefa="${esc(a.id)}"><div style="display:flex;gap:8px;align-items:flex-start;min-width:0">${a.responsavel?avatarPessoa(a.responsavel):'<span class="avatar" style="flex:none;background:#bbb">?</span>'}<div style="min-width:0"><strong>${a.prioridade==='urgente'?'🔴 ':a.prioridade==='alta'?'🟠 ':''}${esc(a.descricao)}</strong><br><span style="color:var(--texto2)">${esc(TIPO_LABEL[a.tipo]||a.tipo)}${st}${cli?` · <span class="cod">${esc(cli.codigo||'')}</span> ${esc(cli.nome)}`:''}${card?' · '+esc(card.titulo):''}</span></div></div>${badge}</div>`;}).join('')+(l.length>mostra.length?`<p class="vazio" style="cursor:pointer" onclick="abrirTab('atividades')">… e mais ${l.length-mostra.length} — ver todas em Tarefas</p>`:'')
+    return`<div class="item" data-pd-tarefa="${esc(a.id)}"><div style="display:flex;gap:8px;align-items:flex-start;min-width:0">${a.responsavel?`<span style="display:inline-flex;flex:none">${avataresResp(a.responsavel)}</span>`:'<span class="avatar" style="flex:none;background:#bbb">?</span>'}<div style="min-width:0"><strong>${a.prioridade==='urgente'?'🔴 ':a.prioridade==='alta'?'🟠 ':''}${esc(a.descricao)}</strong><br><span style="color:var(--texto2)">${esc(TIPO_LABEL[a.tipo]||a.tipo)}${st}${cli?` · <span class="cod">${esc(cli.codigo||'')}</span> ${esc(cli.nome)}`:''}${card?' · '+esc(card.titulo):''}</span></div></div>${badge}</div>`;}).join('')+(l.length>mostra.length?`<p class="vazio" style="cursor:pointer" onclick="abrirTab('atividades')">… e mais ${l.length-mostra.length} — ver todas em Tarefas</p>`:'')
     :`<p class="vazio">${pdTfFiltro==='minhas'?'Você não tem tarefas pendentes. 👍':'Nenhuma tarefa pendente. 👍'}</p>`;
   $('p-ativ').querySelectorAll('[data-pd-tarefa]').forEach(el=>el.onclick=()=>{const a=todasAtividades.find(x=>x.id===el.dataset.pdTarefa);if(!a)return;
     if(v24Ok)abrirTarefa(a.id);else if(a.card_id)abrirModalCard(a.card_id);else abrirTab('atividades');});
@@ -4185,7 +4187,7 @@ function renderFunil(){
   const pend={};
   todasAtividades.filter(a=>!a.concluida&&a.card_id).forEach(a=>{if(!pend[a.card_id]||(a.data_prevista&&(!pend[a.card_id].data_prevista||a.data_prevista<pend[a.card_id].data_prevista)))pend[a.card_id]=a;});
   let cards=filtraEmpresa(todosCards).filter(c=>{
-    if(resp&&(c.responsavel||'').trim()!==resp)return false;
+    if(resp&&norm(c.responsavel)!==norm(resp))return false;
     if(periodo&&['fechada','concluida','perdida'].includes(c.etapa)&&diasDesde(c.data_fechamento_real||c.atualizado_em)>periodo)return false;
     if(busca){const alvo=norm([c.titulo,c.numero_proposta,c.clientes&&c.clientes.nome,c.clientes&&c.clientes.codigo,c.clientes&&c.clientes.razao_social].join(' '));if(!alvo.includes(busca))return false;}
     return true;
@@ -4618,7 +4620,7 @@ function htmlAtividade(a,mostrarContexto){
       <input type="checkbox" ${a.concluida?'checked':''} ${PERM.ativ?'':'disabled'} data-concluir="${esc(a.id)}" style="width:17px;height:17px;margin-top:2px;accent-color:var(--verde)" title="Marcar como feita">
       <div><span class="ativ-desc">${esc(TIPO_LABEL[a.tipo]||a.tipo)} ${esc(a.descricao)}</span>${ctx}</div>
     </div>
-    <div class="acoes">${a.data_prevista?`<span class="badge ${atras?'badge-atraso':hoje?'badge-hoje':a.concluida?'badge-ok':'badge-cinza'}">${esc(fmtDataHora(a.data_prevista))}</span>`:''}${a.responsavel?`<span style="font-size:12px;color:var(--texto2);display:inline-flex;gap:4px;align-items:center">${avatarPessoa(a.responsavel,20)} ${esc(a.responsavel)}</span>`:''}${v24Ok&&a.tipo!=='nota'?`<button class="btn-link" data-editar-ativ="${esc(a.id)}" title="Abrir a tarefa">abrir</button>`:''}${a.status&&!a.concluida&&a.status!=='a_fazer'?`<span class="badge badge-cinza">${esc(STATUS_TAREFA_LABEL[a.status]||a.status)}</span>`:''}${a.visibilidade==='administradores'?'<span class="badge badge-atraso">🔒 adm</span>':''}${PERM.ativ?`<button class="btn-link" data-excluir-ativ="${esc(a.id)}" style="color:var(--vermelho)">excluir</button>`:''}</div>
+    <div class="acoes">${a.data_prevista?`<span class="badge ${atras?'badge-atraso':hoje?'badge-hoje':a.concluida?'badge-ok':'badge-cinza'}">${esc(fmtDataHora(a.data_prevista))}</span>`:''}${a.responsavel?`<span style="font-size:12px;color:var(--texto2);display:inline-flex;gap:4px;align-items:center">${avataresResp(a.responsavel,20)} ${esc(listaResp(a.responsavel).join(', '))}</span>`:''}${v24Ok&&a.tipo!=='nota'?`<button class="btn-link" data-editar-ativ="${esc(a.id)}" title="Abrir a tarefa">abrir</button>`:''}${a.status&&!a.concluida&&a.status!=='a_fazer'?`<span class="badge badge-cinza">${esc(STATUS_TAREFA_LABEL[a.status]||a.status)}</span>`:''}${a.visibilidade==='administradores'?'<span class="badge badge-atraso">🔒 adm</span>':''}${PERM.ativ?`<button class="btn-link" data-excluir-ativ="${esc(a.id)}" style="color:var(--vermelho)">excluir</button>`:''}</div>
   </div>`;
 }
 function ligarAtividades(raiz,depois){
@@ -4664,7 +4666,7 @@ function renderAtividades(){
   const f=$('ativ-filtro').value,resp=$('ativ-resp').value;
   const idsCards=new Set(filtraEmpresa(todosCards).map(c=>c.id));
   const filtroV24=v24Ok?new Set(tarefasFiltradas().map(a=>a.id)):null;
-  let l=todasAtividades.filter(a=>(f==='todas'||(f==='pendentes'?!a.concluida:a.concluida))&&(!resp||(a.responsavel||'').trim()===resp)&&(empresaAtual==='todas'||!a.card_id||idsCards.has(a.card_id))&&(!filtroV24||a.tipo==='nota'||filtroV24.has(a.id)));
+  let l=todasAtividades.filter(a=>(f==='todas'||(f==='pendentes'?!a.concluida:a.concluida))&&(!resp||temResp(a,resp))&&(empresaAtual==='todas'||!a.card_id||idsCards.has(a.card_id))&&(!filtroV24||a.tipo==='nota'||filtroV24.has(a.id)));
   l.sort(ordemAtiv);
   const box=$('lista-atividades');
   if(!l.length){box.innerHTML='<p class="vazio">Nenhuma atividade.</p>';return;}
@@ -6513,7 +6515,7 @@ async function montarOS(win){
   const docs=cp?(cp.documentos||[]).map(d=>[esc(d.nome),esc(fmtNum(d.qtd)),'']):[];
   // v30: itens do inventário separados na proposta
   const{data:invOS}=await sb.from('inventario_os').select('*,inventario_itens(*)').eq('card_id',cardEditandoId);
-  const inv=(invOS||[]).filter(x=>x.inventario_itens).map(x=>{const i=x.inventario_itens;return[esc(i.codigo||''),esc(i.nome)+(i.marca_modelo||i.numero_serie?`<br><small>${esc([i.marca_modelo,i.numero_serie&&'série '+i.numero_serie].filter(Boolean).join(' · '))}</small>`:''),esc(i.unidade||''),esc(fmtNum(x.quantidade)),esc(i.localizacao||''),'',''];});
+  const inv=(invOS||[]).filter(x=>x.inventario_itens).map(x=>{const i=x.inventario_itens;return[esc(i.codigo||''),esc(i.nome)+(i.marca_modelo||i.numero_serie?`<br><small>${esc([i.marca_modelo,i.numero_serie&&'série/CA '+i.numero_serie].filter(Boolean).join(' · '))}</small>`:''),esc(i.unidade||''),esc(fmtNum(x.quantidade)),esc(i.localizacao||''),'',''];});
   // v51: detalhe da execução (condições do local, incluído / não incluído, como deve ficar, item a item)
   const det=await lerOSDetalhe(card.id,card.card_pai_id);
   const sec=secoesOSDetalhe(det&&!det.falta?det:null,itens,br);
@@ -10930,6 +10932,27 @@ async function verificarV24(){
   const{error}=await sb.from('atividades').select('status').limit(1);v24Ok=!error;
 }
 function ehAdminNome(nome){const k=norm(nome);return!!k&&todosPerfis.some(p=>p.perfil==='administrador'&&p.ativo&&norm(p.nome)===k);}
+/* v58.3: tarefa com mais de um responsável (nomes separados por vírgula na mesma coluna) e nomes iguais escritos de jeitos diferentes
+   (ex.: "aila.lessa" e "Aila Lessa") viram um só — vale o nome do cadastro do usuário */
+let nomesCache={chave:'',mapa:{}};
+function nomePessoa(n){
+  n=String(n||'').trim();const k=norm(n);if(!k)return'';
+  const doPerfil=todosPerfis.filter(p=>p.ativo!==false&&p.perfil!=='pendente'&&p.perfil!=='funcionario').map(p=>String(p.nome||'').trim()).filter(Boolean);
+  const chave=doPerfil.join('|')+'#'+todasAtividades.length;
+  if(nomesCache.chave!==chave){
+    const nota=x=>(/\s/.test(x)?4:0)+(/[A-ZÀ-Ý]/.test(x)?2:0)+(/[._@]/.test(x)?0:1);
+    const mapa={};
+    doPerfil.forEach(x=>{const c=norm(x);if(!mapa[c]||nota(x)>nota(mapa[c]))mapa[c]=x;});
+    const doPerfilK=new Set(Object.keys(mapa));
+    todasAtividades.flatMap(a=>String(a.responsavel||'').split(/[,;]/)).map(x=>x.trim()).filter(Boolean).forEach(x=>{const c=norm(x);if(!doPerfilK.has(c)&&(!mapa[c]||nota(x)>nota(mapa[c])))mapa[c]=x;});
+    nomesCache={chave,mapa};
+  }
+  return nomesCache.mapa[k]||n;
+}
+function listaResp(s){const v={};return String(s||'').split(/[,;]/).map(nomePessoa).filter(x=>{const k=norm(x);if(!k||v[k])return false;v[k]=1;return true;});}
+function temResp(a,nome){const k=norm(nome);return!!k&&listaResp(a.responsavel).some(r=>norm(r)===k);}
+function primeiroNome(n){return String(n||'').trim().split(/[\s.]+/)[0]||'';}
+function avataresResp(s,px){const l=listaResp(s);return l.map(r=>avatarPessoa(r,px)).join('');}
 function tarefasFiltradas(){
   const resp=$('ativ-resp').value,q=norm($('tf-busca').value),et=$('tf-etiqueta').value,vis=$('tf-vis').value,minhas=$('tf-minhas').checked;
   const eu=norm(meuPerfil&&meuPerfil.nome);
@@ -10937,8 +10960,8 @@ function tarefasFiltradas(){
   return todasAtividades.filter(a=>{
     if(a.tipo==='nota')return false;
     if(empresaAtual!=='todas'&&a.card_id&&!idsCards.has(a.card_id))return false;
-    if(resp&&(a.responsavel||'').trim()!==resp)return false;
-    if(minhas&&norm(a.responsavel)!==eu)return false;
+    if(resp&&!temResp(a,resp))return false;
+    if(minhas&&!temResp(a,eu))return false;
     if(et&&!(a.etiquetas||[]).includes(et))return false;
     if(vis&&(a.visibilidade||'equipe')!==vis)return false;
     if(q){const card=a.card_id?todosCards.find(c=>c.id===a.card_id):null,cli=a.cliente_id?clientePorId(a.cliente_id):(card&&card.clientes);
@@ -10956,7 +10979,7 @@ function iniciais(n){const p=String(n||'').trim().split(/\s+/).filter(Boolean);r
 const CORES_PESSOA=['#0C4982','#E67E22','#8E44AD','#16A085','#C0392B','#2E86C1','#B7950B','#6D4C41','#D35400','#00897B','#5E35B1','#2E7D32','#AD1457','#546E7A'];
 let pessoasCache={chave:'',mapa:{}};
 function mapaPessoas(){
-  const nomes=[...new Set([...todosPerfis.filter(p=>p.ativo!==false&&p.perfil!=='funcionario').map(p=>p.nome),...todasAtividades.map(a=>a.responsavel)]
+  const nomes=[...new Set([...todosPerfis.filter(p=>p.ativo!==false&&p.perfil!=='funcionario').map(p=>p.nome),...todasAtividades.flatMap(a=>listaResp(a.responsavel))]
     .map(n=>String(n||'').trim()).filter(Boolean))];
   const porChave={};nomes.forEach(n=>{const k=norm(n);if(k&&!porChave[k])porChave[k]=n;});
   const chaves=Object.keys(porChave).sort(),chave=chaves.join('|');
@@ -10992,7 +11015,7 @@ function htmlTarefa(a){
       ${ck.length?`<span class="badge ${ckF===ck.length?'badge-ok':'badge-cinza'}" title="Checklist">☑ ${ckF}/${ck.length}</span>`:''}
       ${a.detalhes?'<span title="Tem detalhes">📝</span>':''}
       <span style="flex:1"></span>
-      ${a.responsavel?`${avatarPessoa(a.responsavel)}<span style="font-size:11px;color:var(--texto2)">${esc(String(a.responsavel).trim().split(/\s+/)[0])}</span>`:''}
+      ${a.responsavel?`${avataresResp(a.responsavel)}<span style="font-size:11px;color:var(--texto2)">${esc(listaResp(a.responsavel).map(primeiroNome).join(', '))}</span>`:''}
       ${pode&&prox<STATUS_TAREFA.length?`<button class="tf-avancar" data-avancar="${esc(a.id)}" title="Mover para: ${esc(STATUS_TAREFA[prox][1])}">→</button>`:''}
     </div></div>`;
 }
@@ -11052,7 +11075,7 @@ function abrirTarefa(id,opcoes){
   preencherSelect($('tf-m-tipo'),TIPOS_ATIV.filter(t=>t[0]!=='nota'));preencherSelect($('tf-m-status'),STATUS_TAREFA.map(s=>[s[0],s[1]]));preencherSelect($('tf-m-prio'),PRIORIDADES);
   $('tf-m-titulo-modal').textContent=a?'Tarefa':'Nova tarefa';
   $('tf-m-desc').value=a?a.descricao:'';$('tf-m-tipo').value=a?(a.tipo==='nota'?'tarefa':a.tipo):'tarefa';$('tf-m-status').value=a?(a.status||'a_fazer'):(opcoes.status||'a_fazer');
-  $('tf-m-prio').value=a?(a.prioridade||'normal'):'normal';$('tf-m-resp').value=a?(a.responsavel||''):((meuPerfil&&meuPerfil.nome)||'');
+  $('tf-m-prio').value=a?(a.prioridade||'normal'):'normal';tarefaResps=a?listaResp(a.responsavel):listaResp((meuPerfil&&meuPerfil.nome)||'');$('tf-m-resp').value='';
   $('tf-m-prazo').value=a&&a.data_prevista?String(new Date(new Date(a.data_prevista).getTime()-new Date().getTimezoneOffset()*60000).toISOString()).slice(0,16):'';
   const card=a&&a.card_id?todosCards.find(c=>c.id===a.card_id):(opcoes.cardId?todosCards.find(c=>c.id===opcoes.cardId):null);
   const cli=a&&a.cliente_id?clientePorId(a.cliente_id):(card&&card.cliente_id?clientePorId(card.cliente_id):null);
@@ -11065,7 +11088,7 @@ function abrirTarefa(id,opcoes){
   $('tf-m-vis').checked=a?a.visibilidade==='administradores':(PERM.admin&&$('tf-vis').value==='administradores');
   $('tf-m-info').textContent=a?`Criada ${a.criado_por?'por '+a.criado_por+' ':''}em ${fmtDataHora(a.criado_em)}${a.concluida_em?' · concluída em '+fmtDataHora(a.concluida_em):''}`:'';
   $('tf-m-excluir').style.display=a&&PERM.ativ?'':'none';
-  renderEtiquetasTarefa();renderChecklistTarefa();
+  renderEtiquetasTarefa();renderRespsTarefa();renderChecklistTarefa();
   modoLeitura('modal-tarefa',!PERM.ativ);
   abrirModal('modal-tarefa');if(!a)setTimeout(()=>$('tf-m-desc').focus(),50);
 }
@@ -11079,7 +11102,16 @@ function mudouClienteTarefa(){
 }
 function mudouCardTarefa(){const c=todosCards.find(x=>x.id===$('tf-m-card').value);if(c&&c.cliente_id&&!$('tf-m-cliente').value){const cli=clientePorId(c.cliente_id);if(cli){$('tf-m-cliente').value=rotuloCliente(cli);mudouClienteTarefa();$('tf-m-card').value=c.id;}}}
 // administrador: tarefa de outro administrador já nasce "só administradores"
-function mudouRespTarefa(){if(!tarefaEditandoId&&PERM.admin)$('tf-m-vis').checked=ehAdminNome($('tf-m-resp').value);}
+function mudouRespTarefa(){if(!tarefaEditandoId&&PERM.admin)$('tf-m-vis').checked=tarefaResps.length>0&&tarefaResps.every(ehAdminNome);}
+let tarefaResps=[];
+function renderRespsTarefa(){
+  const vistos={},todas=[...tarefaResps,...todosPerfis.filter(p=>p.ativo!==false&&p.perfil!=='pendente'&&p.perfil!=='funcionario').map(p=>p.nome)].map(nomePessoa)
+    .filter(r=>{const k=norm(r);if(!k||vistos[k])return false;vistos[k]=1;return true;});
+  const marcado=r=>tarefaResps.some(x=>norm(x)===norm(r));
+  $('tf-m-resps').innerHTML=todas.map(r=>`<label class="chip-cat ${marcado(r)?'marcado':''}"><input type="checkbox" value="${esc(r)}" ${marcado(r)?'checked':''}> ${esc(r)}</label>`).join('');
+  $('tf-m-resps').querySelectorAll('input').forEach(i=>i.onchange=()=>{tarefaResps=i.checked?[...tarefaResps,i.value]:tarefaResps.filter(x=>norm(x)!==norm(i.value));i.parentElement.classList.toggle('marcado',i.checked);mudouRespTarefa();});
+}
+function addRespTarefa(){const t=nomePessoa($('tf-m-resp').value);$('tf-m-resp').value='';if(!t)return;if(!tarefaResps.some(x=>norm(x)===norm(t)))tarefaResps.push(t);renderRespsTarefa();mudouRespTarefa();}
 function renderEtiquetasTarefa(){
   const todas=[...new Set([...ETIQUETAS_TAREFA,...todasAtividades.flatMap(a=>a.etiquetas||[]),...tarefaEtiquetas])];
   $('tf-m-etiquetas').innerHTML=todas.map(e=>`<label class="chip-cat ${tarefaEtiquetas.includes(e)?'marcado':''}"><input type="checkbox" value="${esc(e)}" ${tarefaEtiquetas.includes(e)?'checked':''}> ${esc(e)}</label>`).join('');
@@ -11101,7 +11133,7 @@ async function salvarTarefa(){
   const desc=$('tf-m-desc').value.trim();if(!desc){alert('Escreva o que precisa ser feito.');return;}
   const cliTxt=$('tf-m-cliente').value.trim(),cli=acharClientePorRotulo(cliTxt);if(cliTxt&&!cli){alert('Cliente não encontrado. Escolha da lista.');return;}
   const card=todosCards.find(c=>c.id===$('tf-m-card').value);
-  const dados={descricao:desc,tipo:$('tf-m-tipo').value,status:$('tf-m-status').value,prioridade:$('tf-m-prio').value,responsavel:$('tf-m-resp').value.trim()||null,
+  const dados={descricao:desc,tipo:$('tf-m-tipo').value,status:$('tf-m-status').value,prioridade:$('tf-m-prio').value,responsavel:(()=>{if($('tf-m-resp').value.trim())addRespTarefa();return tarefaResps.length?tarefaResps.join(', '):null;})(),
     data_prevista:localParaISO($('tf-m-prazo').value),cliente_id:cli?cli.id:(card?card.cliente_id:null),card_id:card?card.id:null,projeto_id:$('tf-m-projeto').value||null,
     detalhes:$('tf-m-detalhes').value.trim()||null,checklist:tarefaChecklist.filter(x=>String(x.texto||'').trim()),etiquetas:tarefaEtiquetas,
     visibilidade:PERM.admin&&$('tf-m-vis').checked?'administradores':'equipe'};
@@ -11181,7 +11213,7 @@ function renderInventario(){
   $('tabela-inventario').innerHTML=`<thead><tr><th>Código</th><th>Item</th><th>Tipo</th><th class="num">Estoque</th><th class="num" title="Separado em propostas não perdidas">Em propostas</th><th>Estado</th><th>Onde está</th><th>Empresa</th></tr></thead><tbody>${l.length?l.map(i=>{
     const e=i.empresa_id&&empresaPorId(i.empresa_id),uso=qtdEmPropostas(i.id);
     return`<tr class="clicavel ${i.ativo===false?'inativo':''}" data-inv="${esc(i.id)}" style="cursor:pointer"><td style="white-space:nowrap"><strong>${esc(i.codigo||'')}</strong></td>
-      <td><strong>${esc(i.nome)}</strong>${i.marca_modelo||i.numero_serie?`<div class="dica" style="margin:0">${esc([i.marca_modelo,i.numero_serie&&'série '+i.numero_serie].filter(Boolean).join(' · '))}</div>`:''}${i.categoria?`<div class="dica" style="margin:0">${esc(i.categoria)}</div>`:''}</td>
+      <td><strong>${esc(i.nome)}</strong>${i.marca_modelo||i.numero_serie?`<div class="dica" style="margin:0">${esc([i.marca_modelo,i.numero_serie&&'série/CA '+i.numero_serie].filter(Boolean).join(' · '))}</div>`:''}${i.categoria?`<div class="dica" style="margin:0">${esc(i.categoria)}</div>`:''}</td>
       <td>${esc(TIPO_INV_LABEL[i.tipo]||i.tipo)}${i.tipo==='epi'&&i.data_validade?`<div class="dica" style="margin:0">validade ${esc(fmtData(i.data_validade))}</div>${epiVencendo(i)?` <span class="badge badge-atraso" title="${esc(textoValidadeEPI(i))}">${diasAte(i.data_validade)<0?'vencido':'comprar'}</span>`:''}`:i.tipo==='epi'&&i.ativo!==false?'<div class="dica" style="margin:0;color:var(--vermelho)">sem validade</div>':''}</td>
       <td class="num"><strong>${esc(fmtQtd(i.quantidade))}</strong> ${esc(i.unidade||'')}${estoqueBaixo(i)?` <span class="badge badge-hoje" title="Mínimo: ${esc(fmtQtd(i.quantidade_minima))}">baixo</span>`:''}</td>
       <td class="num">${uso?`${esc(fmtQtd(uso))}${uso>Number(i.quantidade||0)?' <span class="badge badge-atraso" title="Separado mais do que tem em estoque">falta</span>':''}`:'—'}</td>
@@ -11233,7 +11265,7 @@ async function alternarItemInventario(){
 }
 /* v34: importar a planilha do inventário de vocês e exportar no mesmo formato */
 const INV_CAMPOS=[['codigo','Código',/^(cod|codigo|cód|id|patrimonio|n\s*patrimonio|tag)\b/],['nome','Item / descrição *',/^(item|nome|descricao|descrição|material|equipamento|produto)/],['tipo','Tipo',/^tipo/],['categoria','Categoria',/^(categoria|grupo|familia|família)/],
-  ['marca_modelo','Marca / modelo',/^(marca|modelo|fabricante)/],['numero_serie','Nº de série',/(serie|série|serial)/],['quantidade','Quantidade',/^(qtd|qtde|quant|estoque|saldo)/],['unidade','Unidade',/^(un|und|unid|unidade)\b/],
+  ['marca_modelo','Marca / modelo',/^(marca|modelo|fabricante)/],['numero_serie','Nº de série / CA',/(serie|série|serial|^ca$|^c\.a\.?$)/],['quantidade','Quantidade',/^(qtd|qtde|quant|estoque|saldo)/],['unidade','Unidade',/^(un|und|unid|unidade)\b/],
   ['quantidade_minima','Estoque mínimo',/(minim|mínim)/],['localizacao','Onde está',/(local|onde|deposito|depósito|obra|almox)/],['estado','Estado',/^(estado|condicao|condição|situacao|situação)/],['empresa','Empresa',/^empresa/],
   ['valor_unitario','Valor unitário',/(valor|preco|preço|custo)/],['data_aquisicao','Aquisição',/(aquisi|compra|data)/],['observacoes','Observações',/^(obs|observ)/]];
 let invImport=null,invLayout=null;
@@ -11283,7 +11315,7 @@ function acharItemExistente(o){return(o.codigo&&todoInventario.find(i=>norm(i.co
 function previaInventario(){
   const l=linhasImportInventario(),novos=l.filter(o=>!acharItemExistente(o)).length;
   const temNome=invImport.mapa.includes('nome');
-  $('ii-resumo').innerHTML=temNome?`<strong>${l.length}</strong> item(ns) lidos: <strong>${novos}</strong> novo(s) e <strong>${l.length-novos}</strong> já existente(s) (atualizados pelo código ou pelo nome + nº de série). Nada é apagado.`:'⚠️ Escolha qual coluna é o <strong>Item / descrição</strong>.';
+  $('ii-resumo').innerHTML=temNome?`<strong>${l.length}</strong> item(ns) lidos: <strong>${novos}</strong> novo(s) e <strong>${l.length-novos}</strong> já existente(s) (atualizados pelo código ou pelo nome + nº de série/CA). Nada é apagado.`:'⚠️ Escolha qual coluna é o <strong>Item / descrição</strong>.';
   $('ii-btn').disabled=!temNome||!l.length;
   const cols=INV_CAMPOS.filter(([id])=>invImport.mapa.includes(id));
   $('ii-previa').innerHTML=`<thead><tr><th></th>${cols.map(([,t])=>`<th>${esc(t)}</th>`).join('')}</tr></thead><tbody>${l.slice(0,50).map(o=>`<tr><td>${acharItemExistente(o)?'<span class="badge badge-cinza">atualiza</span>':'<span class="badge badge-ok">novo</span>'}</td>${cols.map(([id])=>`<td style="font-size:12px">${esc(id==='empresa'?((empresaPorId(o[id])||{}).sigla||''):id==='tipo'?TIPO_INV_LABEL[o[id]]||'':id==='estado'?ESTADO_INV_LABEL[o[id]]||'':o[id]??'')}</td>`).join('')}</tr>`).join('')}</tbody>`;
@@ -11317,7 +11349,7 @@ async function confirmarImportacaoInventario(){
   else toast(`Inventário importado: ${novos} novo(s), ${atual} atualizado(s)`);
 }
 async function exportarInventario(){
-  const linhas=[['Código','Item','Tipo','Categoria','Marca / modelo','Nº de série','Quantidade','Unidade','Estoque mínimo','Em propostas','Estado','Onde está','Empresa','Valor unitário','Aquisição','Observações','Ativo']];
+  const linhas=[['Código','Item','Tipo','Categoria','Marca / modelo','Nº de série / CA','Quantidade','Unidade','Estoque mínimo','Em propostas','Estado','Onde está','Empresa','Valor unitário','Aquisição','Observações','Ativo']];
   todoInventario.forEach(i=>{const e=empresaPorId(i.empresa_id);linhas.push([i.codigo||'',i.nome,TIPO_INV_LABEL[i.tipo]||i.tipo,i.categoria||'',i.marca_modelo||'',i.numero_serie||'',Number(i.quantidade||0),i.unidade||'',i.quantidade_minima!=null?Number(i.quantidade_minima):'',qtdEmPropostas(i.id),ESTADO_INV_LABEL[i.estado]||i.estado,i.localizacao||'',e?e.sigla:'',i.valor_unitario!=null?Number(i.valor_unitario):'',i.data_aquisicao?fmtData(i.data_aquisicao):'',i.observacoes||'',i.ativo===false?'não':'sim']);});
   // v34: nome no padrão (planilha viva, sem data) e, se houver modelo importado, as mesmas colunas e ordem dele
   const nome=nomeArquivoPadrao({area:'PAT',tipo:'CTL',desc:'INVENTARIO'});
