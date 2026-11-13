@@ -212,6 +212,57 @@ body.tela-larga .conteudo{max-width:none}
 .lista-mini .item{padding:8px 0;border-bottom:1px solid #f0f0f0;display:flex;justify-content:space-between;gap:10px;align-items:flex-start;cursor:pointer}
 .lista-mini .item:last-child{border-bottom:none}
 .lista-mini .item:hover{background:#fafafa}
+/* v62: painel do estagiário (caixas editáveis: ordem, largura, altura, esconder) */
+.ie-grade{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;align-items:start}
+.ie-caixa{background:#fff;border:1.5px solid var(--borda);border-radius:12px;padding:14px 16px;min-width:0;display:flex;flex-direction:column;transition:box-shadow .2s,transform .2s}
+.ie-caixa.tam-1{grid-column:span 1}.ie-caixa.tam-2{grid-column:span 2}.ie-caixa.tam-3{grid-column:span 3}.ie-caixa.tam-4{grid-column:span 4}
+.ie-caixa h3{font-size:14px;margin:0 0 10px;display:flex;align-items:center;gap:8px}
+.ie-caixa h3 .contagem{margin-left:auto;font-size:12px;font-weight:600;color:var(--texto2)}
+.ie-corpo{overflow-y:auto;min-height:0}
+.ie-caixa.alt-p .ie-corpo{max-height:220px}.ie-caixa.alt-m .ie-corpo{max-height:380px}.ie-caixa.alt-g .ie-corpo{max-height:620px}
+.ie-caixa.ie-alerta{border-color:#e6a5a0;background:linear-gradient(#fff,#fff) padding-box}
+.ie-caixa.ie-alerta h3{color:var(--vermelho)}
+.ie-ferr{display:none;gap:6px;align-items:center;flex-wrap:wrap;margin:-4px 0 10px;padding:6px 8px;background:var(--verde-claro);border-radius:8px;font-size:12px}
+.ie-ferr select{padding:3px 6px;font-size:12px;border-radius:6px;border:1px solid var(--borda)}
+.ie-ferr button{border:1px solid var(--borda);background:#fff;border-radius:6px;padding:3px 8px;cursor:pointer;font-size:12px}
+.ie-ferr button:hover{background:#f0f0f0}
+.ie-ferr .ie-puxar{cursor:grab;font-weight:700;letter-spacing:-1px;color:var(--texto2);padding:0 4px}
+.ie-editando .ie-ferr{display:flex}
+.ie-editando .ie-caixa{border-style:dashed;border-color:var(--verde)}
+.ie-editando .ie-caixa.arrastando{opacity:.4}
+.ie-editando .ie-caixa.ie-sobre{box-shadow:0 0 0 3px var(--verde);transform:scale(1.01)}
+.ie-escondidas{display:none;margin:0 0 14px;padding:10px 12px;border:1.5px dashed var(--borda);border-radius:10px;font-size:13px;gap:8px;flex-wrap:wrap;align-items:center}
+.ie-editando .ie-escondidas{display:flex}
+.ie-escondidas button{border:1px solid var(--borda);background:#fff;border-radius:16px;padding:4px 12px;cursor:pointer;font-size:12px}
+.ie-num{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
+.ie-num .ie-n{border-radius:10px;padding:10px 12px;cursor:pointer;border:2px solid transparent}
+.ie-num .ie-n.marcado{border-color:currentColor}
+.ie-num .ie-n b{display:block;font-size:26px;font-variant-numeric:tabular-nums;line-height:1.1}
+.ie-num .ie-n span{font-size:11px;text-transform:uppercase;letter-spacing:.3px;color:var(--texto2)}
+.ie-num .ie-n.pulsa b{animation:iePulsa 1.6s ease-in-out infinite}
+@keyframes iePulsa{0%,100%{opacity:1}50%{opacity:.45}}
+.ie-prog{margin-top:12px;font-size:12px;color:var(--texto2)}
+.ie-prog .trilho{height:8px;background:#eee;border-radius:6px;overflow:hidden;margin-top:4px}
+.ie-prog .cheio{height:100%;background:#2E7D32;border-radius:6px;transition:width .8s}
+.ie-tf{display:flex;gap:10px;align-items:flex-start;padding:9px 6px;border-bottom:1px solid #f0f0f0;cursor:pointer;border-radius:6px}
+.ie-tf:last-child{border-bottom:none}.ie-tf:hover{background:#fafafa}
+.ie-tf .ie-tf-txt{flex:1;min-width:0;font-size:13px}
+.ie-tf .ie-tf-txt small{color:var(--texto2);display:block;margin-top:2px}
+.ie-tf .ie-tf-acoes{display:flex;gap:4px;flex:none;align-items:center}
+.ie-tf .ie-tf-acoes button{border:1px solid var(--borda);background:#fff;border-radius:6px;padding:3px 8px;cursor:pointer;font-size:12px;white-space:nowrap}
+.ie-tf .ie-tf-acoes button.ok{border-color:#2E7D32;color:#2E7D32}
+.ie-tf .ie-tf-acoes button.ok:hover{background:#2E7D32;color:#fff}
+.ie-tf.saindo{opacity:0;transform:translateX(30px);transition:all .35s}
+.ie-atraso{font-weight:700;color:var(--vermelho);font-size:12px;white-space:nowrap}
+.ie-grupo{font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:var(--texto2);margin:10px 0 2px;font-weight:700}
+.ie-grupo:first-child{margin-top:0}
+.ie-filtros{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;align-items:center}
+.ie-rapida{width:100%;margin-bottom:8px;padding:7px 10px;border:1.5px dashed var(--borda);border-radius:8px;font-size:13px}
+.ie-atalhos{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
+.ie-atalhos button{padding:10px;border:1.5px solid var(--borda);background:#fff;border-radius:10px;cursor:pointer;font-size:13px;text-align:left}
+.ie-atalhos button:hover{border-color:var(--verde);background:var(--verde-claro)}
+@media(max-width:1100px){.ie-grade{grid-template-columns:repeat(2,minmax(0,1fr))}.ie-caixa.tam-3,.ie-caixa.tam-4{grid-column:span 2}}
+@media(max-width:700px){.ie-grade{grid-template-columns:minmax(0,1fr)}.ie-caixa.tam-1,.ie-caixa.tam-2,.ie-caixa.tam-3,.ie-caixa.tam-4{grid-column:span 1}.ie-tf{flex-wrap:wrap}}
 /* TABELAS */
 .tabela-wrap{background:#fff;border:1.5px solid var(--borda);border-radius:12px;overflow-x:auto}
 table.tabela{width:100%;border-collapse:collapse;font-size:13px}
@@ -628,6 +679,7 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
   </div>
   <div class="tabs" id="tabs">
     <div class="tab ativo" data-tab="painel" data-comercial>Painel</div>
+    <div class="tab" data-tab="inicio" id="tab-btn-inicio" style="display:none">Painel</div>
     <div class="tab" data-tab="atividades" data-comercial>Tarefas <span id="tab-ativ-badge"></span></div>
     <div class="tab" data-tab="funil" data-comercial id="tab-btn-funil">Funil de Propostas</div>
     <div class="tab" data-tab="clientes" data-comercial>Clientes</div>
@@ -705,6 +757,24 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
       <div class="tabela-wrap"><table class="tabela" id="gxc-tabela"></table></div>
       <p class="dica" id="gxc-dica"></p>
     </div>
+    </div>
+
+    <!-- v62: PAINEL DO ESTAGIÁRIO (caixas editáveis) -->
+    <div id="tab-inicio" style="display:none">
+      <div class="barra-acoes">
+        <div>
+          <div class="pd-saudacao" id="ie-saudacao"></div>
+          <h2>Meu painel</h2>
+        </div>
+        <div class="filtros" style="margin:0;align-items:center">
+          <span class="pd-atualizado" id="ie-atualizado"></span>
+          <button class="btn-sec" onclick="atualizarInicioEst()" title="Buscar os dados mais recentes">Atualizar</button>
+          <button class="btn-sec" id="ie-btn-editar" onclick="alternarEdicaoInicio()" title="Mudar a ordem, o tamanho e quais caixas aparecem">Personalizar painel</button>
+        </div>
+      </div>
+      <div class="aviso" id="ie-dica-edicao" style="display:none">Arraste as caixas pelo <strong>⠿</strong> (ou use as setas) para mudar a ordem. Escolha a <strong>largura</strong> e a <strong>altura</strong> de cada uma, ou esconda as que não usa. Tudo fica salvo no seu login.</div>
+      <div class="ie-escondidas" id="ie-escondidas"></div>
+      <div class="ie-grade" id="ie-grade"></div>
     </div>
 
     <!-- FUNIL -->
@@ -1305,7 +1375,7 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
         <div><strong>Comercial</strong>Clientes, contatos, contratos, tarefas, cronograma e agenda do escritório. Documentos das empresas só consulta. Não vê funil, propostas, valores, contratos recorrentes nem RH.</div>
         <div><strong>Administrativo</strong>Documentos e certidões, funcionários, RH (ficha, uniformes, contracheques, vales, adiantamentos, envio à contabilidade), currículos, contratos, tarefas, cronograma e agenda do escritório. Clientes só consulta. Não vê funil, propostas, valores nem contratos recorrentes.</div>
         <div><strong>Contabilidade</strong>Funcionários, benefícios, RH (salários, contracheques, vales e adiantamentos), documentos/certidões, cronograma e agenda do escritório. Não vê funil, propostas, clientes nem currículos.</div>
-        <div><strong>Estagiário</strong>Tarefas da equipe, cronograma e agenda do escritório (cria e altera, não apaga), inventário e fornecedores. Não vê painel, funil, valores, clientes, contratos, financeiro, RH nem documentos.</div>
+        <div><strong>Estagiário</strong>Painel próprio (tarefas atrasadas e pendentes, agenda, inventário e fornecedores; ela arruma as caixas), tarefas da equipe, cronograma e agenda do escritório (cria e altera, não apaga), inventário e fornecedores. Não vê o painel completo, funil, valores, clientes, contratos, financeiro, RH nem documentos.</div>
         <div><strong>Consultoria ISO</strong>Só a aba Gestão → Normas ISO 9001 / 14001: cadastra e altera requisitos e avalia as leis novas (não apaga, não muda as palavras da busca). Não vê Contas e acessos nem nada do resto do CRM.</div>
         <div><strong>Cliente (portal)</strong>Login de um contato do cliente, criado em Clientes → abrir o cliente → Portal do cliente. Vê os dados do próprio cadastro e só os contratos liberados, com o que foi marcado em cada um (Contratos → abrir o contrato → Portal do cliente). Não vê nada mais do CRM.</div>
         <div><strong>Funcionário (contracheque e ponto)</strong>Entra com CPF e senha e vê somente os próprios contracheques (todos os meses guardados para o CPF) as próprias marcações do ponto (Secullum), avisos, premiações, políticas e as <strong>Ordens de Serviço</strong> em que está escalado no Cronograma (sem valores). Não vê o diário de obra nem nada mais do CRM.</div>
@@ -3266,7 +3336,7 @@ const PERFIS=[['administrador','Administrador'],['comercial','Comercial'],['admi
 const DOMINIO_FUNC='funcionario.bvek.com.br';
 // v46: o perfil Consulta foi removido (quem era Consulta passou para Aguardando liberação)
 const PERFIL_LABEL=Object.assign(Object.fromEntries(PERFIS),{consulta:'Consulta (removido)'});
-const ABAS_ESTAGIARIO=['atividades','cronograma','fornecedores','inventario'];
+const ABAS_ESTAGIARIO=['inicio','atividades','cronograma','fornecedores','inventario']; // v62: 'inicio' = painel do estagiário
 function calcularPermissoes(p){
   const adm=p==='administrador',com=p==='comercial',admv=p==='administrativo',cont=p==='contabilidade',est=p==='estagiario',iso=p==='consultoria_iso';
   // v57: consultoria ISO = só Gestão → Normas ISO 9001 / 14001 (cadastra e altera requisitos, avalia leis novas; não apaga)
@@ -3461,13 +3531,13 @@ async function iniciarApp(){
   $('rh-mes').value=hojeISO().slice(0,7);
   try{const v=localStorage.getItem('bvek_tarefas_visao');if(v)$('ativ-visao').value=v;}catch(e){}
   if(!PERM.comercialVer)abrirTab('documentos');
-  if(PERM.estagiario)abrirTab('atividades');
+  if(PERM.estagiario)abrirTab('inicio'); // v62: o estagiário entra no painel dele
   // link do lembrete do WhatsApp: …/#financeiro abre direto a aba
   if(/^#(financeiro|pagamentos)/.test(location.hash)&&PERM.financeiro)abrirTab('financeiro');
   await carregarTudo();
   // v32: primeiro as tarefas (com som); ao fechar, os avisos do dia
   mostrarNotificacao(mostrarAvisosDoDia);
-  ligarAtualizacaoPainel();
+  ligarAtualizacaoPainel();ligarAtualizacaoInicioEst();
   // enquanto o CRM fica aberto, lembra de novo a cada hora
   setInterval(async()=>{if($('modal-notif').classList.contains('aberto'))return;await Promise.all([carregarAtividades(),carregarFinanceiro()]);mostrarNotificacao();},60*60*1000);
 }
@@ -3895,6 +3965,7 @@ function aplicarPermissoes(){
   mostra('rh-sub-beneficios',PERM.rh);
   mostra('rh-sub-curriculos',PERM.curriculos);
   mostra('tab-btn-financeiro',PERM.financeiro);
+  mostra('tab-btn-inicio',PERM.estagiario);
   mostra('tab-btn-cronograma',PERM.cronograma);mostra('tab-btn-diario',PERM.diario);
   mostra('fin-sub-pagamentos',PERM.pagamentos);
   mostra('pg-btn-config',PERM.admin);
@@ -4070,7 +4141,8 @@ function abrirTab(tab){
   if(tab==='financeiro'&&!PERM.financeiro)tab='painel';
   if(tab==='cronograma'&&!PERM.cronograma)tab='painel';
   if(tab==='diario'&&!PERM.diario)tab='painel';
-  if(PERM.estagiario&&!ABAS_ESTAGIARIO.includes(tab))tab='atividades';
+  if(tab==='inicio'&&!PERM.estagiario)tab='painel';
+  if(PERM.estagiario&&!ABAS_ESTAGIARIO.includes(tab))tab='inicio';
   if(PERM.isoConsultor)tab='gestao';
   if(tab==='funil'&&!PERM.funilVer)tab='painel';
   if(!PERM.comercialVer&&['painel','funil','clientes','projetos','fornecedores','inventario','atividades','empresas'].includes(tab))tab='documentos';
@@ -4081,13 +4153,13 @@ function abrirTab(tab){
   // v34.2: Benefícios sempre no mesmo mês do RH
   if(grupoRH&&$('rh-mes').value&&$('bn-mes').value!==$('rh-mes').value){$('bn-mes').value=$('rh-mes').value;carregarCompetenciaAtual().then(()=>{if(tabAtual==='beneficios')renderBeneficios();});}
   if(grupoRH)document.querySelectorAll('#rh-subabas .subaba').forEach(s=>s.classList.toggle('ativo',s.dataset.rh===(tab==='rh'?rhSub:tab)));
-  ['painel','documentos','beneficios','rh','curriculos','financeiro','fornecedores','inventario','funil','clientes','projetos','cronograma','diario','atividades','empresas','gestao','usuarios'].forEach(t=>{$('tab-'+t).style.display=t===tab?'block':'none';});
+  ['painel','inicio','documentos','beneficios','rh','curriculos','financeiro','fornecedores','inventario','funil','clientes','projetos','cronograma','diario','atividades','empresas','gestao','usuarios'].forEach(t=>{$('tab-'+t).style.display=t===tab?'block':'none';});
   const marca=grupoRH?'rh':tab==='empresas'?'usuarios':tab;
   document.querySelectorAll('#tabs .tab').forEach(el=>el.classList.toggle('ativo',el.dataset.tab===marca));
   renderTabAtual();
 }
 function renderTabAtual(){
-  ({painel:renderPainel,documentos:renderDocumentos,beneficios:renderBeneficios,rh:renderRH,curriculos:renderCurriculos,financeiro:renderFinanceiro,fornecedores:renderFornecedoresTab,inventario:renderInventario,funil:renderFunil,clientes:renderClientes,projetos:renderProjetos,cronograma:abrirCronograma,diario:abrirDiarios,atividades:renderAtividades,empresas:renderEmpresas,gestao:renderGestao,usuarios:renderUsuarios}[tabAtual]||(()=>{}))();
+  ({painel:renderPainel,inicio:renderInicioEst,documentos:renderDocumentos,beneficios:renderBeneficios,rh:renderRH,curriculos:renderCurriculos,financeiro:renderFinanceiro,fornecedores:renderFornecedoresTab,inventario:renderInventario,funil:renderFunil,clientes:renderClientes,projetos:renderProjetos,cronograma:abrirCronograma,diario:abrirDiarios,atividades:renderAtividades,empresas:renderEmpresas,gestao:renderGestao,usuarios:renderUsuarios}[tabAtual]||(()=>{}))();
 }
 function trocarEmpresa(){
   empresaAtual=$('select-empresa').value;
@@ -4394,6 +4466,232 @@ async function atualizarPainel(silencioso){
 function ligarAtualizacaoPainel(){
   if(painelTimer)return;
   painelTimer=setInterval(()=>{if(tabAtual==='painel'&&!document.hidden&&!document.querySelector('.modal-overlay.aberto'))atualizarPainel(true);},5*60*1000);
+}
+/* ================= v62: PAINEL DO ESTAGIÁRIO ================= */
+// Só com o que o estagiário acessa: Tarefas, Cronograma (agenda do escritório e quem está onde), Inventário e Fornecedores.
+// Cada caixa pode mudar de ordem, largura (1 a 4 colunas) e altura, ou ser escondida. O arranjo fica salvo no login
+// (dados do usuário no Supabase Auth — sem migração) e, de reserva, no navegador.
+const IE_CAIXAS=[
+  {id:'resumo',titulo:'Resumo das tarefas',tam:4,alt:'livre'},
+  {id:'atrasadas',titulo:'Tarefas atrasadas',tam:2,alt:'m'},
+  {id:'pendentes',titulo:'Tarefas pendentes',tam:2,alt:'m'},
+  {id:'agenda',titulo:'Agenda do escritório',tam:2,alt:'p',perm:()=>PERM.cronograma},
+  {id:'campo',titulo:'Quem está onde hoje',tam:2,alt:'p',perm:()=>PERM.cronograma},
+  {id:'inventario',titulo:'Inventário: estoque baixo e EPIs a comprar',tam:2,alt:'p',perm:()=>PERM.comercialVer},
+  {id:'fornecedores',titulo:'Buscar fornecedor',tam:2,alt:'p',perm:()=>PERM.comercialVer},
+  {id:'atalhos',titulo:'Atalhos',tam:4,alt:'livre'},
+];
+const IE_TAMS=[[1,'Estreita'],[2,'Média'],[3,'Larga'],[4,'Inteira']],IE_ALTS=[['p','Baixa'],['m','Média'],['g','Alta'],['livre','Sem limite']];
+let ieLayout=null,ieEditando=false,ieArrastada=null,ieFiltro='',ieSoMinhas=false,ieFornBusca='',ieSalvarTimer=null,ieTimer=null;
+function ieChaveLocal(){return'bvek_painel_est_'+((usuario&&usuario.id)||'');}
+function iePadrao(){return IE_CAIXAS.map(c=>({id:c.id,tam:c.tam,alt:c.alt,oculta:false}));}
+function ieCarregarLayout(){
+  let l=null;
+  try{l=usuario&&usuario.user_metadata&&usuario.user_metadata.painel_estagiario;}catch(e){}
+  if(!Array.isArray(l)){try{l=JSON.parse(localStorage.getItem(ieChaveLocal())||'null');}catch(e){l=null;}}
+  if(!Array.isArray(l))l=iePadrao();
+  // tira caixas que não existem mais e acrescenta as novas no fim
+  const ids=new Set(IE_CAIXAS.map(c=>c.id));l=l.filter(x=>x&&ids.has(x.id));
+  IE_CAIXAS.forEach(c=>{if(!l.some(x=>x.id===c.id))l.push({id:c.id,tam:c.tam,alt:c.alt,oculta:false});});
+  l.forEach(x=>{x.tam=Math.min(4,Math.max(1,+x.tam||2));if(!IE_ALTS.some(a=>a[0]===x.alt))x.alt='m';});
+  ieLayout=l;
+}
+function ieSalvarLayout(){
+  try{localStorage.setItem(ieChaveLocal(),JSON.stringify(ieLayout));}catch(e){}
+  clearTimeout(ieSalvarTimer);
+  ieSalvarTimer=setTimeout(async()=>{
+    const{data,error}=await sb.auth.updateUser({data:{painel_estagiario:ieLayout}});
+    if(error)console.warn('Arranjo do painel salvo só neste navegador',error);else if(data&&data.user)usuario=data.user;
+  },800);
+}
+function alternarEdicaoInicio(){
+  ieEditando=!ieEditando;
+  $('ie-btn-editar').textContent=ieEditando?'Concluir personalização':'Personalizar painel';
+  $('ie-btn-editar').className=ieEditando?'btn-novo':'btn-sec';
+  $('ie-dica-edicao').style.display=ieEditando?'block':'none';
+  renderInicioEst();
+}
+function ieRestaurar(){if(!confirm('Voltar o painel para a arrumação original?'))return;ieLayout=iePadrao();ieSalvarLayout();renderInicioEst();}
+function ieMover(id,passo){
+  const vis=ieLayout.filter(x=>!x.oculta&&ieCaixaDef(x.id)),i=vis.findIndex(x=>x.id===id),j=i+passo;
+  if(i<0||j<0||j>=vis.length)return;
+  const a=ieLayout.indexOf(vis[i]),b=ieLayout.indexOf(vis[j]);[ieLayout[a],ieLayout[b]]=[ieLayout[b],ieLayout[a]];
+  ieSalvarLayout();renderInicioEst();
+}
+function ieSoltarAntes(id,alvo){
+  if(id===alvo)return;const x=ieLayout.find(c=>c.id===id);if(!x)return;
+  ieLayout=ieLayout.filter(c=>c.id!==id);const k=ieLayout.findIndex(c=>c.id===alvo);ieLayout.splice(k<0?ieLayout.length:k,0,x);
+  ieSalvarLayout();renderInicioEst();
+}
+function ieCaixaDef(id){const c=IE_CAIXAS.find(x=>x.id===id);return c&&(!c.perm||c.perm())?c:null;}
+/* tarefas */
+function ieTarefas(){return todasAtividades.filter(a=>a.tipo!=='nota'&&!a.concluida&&a.status!=='feito');}
+function ieGrupo(a){
+  if(!a.data_prevista)return'semdata';
+  const d=new Date(a.data_prevista);if(d<inicioDoDia())return'atrasadas';if(d<=fimDoDia())return'hoje';
+  return diasAte(isoLocal(d))<=7?'semana':'depois';
+}
+function ieDiasAtraso(a){return-diasAte(isoLocal(new Date(a.data_prevista)));}
+function ieQuando(a){
+  if(!a.data_prevista)return'sem prazo';
+  const d=new Date(a.data_prevista),g=ieGrupo(a),h=d.getHours()||d.getMinutes()?' às '+d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}):'';
+  if(g==='atrasadas'){const n=ieDiasAtraso(a);return n<=1?'venceu ontem':`atrasada há ${n} dias`;}
+  if(g==='hoje'){if(h&&d<new Date())return'venceu hoje'+h;return'hoje'+h;}
+  const n=diasAte(isoLocal(d));return n===1?'amanhã'+h:d.toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'2-digit'})+h;
+}
+function ieLinhaTarefa(a,modo){
+  const cli=a.cliente_id?clientePorId(a.cliente_id):null,prio=a.prioridade==='urgente'?'<span class="badge badge-atraso">urgente</span> ':a.prioridade==='alta'?'<span class="badge badge-hoje">alta</span> ':'';
+  const st=a.status&&a.status!=='a_fazer'&&typeof STATUS_TAREFA_LABEL!=='undefined'?STATUS_TAREFA_LABEL[a.status]:'';
+  const resp=listaResp(a.responsavel);
+  return`<div class="ie-tf" data-ie-tf="${esc(a.id)}">${resp.length?`<span style="display:inline-flex;flex:none">${avataresResp(a.responsavel,22)}</span>`:'<span class="avatar" style="flex:none;background:#bbb;width:22px;height:22px;font-size:9px">?</span>'}
+    <div class="ie-tf-txt">${prio}<strong>${esc(a.descricao)}</strong><small>${modo==='atraso'?`<span class="ie-atraso">${esc(ieQuando(a))}</span> · prazo ${esc(fmtData(a.data_prevista))}`:esc(ieQuando(a))}${st?' · '+esc(st):''}${resp.length?' · '+esc(resp.map(primeiroNome).join(', ')):''}${cli?` · <span class="cod">${esc(cli.codigo||'')}</span> ${esc(cli.nome)}`:''}</small></div>
+    <div class="ie-tf-acoes">${PERM.ativ&&v24Ok&&(a.status||'a_fazer')==='a_fazer'?`<button data-ie-comecar="${esc(a.id)}" title="Mover para Fazendo">Começar</button>`:''}${PERM.ativ?`<button class="ok" data-ie-ok="${esc(a.id)}" title="Marcar como concluída">Concluir</button>`:''}</div></div>`;
+}
+async function ieConcluir(id,el){
+  const a=todasAtividades.find(x=>x.id===id);if(!a||!PERM.ativ)return;
+  if(el)el.classList.add('saindo');
+  const{error}=await sb.from('atividades').update(v24Ok?{status:'feito'}:{concluida:true,concluida_em:new Date().toISOString()}).eq('id',id);
+  if(erroSB(error,'Não foi possível concluir a tarefa')){if(el)el.classList.remove('saindo');return;}
+  Object.assign(a,{status:'feito',concluida:true,concluida_em:new Date().toISOString()});
+  toast('Tarefa concluída');setTimeout(renderInicioEst,350);carregarAtividades().then(()=>{if(tabAtual==='inicio')renderInicioEst();});
+}
+async function ieComecar(id){
+  const a=todasAtividades.find(x=>x.id===id);if(!a||!PERM.ativ)return;
+  const{error}=await sb.from('atividades').update({status:'fazendo',ordem:Date.now()/1000}).eq('id',id);
+  if(erroSB(error,'Não foi possível mover a tarefa'))return;
+  a.status='fazendo';toast('Tarefa em andamento');renderInicioEst();
+}
+async function ieTarefaRapida(texto){
+  const{error}=await sb.from('atividades').insert({tipo:'tarefa',descricao:texto,status:'a_fazer',responsavel:(meuPerfil&&meuPerfil.nome)||null,visibilidade:'equipe',criado_por:usuario?usuario.email:null,ordem:Date.now()/1000,
+    data_prevista:ieFiltro==='hoje'?localParaISO(hojeISO()+'T18:00'):null});
+  if(erroSB(error))return;await carregarAtividades();atualizarDatalists();renderInicioEst();toast('Tarefa criada');
+  const inp=document.querySelector('[data-ie-rapida]');if(inp)inp.focus();
+}
+/* conteúdo de cada caixa */
+function ieConteudo(id,ctx){
+  const{tf,eu}=ctx;
+  if(id==='resumo'){
+    const n=k=>tf.filter(a=>ieGrupo(a)===k).length,feitasHoje=todasAtividades.filter(a=>a.tipo!=='nota'&&(a.concluida||a.status==='feito')&&a.concluida_em&&new Date(a.concluida_em)>=inicioDoDia()).length;
+    const doDia=n('hoje')+n('atrasadas'),tot=doDia+feitasHoje,pct=tot?Math.round(100*feitasHoje/tot):0;
+    const minhas=tf.filter(a=>temResp(a,eu)).length;
+    const B=[['atrasadas','Atrasadas','#c0392b','#fdecea'],['hoje','Para hoje','#b9770e','#fff6e0'],['semana','Próximos 7 dias','#1565c0','#e8f1fb'],['depois','Mais adiante','#5D6D7E','#f2f4f5'],['semdata','Sem prazo','#555','#f2f2f2']];
+    return{cont:`${tf.length} pendente(s)${eu?` · ${minhas} sua(s)`:''}`,html:`<div class="ie-num">${B.map(([k,r,cor,bg])=>`<div class="ie-n ${ieFiltro===k?'marcado':''} ${k==='atrasadas'&&n(k)?'pulsa':''}" data-ie-filtro="${k}" style="color:${cor};background:${bg}" title="Mostrar só estas em Tarefas pendentes"><b data-contar="${n(k)}">${n(k)}</b><span>${esc(r)}</span></div>`).join('')}</div>
+      <div class="ie-prog">Hoje: <strong>${feitasHoje}</strong> concluída(s) de ${tot} tarefa(s) do dia${tot?` (${pct}%)`:''}${n('atrasadas')?` · <span style="color:var(--vermelho)">comece pelas atrasadas</span>`:tot&&!doDia?' · tudo em dia':''}<div class="trilho"><div class="cheio" data-ie-pct="${pct}" style="width:0"></div></div></div>`};
+  }
+  if(id==='atrasadas'){
+    const l=tf.filter(a=>ieGrupo(a)==='atrasadas').sort((a,b)=>String(a.data_prevista).localeCompare(String(b.data_prevista))||(PESO_PRIO[a.prioridade]??2)-(PESO_PRIO[b.prioridade]??2));
+    const minhas=l.filter(a=>temResp(a,eu));
+    return{alerta:l.length>0,cont:l.length?`${l.length}${minhas.length?` · ${minhas.length} sua(s)`:''}`:'',html:l.length?[...minhas,...l.filter(a=>!temResp(a,eu))].map(a=>ieLinhaTarefa(a,'atraso')).join(''):'<p class="vazio">Nenhuma tarefa atrasada. Bom trabalho!</p>'};
+  }
+  if(id==='pendentes'){
+    let l=tf.filter(a=>ieGrupo(a)!=='atrasadas');
+    if(ieSoMinhas)l=l.filter(a=>temResp(a,eu));
+    if(ieFiltro&&ieFiltro!=='atrasadas')l=l.filter(a=>ieGrupo(a)===ieFiltro);
+    const ordemG={hoje:0,semana:1,depois:2,semdata:3};
+    l.sort((a,b)=>ordemG[ieGrupo(a)]-ordemG[ieGrupo(b)]||String(a.data_prevista||'').localeCompare(String(b.data_prevista||''))||(PESO_PRIO[a.prioridade]??2)-(PESO_PRIO[b.prioridade]??2));
+    const NG={hoje:'Para hoje',semana:'Próximos 7 dias',depois:'Mais adiante',semdata:'Sem prazo'};
+    let g0='',linhas=l.slice(0,60).map(a=>{const g=ieGrupo(a),cab=g!==g0?`<div class="ie-grupo">${esc(NG[g])}</div>`:'';g0=g;return cab+ieLinhaTarefa(a);}).join('');
+    if(l.length>60)linhas+=`<p class="vazio" style="cursor:pointer" onclick="abrirTab('atividades')">… e mais ${l.length-60} — ver todas em Tarefas</p>`;
+    const F=[['','Todas'],['hoje','Hoje'],['semana','7 dias'],['depois','Mais adiante'],['semdata','Sem prazo']];
+    return{cont:`${l.length}`,topo:`<div class="ie-filtros">${F.map(([k,r])=>`<button class="pd-aba ${(ieFiltro==='atrasadas'?'':ieFiltro)===k?'ativo':''}" data-ie-filtro="${k}">${esc(r)}</button>`).join('')}<label style="font-size:12px;display:flex;gap:4px;align-items:center;margin-left:auto"><input type="checkbox" data-ie-minhas ${ieSoMinhas?'checked':''}> só as minhas</label></div>
+      ${PERM.ativ?`<input class="ie-rapida" data-ie-rapida placeholder="+ nova tarefa rápida (escreva e tecle Enter)${ieFiltro==='hoje'?' — com prazo hoje':''}">`:''}`,
+      html:linhas||`<p class="vazio">${ieSoMinhas?'Você não tem tarefas pendentes':'Nenhuma tarefa pendente'}${ieFiltro&&ieFiltro!=='atrasadas'?' neste filtro':''}.</p>`};
+  }
+  if(id==='agenda'){
+    if(!v45Ok)return{html:'<p class="vazio">A agenda do escritório ainda não está ligada.</p>'};
+    const hj=hojeISO(),l=(agendaProx||[]).filter(e=>e.situacao==='ativo'&&diaBR(e.fim)>=hj).sort((a,b)=>String(a.inicio).localeCompare(String(b.inicio)));
+    return{cont:l.length?`${l.length} em 7 dias`:'',html:(l.length?l.slice(0,15).map(e=>itemEscMini(e,true)).join(''):'<p class="vazio">Nenhum evento do escritório nos próximos 7 dias.</p>')+
+      '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px"><button class="btn-sec" onclick="abrirEventoEscritorio()">+ Evento do escritório</button><button class="btn-link" onclick="abrirTab(\'cronograma\')">ver no Cronograma →</button></div>',lista:true};
+  }
+  if(id==='campo'){
+    const{ls,pessoas}=pessoasEmCampoHoje(),porK=new Map();
+    ls.forEach(l=>{const k=chaveAloc(l);if(!porK.has(k))porK.set(k,{l,ids:new Set()});(l.funcionarios||[]).forEach(i=>porK.get(k).ids.add(i));});
+    return{cont:pessoas?`${pessoas} pessoa(s)`:'',lista:true,html:porK.size?[...porK.values()].map(x=>`<div class="item" data-ie-crg="1"><div><span class="crg-cor" style="background:${corAloc(x.l)}"></span><strong>${esc(rotuloAloc(x.l))}</strong>${x.l.local?` <span style="color:var(--texto2)">· ${esc(x.l.local)}</span>`:''}<br><span style="color:var(--texto2)">${esc([...x.ids].map(i=>(funcPorId(i)||{}).nome||'(funcionário)').join(', '))}</span></div></div>`).join(''):'<p class="vazio">Ninguém alocado em contrato hoje.</p>'};
+  }
+  if(id==='inventario'){
+    if(!v30InvOk)return{html:'<p class="vazio">Inventário indisponível.</p>'};
+    const ativos=todoInventario.filter(i=>i.ativo!==false),b=ativos.filter(estoqueBaixo),e=ativos.filter(epiVencendo).sort((x,y)=>String(x.data_validade).localeCompare(String(y.data_validade))),man=ativos.filter(i=>i.estado==='manutencao');
+    const it=(i,txt,cls)=>`<div class="item" data-ie-inv="${esc(i.id)}"><div><strong>${esc(i.nome)}</strong> <span class="cod">${esc(i.codigo||'')}</span><br><span style="color:var(--texto2)">${esc(txt)}</span></div><span class="badge ${cls}">${cls==='badge-atraso'?'comprar':cls==='badge-hoje'?'baixo':'manutenção'}</span></div>`;
+    const baixoTxt=i=>`tem ${fmtQtd(i.quantidade)} ${i.unidade||''} · mínimo ${fmtQtd(i.quantidade_minima)}`;
+    const html=[...e.map(i=>it(i,'EPI '+textoValidadeEPI(i)+(estoqueBaixo(i)?' · '+baixoTxt(i):''),'badge-atraso')),...b.filter(i=>!e.includes(i)).map(i=>it(i,baixoTxt(i),'badge-hoje')),...man.filter(i=>!e.includes(i)&&!b.includes(i)).map(i=>it(i,i.localizacao||'em manutenção','badge-cinza'))].join('');
+    return{alerta:e.length>0,cont:new Set([...b,...e]).size?`${new Set([...b,...e]).size} a repor`:'',lista:true,html:(html||`<p class="vazio">Nada a repor: ${ativos.length} item(ns) cadastrado(s) em dia.</p>`)+
+      `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">${PERM.invEditar?'<button class="btn-sec" onclick="abrirItemInventario(null)">+ Novo item</button>':''}<button class="btn-link" onclick="abrirTab('inventario')">ver o inventário →</button></div>`};
+  }
+  if(id==='fornecedores'){
+    const q=norm(ieFornBusca),ativos=todosFornecedores.filter(f=>f.ativo!==false);
+    const l=q?ativos.filter(f=>norm([f.nome,f.razao_social,f.contato,f.cidade,(f.categorias||[]).join(' ')].join(' ')).includes(q)).slice(0,20)
+      :[...ativos].sort((a,b)=>String(b.atualizado_em||b.criado_em||'').localeCompare(String(a.atualizado_em||a.criado_em||''))).slice(0,6);
+    return{cont:`${ativos.length} cadastrado(s)`,lista:true,topo:`<input type="search" class="ie-rapida" style="border-style:solid" data-ie-forn placeholder="Nome, categoria, cidade ou contato" value="${esc(ieFornBusca)}">${q?'':'<div class="ie-grupo">Atualizados por último</div>'}`,
+      html:(l.length?l.map(f=>{const tel=f.whatsapp||f.telefone,wa=linkWhats(tel);return`<div class="item" data-ie-fo="${esc(f.id)}"><div><strong>${esc(f.nome)}</strong>${f.cidade?` <span style="color:var(--texto2)">· ${esc(f.cidade)}</span>`:''}<br><span style="color:var(--texto2)">${esc((f.categorias||[]).slice(0,3).join(', '))}${f.contato?' · '+esc(f.contato):''}${tel?' · '+esc(fmtTel(tel)):''}</span></div>${wa?`<a href="${esc(wa)}" target="_blank" rel="noopener" class="btn-link" onclick="event.stopPropagation()">WhatsApp</a>`:''}</div>`;}).join(''):`<p class="vazio">${q?'Nenhum fornecedor encontrado.':'Nenhum fornecedor cadastrado.'}</p>`)+
+      `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">${PERM.fornEditar?'<button class="btn-sec" onclick="abrirFornecedor(null)">+ Novo fornecedor</button>':''}<button class="btn-link" onclick="abrirTab('fornecedores')">ver fornecedores e preços →</button></div>`};
+  }
+  if(id==='atalhos'){
+    const A=[[PERM.ativ,'Nova tarefa',"abrirTarefa(null)"],[true,'Quadro de tarefas',"abrirTab('atividades')"],[PERM.cronograma,'Cronograma',"abrirTab('cronograma')"],[PERM.cronograma,'Evento do escritório',"abrirEventoEscritorio()"],
+      [PERM.invEditar,'Novo item no inventário',"abrirItemInventario(null)"],[true,'Inventário',"abrirTab('inventario')"],[PERM.fornEditar,'Novo fornecedor',"abrirFornecedor(null)"],[true,'Fornecedores',"abrirTab('fornecedores')"]];
+    return{html:`<div class="ie-atalhos">${A.filter(a=>a[0]).map(a=>`<button onclick="${a[2]}">${esc(a[1])}</button>`).join('')}</div>`};
+  }
+  return{html:''};
+}
+function renderInicioEst(){
+  const grade=$('ie-grade');if(!grade)return;
+  if(!ieLayout)ieCarregarLayout();
+  const h=new Date().getHours(),pn=String((meuPerfil&&meuPerfil.nome)||'').trim().split(/\s+/)[0];
+  $('ie-saudacao').textContent=`${h<12?'Bom dia':h<18?'Boa tarde':'Boa noite'}${pn?', '+pn:''} · ${new Date().toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long'})}`;
+  $('ie-atualizado').textContent='atualizado às '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+  $('tab-inicio').classList.toggle('ie-editando',ieEditando);
+  const ctx={tf:ieTarefas(),eu:norm(meuPerfil&&meuPerfil.nome)};
+  const vis=ieLayout.filter(x=>!x.oculta&&ieCaixaDef(x.id)),ocultas=ieLayout.filter(x=>x.oculta&&ieCaixaDef(x.id));
+  $('ie-escondidas').innerHTML=`<span><strong>Caixas escondidas:</strong></span>${ocultas.length?ocultas.map(x=>`<button data-ie-mostrar="${esc(x.id)}" title="Mostrar de novo">+ ${esc(ieCaixaDef(x.id).titulo)}</button>`).join(''):'<span class="dica" style="margin:0">nenhuma</span>'}<span style="flex:1"></span><button onclick="ieRestaurar()">Restaurar arrumação original</button>`;
+  grade.innerHTML=vis.map((x,i)=>{const d=ieCaixaDef(x.id),c=ieConteudo(x.id,ctx);
+    return`<div class="ie-caixa tam-${x.tam} alt-${x.alt}${c.alerta?' ie-alerta':''}" data-ie-caixa="${esc(x.id)}">
+      <div class="ie-ferr"><span class="ie-puxar" draggable="true" data-ie-puxar="${esc(x.id)}" title="Arraste para mudar de lugar">⠿</span>
+        <button data-ie-mover="-1" ${i===0?'disabled':''} title="Mover para antes">◀</button><button data-ie-mover="1" ${i===vis.length-1?'disabled':''} title="Mover para depois">▶</button>
+        <label>Largura <select data-ie-tam>${IE_TAMS.map(([v,r])=>`<option value="${v}" ${x.tam===v?'selected':''}>${r}</option>`).join('')}</select></label>
+        <label>Altura <select data-ie-alt>${IE_ALTS.map(([v,r])=>`<option value="${v}" ${x.alt===v?'selected':''}>${r}</option>`).join('')}</select></label>
+        <span style="flex:1"></span><button data-ie-ocultar title="Esconder esta caixa">Esconder</button></div>
+      <h3>${esc(d.titulo)}${c.cont?`<span class="contagem">${esc(c.cont)}</span>`:''}</h3>${c.topo||''}
+      <div class="ie-corpo${c.lista?' lista-mini':''}">${c.html}</div></div>`;}).join('')||'<p class="vazio">Todas as caixas estão escondidas. Clique em <strong>Personalizar painel</strong> para mostrar de novo.</p>';
+  ieLigar(grade);
+  animarNumeros(grade);
+  requestAnimationFrame(()=>requestAnimationFrame(()=>grade.querySelectorAll('[data-ie-pct]').forEach(b=>b.style.width=b.dataset.iePct+'%')));
+}
+function ieLigar(grade){
+  $('ie-escondidas').querySelectorAll('[data-ie-mostrar]').forEach(b=>b.onclick=()=>{const x=ieLayout.find(c=>c.id===b.dataset.ieMostrar);if(x){x.oculta=false;ieSalvarLayout();renderInicioEst();}});
+  grade.querySelectorAll('[data-ie-caixa]').forEach(cx=>{
+    const id=cx.dataset.ieCaixa,x=ieLayout.find(c=>c.id===id);
+    cx.querySelectorAll('[data-ie-mover]').forEach(b=>b.onclick=()=>ieMover(id,+b.dataset.ieMover));
+    cx.querySelector('[data-ie-tam]').onchange=ev=>{x.tam=+ev.target.value;ieSalvarLayout();renderInicioEst();};
+    cx.querySelector('[data-ie-alt]').onchange=ev=>{x.alt=ev.target.value;ieSalvarLayout();renderInicioEst();};
+    cx.querySelector('[data-ie-ocultar]').onclick=()=>{x.oculta=true;ieSalvarLayout();renderInicioEst();};
+    const puxa=cx.querySelector('[data-ie-puxar]');
+    puxa.addEventListener('dragstart',ev=>{ieArrastada=id;ev.dataTransfer.setData('text/plain',id);ev.dataTransfer.effectAllowed='move';cx.classList.add('arrastando');});
+    puxa.addEventListener('dragend',()=>{cx.classList.remove('arrastando');ieArrastada=null;grade.querySelectorAll('.ie-sobre').forEach(e=>e.classList.remove('ie-sobre'));});
+    cx.addEventListener('dragover',ev=>{if(!ieEditando||!ieArrastada)return;ev.preventDefault();cx.classList.add('ie-sobre');});
+    cx.addEventListener('dragleave',ev=>{if(!cx.contains(ev.relatedTarget))cx.classList.remove('ie-sobre');});
+    cx.addEventListener('drop',ev=>{if(!ieEditando||!ieArrastada)return;ev.preventDefault();cx.classList.remove('ie-sobre');ieSoltarAntes(ieArrastada,id);});
+  });
+  grade.querySelectorAll('[data-ie-filtro]').forEach(el=>el.onclick=()=>{const k=el.dataset.ieFiltro;ieFiltro=el.closest('.ie-num')&&ieFiltro===k?'':k;renderInicioEst();
+    if(k==='atrasadas'){const c=grade.querySelector('[data-ie-caixa="atrasadas"]');if(c)c.scrollIntoView({behavior:'smooth',block:'nearest'});}});
+  const mi=grade.querySelector('[data-ie-minhas]');if(mi)mi.onchange=()=>{ieSoMinhas=mi.checked;renderInicioEst();};
+  const rp=grade.querySelector('[data-ie-rapida]');if(rp)rp.onkeydown=ev=>{if(ev.key==='Enter'&&rp.value.trim()){const t=rp.value.trim();rp.value='';ieTarefaRapida(t);}};
+  const fo=grade.querySelector('[data-ie-forn]');if(fo)fo.oninput=()=>{ieFornBusca=fo.value;const p=fo.selectionStart;renderInicioEst();const n=$('ie-grade').querySelector('[data-ie-forn]');if(n){n.focus();try{n.setSelectionRange(p,p);}catch(e){}}};
+  grade.querySelectorAll('[data-ie-tf]').forEach(el=>el.onclick=ev=>{if(ev.target.closest('button'))return;const a=todasAtividades.find(t=>t.id===el.dataset.ieTf);if(!a)return;if(v24Ok)abrirTarefa(a.id);else abrirTab('atividades');});
+  grade.querySelectorAll('[data-ie-ok]').forEach(b=>b.onclick=ev=>{ev.stopPropagation();ieConcluir(b.dataset.ieOk,b.closest('.ie-tf'));});
+  grade.querySelectorAll('[data-ie-comecar]').forEach(b=>b.onclick=ev=>{ev.stopPropagation();ieComecar(b.dataset.ieComecar);});
+  grade.querySelectorAll('[data-esc]').forEach(el=>el.onclick=()=>abrirEventoEscritorio(el.dataset.esc));
+  grade.querySelectorAll('[data-ie-crg]').forEach(el=>el.onclick=()=>abrirTab('cronograma'));
+  grade.querySelectorAll('[data-ie-inv]').forEach(el=>el.onclick=()=>abrirItemInventario(el.dataset.ieInv));
+  grade.querySelectorAll('[data-ie-fo]').forEach(el=>el.onclick=()=>abrirFornecedor(el.dataset.ieFo));
+}
+async function atualizarInicioEst(silencioso){
+  await Promise.all([carregarAtividades(),carregarAgendaPainel(),carregarInventario()]);
+  if(tabAtual==='inicio')renderInicioEst();
+  if(!silencioso)toast('Painel atualizado');
+}
+// atualiza sozinho a cada 3 minutos enquanto o painel está na tela (não atrapalha a personalização nem um modal aberto)
+function ligarAtualizacaoInicioEst(){
+  if(ieTimer||!PERM.estagiario)return;
+  ieTimer=setInterval(()=>{if(tabAtual==='inicio'&&!ieEditando&&!document.hidden&&!document.querySelector('.modal-overlay.aberto')&&!(document.activeElement&&document.activeElement.closest&&document.activeElement.closest('#tab-inicio input')))atualizarInicioEst(true);},3*60*1000);
 }
 function itemAtividadeMini(a){
   const atras=new Date(a.data_prevista)<inicioDoDia();
