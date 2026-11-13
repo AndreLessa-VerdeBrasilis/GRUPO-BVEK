@@ -77,6 +77,15 @@ button{font-family:inherit}
 #tela-portal{display:none;min-height:100vh;background:var(--cinza)}
 @media(max-width:560px){.pt-topo-tit{display:none}}
 .pt-wrap{max-width:900px;margin:0 auto;padding:20px 16px 40px}
+/* v62.3: no computador o portal do cliente usa mais da largura (no celular continua igual) */
+@media(min-width:900px){
+  .pt-wrap{max-width:1200px;width:92%;padding:28px 24px 48px}
+  #tela-portal .cc-abas button{flex:1 1 auto;white-space:nowrap;padding:11px 14px}
+  #pt-corpo .cc-lista{display:grid;grid-template-columns:repeat(auto-fill,minmax(440px,1fr));gap:12px}
+  #pt-primeiro{max-width:820px;margin-left:auto;margin-right:auto}
+  #tela-portal .pt-fotos figure{width:calc(25% - 6px)}
+  #tela-portal .pt-fotos img{height:170px}
+}
 .pt-sec{background:#fff;border-radius:12px;padding:16px 18px;box-shadow:0 1px 4px rgba(0,0,0,.06);margin-bottom:12px;line-height:1.5;font-size:14px}
 .pt-sec h3{font-size:15px;margin:0 0 8px}.pt-sec table{border-collapse:collapse;width:100%;font-size:13.5px}.pt-sec th{text-align:left;color:var(--texto2);font-weight:600;padding:5px 10px 5px 0;width:150px;vertical-align:top}.pt-sec td{padding:5px 0;vertical-align:top}
 .pt-fotos{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}.pt-fotos figure{margin:0;width:calc(33.3% - 6px);min-width:110px}.pt-fotos img{width:100%;height:140px;object-fit:cover;border-radius:6px;cursor:zoom-in;background:#eee}.pt-fotos figcaption{font-size:11px;color:var(--texto2)}
