@@ -40,6 +40,15 @@ button{font-family:inherit}
 /* v17: tela do perfil Funcionário (só contracheque) */
 #tela-cc{display:none;min-height:100vh;background:var(--cinza)}
 .cc-wrap{max-width:640px;margin:0 auto;padding:20px 16px 40px}
+/* v62.2: no computador a tela do login por CPF usa mais da largura (no celular continua igual) */
+@media(min-width:900px){
+  .cc-wrap{max-width:1200px;width:92%;padding:28px 24px 48px}
+  #tela-cc .cc-abas button{flex:1 1 auto;white-space:nowrap;padding:11px 14px}
+  #cc-lista{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:12px}
+  #cc-lista>.cc-vazio{grid-column:1/-1}
+  #cc-primeiro,#cc-denuncia{max-width:820px;margin:0 auto}
+  #tela-cc .cc-termo{max-height:340px}
+}
 .cc-ola{background:#fff;border-radius:12px;padding:18px 20px;margin-bottom:16px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
 .cc-ola h2{font-size:18px;color:var(--verde)}
 .cc-ola p{font-size:13px;color:var(--texto2);margin-top:4px}
