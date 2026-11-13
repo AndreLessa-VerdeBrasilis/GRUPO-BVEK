@@ -2504,6 +2504,7 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
     <div id="inv-uso"></div>
     <div class="modal-btns">
       <button class="btn-excluir" id="inv-btn-desativar" style="display:none" onclick="alternarItemInventario()">Desativar</button>
+      <button class="btn-sec so-edicao" id="inv-btn-duplicar" style="display:none" onclick="duplicarItemInventario()" title="Abre um item novo com os mesmos dados deste (o nº de série fica em branco para preencher)">Duplicar</button>
       <button class="btn-cancelar" onclick="fecharModal('modal-inventario')">Cancelar</button>
       <button class="btn-salvar so-edicao" onclick="salvarItemInventario()">Salvar</button>
     </div>
@@ -11656,8 +11657,19 @@ function abrirItemInventario(id){
   const usos=i?todoInvOS.filter(x=>x.item_id===i.id).map(x=>({x,c:todosCards.find(c=>c.id===x.card_id)})).filter(u=>u.c):[];
   $('inv-uso').innerHTML=usos.length?`<div class="secao">Separado nestas propostas</div><div class="sub-lista">${usos.map(u=>`<div class="sub-item clicavel" data-inv-card="${esc(u.c.id)}"><span><strong>${esc(numeroProposta(u.c)||'')}</strong> ${esc(u.c.titulo||'')}</span><span>${esc(fmtQtd(u.x.quantidade))} ${esc(i.unidade||'')} · ${esc(ETAPA_LABEL[u.c.etapa]||u.c.etapa)}</span></div>`).join('')}</div>`:'';
   $('inv-uso').querySelectorAll('[data-inv-card]').forEach(el=>el.onclick=()=>{fecharModal('modal-inventario');abrirModalCard(el.dataset.invCard);});
+  $('inv-btn-duplicar').style.display=i&&PERM.invEditar?'':'none';
   $('inv-btn-desativar').style.display=i&&PERM.invEditar?'':'none';$('inv-btn-desativar').textContent=i&&i.ativo===false?'Reativar':'Desativar';
   modoLeitura('modal-inventario',!PERM.invEditar);abrirModal('modal-inventario');if(!i)setTimeout(()=>$('inv-nome').focus(),50);
+}
+// v61.1: duplicar — o formulário continua preenchido com os dados do item aberto, mas vira um item novo (código novo, nº de série em branco)
+function duplicarItemInventario(){
+  const i=itemInvPorId(invEditandoId);if(!i||!PERM.invEditar)return;
+  invEditandoId=null;
+  $('inv-titulo-modal').textContent=`Novo item (cópia de ${i.codigo||i.nome})`;
+  $('inv-serie').value='';$('inv-uso').innerHTML='';
+  $('inv-btn-duplicar').style.display='none';$('inv-btn-desativar').style.display='none';
+  toast('Dados copiados. Ajuste o nº de série e clique em Salvar.');
+  setTimeout(()=>$('inv-serie').focus(),50);
 }
 async function salvarItemInventario(){
   if(!PERM.invEditar)return;
