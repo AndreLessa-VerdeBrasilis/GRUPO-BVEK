@@ -1798,7 +1798,7 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
       <div class="campo"><label>Coluna</label><select id="tf-m-status"></select></div>
       <div class="campo"><label>Prioridade</label><select id="tf-m-prio"></select></div>
       <div class="campo"><label>Responsáveis <small style="color:var(--texto2)">(pode marcar mais de um)</small></label><div id="tf-m-resps" class="chips-cat"></div>
-        <div class="linha-flex so-edicao" style="margin-top:6px"><input type="text" id="tf-m-resp" list="dl-responsaveis" placeholder="Outra pessoa…" onkeydown="if(event.key==='Enter')addRespTarefa()" onchange="addRespTarefa()"><button class="btn-sec" style="flex:0 0 auto" onclick="addRespTarefa()">+</button></div></div>
+        <div class="linha-flex so-edicao" style="margin-top:6px"><input type="text" id="tf-m-resp" list="dl-resp-tarefa" placeholder="Outra pessoa…" onkeydown="if(event.key==='Enter')addRespTarefa()" onchange="addRespTarefa()"><button class="btn-sec" style="flex:0 0 auto" onclick="addRespTarefa()">+</button></div></div>
       <div class="campo"><label>Prazo</label><input type="datetime-local" id="tf-m-prazo"></div>
       <div class="campo"><label>Tipo</label><select id="tf-m-tipo"></select></div>
       <div class="campo"><label>Cliente</label><input type="text" id="tf-m-cliente" list="dl-clientes" placeholder="Opcional" onchange="mudouClienteTarefa()"></div>
@@ -3322,6 +3322,7 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
 <datalist id="dl-clientes"></datalist>
 <datalist id="dl-clientes-saida"></datalist>
 <datalist id="dl-responsaveis"></datalist>
+<datalist id="dl-resp-tarefa"></datalist>
 <div class="toast" id="toast"></div>
 
 <script>
@@ -11949,8 +11950,14 @@ function mudouCardTarefa(){const c=todosCards.find(x=>x.id===$('tf-m-card').valu
 // administrador: tarefa de outro administrador já nasce "só administradores"
 function mudouRespTarefa(){if(!tarefaEditandoId&&PERM.admin)$('tf-m-vis').checked=tarefaResps.length>0&&tarefaResps.every(ehAdminNome);}
 let tarefaResps=[];
+/* v62.4: só aparece como responsável quem entra na aba Tarefas (administrador, comercial, administrativo, estagiário e funcionário do escritório).
+   Cliente (portal), consultoria ISO, contabilidade e funcionário só de contracheque (CPF) ficam de fora. */
+const PERFIS_TAREFAS=['administrador','comercial','administrativo','estagiario'];
+function temAcessoTarefas(p){return!!p&&p.ativo!==false&&(PERFIS_TAREFAS.includes(p.perfil)||(p.perfil==='funcionario'&&p.ve_tarefas===true));}
+function nomesAcessoTarefas(){const v={};return todosPerfis.filter(temAcessoTarefas).map(p=>nomePessoa(p.nome)).filter(r=>{const k=norm(r);if(!k||v[k])return false;v[k]=1;return true;}).sort((a,b)=>a.localeCompare(b,'pt-BR'));}
 function renderRespsTarefa(){
-  const vistos={},todas=[...tarefaResps,...todosPerfis.filter(p=>p.ativo!==false&&p.perfil!=='pendente'&&p.perfil!=='funcionario').map(p=>p.nome)].map(nomePessoa)
+  $('dl-resp-tarefa').innerHTML=nomesAcessoTarefas().filter(r=>!tarefaResps.some(x=>norm(x)===norm(r))).map(r=>`<option value="${esc(r)}">`).join('');
+  const vistos={},todas=[...tarefaResps,...nomesAcessoTarefas()].map(nomePessoa)
     .filter(r=>{const k=norm(r);if(!k||vistos[k])return false;vistos[k]=1;return true;});
   const marcado=r=>tarefaResps.some(x=>norm(x)===norm(r));
   $('tf-m-resps').innerHTML=todas.map(r=>`<label class="chip-cat ${marcado(r)?'marcado':''}"><input type="checkbox" value="${esc(r)}" ${marcado(r)?'checked':''}> ${esc(r)}</label>`).join('');
