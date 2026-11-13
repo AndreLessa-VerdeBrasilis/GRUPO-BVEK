@@ -10067,17 +10067,18 @@ function renderDenunciasRH(){
   if(!v42Ok){$('den-info').innerHTML=avisoV42;$('tabela-denuncias').innerHTML='';return;}
   const f=$('den-filtro').value;
   const l=todasDenuncias.filter(d=>f==='abertas'?['nova','em_analise'].includes(d.situacao):!f||d.situacao===f);
-  $('den-info').innerHTML='Denúncias enviadas pelos funcionários no <strong>acesso por CPF</strong>. São <strong>anônimas</strong>: o CRM não guarda quem enviou. A <strong>resposta</strong> que você escrever aparece para quem denunciou ao consultar o protocolo. Nada é apagado (use “Arquivada”).';
-  $('tabela-denuncias').innerHTML='<thead><tr><th>Recebida</th><th>Protocolo</th><th>Assunto</th><th>Relato</th><th>Situação</th></tr></thead><tbody>'+
-    (l.length?l.map(d=>{const st=SIT_DEN_RH[d.situacao]||[d.situacao,'badge-cinza'];return`<tr class="clicavel" data-den="${esc(d.id)}"><td style="white-space:nowrap">${esc(fmtData(d.recebida_em))}</td><td><span class="cod">${esc(d.protocolo)}</span></td><td>${esc(d.categoria)}</td>
+  $('den-info').innerHTML='Denúncias dos funcionários (<strong>acesso por CPF</strong>, protocolo DEN-) e relatos da <strong>Ouvidoria do site</strong> (www.bvek.com.br/ouvidoria, protocolo OUV-: denúncias, reclamações, sugestões e elogios). São <strong>anônimos</strong>: o CRM não guarda quem enviou (só aparece contato se a pessoa quis se identificar). A <strong>resposta</strong> que você escrever aparece para quem denunciou ao consultar o protocolo. Nada é apagado (use “Arquivada”).';
+  $('tabela-denuncias').innerHTML='<thead><tr><th>Recebida</th><th>Protocolo</th><th>Origem</th><th>Assunto</th><th>Relato</th><th>Situação</th></tr></thead><tbody>'+
+    (l.length?l.map(d=>{const st=SIT_DEN_RH[d.situacao]||[d.situacao,'badge-cinza'];return`<tr class="clicavel" data-den="${esc(d.id)}"><td style="white-space:nowrap">${esc(fmtData(d.recebida_em))}</td><td><span class="cod">${esc(d.protocolo)}</span></td><td style="white-space:nowrap">${d.origem==='site'?'Site':'Funcionário'}<div class="dica" style="margin:0">${esc(d.tipo||'Denúncia')}</div></td><td>${esc(d.categoria)}</td>
       <td style="font-size:12px">${esc(String(d.descricao||'').slice(0,160))}${String(d.descricao||'').length>160?'…':''}</td><td><span class="badge ${st[1]}">${esc(st[0])}</span>${d.resposta?'<div class="dica" style="margin:0">respondida</div>':''}</td></tr>`;}).join('')
-    :'<tr><td colspan="5" class="vazio">Nenhuma denúncia com este filtro.</td></tr>')+'</tbody>';
+    :'<tr><td colspan="6" class="vazio">Nenhuma denúncia com este filtro.</td></tr>')+'</tbody>';
   $('tabela-denuncias').querySelectorAll('[data-den]').forEach(tr=>tr.onclick=()=>abrirDenunciaRH(tr.dataset.den));
 }
 function abrirDenunciaRH(id){
   const d=todasDenuncias.find(x=>x.id===id);if(!d)return;denunciaEditId=d.id;
-  $('dn-titulo').textContent=`Denúncia ${d.protocolo}`;
-  $('dn-detalhe').innerHTML=`<strong>Assunto:</strong> ${esc(d.categoria)} · <strong>recebida em</strong> ${esc(fmtData(d.recebida_em))}\n<strong>O que aconteceu:</strong>\n${esc(d.descricao)}${d.local?`\n<strong>Onde:</strong> ${esc(d.local)}`:''}${d.quando?`\n<strong>Quando:</strong> ${esc(d.quando)}`:''}${d.envolvidos?`\n<strong>Envolvidos:</strong> ${esc(d.envolvidos)}`:''}`;
+  $('dn-titulo').textContent=`${d.tipo||'Denúncia'} ${d.protocolo}`;
+  $('dn-detalhe').innerHTML=`<strong>Origem:</strong> ${d.origem==='site'?'Ouvidoria do site':'Funcionário (acesso por CPF)'} · <strong>tipo:</strong> ${esc(d.tipo||'Denúncia')}
+<strong>Assunto:</strong> ${esc(d.categoria)} · <strong>recebida em</strong> ${esc(fmtData(d.recebida_em))}${d.contato?`\n<strong>Contato (a pessoa quis se identificar):</strong> ${esc(d.contato)}`:''}\n<strong>O que aconteceu:</strong>\n${esc(d.descricao)}${d.local?`\n<strong>Onde:</strong> ${esc(d.local)}`:''}${d.quando?`\n<strong>Quando:</strong> ${esc(d.quando)}`:''}${d.envolvidos?`\n<strong>Envolvidos:</strong> ${esc(d.envolvidos)}`:''}`;
   $('dn-situacao').value=d.situacao==='nova'?'em_analise':d.situacao;$('dn-resposta').value=d.resposta||'';$('dn-notas').value=d.anotacoes_rh||'';
   abrirModal('modal-denuncia');
 }

@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ouvidoria e canal de denúncias — Grupo BVEK</title>
+<meta name="description" content="Ouvidoria do Grupo BVEK: denúncias, reclamações, sugestões e elogios, com anonimato e acompanhamento por protocolo.">
+<meta name="theme-color" content="#071f38">
+<link rel="canonical" href="https://www.bvek.com.br/ouvidoria">
+<link rel="icon" href="favicon.ico">
+<link rel="apple-touch-icon" href="img/icone.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/site.css">
+</head>
+<body>
+
+<header>
+  <div class="wrap topo">
+    <a class="marca" href="/" aria-label="Grupo BVEK — início">
+      <img src="img/bvk-simbolo.png" alt="" width="46" height="40">
+      <span>GRUPO BVEK<small>SOLUÇÕES</small></span>
+    </a>
+    <button class="menu-btn" aria-label="Abrir menu" aria-expanded="false" aria-controls="menu" onclick="alternarMenu(this)">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+    </button>
+    <nav id="menu">
+      <ul>
+        <li><a href="/#grupo" onclick="fecharMenu()">O grupo</a></li>
+        <li><a href="/#empresas" onclick="fecharMenu()">Empresas</a></li>
+        <li><a href="/#clientes" onclick="fecharMenu()">Clientes</a></li>
+        <li><a href="/#como" onclick="fecharMenu()">Atuação</a></li>
+        <li><a href="/#contato" onclick="fecharMenu()">Contato</a></li>
+        <li><a class="btn btn-pri" href="/#contato" onclick="fecharMenu()">Solicitar proposta</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section class="pg-topo">
+    <div class="wrap">
+      <a class="voltar" href="/"><span aria-hidden="true">←</span> Voltar ao início</a>
+      <span class="rotulo">Ouvidoria</span>
+      <h1>Ouvidoria e canal de denúncias</h1>
+      <p class="lead">Denúncias, reclamações, sugestões e elogios sobre o Grupo BVEK e suas empresas. Você não precisa se identificar e acompanha a resposta por um protocolo.</p>
+    </div>
+  </section>
+
+  <section class="secao cinza">
+    <div class="wrap ouv">
+      <div>
+        <div class="form-box" id="ouv-form-box">
+          <h2>Fazer um relato</h2>
+          <form id="ouv-form" novalidate>
+            <div class="campo">
+              <label>Tipo de manifestação</label>
+              <div class="tipos" role="radiogroup">
+                <input type="radio" name="tipo" id="t-den" value="Denúncia" checked><label for="t-den">Denúncia</label>
+                <input type="radio" name="tipo" id="t-rec" value="Reclamação"><label for="t-rec">Reclamação</label>
+                <input type="radio" name="tipo" id="t-sug" value="Sugestão"><label for="t-sug">Sugestão</label>
+                <input type="radio" name="tipo" id="t-elo" value="Elogio"><label for="t-elo">Elogio</label>
+              </div>
+            </div>
+            <div class="campo">
+              <label for="o-cat">Assunto</label>
+              <select id="o-cat">
+                <option>Assédio moral</option><option>Assédio sexual</option><option>Discriminação ou preconceito</option>
+                <option>Segurança do trabalho / risco de acidente</option><option>Meio ambiente</option><option>Fraude, desvio ou corrupção</option>
+                <option>Conduta de colaborador ou chefia</option><option>Uso indevido de bens da empresa</option><option>Qualidade do serviço prestado</option>
+                <option>Atendimento</option><option>Outro</option>
+              </select>
+            </div>
+            <div class="campo">
+              <label for="o-desc">O que aconteceu? *</label>
+              <textarea id="o-desc" maxlength="8000" placeholder="Conte com o máximo de detalhes que puder: o que aconteceu, como, se se repete…" required></textarea>
+            </div>
+            <div class="duas">
+              <div class="campo"><label for="o-local">Onde? <small>(opcional)</small></label><input type="text" id="o-local" maxlength="300" placeholder="Ex.: obra, escritório, unidade do cliente"></div>
+              <div class="campo"><label for="o-quando">Quando? <small>(opcional)</small></label><input type="text" id="o-quando" maxlength="200" placeholder="Ex.: semana passada, todo dia"></div>
+            </div>
+            <div class="campo"><label for="o-env">Quem está envolvido? <small>(opcional)</small></label><input type="text" id="o-env" maxlength="1000" placeholder="Nomes, funções, empresa ou testemunhas"></div>
+            <div class="campo"><label for="o-contato">Quer ser contatado? <small>(opcional — deixe em branco para ficar anônimo)</small></label><input type="text" id="o-contato" maxlength="300" placeholder="Nome e telefone ou e-mail"></div>
+            <div class="isca" aria-hidden="true"><label for="o-site">Não preencha</label><input type="text" id="o-site" tabindex="-1" autocomplete="off"></div>
+            <p class="aviso">Para continuar anônimo, não escreva seu nome nem detalhes que mostrem quem você é. Guardamos apenas o relato e a data do envio.</p>
+            <div class="erro" id="o-erro" role="alert"></div>
+            <button class="btn btn-pri" type="submit" id="o-btn">Enviar relato</button>
+          </form>
+        </div>
+
+        <div class="form-box" id="ouv-ok" style="display:none">
+          <h2>Relato recebido</h2>
+          <p>Anote ou copie o seu protocolo. Ele é a única forma de acompanhar a resposta: não sabemos quem enviou.</p>
+          <div class="prot" id="o-prot"></div>
+          <div style="display:flex;gap:12px;flex-wrap:wrap">
+            <button class="btn btn-pri" type="button" id="o-copiar">Copiar protocolo</button>
+            <button class="btn btn-esc" type="button" id="o-novo">Fazer outro relato</button>
+          </div>
+        </div>
+      </div>
+
+      <aside class="lateral">
+        <div class="form-box">
+          <h3>Acompanhar um relato</h3>
+          <form id="ouv-cons" novalidate>
+            <div class="campo"><label for="o-cons">Protocolo</label><input type="text" id="o-cons" placeholder="OUV-XXXXXXXX" style="text-transform:uppercase" autocomplete="off"></div>
+            <button class="btn btn-esc" type="submit" style="width:100%">Consultar</button>
+          </form>
+          <div class="res" id="o-cons-res" aria-live="polite"></div>
+        </div>
+        <div class="bloco">
+          <h3>Nossos compromissos</h3>
+          <ul>
+            <li>Todo relato é recebido, analisado e tratado com sigilo.</li>
+            <li>O anonimato é respeitado: não pedimos nome, CPF nem login.</li>
+            <li>Não toleramos retaliação a quem relata de boa-fé.</li>
+            <li>A resposta aparece aqui, pelo protocolo.</li>
+          </ul>
+        </div>
+        <div class="bloco">
+          <h3>Outros canais</h3>
+          <p>Telefone: <a href="tel:+552130403700">(21) 3040-3700</a><br>Leia também o nosso <a href="codigo-de-etica">Código de Ética e Conduta</a>.</p>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+<script>
+(function(){
+  const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNtdXNlbmFzemdrcWtqandibHlpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0MTIwNTMsImV4cCI6MjA5Nzk4ODA1M30.IU1Z9ddIUpktjHvWqrSZaEWuo4gbmZfrfmYJ_NoXbWs'
+  const URL_SB='https://smusenaszgkqkjjwblyi.supabase.co/rest/v1/rpc/';
+  const $=id=>document.getElementById(id);
+  const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  async function rpc(fn,args){
+    const r=await fetch(URL_SB+fn,{method:'POST',headers:{'Content-Type':'application/json',apikey:SUPABASE_KEY,Authorization:'Bearer '+SUPABASE_KEY},body:JSON.stringify(args)});
+    const t=await r.text();let d=null;try{d=t?JSON.parse(t):null;}catch(e){}
+    if(!r.ok)throw new Error((d&&d.message)||'Falha no envio');
+    return d;
+  }
+  const erro=$('o-erro');
+  const mostraErro=m=>{erro.textContent=m;erro.style.display='block';};
+  document.querySelectorAll('input[name=tipo]').forEach(r=>r.addEventListener('change',()=>{
+    const t=document.querySelector('input[name=tipo]:checked').value;
+    if(t==='Sugestão'||t==='Elogio'){$('o-cat').value='Outro';}
+  }));
+  $('ouv-form').addEventListener('submit',async e=>{
+    e.preventDefault();erro.style.display='none';
+    const desc=$('o-desc').value.trim();
+    if(desc.length<10){mostraErro('Conte o que aconteceu (pelo menos algumas palavras).');$('o-desc').focus();return;}
+    if($('o-site').value){return;}
+    const btn=$('o-btn');btn.disabled=true;btn.textContent='Enviando…';
+    try{
+      const prot=await rpc('bvek_ouvidoria_enviar',{
+        p_tipo:document.querySelector('input[name=tipo]:checked').value,p_categoria:$('o-cat').value,p_descricao:desc,
+        p_local:$('o-local').value.trim()||null,p_quando:$('o-quando').value.trim()||null,
+        p_envolvidos:$('o-env').value.trim()||null,p_contato:$('o-contato').value.trim()||null});
+      if(!prot)throw new Error('Sem protocolo');
+      $('ouv-form').reset();$('o-prot').textContent=prot;
+      $('ouv-form-box').style.display='none';$('ouv-ok').style.display='';
+      $('ouv-ok').scrollIntoView({behavior:'smooth',block:'start'});
+    }catch(err){
+      mostraErro('Não foi possível enviar agora. Tente de novo em instantes ou ligue (21) 3040-3700.');
+      console.error(err);
+    }finally{btn.disabled=false;btn.textContent='Enviar relato';}
+  });
+  $('o-novo').addEventListener('click',()=>{$('ouv-ok').style.display='none';$('ouv-form-box').style.display='';$('o-prot').textContent='';});
+  $('o-copiar').addEventListener('click',()=>{const t=$('o-prot').textContent;
+    (navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>{$('o-copiar').textContent='Protocolo copiado';},()=>{window.prompt('Copie o protocolo:',t);});});
+  const SIT={nova:'Recebido — aguardando análise',em_analise:'Em análise',concluida:'Concluído',arquivada:'Arquivado'};
+  const fmt=d=>d?d.split('-').reverse().join('/'):'';
+  $('ouv-cons').addEventListener('submit',async e=>{
+    e.preventDefault();const box=$('o-cons-res');const p=$('o-cons').value.trim().toUpperCase();
+    if(!/^OUV-[A-Z0-9]{6,}$/.test(p)){box.innerHTML='<p>Digite o protocolo completo (OUV-…).</p>';return;}
+    box.innerHTML='<p>Consultando…</p>';
+    try{
+      const r=await rpc('bvek_ouvidoria_consultar',{p_protocolo:p});const d=Array.isArray(r)?r[0]:r;
+      if(!d){box.innerHTML='<p>Protocolo não encontrado. Confira as letras e números.</p>';return;}
+      box.innerHTML=`<div class="card-res"><strong>${esc(d.protocolo)}</strong><br>${esc(d.tipo)} · ${esc(d.categoria)}<br>Enviado em ${esc(fmt(d.recebida_em))}<br>Situação: <strong>${esc(SIT[d.situacao]||d.situacao)}</strong>${d.resposta?`<p style="margin:10px 0 0"><strong>Resposta${d.respondida_em?' ('+esc(fmt(d.respondida_em))+')':''}:</strong><br>${esc(d.resposta).replace(/\n/g,'<br>')}</p>`:''}</div>`;
+    }catch(err){box.innerHTML='<p>Não foi possível consultar agora. Tente de novo em instantes.</p>';console.error(err);}
+  });
+})();
+</script>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="grade-rod">
+      <div>
+        <div class="marca-rod">
+          <img src="img/bvk-simbolo.png" alt="" width="46" height="40">
+          <span>GRUPO BVEK<small>SOLUÇÕES</small></span>
+        </div>
+        <p>Engenharia, facilities, meio ambiente e seguros para indústrias, empresas e instituições no Rio de Janeiro.</p>
+      </div>
+      <div>
+        <h4>Empresas</h4>
+        <ul>
+          <li><a href="https://www.engekat.com.br" target="_blank" rel="noopener">Engekat Construções</a></li>
+          <li><a href="https://www.verdebrasilis.com.br" target="_blank" rel="noopener">Verde Brasilis</a></li>
+          <li><a href="https://www.brasilimp.com.br" target="_blank" rel="noopener">BrasiLimp</a></li>
+          <li><a href="https://www.katseguros.com.br" target="_blank" rel="noopener">Kat Corretora de Seguros</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Contato</h4>
+        <ul>
+          <li><a href="tel:+552130403700">(21) 3040-3700</a></li>
+          <li><a href="mailto:comercial@bvek.com.br">comercial@bvek.com.br</a></li>
+          <li><a href="https://wa.me/552130403700" target="_blank" rel="noopener">WhatsApp (21) 3040-3700</a></li>
+          <li><a href="/#trabalhe-conosco">Trabalhe conosco</a></li>
+          <li><a href="ouvidoria">Ouvidoria</a></li>
+          <li><a href="codigo-de-etica">Código de ética</a></li>
+          <li><a href="https://grupo-bvek.vercel.app" rel="nofollow">Área da equipe</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="base">
+      <span>© <span id="ano">2026</span> Grupo BVEK Soluções. Todos os direitos reservados.</span>
+      <span>Rio de Janeiro · RJ</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+function alternarMenu(b){const n=document.getElementById('menu');const a=n.classList.toggle('aberto');b.setAttribute('aria-expanded',a);}
+function fecharMenu(){document.getElementById('menu').classList.remove('aberto');document.querySelector('.menu-btn').setAttribute('aria-expanded','false');}
+document.getElementById('ano').textContent=new Date().getFullYear();
+</script>
+</body>
+</html>

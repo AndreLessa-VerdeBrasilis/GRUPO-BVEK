@@ -26,7 +26,7 @@ Sempre responda em português. O dono do sistema é o André Lessa (sócio do Gr
 1. **Antes de mexer**, leia o `index.html` atual e as migrações em `supabase/`. Não reescreva o que já funciona; faça a menor mudança que resolve.
 2. **Decisões do André**: se algo exigir regra de negócio, nome, campo novo ou mudança de comportamento visível, pergunte antes de implementar.
 3. **Banco de dados**:
-   - Toda mudança de banco vira um arquivo novo em `supabase/` no formato `migracao_crm_vNN_descricao.sql`, com o próximo número (confira o maior existente; em 13/nov/2026 a última era a v59).
+   - Toda mudança de banco vira um arquivo novo em `supabase/` no formato `migracao_crm_vNN_descricao.sql`, com o próximo número (confira o maior existente; em 13/nov/2026 a última era a v60).
    - A migração precisa poder rodar mais de uma vez sem duplicar nada (`if not exists`, `where not exists`, `create or replace`, `on conflict do nothing`).
    - Termine o arquivo com um `select` que permita ao André conferir o resultado.
    - **Funil só do administrador (desde a v46):** propostas (`cards`, `itens_proposta`, histórico), contratos fixos, valores e PDFs das propostas só chegam ao Administrador — o banco não manda para os outros perfis. Antes (v36) a regra era: o perfil Comercial não recebe `cards.valor_estimado`, `cards.composicao`, `itens_proposta.valor_unitario/valor_total` nem `contratos_recorrentes.valor_mensal/custo_mensal`. O front-end lê propostas, itens e contratos pelas funções `bvek_cards`, `bvek_itens_proposta` e `bvek_contratos` (nunca `select('*')` direto nessas tabelas). Migração que criar coluna nova nessas três tabelas deve terminar com `select public.bvek_proteger_valores();`.
@@ -74,6 +74,7 @@ Boa parte disto já foi implementada nas versões v11 a v18 (acessos, documentos
 **Gestão (v56, só administrador)**
 - Aba **Gestão**: 📜 Normas ISO 9001/14001 (`iso_requisitos` = matriz de requisitos legais; `iso_novidades` = leis novas achadas pela função `normas-iso` no LexML, toda segunda via pg_cron, palavras em `iso_config`; foco federal + estado e município do Rio) e 🔐 Contas e acessos (`contas_acessos`, **sem senha** — as senhas ficam no McAfee, 2 etapas no Microsoft Authenticator).
 - Financeiro → 📆 Mensalidades e débito automático (`mensalidades`, administrador e administrativo): domínios (Registro.br), sistemas, assinaturas, com alerta antes do vencimento.
+- Ouvidoria do site (v60): o formulário em www.bvek.com.br/ouvidoria (pasta `site/`) grava no mesmo canal de denúncias (`denuncias`, RH → Denúncias) pela função `bvek_ouvidoria_enviar` (sem login, protocolo `OUV-`; `origem`='site', `tipo` Denúncia/Reclamação/Sugestão/Elogio, `contato` só se a pessoa quiser). Consulta pública só por `bvek_ouvidoria_consultar`. O código de ética fica em `site/codigo-de-etica.html`.
 - Currículos: certidões **entregues pelo candidato** só quando a função justifica (colunas `curriculos.certidoes*`). O André decidiu não consultar CPF em Serasa/polícia/tribunais (risco trabalhista/LGPD).
 
 **Controle de documentos**
