@@ -2372,7 +2372,7 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
       <div class="campo"><label>Disponibilidade</label><input type="text" id="cv-disp" placeholder="Ex.: imediata, só fins de semana"></div>
       <div class="campo"><label>Pretensão</label><input type="text" id="cv-pret" placeholder="Ex.: R$ 180/dia ou R$ 2.500/mês"></div>
       <div class="campo full"><label>Currículo (arquivo)</label>
-        <div class="caixa-pdf"><div id="cv-arquivo-atual" class="info" style="margin:0 0 6px"></div><input type="file" id="cv-arquivo" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"></div>
+        <div class="caixa-pdf"><div id="cv-arquivo-atual" class="info" style="margin:0 0 6px"></div><input type="file" id="cv-arquivo" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" onchange="lerArquivoCurriculo(this.files[0])"><div class="dica" id="cv-leitura"></div></div>
       </div>
     </div>
     <div class="secao">Avaliação do RH</div>
@@ -9397,7 +9397,7 @@ function abrirCurriculo(id){
   $('cv-nota-tec').value=c&&c.nota_tecnica?String(c.nota_tecnica):'';$('cv-nota-comp').value=c&&c.nota_comportamental?String(c.nota_comportamental):'';
   $('cv-fortes').value=v('pontos_fortes');$('cv-atencao').value=v('pontos_atencao');$('cv-parecer').value=v('parecer');
   $('cv-avaliado').textContent=c&&c.avaliado_por?`Avaliado por ${c.avaliado_por}${c.avaliado_em?' em '+fmtDataHora(c.avaliado_em):''}`:'';
-  $('cv-arquivo').value='';
+  $('cv-arquivo').value='';$('cv-leitura').textContent='';cvLeituraVez++;
   $('cv-arquivo-atual').innerHTML=c&&c.arquivo?`<button class="btn-link" onclick="abrirArquivoRH('${esc(c.arquivo)}')">${esc(c.arquivo_nome||'currículo')}</button> (escolha outro arquivo para substituir)`:'Nenhum arquivo anexado.';
   $('cv-titulo').textContent=c?c.nome:'Novo currículo';
   $('cv-sub').textContent=c?[c.funcao,CV_VINC_LABEL[c.vinculo],c.criado_em&&'cadastrado em '+fmtData(c.criado_em)].filter(Boolean).join(' · '):'Candidatos e freelas que já conhecemos, para não precisar avaliar de novo.';
@@ -9406,6 +9406,100 @@ function abrirCurriculo(id){
   renderPerfilCV();renderCertidoesCV();
   abrirModal('modal-curriculo');
   if(!c)setTimeout(()=>$('cv-nome').focus(),50);
+}
+/* ===== v62.5: lê o currículo enviado e preenche a ficha (só os campos em branco) ===== */
+let cvLeituraVez=0;
+// texto de um .docx (o .docx é um zip; o texto fica em word/document.xml)
+async function textoDoDocx(arquivo){
+  const b=new Uint8Array(await arquivo.arrayBuffer()),dv=new DataView(b.buffer);
+  let fim=-1;for(let i=b.length-22;i>=Math.max(0,b.length-66000);i--)if(dv.getUint32(i,true)===0x06054b50){fim=i;break;}
+  if(fim<0)throw new Error('Arquivo Word inválido.');
+  let p=dv.getUint32(fim+16,true);const n=dv.getUint16(fim+10,true);
+  for(let k=0;k<n;k++){
+    const metodo=dv.getUint16(p+10,true),tam=dv.getUint32(p+20,true),ln=dv.getUint16(p+28,true),le=dv.getUint16(p+30,true),lc=dv.getUint16(p+32,true),ofs=dv.getUint32(p+42,true);
+    const nome=new TextDecoder().decode(b.subarray(p+46,p+46+ln));
+    if(nome==='word/document.xml'){
+      const ini=ofs+30+dv.getUint16(ofs+26,true)+dv.getUint16(ofs+28,true),dados=b.subarray(ini,ini+tam);
+      let xml;
+      if(metodo===0)xml=new TextDecoder().decode(dados);
+      else xml=await new Response(new Blob([dados]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).text();
+      const t=xml.replace(/<w:tab\/>/g,' ').replace(/<w:br[^>]*\/>|<\/w:p>/g,'\n').replace(/<[^>]+>/g,'')
+        .replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&apos;/g,"'").replace(/&amp;/g,'&');
+      return t.split('\n').map(l=>l.replace(/\s+/g,' ').trim()).filter(Boolean);
+    }
+    p+=46+ln+le+lc;
+  }
+  throw new Error('Não encontrei o texto do arquivo Word.');
+}
+const CV_FUNCOES_COMUNS=['mestre de obras','encarregado de obras','encarregado','pedreiro','servente de obras','servente de pedreiro','servente','ajudante de obras','ajudante geral','ajudante','auxiliar de obras','eletricista','encanador','bombeiro hidráulico','pintor','carpinteiro','armador','gesseiro','azulejista','ladrilheiro','soldador','serralheiro','marceneiro','vidraceiro','montador','operador de máquinas','jardineiro','paisagista','auxiliar de limpeza','auxiliar de serviços gerais','servente de limpeza','faxineira','faxineiro','diarista','copeira','copeiro','cozinheira','cozinheiro','porteiro','zelador','vigia','motorista','almoxarife','técnico de segurança do trabalho','técnico em edificações','técnico em meio ambiente','engenheiro civil','engenheira civil','engenheiro ambiental','engenheira ambiental','engenheiro eletricista','arquiteto','arquiteta','desenhista','projetista','estagiário','estagiária','auxiliar administrativo','assistente administrativo','recepcionista','secretária','comprador','supervisor','supervisora'];
+function extrairDadosCurriculo(linhas){
+  const L=linhas.map(l=>String(l).replace(/\s+/g,' ').trim()).filter(Boolean),txt=L.join('\n'),r={};
+  const depoisDe=re=>{for(let i=0;i<L.length;i++){const m=L[i].match(re);if(m){let v=L[i].slice(m.index+m[0].length).replace(/^\s*[:\-–]\s*/,'').trim();
+    if(!v&&L[i+1]&&!/^[^:]{1,30}:/.test(L[i+1]))v=L[i+1];if(v)return v;}}return'';};
+  // e-mail
+  let m=txt.match(/[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}/);if(m)r.email=m[0].toLowerCase().replace(/\.$/,'');
+  // telefone com DDD (dá preferência ao celular)
+  const tels=[...txt.matchAll(/(?:\+?55[\s.]*)?\(?\b([1-9][1-9])\)?[\s.\-]*(9[\s.]?\d{4}|[2-5]\d{3})[\s.\-]?(\d{4})\b/g)].map(x=>(x[1]+x[2]+x[3]).replace(/\D/g,''));
+  if(tels.length)r.telefone=tels.find(t=>t.length===11)||tels[0];
+  // nome: "Nome: …" ou a primeira linha que parece um nome
+  const ehNome=v=>{v=v.replace(/\s+/g,' ').trim();if(v.length<5||v.length>70||/[\d@:|]/.test(v))return false;
+    if(/curr[ií]cul|vitae|resum|dados|pessoa|objetiv|perfil|contato|endere|telefone|celular|e-?mail|experi|forma[cç]|escolar|profiss|qualifica|brasileir|solteir|casad|idade|nascimento|rua |avenida/i.test(v))return false;
+    const p=v.split(' ');return p.length>=2&&p.length<=7&&p.every(w=>/^[A-Za-zÀ-ÿ'´`.\-]+$/.test(w));};
+  let nome=depoisDe(/\bnome(?:\s+completo)?\b/i).split(/\s{2,}|\s[|•–]\s/)[0];
+  if(!ehNome(nome))nome=(L.slice(0,15).find(ehNome)||'');
+  if(nome)r.nome=nome.toUpperCase().replace(/\s+/g,' ').trim();
+  // função: objetivo / cargo pretendido / função / área de interesse
+  const capital=v=>v?v.charAt(0).toUpperCase()+v.slice(1):v;
+  let obj=depoisDe(/\b(?:objetivos?(?:\s+profissional)?|cargo(?:\s+pretendido)?|fun[cç][aã]o(?:\s+pretendida)?|vaga(?:\s+pretendida)?|[aá]rea\s+de\s+(?:interesse|atua[cç][aã]o))\b/i);
+  const conhecidas=[...new Set([...[...document.querySelectorAll('#dl-funcoes option')].map(o=>o.value),...CV_FUNCOES_COMUNS].map(f=>String(f||'').trim()).filter(f=>f.length>=4))].sort((a,b)=>b.length-a.length);
+  const achaConhecida=t=>{const tt=' '+semAcento(t).toLowerCase().replace(/[^a-z ]/g,' ').replace(/\s+/g,' ')+' ';return conhecidas.find(f=>tt.includes(' '+semAcento(f).toLowerCase()+' '));};
+  if(obj){obj=obj.replace(/^(?:atuar|trabalhar)\s+(?:como|na\s+(?:fun[cç][aã]o|[aá]rea)\s+de)\s+/i,'').replace(/^(?:vaga|cargo|fun[cç][aã]o)\s+de\s+/i,'').split(/[.;]/)[0].trim();
+    const k=achaConhecida(obj);r.funcao=obj.length<=45?capital(obj):k?capital(k):'';}
+  if(!r.funcao){const k=achaConhecida(L.slice(0,40).join(' '));if(k)r.funcao=capital(k);}
+  // cidade / bairro
+  const UF='AC|AL|AP|AM|BA|CE|DF|ES|GO|MA|MT|MS|MG|PA|PB|PR|PE|PI|RJ|RN|RS|RO|RR|SC|SP|SE|TO';
+  const limpa=v=>String(v||'').replace(/\b\d{5}-?\d{3}\b/g,'').replace(/\bCEP\b[:\s]*/i,'').replace(/\s*[-\/–,]\s*(?:AC|AL|AP|AM|BA|CE|DF|ES|GO|MA|MT|MS|MG|PA|PB|PR|PE|PI|RJ|RN|RS|RO|RR|SC|SP|SE|TO)\s*$/,'').replace(/[\s,.\-–\/]+$/,'').trim();
+  let cid=limpa(depoisDe(/\bcidade\b/i)),bai=limpa(depoisDe(/\bbairro\b/i));
+  if(!cid){const lin=L.find(l=>new RegExp(`[A-Za-zÀ-ÿ]\\s*[-\\/–,]\\s*(?:${UF})\\b`).test(l)&&!/@/.test(l));
+    if(lin){const antes=lin.replace(/^.*?\b(?:endere[cç]o|resid[eê]ncia|reside\s+em)\b\s*[:\-–]?\s*/i,'').split(new RegExp(`\\s*[-\\/–,]\\s*(?:${UF})\\b`))[0];
+      const partes=antes.split(/\s*[,–]\s*|\s+-\s+/).map(limpa).filter(x=>x&&!/\d/.test(x)&&!/^(?:rua|r\.|av|avenida|travessa|estrada|pra[cç]a)\b/i.test(x));
+      cid=partes.pop()||'';if(!bai&&partes.length)bai=partes.pop();}}
+  if(cid&&cid.length<=40)r.cidade=bai&&bai.length<=40&&norm(bai)!==norm(cid)?`${cid} / ${bai}`:cid;
+  else if(bai&&bai.length<=40)r.cidade=bai;
+  // pretensão e disponibilidade
+  const pret=depoisDe(/\bpretens[aã]o(?:\s+salarial)?\b/i);if(pret){const v=pret.match(/R\$\s*[\d.]+(?:,\d{2})?(?:\s*(?:\/|por)\s*(?:m[eê]s|dia|hora))?/i);r.pretensao=v?v[0]:pret.length<=40?pret:'';}
+  const disp=depoisDe(/\bdisponibilidade(?:\s+de\s+hor[aá]rio)?\b/i);if(disp&&disp.length<=60)r.disponibilidade=disp.replace(/[.;]$/,'');
+  return r;
+}
+async function lerArquivoCurriculo(arq){
+  const info=$('cv-leitura');if(!info)return;const vez=++cvLeituraVez;info.textContent='';
+  if(!arq)return;
+  if(/\.doc$/i.test(arq.name)){info.textContent='Arquivo Word antigo (.doc): não dá para ler sozinho. Preencha a ficha à mão ou envie em PDF/.docx.';return;}
+  info.textContent='Lendo o currículo para preencher a ficha…';
+  let linhas=[];
+  try{
+    if(/\.pdf$/i.test(arq.name)){
+      linhas=await textoDoPdf(arq);
+      if(letrasDoTexto(linhas.join(' '))<80){ // PDF escaneado / foto: lê pela imagem
+        info.textContent='O PDF é uma imagem: lendo pela imagem (pode levar alguns segundos)…';
+        const lib=await carregarPdfJs(),pdf=await lib.getDocument({data:await arq.arrayBuffer()}).promise;
+        for(let n=1;n<=Math.min(pdf.numPages,2);n++)linhas.push(...(await ocrPaginaPdf(await pdf.getPage(n))).split('\n'));
+      }
+    }else if(/\.docx$/i.test(arq.name))linhas=await textoDoDocx(arq);
+    else if(/\.(jpe?g|png)$/i.test(arq.name)){
+      info.textContent='Lendo a foto do currículo (pode levar alguns segundos)…';
+      const T=await carregarTesseract();if(!ocrWorker)ocrWorker=await T.createWorker('por');
+      const{data}=await ocrWorker.recognize(arq);linhas=String(data&&data.text||'').split('\n');
+    }else{info.textContent='';return;}
+  }catch(e){console.error(e);if(vez===cvLeituraVez)info.textContent='Não consegui ler o arquivo para preencher a ficha ('+(e.message||e)+'). Preencha à mão.';return;}
+  finally{await encerrarOcr();}
+  if(vez!==cvLeituraVez)return;
+  const d=extrairDadosCurriculo(linhas);
+  const campos=[['nome','cv-nome','nome'],['telefone','cv-tel','telefone'],['email','cv-email','e-mail'],['funcao','cv-funcao','função'],['cidade','cv-cidade','cidade/bairro'],['pretensao','cv-pret','pretensão'],['disponibilidade','cv-disp','disponibilidade']];
+  const preenchidos=[];
+  campos.forEach(([k,id,rot])=>{const el=$(id);if(!d[k]||!el||el.value.trim())return;el.value=k==='telefone'?fmtTel(d[k]):d[k];preenchidos.push(rot);});
+  info.textContent=preenchidos.length?`Preenchido a partir do arquivo: ${preenchidos.join(', ')}. Confira antes de salvar (campos que já tinham algo não foram trocados).`
+    :(letrasDoTexto(linhas.join(' '))<20?'Não encontrei texto no arquivo. Preencha a ficha à mão.':'Li o arquivo, mas não achei dados novos para os campos em branco.');
 }
 function renderPerfilCV(){
   const box=$('cv-perfil'),Q=QP();
