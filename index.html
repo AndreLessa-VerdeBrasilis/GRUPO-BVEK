@@ -1072,6 +1072,8 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
         <div style="display:flex;gap:8px;flex-wrap:wrap">
           <button class="btn-sec" onclick="abrirModalFuncionarios()">Funcionários</button>
           <button class="btn-sec" id="btn-tipos-doc" onclick="abrirModalTipos()">Tipos de documento</button>
+          <button class="btn-sec" id="btn-trein-doc" onclick="abrirListaTreinamentos()">Treinamentos emitidos</button>
+          <button class="btn-projeto" id="btn-emitir-trein" onclick="abrirEmissaoTreinamento()">Emitir treinamento (NR)</button>
           <button class="btn-novo" id="btn-novo-doc" onclick="abrirModalDocumento()">+ Novo documento</button>
         </div>
       </div>
@@ -1870,6 +1872,7 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
         </div>
       </div>
       <div class="campo full"><label>Observações</label><textarea id="md-obs" rows="2"></textarea></div>
+      <div class="campo full" id="md-trein" style="display:none"></div>
       <div class="campo full" id="md-colinha"></div>
     </div>
     <div id="md-historico-box" style="display:none">
@@ -1883,6 +1886,68 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
       <button class="btn-cancelar" onclick="fecharModal('modal-documento')">Fechar</button>
       <button class="btn-salvar so-edicao" id="md-btn-salvar" onclick="salvarDocumento()">Salvar</button>
     </div>
+  </div>
+</div>
+
+<!-- v61: EMITIR TREINAMENTO (certificado + lista de presença) -->
+<div class="modal-overlay" id="modal-treinamento">
+  <div class="modal modal-lg">
+    <h2 id="tr-titulo">Emitir treinamento</h2>
+    <p class="modal-sub">Escolha o treinamento e os participantes: o CRM gera o <strong>certificado de cada participante</strong> (já cadastrado como documento do funcionário, com validade e aviso de renovação) e a <strong>lista de presença</strong> da turma, prontos para imprimir e assinar. Tudo pode ser editado antes de emitir.</p>
+    <div id="tr-form">
+      <div class="secao">Treinamento</div>
+      <div class="form-grid">
+        <div class="campo full"><label>Tipo de documento (treinamento) *</label><select id="tr-tipo" onchange="mudouTipoTreinamento()"></select><div class="dica">Aparecem os tipos de funcionário que começam com "NR" ou que já têm modelo. Para um treinamento novo (ex.: NR-11), crie o tipo em "Tipos de documento".</div></div>
+        <div class="campo"><label>Norma *</label><input type="text" id="tr-norma" placeholder="Ex.: NR 06"></div>
+        <div class="campo"><label>Carga horária *</label><input type="text" id="tr-carga" placeholder="Ex.: 04 horas"></div>
+        <div class="campo full"><label>Título do treinamento *</label><input type="text" id="tr-tit" placeholder="Ex.: Equipamento de Proteção Individual"></div>
+        <div class="campo"><label>Data de realização *</label><input type="date" id="tr-data" onchange="validadeTreinamento()"></div>
+        <div class="campo"><label>Certificado válido até</label><input type="date" id="tr-validade"><div class="dica" id="tr-validade-dica"></div></div>
+        <div class="campo full"><label>Local de realização *</label><input type="text" id="tr-local" placeholder="Ex.: Rua Conquista, 270 - Jardim Guanabara - Rio de Janeiro/RJ"></div>
+        <div class="campo"><label>Cidade (para a data do certificado)</label><input type="text" id="tr-cidade" placeholder="Rio de Janeiro"></div>
+      </div>
+      <div class="secao">Instrutor</div>
+      <div class="form-grid">
+        <div class="campo"><label>Nome do instrutor *</label><input type="text" id="tr-instrutor"></div>
+        <div class="campo"><label>Formação / cargo</label><input type="text" id="tr-inst-cargo" placeholder="Técnico(a) em Segurança do Trabalho"></div>
+        <div class="campo"><label>Registro profissional</label><input type="text" id="tr-inst-reg" placeholder="Ex.: MTE 0000000"></div>
+      </div>
+      <div class="secao">Empresa que certifica</div>
+      <div class="form-grid">
+        <div class="campo"><label>Razão social *</label><input type="text" id="tr-razao"></div>
+        <div class="campo"><label>Nome fantasia</label><input type="text" id="tr-fantasia"></div>
+        <div class="campo"><label>CNPJ *</label><input type="text" id="tr-cnpj"></div>
+      </div>
+      <div class="secao">Participantes <span class="dica" id="tr-part-cont" style="margin:0;text-transform:none;letter-spacing:0"></span></div>
+      <div class="filtros"><input type="search" id="tr-busca" placeholder="Buscar funcionário" oninput="renderParticipantesTrein()"><button class="btn-link" onclick="marcarTodosTrein(true)">marcar os que aparecem</button><button class="btn-link" onclick="marcarTodosTrein(false)">desmarcar todos</button></div>
+      <div id="tr-participantes" style="max-height:240px;overflow:auto;border:1px solid var(--borda,#e2e2e2);border-radius:8px;padding:6px 10px"></div>
+      <div class="secao">Conteúdo programático</div>
+      <div class="form-grid" style="grid-template-columns:1fr">
+        <div class="campo"><label>Um item por linha (sai no verso do certificado)</label><textarea id="tr-conteudo" rows="8"></textarea></div>
+        <details><summary style="cursor:pointer;font-size:13px;font-weight:600">Texto do certificado (opcional — para mudar a redação)</summary>
+          <div class="campo" style="margin-top:8px"><textarea id="tr-texto" rows="6"></textarea>
+          <div class="dica">Campos que o CRM troca sozinho: {empresa} {cnpj} {nome} {cpf} {funcao} {data} {norma} {titulo} {carga} {local}. Use **texto** para negrito.</div>
+          <button class="btn-link" onclick="$('tr-texto').value=TEXTO_CERT_PADRAO">voltar ao texto padrão</button></div>
+        </details>
+        <div class="campo-check"><input type="checkbox" id="tr-salvar-modelo"><label for="tr-salvar-modelo">Guardar norma, título, carga horária, conteúdo e texto como modelo padrão deste treinamento</label></div>
+      </div>
+    </div>
+    <div id="tr-resultado" style="display:none"></div>
+    <div class="modal-btns">
+      <button class="btn-cancelar" onclick="fecharModal('modal-treinamento')">Fechar</button>
+      <button class="btn-sec" id="tr-btn-previa" onclick="previaTreinamento()">Pré-visualizar</button>
+      <button class="btn-salvar" id="tr-btn-emitir" onclick="emitirTreinamento()">Emitir e guardar</button>
+    </div>
+  </div>
+</div>
+<!-- v61: TREINAMENTOS EMITIDOS -->
+<div class="modal-overlay" id="modal-treinamentos">
+  <div class="modal modal-lg">
+    <h2>Treinamentos emitidos</h2>
+    <p class="modal-sub">Cada turma guarda a lista de presença gerada e, depois de assinada, a lista escaneada. Os certificados ficam nos documentos de cada funcionário.</p>
+    <div class="tabela-wrap"><table class="tabela" id="trl-tabela"></table></div>
+    <input type="file" id="trl-arquivo" accept="application/pdf,.pdf,image/jpeg,image/png" style="display:none" onchange="enviarListaAssinada(this.files&&this.files[0])">
+    <div class="modal-btns"><button class="btn-cancelar" onclick="fecharModal('modal-treinamentos')">Fechar</button></div>
   </div>
 </div>
 
@@ -3821,6 +3886,7 @@ function aplicarPermissoes(){
   mostra('btn-nova-empresa',PERM.admin);
   mostra('btn-novo-doc',PERM.docs);
   mostra('btn-tipos-doc',PERM.docs);
+  mostra('btn-emitir-trein',PERM.docs);mostra('btn-trein-doc',PERM.docs||PERM.rhPessoal);
   mostra('tab-btn-usuarios',PERM.admin);
   mostra('tab-btn-gestao',PERM.gestao);mostra('fin-sub-mensalidades',PERM.mensalidades);
   // v34: Benefícios e Currículos são subabas do RH
@@ -3894,6 +3960,7 @@ async function carregarDocsTudo(){
   if(erro){console.error(erro);if(/tipos_documento|funcionarios|documentos/.test(erro.message||''))avisarMigracaoV11();todosTipos=[];todosFuncionarios=[];todosDocumentos=[];return;}
   todosTipos=t.data||[];todosFuncionarios=f.data||[];todosDocumentos=d.data||[];
   atualizarBadgeDocs();
+  if(PERM.docs||PERM.rhPessoal)carregarTreinamentos(); // v61: turmas de treinamento (lista de presença)
 }
 async function carregarDocumentos(){
   const{data,error}=await sb.from('documentos').select('*').order('data_validade',{ascending:true,nullsFirst:false});
@@ -5267,6 +5334,7 @@ function preencherSelectFuncionarios(selId,valor){
   if(valor)$(selId).value=valor;
 }
 function colinhaDoc(){
+  boxTreinDoc();
   const box=$('md-colinha');if(!box)return;const t=tipoPorId($('md-tipo').value);
   if(!t){box.innerHTML='';return;}
   const f=titularSelecionado()==='funcionario'?funcPorId($('md-func').value):null;
@@ -13125,6 +13193,359 @@ document.addEventListener('DOMContentLoaded',()=>{
   new MutationObserver(ms=>{for(const m of ms)for(const n of m.addedNodes)if(n.nodeType===1){if(n.matches&&n.matches('input[type=file]'))prepararZonaColar(n);else if(n.querySelector&&n.querySelector('input[type=file]'))prepararZonasColar(n);}})
     .observe(document.body,{childList:true,subtree:true});
 });
+/* ================= v61: TREINAMENTOS (NRs) — CERTIFICADO + LISTA DE PRESENÇA ================= */
+// Ao emitir um treinamento, o CRM gera um certificado para cada participante (que vira documento do
+// funcionário, com validade e aviso de renovação) e a lista de presença da turma. O modelo de cada
+// treinamento (norma, título, carga horária, conteúdo e texto) fica em tipos_documento.modelo_treinamento.
+const TEXTO_CERT_PADRAO='**{empresa}**, inscrita no CNPJ sob o nº {cnpj}, certifica que **{nome}**, CPF nº {cpf}, participou e concluiu com aproveitamento, em {data}, o treinamento de Segurança e Saúde no Trabalho referente à **{norma} – {titulo}**, com carga horária de {carga} e o conteúdo programático descrito no verso, realizado em {local}, conforme as exigências da Norma Regulamentadora {norma} do Ministério do Trabalho e Emprego.';
+const TREIN_PADRAO={local:'Rua Conquista, 270 - Jardim Guanabara - Rio de Janeiro/RJ',cidade:'Rio de Janeiro',instrutor_cargo:'Técnico(a) em Segurança do Trabalho',empresa_razao:'Verde Brasilis Gestão e Serviços Ltda.',empresa_fantasia:'Engekat Construções',empresa_cnpj:'27.400.958/0001-26'};
+const PASTA_SST='01_ADMINISTRATIVO/01.3_SST';
+const MESES_EXT=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+let todosTreinamentos=[],trSel=new Set(),v61Ok=true,trResultado=null,trlEnviarId=null;
+function dataExtensoBR(iso){if(!iso)return'';const[a,m,d]=String(iso).slice(0,10).split('-');return`${Number(d)} de ${MESES_EXT[Number(m)-1]} de ${a}`;}
+function ehTipoTreinamento(t){return!!t&&t.categoria==='funcionario'&&t.ativo!==false&&(!!t.modelo_treinamento||/^\s*NR/i.test(t.nome));}
+function modeloTrein(t){
+  const m=(t&&t.modelo_treinamento)||{};let norma=m.norma,titulo=m.titulo;
+  if(!norma&&t){const x=String(t.nome).match(/^\s*NR[\s\-–]*(\d+)/i);if(x)norma='NR '+x[1].padStart(2,'0');}
+  if(!titulo&&t)titulo=String(t.nome).replace(/^\s*NR[\s\-–]*\d+\s*[–\-:]?\s*/i,'').trim();
+  return{norma:norma||'',titulo:titulo||'',carga_horaria:m.carga_horaria||'',conteudo:Array.isArray(m.conteudo)?m.conteudo:[],texto:m.texto||''};
+}
+async function carregarTreinamentos(){
+  const{data,error}=await sb.from('treinamentos').select('*').order('data_realizacao',{ascending:false}).order('numero',{ascending:false});
+  if(error){if(/treinamentos|schema cache|does not exist/i.test(error.message||''))v61Ok=false;else console.warn(error);return false;}
+  v61Ok=true;todosTreinamentos=data||[];return true;
+}
+function avisoV61(){alert('Falta atualizar o banco de dados (v61).\n\nNo Supabase, abra SQL Editor → New query, cole o arquivo supabase/migracao_crm_v61_treinamentos_certificado_lista.sql e clique em Run. Depois recarregue a página.');}
+
+/* ---- janela de emissão ---- */
+async function abrirEmissaoTreinamento(tipoId,funcId){
+  if(!PERM.docs)return;
+  if(!v11Ok){avisarMigracaoV11();return;}
+  await carregarTreinamentos();if(!v61Ok){avisoV61();return;}
+  const tipos=todosTipos.filter(ehTipoTreinamento);
+  preencherSelect($('tr-tipo'),tipos.map(t=>[t.id,t.nome]),'Selecione o treinamento');
+  trSel=new Set(funcId?[funcId]:[]);trResultado=null;
+  const ult=todosTreinamentos[0]||{},v=k=>ult[k]||TREIN_PADRAO[k]||'';
+  $('tr-local').value=v('local');$('tr-cidade').value=v('cidade');
+  $('tr-instrutor').value=ult.instrutor||'';$('tr-inst-cargo').value=v('instrutor_cargo');$('tr-inst-reg').value=ult.instrutor_registro||'';
+  $('tr-razao').value=v('empresa_razao');$('tr-fantasia').value=ult.empresa_razao?(ult.empresa_fantasia||''):TREIN_PADRAO.empresa_fantasia;$('tr-cnpj').value=v('empresa_cnpj');
+  $('tr-data').value=hojeISO();$('tr-busca').value='';
+  $('tr-tipo').value=tipoId&&tipos.some(t=>t.id===tipoId)?tipoId:'';
+  mudouTipoTreinamento();
+  $('tr-form').style.display='';$('tr-resultado').style.display='none';$('tr-resultado').innerHTML='';
+  $('tr-btn-emitir').style.display='';$('tr-btn-previa').style.display='';$('tr-titulo').textContent='Emitir treinamento';
+  renderParticipantesTrein();abrirModal('modal-treinamento');
+}
+function mudouTipoTreinamento(){
+  const t=tipoPorId($('tr-tipo').value),m=modeloTrein(t);
+  $('tr-norma').value=m.norma;$('tr-tit').value=m.titulo;$('tr-carga').value=m.carga_horaria;
+  $('tr-conteudo').value=m.conteudo.join('\n');$('tr-texto').value=m.texto||TEXTO_CERT_PADRAO;
+  $('tr-salvar-modelo').checked=!!t&&!t.modelo_treinamento;
+  validadeTreinamento();
+}
+function validadeTreinamento(){
+  const t=tipoPorId($('tr-tipo').value),d=$('tr-data').value;
+  $('tr-validade').value=t&&t.validade_dias&&d?somarDias(d,t.validade_dias):'';
+  $('tr-validade-dica').textContent=!t?'':t.validade_dias?`Calculada pela validade do tipo (${t.validade_dias} dias). Pode mudar.`:'Este tipo não tem validade padrão: deixe vazio (sem vencimento) ou informe a data da reciclagem.';
+}
+function renderParticipantesTrein(){
+  const b=norm($('tr-busca').value);
+  const l=todosFuncionarios.filter(f=>f.ativo!==false||trSel.has(f.id)).filter(f=>!b||trSel.has(f.id)||norm([f.nome,f.cargo].join(' ')).includes(b)).sort((a,c)=>a.nome.localeCompare(c.nome,'pt-BR'));
+  $('tr-participantes').innerHTML=l.length?l.map(f=>`<label class="campo-check" style="padding:3px 0;cursor:pointer"><input type="checkbox" data-trp="${esc(f.id)}" ${trSel.has(f.id)?'checked':''} onchange="marcarTrein(this)"> <span><strong>${esc(f.nome)}</strong>${f.cargo?' — '+esc(f.cargo):''}${f.cpf?'':' <span class="badge badge-atraso">sem CPF</span>'}</span></label>`).join(''):'<p class="vazio">Nenhum funcionário encontrado.</p>';
+  $('tr-part-cont').textContent=trSel.size?`· ${trSel.size} selecionado(s)`:'';
+}
+function marcarTrein(el){const id=el.dataset.trp;if(el.checked)trSel.add(id);else trSel.delete(id);$('tr-part-cont').textContent=trSel.size?`· ${trSel.size} selecionado(s)`:'';}
+function marcarTodosTrein(v){if(!v)trSel.clear();else document.querySelectorAll('#tr-participantes [data-trp]').forEach(i=>trSel.add(i.dataset.trp));renderParticipantesTrein();}
+function dadosTreinForm(){
+  const g=i=>$(i).value.trim();
+  return{tipo_id:$('tr-tipo').value||null,norma:g('tr-norma'),titulo:g('tr-tit'),carga_horaria:g('tr-carga'),data_realizacao:$('tr-data').value,data_validade:$('tr-validade').value||null,
+    local:g('tr-local'),cidade:g('tr-cidade'),instrutor:g('tr-instrutor'),instrutor_cargo:g('tr-inst-cargo'),instrutor_registro:g('tr-inst-reg'),
+    empresa_razao:g('tr-razao'),empresa_fantasia:g('tr-fantasia'),empresa_cnpj:g('tr-cnpj'),
+    conteudo:$('tr-conteudo').value.split('\n').map(x=>x.replace(/^[\s•●▪\-–*]+/,'').replace(/[;.]\s*$/,'').trim()).filter(Boolean),
+    texto_certificado:$('tr-texto').value.trim()||TEXTO_CERT_PADRAO};
+}
+function participantesTrein(){return[...trSel].map(funcPorId).filter(Boolean).sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR')).map(f=>({funcionario_id:f.id,nome:f.nome,cpf:f.cpf||'',funcao:f.cargo||''}));}
+function validarTrein(T,ps,previa){
+  if(!T.tipo_id&&!previa)return'Escolha o treinamento.';
+  if(!T.norma||!T.titulo)return'Informe a norma e o título do treinamento.';
+  if(!T.carga_horaria)return'Informe a carga horária.';
+  if(!T.data_realizacao)return'Informe a data de realização.';
+  if(T.data_validade&&T.data_validade<T.data_realizacao)return'A validade está antes da data do treinamento.';
+  if(!T.local)return'Informe o local de realização.';
+  if(!T.instrutor)return'Informe o nome do instrutor.';
+  if(!T.empresa_razao||!T.empresa_cnpj)return'Informe a razão social e o CNPJ da empresa que certifica.';
+  if(!ps.length)return'Marque pelo menos um participante.';
+  return'';
+}
+
+/* ---- modelos (HTML de página fixa → PDF) ---- */
+function cssTrein(){
+  const T=temaEmpresa('BVK'),AZ='#'+T.principal,VD='#'+T.destaque,CL='#'+T.claro;
+  return`*{box-sizing:border-box;margin:0;padding:0}html,body{background:#fff}
+  body{font-family:'Times New Roman',Times,Georgia,serif;color:#2f2f2f;-webkit-font-smoothing:antialiased}
+  .pg{position:relative;overflow:hidden;background:#fff}
+  .mold{position:absolute;border:2px solid ${AZ}}.mold2{position:absolute;border:1px solid ${VD}}
+  .mdagua{position:absolute;opacity:.05}
+  .fio{height:3px;background:${VD};width:90px}
+  .rod{position:absolute;left:0;right:0;text-align:center;font-family:Arial,Helvetica,sans-serif}
+  .rod-t{font-size:11px;color:${AZ};letter-spacing:.5px;margin-bottom:6px}
+  .rod-l{display:flex;justify-content:center;gap:34px;align-items:flex-end}
+  .rod-l div{display:flex;flex-direction:column;align-items:center;gap:3px}.rod-l img{height:40px}.rod-l span{font-size:9.5px;color:#555}
+  .rod-lin{height:1px;background:${AZ};margin:0 auto 8px;opacity:.6}
+  /* certificado */
+  .cert .in{position:absolute;left:78px;right:78px;top:50px}
+  .cert .cab{display:flex;align-items:center}.cert .cab-t{flex:1;text-align:center;padding-left:120px}
+  .cert .lg{height:84px}
+  .cert .c1{font-size:46px;letter-spacing:12px;color:${AZ};font-weight:400;line-height:1.1}
+  .cert .c2{font-size:20px;color:${AZ};margin-top:6px;line-height:1.3}
+  .cert .fio{margin:12px auto 0}
+  .cert .num{font-family:Arial,Helvetica,sans-serif;font-size:10.5px;color:#777;margin-top:8px;letter-spacing:.3px}
+  .cert .txt{font-size:19.5px;line-height:1.8;text-align:justify;margin-top:30px;color:#333}
+  .cert .txt strong{color:#1f1f1f}
+  .cert .ass{display:flex;justify-content:space-between;margin-top:78px}
+  .cert .ass>div{width:41%;text-align:center;font-size:14px;line-height:1.45;color:#333}
+  .cert .ass .ln{border-top:1px solid #444;margin-bottom:6px}
+  .cert .ass .p{font-family:Arial,Helvetica,sans-serif;font-size:11.5px;color:#555}
+  .cert .dt{text-align:center;font-size:15.5px;margin-top:30px;color:#333}
+  .cert h3{font-size:20px;color:${AZ};font-weight:700;margin:30px 0 14px}
+  .cert .cols{display:flex;gap:40px}.cert .cols>div{flex:1}
+  .cert .it{display:flex;gap:10px;font-size:15.5px;line-height:1.35;margin-bottom:8px;color:#333}
+  .cert .it i{flex:0 0 6px;height:6px;background:${VD};margin-top:7px}
+  .cert .resumo{display:flex;border:1px solid #c9d6e5;margin-top:22px}
+  .cert .resumo>div{flex:1;padding:8px 12px;border-left:1px solid #c9d6e5}.cert .resumo>div:first-child{border-left:0}
+  /* lista de presença */
+  .lista .in{position:absolute;left:44px;right:44px;top:40px}
+  .lista .cab{display:flex;align-items:center;justify-content:space-between}
+  .lista .lt{font-size:25px;font-weight:700;color:${AZ};letter-spacing:1px}
+  .lista .ls{font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#666;margin-top:3px}
+  .lista .lg{height:66px}.lista .fio{margin:10px 0 14px;width:100%;height:2px}
+  table{border-collapse:collapse;width:100%}
+  .lb{display:block;font-family:Arial,Helvetica,sans-serif;font-size:9px;text-transform:uppercase;letter-spacing:.6px;color:#6b7a8c;margin-bottom:2px}
+  .info td{border:1px solid #9fb3c8;padding:6px 8px;font-size:14px;vertical-align:top;font-weight:700;color:#222}
+  .part{margin-top:12px}
+  .part th{background:${CL};border:1px solid #9fb3c8;font-family:Arial,Helvetica,sans-serif;font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:${AZ};padding:6px;text-align:left}
+  .part td{border:1px solid #9fb3c8;height:31px;padding:2px 7px;font-size:13px;color:#222}
+  .part td.n{text-align:center;color:#666;font-size:12px;width:30px}
+  .part td.cpf{font-family:Arial,Helvetica,sans-serif;font-size:11.5px;white-space:nowrap}
+  .part td.fn{font-family:Arial,Helvetica,sans-serif;font-size:10px;line-height:1.15;color:#444}
+  .aval{margin-top:12px;border:1px solid #9fb3c8}
+  .aval .h{background:${CL};text-align:center;font-family:Arial,Helvetica,sans-serif;font-size:10.5px;letter-spacing:.6px;text-transform:uppercase;font-weight:700;color:${AZ};padding:6px;border-bottom:1px solid #9fb3c8}
+  .aval .c{display:flex}.aval .c>div{padding:8px 14px;font-size:13px;line-height:1.35}
+  .aval .c>div:first-child{flex:1.7;border-right:1px solid #9fb3c8;text-align:center}.aval .c>div:last-child{flex:1}
+  .aval .ln{border-top:1px solid #444;margin:26px 30px 4px}
+  .aval .d{font-family:Arial,Helvetica,sans-serif;font-size:11px;color:#555}
+  .pgn{position:absolute;right:44px;top:18px;font-family:Arial,Helvetica,sans-serif;font-size:9.5px;color:#888}`;
+}
+function rodapeTrein(larg){
+  const E=[['ek','www.engekat.com.br'],['bl','www.brasilimp.com.br'],['vb','www.verdebrasilis.com.br'],['ks','www.katseguros.com.br']];
+  return`<div class="rod" style="bottom:${larg>900?36:30}px"><div class="rod-lin" style="width:${larg>900?620:700}px"></div><div class="rod-t">Conheça nossas empresas</div><div class="rod-l">${E.map(([s,u])=>`<div><img src="${urlLogo(s,'logo')}" alt=""><span>${u}</span></div>`).join('')}</div></div>`;
+}
+function molduraTrein(W,H){
+  const mw=360,mh=Math.round(mw*327/360);
+  return`<div class="mold" style="left:18px;top:18px;width:${W-36}px;height:${H-36}px"></div><div class="mold2" style="left:25px;top:25px;width:${W-50}px;height:${H-50}px"></div>
+  <img class="mdagua" src="${urlLogo('bvk','marca')}" alt="" style="width:${mw}px;height:${mh}px;left:${Math.round((W-mw)/2)}px;top:${Math.round((H-mh)/2)}px">`;
+}
+function textoCertificado(T,p){
+  const emp=T.empresa_razao+(T.empresa_fantasia?`, nome fantasia ${T.empresa_fantasia}`:'');
+  const v={empresa:emp,cnpj:T.empresa_cnpj,nome:p.nome,cpf:p.cpf||'_______________',funcao:p.funcao||'',data:fmtData(T.data_realizacao),norma:T.norma,titulo:T.titulo,carga:T.carga_horaria,local:T.local};
+  return esc(T.texto_certificado||TEXTO_CERT_PADRAO).replace(/\{(\w+)\}/g,(m,k)=>k in v?esc(v[k]):m).replace(/\*\*([\s\S]+?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>');
+}
+function htmlCertificado(T,p,numero){
+  const W=1123,H=794,tit=`${T.norma} – ${T.titulo}`;
+  const cab=`<div class="cab"><div class="cab-t"><div class="c1">CERTIFICADO</div><div class="c2">Treinamento ${esc(tit)}</div><div class="fio"></div>${numero?`<div class="num">Certificado nº ${esc(numero)}</div>`:''}</div><img class="lg" src="${urlLogo('bvk','logo')}" alt=""></div>`;
+  const c=T.conteudo||[],meio=Math.ceil(c.length/2),col=l=>l.map(x=>`<div class="it"><i></i><span>${esc(x)};</span></div>`).join('');
+  const inst=[T.instrutor_cargo,T.instrutor_registro].filter(Boolean).map(esc).join('<br>');
+  const p1=`<div class="pg cert" style="width:${W}px;height:${H}px">${molduraTrein(W,H)}<div class="in">${cab}
+    <div class="txt">${textoCertificado(T,p)}</div>
+    <div class="ass"><div><div class="ln"></div><strong>${esc(p.nome)}</strong><br><span class="p">CPF: ${esc(p.cpf||'_______________')}${p.funcao?' · '+esc(p.funcao):''}</span></div>
+      <div><div class="ln"></div><strong>${esc(T.instrutor)}</strong><br><span class="p">Instrutor(a) responsável técnico(a)${inst?'<br>'+inst:''}</span></div></div>
+    <div class="dt">${esc(T.cidade||'Rio de Janeiro')}, ${esc(dataExtensoBR(T.data_realizacao))}.</div></div>${rodapeTrein(W)}</div>`;
+  const p2=`<div class="pg cert" style="width:${W}px;height:${H}px">${molduraTrein(W,H)}<div class="in">${cab}
+    <h3>Conteúdo programático</h3>
+    <div class="cols"><div>${col(c.slice(0,meio))}</div><div>${col(c.slice(meio))}</div></div>
+    <div class="resumo"><div style="flex:1.8"><span class="lb">Participante</span><strong>${esc(p.nome)}</strong></div><div><span class="lb">Carga horária</span><strong>${esc(T.carga_horaria)}</strong></div><div><span class="lb">Data</span><strong>${esc(fmtData(T.data_realizacao))}</strong></div><div style="flex:1.6"><span class="lb">Instrutor(a)</span><strong>${esc(T.instrutor)}</strong>${T.instrutor_registro?' · '+esc(T.instrutor_registro):''}</div></div>
+    </div>${rodapeTrein(W)}</div>`;
+  return`<!DOCTYPE html><html><head><meta charset="utf-8"><style>${cssTrein()}</style></head><body>${p1}${p2}</body></html>`;
+}
+function htmlListaPresenca(T,ps,turma){
+  const W=794,H=1123,POR=13,pags=Math.max(1,Math.ceil(ps.length/POR)),inst=[T.instrutor_cargo,T.instrutor_registro].filter(Boolean).map(esc).join('<br>');
+  let html='';
+  for(let g=0;g<pags;g++){
+    const l=ps.slice(g*POR,(g+1)*POR);while(l.length<POR)l.push(null);
+    html+=`<div class="pg lista" style="width:${W}px;height:${H}px">${pags>1?`<div class="pgn">Página ${g+1} de ${pags}</div>`:''}<div class="in">
+      <div class="cab"><div><div class="lt">LISTA DE PRESENÇA</div><div class="ls">Treinamento de Segurança e Saúde no Trabalho${turma?` · Turma nº ${esc(String(turma).padStart(4,'0'))}`:''}</div></div><img class="lg" src="${urlLogo('bvk','logo')}" alt=""></div>
+      <div class="fio"></div>
+      <table class="info">
+        <tr><td colspan="3"><span class="lb">Título do treinamento</span>${esc(T.norma)} – ${esc(T.titulo)}</td></tr>
+        <tr><td style="width:44%"><span class="lb">Instrutor responsável técnico</span>${esc(T.instrutor)}</td><td><span class="lb">Data de realização</span>${esc(fmtData(T.data_realizacao))}</td><td><span class="lb">Carga horária</span>${esc(T.carga_horaria)}</td></tr>
+        <tr><td colspan="3"><span class="lb">Local de realização</span>${esc(T.local)}</td></tr>
+      </table>
+      <table class="part"><thead><tr><th style="width:30px">Nº</th><th>Nome</th><th style="width:108px">CPF</th><th style="width:118px">Função</th><th style="width:200px">Assinatura</th></tr></thead><tbody>
+        ${l.map((p,i)=>`<tr><td class="n">${g*POR+i+1}</td><td>${p?esc(p.nome):''}</td><td class="cpf">${p?esc(p.cpf||''):''}</td><td class="fn">${p?esc(p.funcao||''):''}</td><td></td></tr>`).join('')}
+      </tbody></table>
+      <div class="aval"><div class="h">Avaliação do treinamento</div><div class="c">
+        <div><div class="d" style="text-align:left">Declaro que os participantes acima estiveram presentes e concluíram o treinamento com aproveitamento.</div><div class="ln"></div><strong>${esc(T.instrutor)}</strong><br><span class="d">Instrutor(a) responsável técnico(a)${inst?'<br>'+inst:''}</span></div>
+        <div><span class="lb">Data</span><strong>${esc(fmtData(T.data_realizacao))}</strong><div style="margin-top:14px"><span class="lb">Observações</span></div></div>
+      </div></div>
+    </div>${rodapeTrein(W)}</div>`;
+  }
+  return`<!DOCTYPE html><html><head><meta charset="utf-8"><style>${cssTrein()}</style></head><body>${html}</body></html>`;
+}
+// cada parte = [html, largura, altura] (px a 96 dpi; A4 = 794 × 1123). Cada .pg vira uma página A4.
+async function pdfTrein(partes,nome){
+  const L=await carregarPdfLib(),pdf=await L.PDFDocument.create();
+  for(const[html,W,H]of partes){
+    const ifr=document.createElement('iframe');ifr.setAttribute('aria-hidden','true');
+    ifr.style.cssText=`position:fixed;left:-20000px;top:0;width:${W}px;height:${H}px;border:0;background:#fff`;
+    document.body.appendChild(ifr);
+    try{
+      const d=ifr.contentDocument;d.open();d.write(html);d.close();
+      ifr.style.height=Math.max(H,d.documentElement.scrollHeight)+'px';
+      await esperarImagens(d);try{await d.fonts.ready;}catch(e){}
+      await carregarScriptEm(d,location.origin+'/vendor/html2canvas-1.4.1.min.js');
+      const h2c=ifr.contentWindow.html2canvas;if(!h2c)throw new Error('o gerador de imagem não carregou');
+      const pw=W>H?841.89:595.28,ph=W>H?595.28:841.89;
+      for(const pg of d.querySelectorAll('.pg')){
+        const c=await h2c(pg,{scale:2,backgroundColor:'#ffffff',useCORS:true,logging:false,width:W,height:H,windowWidth:W});
+        const blob=await new Promise(ok=>c.toBlob(ok,'image/jpeg',0.9));
+        const img=await pdf.embedJpg(new Uint8Array(await blob.arrayBuffer()));
+        pdf.addPage([pw,ph]).drawImage(img,{x:0,y:0,width:pw,height:ph});
+      }
+    }finally{ifr.remove();}
+  }
+  pdf.setTitle(nome);pdf.setProducer('CRM Grupo BVEK');
+  return new File([await pdf.save()],nome+'.pdf',{type:'application/pdf'});
+}
+async function previaTreinamento(){
+  const T=dadosTreinForm();let ps=participantesTrein();
+  if(!ps.length)ps=[{nome:'Nome do Participante',cpf:'000.000.000-00',funcao:'Função'}];
+  const erro=validarTrein(T,ps,true);if(erro){alert(erro);return;}
+  const w=window.open('','_blank');if(w)w.document.write('<p style="font-family:sans-serif;padding:24px">Gerando a prévia do certificado e da lista de presença…</p>');
+  const b=$('tr-btn-previa');b.disabled=true;
+  try{
+    const prox=todosTreinamentos.reduce((m,t)=>Math.max(m,t.numero||0),0)+1;
+    const f=await pdfTrein([[htmlCertificado(T,ps[0],'(prévia)'),1123,794],[htmlListaPresenca(T,ps,prox),794,1123]],'Prévia do treinamento');
+    const u=URL.createObjectURL(f);if(w)w.location.href=u;else window.open(u,'_blank');
+  }catch(e){console.error(e);if(w)w.close();alert('Não foi possível gerar a prévia:\n'+(e&&e.message||e));}
+  finally{b.disabled=false;}
+}
+
+/* ---- emitir: grava a turma, gera a lista e um certificado (documento) por participante ---- */
+async function emitirTreinamento(){
+  if(!PERM.docs)return;
+  const T=dadosTreinForm(),ps=participantesTrein(),erro=validarTrein(T,ps);if(erro){alert(erro);return;}
+  const tipo=tipoPorId(T.tipo_id);if(!tipo){alert('Escolha o treinamento.');return;}
+  const semCpf=ps.filter(p=>!p.cpf);
+  if(semCpf.length&&!confirm(`Sem CPF na ficha: ${semCpf.map(p=>p.nome).join(', ')}.\nO certificado sai com o CPF em branco (complete a ficha e emita de novo, se precisar).\n\nContinuar?`))return;
+  const jaTem=ps.filter(p=>todosDocumentos.some(d=>(d.situacao||'vigente')==='vigente'&&d.tipo_id===T.tipo_id&&d.funcionario_id===p.funcionario_id&&!d.descricao));
+  if(jaTem.length&&!confirm(`Já têm ${tipo.nome} valendo: ${jaTem.map(p=>p.nome).join(', ')}.\nO certificado anterior vai para o histórico e fica valendo o novo (renovação).\n\nContinuar?`))return;
+  const btn=$('tr-btn-emitir'),rot=btn.textContent;btn.disabled=true;$('tr-btn-previa').disabled=true;
+  const passo=t=>{btn.textContent=t;};
+  try{
+    passo('Gravando a turma…');
+    const{data:tr,error}=await sb.from('treinamentos').insert({...T,participantes:ps,criado_por:usuario?usuario.email:null}).select().single();
+    if(error){if(/treinamentos|schema cache|does not exist/i.test(error.message||''))avisoV61();else erroSB(error);return;}
+    const ano=T.data_realizacao.slice(0,4),num=i=>`${String(tr.numero).padStart(4,'0')}/${ano}-${String(i+1).padStart(2,'0')}`;
+    // lista de presença da turma
+    passo('Gerando a lista de presença…');
+    const nomeLista=nomeArquivoPadrao({area:'SST',tipo:'TRE',desc:'LISTA PRESENCA '+T.norma,data:aaaammdd(T.data_realizacao)});
+    const fLista=await pdfTrein([[htmlListaPresenca(T,ps,tr.numero),794,1123]],nomeLista);
+    const cLista=`treinamentos/${tr.id}/${Date.now()}_${nomeLista}.pdf`;
+    const up=await sb.storage.from(BUCKET_DOCS).upload(cLista,fLista,{contentType:'application/pdf',upsert:false});
+    if(!erroSB(up.error,'A lista de presença não foi guardada (os certificados seguem)')){
+      await sb.from('treinamentos').update({lista_arquivo:cLista,lista_arquivo_nome:nomeLista+'.pdf'}).eq('id',tr.id);
+      enviarAoSharePoint({bucket:BUCKET_DOCS,caminho:cLista,pasta:PASTA_SST,nome:nomeLista+'.pdf'},true);
+    }
+    // certificados
+    const feitos=[],falhas=[];let substituidos=0;
+    for(let i=0;i<ps.length;i++){
+      const p=ps[i],f=funcPorId(p.funcionario_id);passo(`Certificado ${i+1} de ${ps.length}…`);
+      try{
+        const sg=sugestaoNomeDoc({tipoNome:tipo.nome,funcionario:f,complemento:T.norma,emissao:T.data_realizacao});
+        const arq=await pdfTrein([[htmlCertificado(T,p,num(i)),1123,794]],sg.nome);
+        const dados={tipo_id:T.tipo_id,descricao:null,empresa_id:f.empresa_id||null,funcionario_id:f.id,orgao:tipo.orgao||null,numero:num(i),data_emissao:T.data_realizacao,data_validade:T.data_validade,
+          dias_aviso:tipo.dias_aviso??30,observacoes:`Certificado emitido pelo CRM — turma nº ${String(tr.numero).padStart(4,'0')}, instrutor(a) ${T.instrutor}.`,treinamento_id:tr.id,situacao:'vigente',criado_por:usuario?usuario.email:null,atualizado_em:new Date().toISOString()};
+        const outras=await outrasVersoesVigentes(dados,[]);
+        const{data:doc,error:e1}=await sb.from('documentos').insert(dados).select().single();if(e1)throw e1;
+        await substituirVersoesDoc(outras,doc.id);substituidos+=outras.length;
+        const caminho=`${(empresaPorId(f.empresa_id)||{}).sigla||'GERAL'}/${doc.id}/${Date.now()}_${sg.nome}.pdf`;
+        const{error:e2}=await sb.storage.from(BUCKET_DOCS).upload(caminho,arq,{contentType:'application/pdf',upsert:false});if(e2)throw e2;
+        const{error:e3}=await sb.from('documentos').update({arquivo:caminho,arquivo_nome:sg.nome+'.pdf'}).eq('id',doc.id);if(e3)throw e3;
+        enviarAoSharePoint({bucket:BUCKET_DOCS,caminho,pasta:sg.pasta,nome:sg.nome+'.pdf'},true);
+        p.documento_id=doc.id;feitos.push({p,arq});
+      }catch(e){console.error(e);falhas.push(`${p.nome}: ${e&&e.message||e}`);}
+    }
+    await sb.from('treinamentos').update({participantes:ps,atualizado_em:new Date().toISOString()}).eq('id',tr.id);
+    // modelo padrão do treinamento
+    if($('tr-salvar-modelo').checked){
+      const modelo={norma:T.norma,titulo:T.titulo,carga_horaria:T.carga_horaria,conteudo:T.conteudo};if(T.texto_certificado!==TEXTO_CERT_PADRAO)modelo.texto=T.texto_certificado;
+      const{error:e4}=await sb.from('tipos_documento').update({modelo_treinamento:modelo}).eq('id',T.tipo_id);
+      if(e4)console.warn('modelo do treinamento',e4);else{const{data}=await sb.from('tipos_documento').select('*').order('ordem').order('nome');todosTipos=data||todosTipos;}
+    }
+    // todos os certificados num PDF só, para imprimir de uma vez
+    passo('Preparando para imprimir…');
+    let todos=null;
+    try{const L=await carregarPdfLib(),all=await L.PDFDocument.create();
+      for(const x of feitos){const src=await L.PDFDocument.load(await x.arq.arrayBuffer());(await all.copyPages(src,src.getPageIndices())).forEach(pg=>all.addPage(pg));}
+      if(feitos.length)todos=new File([await all.save()],'Certificados.pdf',{type:'application/pdf'});}catch(e){console.warn(e);}
+    trResultado={lista:up.error?null:fLista,todos,certs:feitos.map(x=>x.arq)};
+    await carregarDocumentos();await carregarTreinamentos();renderTabAtual();
+    $('tr-form').style.display='none';$('tr-btn-emitir').style.display='none';$('tr-btn-previa').style.display='none';
+    $('tr-titulo').textContent=`Turma nº ${String(tr.numero).padStart(4,'0')} emitida`;
+    $('tr-resultado').style.display='';
+    $('tr-resultado').innerHTML=`<div class="info-box" style="display:block"><strong>${esc(T.norma)} – ${esc(T.titulo)}</strong> · ${esc(fmtData(T.data_realizacao))}<br>
+      ${feitos.length} certificado(s) cadastrado(s) nos documentos dos funcionários${T.data_validade?`, válidos até ${esc(fmtData(T.data_validade))}`:''}.${substituidos?` ${substituidos} certificado(s) anterior(es) foram para o histórico.`:''}</div>
+      ${falhas.length?`<div class="info-box" style="display:block;background:#f8d7da;color:#842029"><strong>Não foi possível emitir:</strong><br>${falhas.map(esc).join('<br>')}</div>`:''}
+      <div class="secao">Imprimir e assinar</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">${trResultado.lista?'<button class="btn-projeto" onclick="abrirResultadoTrein(\'lista\')">Abrir a lista de presença</button>':''}${todos?'<button class="btn-projeto" onclick="abrirResultadoTrein(\'todos\')">Abrir todos os certificados</button>':''}</div>
+      ${feitos.length>1?`<div class="sub-lista" style="margin-top:10px">${feitos.map((x,i)=>`<div class="sub-item"><span>${esc(x.p.nome)} <span class="dica" style="display:inline">certificado nº ${esc(num(ps.indexOf(x.p)))}</span></span><button class="btn-link" onclick="abrirResultadoTrein(${i})">abrir</button></div>`).join('')}</div>`:''}
+      <p class="dica" style="margin-top:10px">Depois de assinados: anexe a lista escaneada em "Treinamentos emitidos" e, se quiser, troque o arquivo do certificado no documento do funcionário pela versão assinada. Os arquivos também foram copiados para o SharePoint (pasta de cada colaborador e ${esc(caminhoBonito(PASTA_SST))}), quando a ligação está ativa.</p>`;
+    toast(`Treinamento emitido: ${feitos.length} certificado(s) e a lista de presença`);
+  }finally{btn.disabled=false;btn.textContent=rot;$('tr-btn-previa').disabled=false;}
+}
+function abrirResultadoTrein(q){
+  if(!trResultado)return;const f=q==='lista'?trResultado.lista:q==='todos'?trResultado.todos:trResultado.certs[q];
+  if(f)window.open(URL.createObjectURL(f),'_blank');
+}
+
+/* ---- no cadastro do documento: atalho para emitir e ligação com a turma ---- */
+function boxTreinDoc(){
+  const box=$('md-trein');if(!box)return;
+  const t=tipoPorId($('md-tipo').value),func=titularSelecionado()==='funcionario';
+  const d=docEditandoId?todosDocumentos.find(x=>x.id===docEditandoId):null,partes=[];
+  if(d&&d.treinamento_id){const tr=todosTreinamentos.find(x=>x.id===d.treinamento_id);
+    partes.push(`Certificado emitido pelo CRM${tr?` (turma nº ${esc(String(tr.numero).padStart(4,'0'))}, ${esc(fmtData(tr.data_realizacao))}, instrutor(a) ${esc(tr.instrutor||'')})`:''}.${tr&&tr.lista_arquivo?` <a href="#" onclick="abrirArquivoDoc('${esc(tr.lista_arquivo)}');return false">Lista de presença</a>`:''}${tr&&tr.lista_assinada_arquivo?` · <a href="#" onclick="abrirArquivoDoc('${esc(tr.lista_assinada_arquivo)}');return false">lista assinada</a>`:''}`);}
+  if(func&&ehTipoTreinamento(t)&&PERM.docs&&(!d||(d.situacao||'vigente')==='vigente'))
+    partes.push(`<button class="btn-projeto" onclick="emitirDoDocumento()">${d?'Emitir certificado novo (renovação)':'Gerar certificado e lista de presença'}</button> <span class="dica" style="display:inline">o CRM preenche pelo modelo do treinamento e cadastra o documento sozinho</span>`);
+  box.style.display=partes.length?'':'none';box.innerHTML=partes.length?`<div class="info-box" style="display:block">${partes.join('<br>')}</div>`:'';
+}
+function emitirDoDocumento(){const tipo=$('md-tipo').value,f=$('md-func').value;fecharModal('modal-documento');abrirEmissaoTreinamento(tipo,f||null);}
+
+/* ---- turmas emitidas ---- */
+async function abrirListaTreinamentos(){
+  await carregarTreinamentos();if(!v61Ok){avisoV61();return;}
+  renderListaTreinamentos();abrirModal('modal-treinamentos');
+}
+function renderListaTreinamentos(){
+  $('trl-tabela').innerHTML='<thead><tr><th>Turma</th><th>Data</th><th>Treinamento</th><th>Instrutor(a)</th><th class="num">Participantes</th><th>Lista de presença</th></tr></thead><tbody>'+
+    (todosTreinamentos.length?todosTreinamentos.map(t=>{const ps=t.participantes||[];return`<tr><td>${esc(String(t.numero).padStart(4,'0'))}</td><td style="white-space:nowrap">${esc(fmtData(t.data_realizacao))}</td>
+      <td><strong>${esc(t.norma||'')}</strong> – ${esc(t.titulo||'')}<div class="dica" style="margin:2px 0 0">${esc(ps.map(p=>p.nome).join(', '))}</div></td><td>${esc(t.instrutor||'')}</td><td class="num">${ps.length}</td>
+      <td style="white-space:nowrap">${t.lista_arquivo?`<a href="#" onclick="abrirArquivoDoc('${esc(t.lista_arquivo)}');return false">gerada</a>`:''}${t.lista_assinada_arquivo?` · <a href="#" onclick="abrirArquivoDoc('${esc(t.lista_assinada_arquivo)}');return false">assinada</a>`:t.lista_arquivo?' · <span class="badge badge-hoje">falta a assinada</span>':''}${PERM.docs?`<br><button class="btn-link" onclick="escolherListaAssinada('${esc(t.id)}')">${t.lista_assinada_arquivo?'trocar a assinada':'anexar a assinada'}</button>`:''}</td></tr>`;}).join('')
+      :'<tr><td colspan="6" class="vazio">Nenhum treinamento emitido ainda.</td></tr>')+'</tbody>';
+}
+function escolherListaAssinada(id){trlEnviarId=id;$('trl-arquivo').value='';$('trl-arquivo').click();}
+async function enviarListaAssinada(f){
+  if(!f||!trlEnviarId||!PERM.docs)return;
+  if(!/\.(pdf|jpe?g|png)$/i.test(f.name)||f.size>20*1024*1024){alert('Envie PDF, JPG ou PNG de até 20 MB.');return;}
+  const t=todosTreinamentos.find(x=>x.id===trlEnviarId);if(!t)return;
+  const ext=(f.name.match(/\.[a-z0-9]+$/i)||['.pdf'])[0].toLowerCase();
+  const nome=nomeArquivoPadrao({area:'SST',tipo:'TRE',desc:'LISTA PRESENCA ASSINADA '+(t.norma||''),data:aaaammdd(t.data_realizacao)})+ext;
+  const caminho=`treinamentos/${t.id}/${Date.now()}_${nome}`;
+  const{error}=await sb.storage.from(BUCKET_DOCS).upload(caminho,f,{contentType:f.type||undefined,upsert:false});if(erroSB(error,'A lista não foi enviada'))return;
+  const{error:e2}=await sb.from('treinamentos').update({lista_assinada_arquivo:caminho,lista_assinada_nome:nome,atualizado_em:new Date().toISOString()}).eq('id',t.id);if(erroSB(e2))return;
+  enviarAoSharePoint({bucket:BUCKET_DOCS,caminho,pasta:PASTA_SST,nome},true);
+  await carregarTreinamentos();renderListaTreinamentos();toast('Lista de presença assinada guardada');
+}
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){const abertos=[...document.querySelectorAll('.modal-overlay.aberto')];if(abertos.length)fecharModal(abertos[abertos.length-1].id);}});
 registrarApp();
 sb.auth.getSession().then(({data:{session}})=>{if(session)iniciarApp();});

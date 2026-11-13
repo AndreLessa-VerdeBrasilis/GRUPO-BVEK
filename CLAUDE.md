@@ -26,7 +26,7 @@ Sempre responda em português. O dono do sistema é o André Lessa (sócio do Gr
 1. **Antes de mexer**, leia o `index.html` atual e as migrações em `supabase/`. Não reescreva o que já funciona; faça a menor mudança que resolve.
 2. **Decisões do André**: se algo exigir regra de negócio, nome, campo novo ou mudança de comportamento visível, pergunte antes de implementar.
 3. **Banco de dados**:
-   - Toda mudança de banco vira um arquivo novo em `supabase/` no formato `migracao_crm_vNN_descricao.sql`, com o próximo número (confira o maior existente; em 13/nov/2026 a última era a v60).
+   - Toda mudança de banco vira um arquivo novo em `supabase/` no formato `migracao_crm_vNN_descricao.sql`, com o próximo número (confira o maior existente; em 13/nov/2026 a última era a v61).
    - A migração precisa poder rodar mais de uma vez sem duplicar nada (`if not exists`, `where not exists`, `create or replace`, `on conflict do nothing`).
    - Termine o arquivo com um `select` que permita ao André conferir o resultado.
    - **Funil só do administrador (desde a v46):** propostas (`cards`, `itens_proposta`, histórico), contratos fixos, valores e PDFs das propostas só chegam ao Administrador — o banco não manda para os outros perfis. Antes (v36) a regra era: o perfil Comercial não recebe `cards.valor_estimado`, `cards.composicao`, `itens_proposta.valor_unitario/valor_total` nem `contratos_recorrentes.valor_mensal/custo_mensal`. O front-end lê propostas, itens e contratos pelas funções `bvek_cards`, `bvek_itens_proposta` e `bvek_contratos` (nunca `select('*')` direto nessas tabelas). Migração que criar coluna nova nessas três tabelas deve terminar com `select public.bvek_proteger_valores();`.
@@ -110,3 +110,6 @@ Boa parte disto já foi implementada nas versões v11 a v18 (acessos, documentos
 - Campos de enviar arquivo aceitam colar (Ctrl+V ou botão direito → Colar); print colado em campo só de PDF vira PDF.
 - Gerar proposta guarda o PDF sozinho na proposta e em `03_CLIENTES/C###_NOME/02_PROPOSTAS` (html2canvas em `vendor/` + pdf-lib).
 - Normas ISO: versões do texto de cada requisito em `iso_requisitos_versoes`, com comparativo (o que entrou, saiu e mudou).
+
+**Treinamentos (v61)**
+- Documentos e certidões → "Emitir treinamento (NR)": gera o certificado de cada participante (vira documento do funcionário, com validade e aviso) e a lista de presença da turma (tabela `treinamentos`, `documentos.treinamento_id`). Modelo de cada NR (norma, título, carga horária, conteúdo, texto) em `tipos_documento.modelo_treinamento`. ASO não é gerado (vem da clínica).
