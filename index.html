@@ -11967,7 +11967,7 @@ function reescalarItens(itens,preco){
   if(u&&dif){u.valor_unitario=r2(u.valor_unitario+dif/n0(u.quantidade));u.valor_total=r2(u.valor_unitario*n0(u.quantidade));}
   return itens;
 }
-function textoPagBase(p){if(!p||!p.tipo)return'';if(p.tipo==='outra')return p.texto||'';try{return textoPagamento({tipo:p.tipo,periodo:p.periodo||'mensal',sinal:n0(p.sinal_pct)||null,dias:p.dias==null?null:n0(p.dias)});}catch(e){return p.texto||p.tipo;}}
+function textoPagBase(p){if(!p||!p.tipo)return'';if(p.tipo==='outra')return p.texto||'';try{return textoPagamento({tipo:p.tipo,periodo:p.periodo||'mensal',sinal:n0(p.sinal_pct)||null,dias:n0(p.dias)>0?n0(p.dias):null});}catch(e){return p.texto||p.tipo;}}
 function empresaDaBase(d){const e=d.empresa_sigla&&todasEmpresas.find(x=>String(x.sigla||'').toUpperCase()===d.empresa_sigla);return e?e.id:'';}
 function clienteDaBase(d){
   const doc=String(d.cliente_documento||'').replace(/\D/g,'');
@@ -12016,7 +12016,7 @@ async function aplicarPropostaBase(){
     set('card-titulo',d.titulo);set('card-escopo',d.escopo);set('card-obs',d.premissas);set('card-nota1',d.nota1);set('card-nota2',d.nota2);
     if(d.prazo&&n0(d.prazo.numero)>0){set('card-prazo',Math.round(n0(d.prazo.numero)));if(d.prazo.unidade)$('card-prazo-unid').value=d.prazo.unidade;}
     if(n0(d.validade_dias)>0)set('card-validade',Math.round(n0(d.validade_dias)));
-    const p=d.pagamento||{};if(p.tipo){const pg={tipo:p.tipo,periodo:p.periodo||'mensal',sinal:n0(p.sinal_pct)||null,dias:p.dias==null?null:n0(p.dias)};if(p.tipo==='outra')pg.texto=p.texto;
+    const p=d.pagamento||{};if(p.tipo){const pg={tipo:p.tipo,periodo:p.periodo||'mensal',sinal:n0(p.sinal_pct)||null,dias:n0(p.dias)>0?n0(p.dias):null};if(p.tipo==='outra')pg.texto=p.texto;
       preencherPagamentoForm(pg,p.tipo==='outra'?p.texto:'');marcarPreenchido('card-pag-tipo');}
     feitos.push('objeto, escopo, premissas, prazo e pagamento');
   }

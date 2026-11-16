@@ -27,7 +27,8 @@ const CORS = {
 const json = (b: unknown, s = 200) =>
   new Response(JSON.stringify(b), { status: s, headers: { ...CORS, "Content-Type": "application/json" } });
 
-const num = { type: ["number", "null"] };
+// números sem "null" (a API limita campos com mais de um tipo): 0 = não informado
+const num = { type: "number" };
 const txt = { type: "string" };
 const obj = (props: Record<string, unknown>) => ({ type: "object", properties: props, required: Object.keys(props), additionalProperties: false });
 const lista = (item: unknown) => ({ type: "array", items: item });
@@ -77,7 +78,7 @@ Você recebe uma proposta comercial pronta, feita em outro formato (muitas vezes
 
 O nosso modelo de proposta já tem, fixos, a carta de apresentação, os segmentos, os seguros, tributos, faturamento, considerações finais, assinaturas e o aceite. NÃO repita esses textos institucionais nos campos. O PDF final tem as seções: Objeto · Escopo de fornecimento · Planilha de preços (com subtotais por etapa) · Resumo por etapa · Equipe e equipamentos previstos · Premissas e esclarecimentos · Condições comerciais.
 
-Regras de cada campo:
+Regras de cada campo (número desconhecido ou não informado = 0):
 - titulo: o objeto em uma frase curta, começando com o serviço (ex.: "Retrofit do laboratório — térreo"). Sem o nome da nossa empresa, sem número de proposta.
 - empresa_sigla: a empresa do grupo que executa (pelo tipo de serviço ou pelo nome na proposta); "" se não der para saber.
 - cliente_nome / cliente_documento (CNPJ ou CPF do CLIENTE, nunca o nosso): "" se não houver.
@@ -87,9 +88,9 @@ Regras de cada campo:
 - nota1 e nota2: duas observações curtas e importantes que a proposta traga (ex.: chuva, paralisação, horário); "" se não houver.
 - prazo: prazo de execução (número + unidade). validade_dias: validade da proposta em dias.
 - pagamento: classifique em medicao (por medição), conclusao (após a conclusão), sinal_conclusao (sinal + saldo na conclusão), sinal_medicao (sinal + saldo por medição) ou outra (texto livre em "texto"). sinal_pct, dias (prazo para pagar) e periodo quando houver.
-- itens: a planilha de preços no nosso padrão. Agrupe em etapas: a linha de etapa tem tipo "etapa", item "1", "2"… e descrição em poucas palavras, sem quantidade e sem valores (null). Os itens da etapa têm tipo "item", item "1.1", "1.2"…, descrição clara, unidade (m², m, un, vb, mês, diária, h, kg, m³…), quantidade, preço unitário e total. Se a proposta não tiver etapas, crie etapas lógicas. Use os preços que a proposta traz (finais, já com tudo); se um item não tiver preço, deixe null. Nunca mostre margem de lucro, BDI ou impostos separados como item: se a proposta tiver linhas de BDI/lucro/impostos, distribua esse valor proporcionalmente nos preços unitários e avise em "alertas".
-- valor_total: o valor global da proposta (null se não houver).
-- composicao: o que é preciso para executar, para o CRM calcular o custo com a nossa base. Equipe: função, quantidade de pessoas e dias (null = o período todo). Use, quando corresponder, exatamente os nomes de função da lista fornecida. Materiais e equipamentos: descrição (use o nome da lista de materiais quando for o mesmo item), unidade e quantidade. Terceiros e mobilização: descrição e valor só se a proposta disser o custo (senão null). Dias úteis, sábados e domingos/feriados de trabalho pelo prazo e pelo cronograma (ex.: 1 mês de seg a sex ≈ 22 dias úteis); turno noturno só se a proposta disser. documentos: exigências documentais do cliente que estejam na lista de documentos (ex.: ASO, NR-35, PGR), com o nome exato da lista. tipo_cliente: um nome da lista de tipos de cliente, ou "". Se não houver informação para estimar algo, deixe vazio — não invente números sem base.
+- itens: a planilha de preços no nosso padrão. Agrupe em etapas: a linha de etapa tem tipo "etapa", item "1", "2"… e descrição em poucas palavras, quantidade e valores 0. Os itens da etapa têm tipo "item", item "1.1", "1.2"…, descrição clara, unidade (m², m, un, vb, mês, diária, h, kg, m³…), quantidade, preço unitário e total. Se a proposta não tiver etapas, crie etapas lógicas. Use os preços que a proposta traz (finais, já com tudo); se um item não tiver preço, deixe 0. Nunca mostre margem de lucro, BDI ou impostos separados como item: se a proposta tiver linhas de BDI/lucro/impostos, distribua esse valor proporcionalmente nos preços unitários e avise em "alertas".
+- valor_total: o valor global da proposta (0 se não houver).
+- composicao: o que é preciso para executar, para o CRM calcular o custo com a nossa base. Equipe: função, quantidade de pessoas e dias (0 = o período todo). Use, quando corresponder, exatamente os nomes de função da lista fornecida. Materiais e equipamentos: descrição (use o nome da lista de materiais quando for o mesmo item), unidade e quantidade. Terceiros e mobilização: descrição e valor só se a proposta disser o custo (senão 0). Dias úteis, sábados e domingos/feriados de trabalho pelo prazo e pelo cronograma (ex.: 1 mês de seg a sex ≈ 22 dias úteis); turno noturno só se a proposta disser. documentos: exigências documentais do cliente que estejam na lista de documentos (ex.: ASO, NR-35, PGR), com o nome exato da lista. tipo_cliente: um nome da lista de tipos de cliente, ou "". Se não houver informação para estimar algo, deixe vazio — não invente números sem base.
 - os: detalhe da execução para a equipe (sai só na Ordem de Serviço, sem valores): condições do local, o que está incluído, o que NÃO está incluído, como deve ficar no final, quando parar e consultar o responsável, cuidados de segurança (EPI, NR, isolamento). "" quando a proposta não disser.
 - alertas: avisos curtos para quem vai revisar (ex.: "a proposta original mostrava BDI de 25% — diluído nos preços", "item 2.3 sem preço", "a soma dos itens difere do valor global", "prazo não informado").
 
