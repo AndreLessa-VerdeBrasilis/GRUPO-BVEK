@@ -1497,6 +1497,13 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
           <div class="info" id="card-arquivo-info">Envie o PDF da proposta: o arquivo fica guardado no atendimento e o CRM tenta preencher os campos sozinho (confira os campos destacados em amarelo).</div>
         </div>
       </div>
+      <!-- v63: proposta pronta em outro formato (feita com IA, de terceiros…) adaptada ao nosso modelo -->
+      <div class="campo full so-edicao so-lucro"><label>Usar proposta pronta como base <span style="font-weight:400;color:var(--texto2)">(PDF ou Word em outro formato)</span></label>
+        <div class="caixa-pdf">
+          <input type="file" id="card-base-arquivo" accept="application/pdf,.pdf,.docx" onchange="lerPropostaBase(this.files[0]);this.value=''">
+          <div class="info" id="card-base-info">A IA lê a proposta inteira e monta no nosso modelo: objeto, escopo, planilha por etapa, premissas, prazo, pagamento, composição de preço com a nossa base e o detalhe da OS. Você confere antes de aplicar. O arquivo não é guardado.</div>
+        </div>
+      </div>
       <div class="campo full"><label>Título / Objeto da proposta *</label><input type="text" id="card-titulo" placeholder="Ex: Retrofit Laboratório Arkema — Térreo"></div>
       <div class="campo"><label>Valor total (R$)</label><input type="text" inputmode="numeric" id="card-valor" placeholder="0,00" oninput="mascaraMoeda(this)"></div>
       <div class="campo"><label>Chance de fechar</label>
@@ -1633,6 +1640,31 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
       <button class="btn-sec so-edicao" onclick="aplicarComposicao('guardar')">Guardar composição</button>
       <button class="btn-sec so-edicao" onclick="aplicarComposicao('preco')">Usar o preço no card</button>
       <button class="btn-salvar so-edicao" onclick="aplicarComposicao('itens')">Gerar itens do orçamento</button>
+    </div>
+  </div>
+</div>
+<!-- MODAL PROPOSTA PRONTA COMO BASE (v63) -->
+<div class="modal-overlay" id="modal-base-prop">
+  <div class="modal modal-lg" style="max-width:1000px">
+    <h2>Proposta pronta adaptada ao nosso modelo</h2>
+    <p class="modal-sub" id="bp-sub"></p>
+    <div class="info-box" id="bp-alertas" style="display:none;background:#fffbea;line-height:1.5"></div>
+    <div class="secao">O que levar para a proposta</div>
+    <div class="campo-check"><input type="checkbox" id="bp-textos" checked><label for="bp-textos">Objeto, cliente, empresa, escopo, premissas, notas, prazo, validade e pagamento</label></div>
+    <div class="campo" style="margin-top:10px"><label>Preços e itens do orçamento</label>
+      <select id="bp-precos" onchange="renderPreviaBase()">
+        <option value="proposta">Manter os preços da proposta enviada (planilha por etapa no nosso padrão)</option>
+        <option value="composicao">Recalcular pela nossa composição de preço (custos da base + BDI dos Parâmetros)</option>
+        <option value="nenhum">Não mexer nos itens nem no valor</option>
+      </select>
+      <div class="dica" id="bp-precos-dica"></div>
+    </div>
+    <div class="campo-check"><input type="checkbox" id="bp-comp" checked><label for="bp-comp">Guardar a composição de preço (equipe, materiais, equipamentos, dias) — a equipe e os equipamentos saem na proposta</label></div>
+    <div class="campo-check"><input type="checkbox" id="bp-os" checked><label for="bp-os">Detalhe da execução da OS (condições do local, incluído / não incluído, segurança) — só preenche o que estiver em branco</label></div>
+    <div id="bp-previa"></div>
+    <div class="modal-btns">
+      <button class="btn-cancelar" onclick="fecharModal('modal-base-prop')">Cancelar</button>
+      <button class="btn-salvar" onclick="aplicarPropostaBase()">Aplicar na proposta</button>
     </div>
   </div>
 </div>
@@ -4993,6 +5025,7 @@ async function gerarNumeroProposta(empresaId,clienteId){
 async function abrirModalCard(id=null){
   if(!PERM.funilVer){toast('Seu perfil não acessa o funil de propostas');return;}
   cardEditandoId=id;cardOriginal=null;itensLocais=[];contatosDoCliente=[];composicaoLocal=null;$('cp-card-resumo').style.display='none';
+  baseProp=null;osBasePendente=null;{const bi=$('card-base-info');if(bi)bi.textContent='A IA lê a proposta inteira e monta no nosso modelo: objeto, escopo, planilha por etapa, premissas, prazo, pagamento, composição de preço com a nossa base e o detalhe da OS. Você confere antes de aplicar. O arquivo não é guardado.';}
   ['card-cliente','card-titulo','card-responsavel','card-valor','card-fechamento','card-prazo','card-escopo','card-pagamento','card-obs','card-nota1','card-nota2','card-dias','nct-nome','nct-cargo','nct-tel','nct-email','card-motivo-detalhe','ca-desc','ca-data'].forEach(i=>{$(i).value='';});
   $('card-validade').value='30';$('card-pct-mao').value='30';$('card-pct-ins').value='70';
   $('card-prazo-unid').value='meses';preencherPagamentoForm(null,'');
@@ -5209,6 +5242,7 @@ async function salvarCard(){
       if(!ok)return;
     }
     if(!await salvarImagensProposta(savedId,dados.numero_proposta||(cardOriginal&&cardOriginal.numero_proposta)))return;
+    if(osBasePendente)await gravarOSBase(savedId); // v63: detalhe da OS lido da proposta base
     const virouFechada=etapa==='fechada'&&cardOriginal&&cardOriginal.etapa!=='fechada'&&!cardOriginal.projeto_id;
     fecharModal('modal-card');
     await carregarCards();atualizarDatalists();renderTabAtual();verificarAlertas();
@@ -11857,6 +11891,167 @@ function resumoComposicaoNoCard(){
   const c=composicaoLocal,el=$('cp-card-resumo');if(!c||!c.resultado||!PERM.verLucro){el.style.display='none';return;}
   el.style.display='block';
   el.innerHTML=`Composição${c.tipo_cliente?' · '+esc(c.tipo_cliente):''}: custo direto <strong>R$ ${esc(fmtMoeda(c.resultado.custo_direto))}</strong> · BDI ${esc(fmtPct(c.resultado.bdi))} · preço sugerido <strong>R$ ${esc(fmtMoeda(c.resultado.preco))}</strong>${c.atualizado_em?` <span class="dica" style="margin:0">(${esc(fmtDataHora(c.atualizado_em))}${c.atualizado_por?' · '+esc(c.atualizado_por):''})</span>`:''}`;
+}
+
+/* ================= PROPOSTA PRONTA COMO BASE (v63) ================= */
+// Lê uma proposta feita em outro formato (PDF/Word) pela função "ler-proposta" (IA) e adapta ao nosso gerador.
+// Os custos da composição vêm SEMPRE da nossa base (Parâmetros e Fornecedores), nunca da IA.
+let baseProp=null,osBasePendente=null;
+function base64DeBytes(b){let s='';for(let i=0;i<b.length;i+=0x8000)s+=String.fromCharCode(...b.subarray(i,i+0x8000));return btoa(s);}
+async function lerPropostaBase(f){
+  if(!f)return;
+  if(!PERM.verLucro){alert('Só administradores usam esta leitura (propostas e custos).');return;}
+  const info=$('card-base-info'),pdf=/\.pdf$/i.test(f.name)||f.type==='application/pdf',docx=/\.docx$/i.test(f.name);
+  if(!pdf&&!docx){alert('Envie a proposta em PDF ou Word (.docx).');return;}
+  if(f.size>20*1024*1024){alert('Arquivo maior que 20 MB.');return;}
+  if(!precoCfg)await carregarPrecoCfg();
+  if(typeof carregarFornecedores==='function'&&!todosMateriais.length)try{await carregarFornecedores();}catch(e){}
+  info.innerHTML=`Lendo <strong>${esc(f.name)}</strong> e adaptando ao nosso modelo… pode levar de 30 segundos a 2 minutos. Não feche a proposta.`;
+  const corpo={nome:f.name,contexto:{funcoes:((precoCfg&&precoCfg.funcoes)||[]).map(x=>x.nome),tipos_cliente:((precoCfg&&precoCfg.tipos_cliente)||[]).map(x=>x.nome),
+    documentos:((precoCfg&&precoCfg.documentos)||[]).map(x=>x.nome),materiais:(todosMateriais||[]).filter(m=>m.ativo!==false).map(m=>m.nome)}};
+  try{
+    if(pdf)corpo.pdf_base64=base64DeBytes(new Uint8Array(await f.arrayBuffer()));
+    else corpo.texto=(await textoDoDocx(f)).join('\n');
+  }catch(e){console.error(e);info.textContent='Não consegui abrir o arquivo: '+(e.message||e);return;}
+  const{data,error}=await sb.functions.invoke('ler-proposta',{body:corpo});
+  let erro=data&&data.erro;
+  if(error&&!erro){try{const j=await error.context.json();erro=j.erro;}catch(e){erro=error.message;}}
+  if(erro||!data||!data.dados){
+    info.innerHTML=`Não foi possível ler a proposta: ${esc(erro||'sem resposta')}${/not found|404|Failed to send/i.test(erro||'')?'<br>A função <strong>ler-proposta</strong> ainda não foi publicada no Supabase.':''}`;return;}
+  baseProp={nome:f.name,d:data.dados};
+  info.innerHTML=`<strong>${esc(f.name)}</strong> lida. Confira na janela e clique em <em>Aplicar na proposta</em>.`;
+  $('bp-precos').value=(data.dados.itens||[]).some(i=>n0(i.valor_total)>0||n0(i.valor_unitario)>0)?'proposta':'composicao';
+  abrirModal('modal-base-prop');renderPreviaBase();
+}
+// monta a composição com a nossa base de custos a partir do que a proposta diz
+function compDaBase(d,empId){
+  const c=compNova(),k=d.composicao||{},F=(precoCfg&&precoCfg.funcoes)||[],D=(precoCfg&&precoCfg.documentos)||[],falta=[];
+  c.empresa_id=empId||c.empresa_id;c.bdi.tributos=tributosDaEmpresa(c.empresa_id);
+  c.turno=k.turno==='noturno'?'noturno':'diurno';
+  c.dias_uteis=n0(k.dias_uteis)||(!n0(k.sabados)&&!n0(k.domingos)?1:0);c.sabados=n0(k.sabados);c.domingos=n0(k.domingos);
+  if(!n0(k.dias_uteis)&&!n0(k.sabados)&&!n0(k.domingos))falta.push('dias de trabalho (ficou 1 dia útil)');
+  const t=(precoCfg.tipos_cliente||[]).find(x=>norm(x.nome)===norm(k.tipo_cliente||''));
+  if(t){c.tipo_cliente=t.nome;if(n0(t.lucro_dia)>0){c.bdi.lucro_tipo='dia';c.bdi.lucro_dia=n0(t.lucro_dia);}else c.bdi.lucro=n0(t.lucro);}
+  else falta.push('tipo de cliente (margem de lucro)');
+  (k.equipe||[]).filter(x=>String(x.funcao||'').trim()).forEach(x=>{const f=F.find(y=>norm(y.nome)===norm(x.funcao));
+    c.equipe.push({funcao:f?f.nome:x.funcao,qtd:n0(x.qtd)||1,custo_dia:f?n0(f.custo_dia):0,dias:n0(x.dias)?n0(x.dias):''});
+    if(!f||!n0(f.custo_dia))falta.push(`custo/dia de "${x.funcao}"`);});
+  (k.materiais||[]).filter(x=>String(x.descricao||'').trim()).forEach(x=>{const m=materialPorRotulo(x.descricao),e=m?estatPreco(m.id):null;
+    const r={descricao:m?m.nome:x.descricao,unidade:(m&&m.unidade)||x.unidade||'un',qtd:n0(x.qtd)||1,custo_unit:e?Math.round(e.ref*100)/100:0};
+    if(m)r.material_id=m.id;if(e)r.dica=`Preço de referência da base própria (mediana de ${e.nBase} preço(s), ${e.fontes} fornecedor(es)).`;else{r.dica='Sem preço registrado em Fornecedores — informe o custo.';falta.push(`custo de "${x.descricao}"`);}
+    c.materiais.push(r);});
+  (k.equipamentos||[]).filter(x=>String(x.descricao||'').trim()).forEach(x=>{c.equipamentos.push({descricao:x.descricao,unidade:x.unidade||'diária',qtd:n0(x.qtd)||1,custo_unit:0});falta.push(`custo de "${x.descricao}"`);});
+  (k.terceiros||[]).filter(x=>String(x.descricao||'').trim()).forEach(x=>{c.terceiros.push({descricao:x.descricao,valor:n0(x.valor)});if(!n0(x.valor))falta.push(`valor de "${x.descricao}"`);});
+  (k.mobilizacao||[]).filter(x=>String(x.descricao||'').trim()).forEach(x=>{c.mobilizacao.push({descricao:x.descricao,valor:n0(x.valor)});if(!n0(x.valor))falta.push(`valor de "${x.descricao}"`);});
+  (k.documentos||[]).forEach(nome=>{const doc=D.find(y=>norm(y.nome)===norm(nome));if(doc&&!c.documentos.some(z=>z.nome===doc.nome))c.documentos.push({nome:doc.nome,custo:n0(doc.custo),por_pessoa:!!doc.por_pessoa,qtd:doc.por_pessoa?(pessoasEquipe(c)||1):1});});
+  c.obs=String(k.obs||'').trim();
+  const r=calcComposicao(c);c.resultado={custo_direto:r.cd,preco:r.preco,bdi:r.bdiPct,mao_obra:r.mo};
+  c.atualizado_em=new Date().toISOString();c.atualizado_por=quemSou();c.origem='proposta base: '+(baseProp?baseProp.nome:'');
+  return{c,r,falta};
+}
+// planilha no nosso padrão: etapa "1" sem quantidade/valor, itens "1.1"…
+function itensDaBase(d){
+  const r2=v=>Math.round(v*100)/100;
+  return(d.itens||[]).filter(i=>String(i.descricao||'').trim()).map(i=>{
+    if(i.tipo==='etapa')return{item:String(i.item||'').replace(/\.$/,''),codigo:'',descricao:i.descricao,unidade:'',quantidade:0,valor_unitario:0,valor_total:0};
+    const q=n0(i.quantidade)||1,vu=n0(i.valor_unitario)||(n0(i.valor_total)?n0(i.valor_total)/q:0);
+    return{item:String(i.item||''),codigo:'',descricao:i.descricao,unidade:i.unidade||'vb',quantidade:q,valor_unitario:r2(vu),valor_total:r2(vu*q)};});
+}
+// preços da planilha proporcionais à proposta, fechando no preço da nossa composição
+function reescalarItens(itens,preco){
+  const r2=v=>Math.round(v*100)/100,linhas=itens.filter(i=>n0(i.quantidade)>0);
+  let soma=linhas.reduce((s,i)=>s+n0(i.valor_total),0);
+  if(!(soma>0)){linhas.forEach(i=>{i.valor_total=1;});soma=linhas.length;} // sem preços: divide igual
+  linhas.forEach(i=>{i.valor_unitario=r2(n0(i.valor_total)/soma*preco/n0(i.quantidade));i.valor_total=r2(i.valor_unitario*n0(i.quantidade));});
+  const dif=r2(preco-linhas.reduce((s,i)=>s+i.valor_total,0)),u=linhas.find(i=>n0(i.quantidade)===1)||linhas[0];
+  if(u&&dif){u.valor_unitario=r2(u.valor_unitario+dif/n0(u.quantidade));u.valor_total=r2(u.valor_unitario*n0(u.quantidade));}
+  return itens;
+}
+function textoPagBase(p){if(!p||!p.tipo)return'';if(p.tipo==='outra')return p.texto||'';try{return textoPagamento({tipo:p.tipo,periodo:p.periodo||'mensal',sinal:n0(p.sinal_pct)||null,dias:p.dias==null?null:n0(p.dias)});}catch(e){return p.texto||p.tipo;}}
+function empresaDaBase(d){const e=d.empresa_sigla&&todasEmpresas.find(x=>String(x.sigla||'').toUpperCase()===d.empresa_sigla);return e?e.id:'';}
+function clienteDaBase(d){
+  const doc=String(d.cliente_documento||'').replace(/\D/g,'');
+  let c=doc&&!NOSSOS_CNPJS.includes(doc)?todosClientes.find(x=>String(x.documento||'').replace(/\D/g,'')===doc):null;
+  if(!c&&d.cliente_nome){const n=norm(d.cliente_nome);c=todosClientes.find(x=>[x.razao_social,x.empresa_cliente,x.nome].some(v=>v&&norm(v)===n))||todosClientes.find(x=>[x.razao_social,x.empresa_cliente,x.nome].some(v=>v&&norm(v).length>3&&(n.includes(norm(v))||norm(v).includes(n))));}
+  return c||null;
+}
+function renderPreviaBase(){
+  if(!baseProp)return;const d=baseProp.d,modo=$('bp-precos').value;
+  const empId=$('card-empresa-id').value||empresaDaBase(d),cli=clienteDaBase(d);
+  const itens=itensDaBase(d),somaProp=itens.reduce((s,i)=>s+n0(i.valor_total),0),valorProp=n0(d.valor_total)||somaProp;
+  const{r,falta}=compDaBase(d,empId);
+  $('bp-sub').innerHTML=`Lido de <strong>${esc(baseProp.nome)}</strong>${d.numero_original?` (nº original ${esc(d.numero_original)})`:''}. A proposta fica com o nosso número, a nossa carta de apresentação, condições, assinaturas e aceite.`;
+  const al=[...(d.alertas||[])];
+  if(!cli&&(d.cliente_nome||d.cliente_documento))al.push(`Cliente "${d.cliente_nome||d.cliente_documento}" não encontrado no cadastro — escolha ou cadastre antes de salvar.`);
+  if(n0(d.valor_total)&&somaProp&&Math.abs(n0(d.valor_total)-somaProp)>1)al.push(`A soma dos itens (R$ ${fmtMoeda(somaProp)}) difere do valor global da proposta (R$ ${fmtMoeda(d.valor_total)}).`);
+  $('bp-alertas').style.display=al.length?'block':'none';$('bp-alertas').innerHTML=al.length?'<strong>Pontos para conferir</strong><ul style="margin:4px 0 0 18px">'+al.map(a=>`<li>${esc(a)}</li>`).join('')+'</ul>':'';
+  const comp=`Pela nossa base: custo direto R$ ${fmtMoeda(r.cd)} · preço sugerido <strong>R$ ${fmtMoeda(r.preco)}</strong>`;
+  $('bp-precos-dica').innerHTML=(valorProp?`Valor da proposta enviada: <strong>R$ ${fmtMoeda(valorProp)}</strong>. `:'A proposta enviada não traz preços. ')+comp+
+    (valorProp&&r.preco?` (${r.preco>valorProp?'+':''}${fmtPct(Math.round((r.preco/valorProp-1)*1000)/10)} em relação à enviada)`:'')+'.'+
+    (falta.length?`<br><span style="color:#b00020">Faltam na base para a composição ficar completa: ${esc(falta.slice(0,8).join('; '))}${falta.length>8?` e mais ${falta.length-8}`:''}. Depois de aplicar, abra <em>Composição de preço</em> para completar.</span>`:'')+
+    (modo==='composicao'?'<br>Os itens ficam com a descrição e a quantidade da proposta, e os preços proporcionais aos dela, fechando no preço da composição.':'');
+  const k=d.composicao||{},eq=(k.equipe||[]).map(x=>`${n0(x.qtd)||1} ${x.funcao}`).join(', ');
+  const linhaIt=i=>n0(i.quantidade)?`<tr><td>${esc(i.item)}</td><td>${esc(i.descricao)}</td><td>${esc(i.unidade)}</td><td style="text-align:right">${esc(n0(i.quantidade).toLocaleString('pt-BR'))}</td><td style="text-align:right">${fmtMoeda(i.valor_total)}</td></tr>`:`<tr><td><strong>${esc(i.item)}</strong></td><td colspan="4"><strong>${esc(String(i.descricao).toUpperCase())}</strong></td></tr>`;
+  const its=modo==='composicao'?reescalarItens(itensDaBase(d),r.preco):itens;
+  $('bp-previa').innerHTML=`<div class="secao">Prévia</div>
+    <table class="tabela-itens" style="margin-bottom:8px"><tbody>
+      <tr><th style="width:170px;text-align:left">Objeto</th><td>${esc(d.titulo||'')}</td></tr>
+      <tr><th style="text-align:left">Cliente</th><td>${cli?esc(rotuloCliente(cli)):`<span style="color:#b00020">${esc(d.cliente_nome||'não identificado')}</span>`}</td></tr>
+      <tr><th style="text-align:left">Empresa</th><td>${esc((todasEmpresas.find(e=>e.id===empId)||{}).nome||'—')}</td></tr>
+      <tr><th style="text-align:left">Prazo · validade</th><td>${d.prazo&&d.prazo.numero?esc(d.prazo.numero+' '+(d.prazo.unidade||'')):'—'} · ${d.validade_dias?esc(d.validade_dias+' dias'):'—'}</td></tr>
+      <tr><th style="text-align:left">Pagamento</th><td>${esc(textoPagBase(d.pagamento)||'—')}</td></tr>
+      <tr><th style="text-align:left">Equipe prevista</th><td>${esc(eq||'—')}${k.dias_uteis||k.sabados||k.domingos?` · ${n0(k.dias_uteis)} dia(s) útil(eis)${n0(k.sabados)?` + ${n0(k.sabados)} sáb.`:''}${n0(k.domingos)?` + ${n0(k.domingos)} dom./fer.`:''}`:''}</td></tr>
+    </tbody></table>
+    <details><summary style="cursor:pointer;font-weight:600">Escopo de fornecimento</summary><pre style="white-space:pre-wrap;font-family:inherit;font-size:12.5px;margin:6px 0">${esc(d.escopo||'')}</pre></details>
+    <details><summary style="cursor:pointer;font-weight:600">Premissas e esclarecimentos</summary><pre style="white-space:pre-wrap;font-family:inherit;font-size:12.5px;margin:6px 0">${esc([d.premissas,d.nota1,d.nota2].filter(Boolean).join('\n'))}</pre></details>
+    ${modo!=='nenhum'&&its.length?`<details open><summary style="cursor:pointer;font-weight:600">Planilha (${its.filter(i=>n0(i.quantidade)).length} itens · total R$ ${fmtMoeda(its.reduce((s,i)=>s+n0(i.valor_total),0))})</summary>
+      <div style="overflow-x:auto;max-height:320px"><table class="tabela-itens"><thead><tr><th style="width:50px">Item</th><th>Descrição</th><th style="width:60px">Un.</th><th style="width:80px;text-align:right">Qtd.</th><th style="width:110px;text-align:right">Total (R$)</th></tr></thead><tbody>${its.map(linhaIt).join('')}</tbody></table></div></details>`:''}`;
+}
+async function aplicarPropostaBase(){
+  if(!baseProp)return;const d=baseProp.d,modo=$('bp-precos').value,feitos=[];
+  const set=(id,v)=>{if(v==null||v==='')return;$(id).value=v;marcarPreenchido(id);};
+  if($('bp-textos').checked){
+    const emp=empresaDaBase(d);if(emp&&!$('card-empresa-id').value){$('card-empresa-id').value=emp;feitos.push('empresa');}
+    const cli=clienteDaBase(d);if(cli&&!$('card-cliente').value.trim()){$('card-cliente').value=rotuloCliente(cli);marcarPreenchido('card-cliente');await clienteEscolhidoNoCard();feitos.push('cliente');}
+    set('card-titulo',d.titulo);set('card-escopo',d.escopo);set('card-obs',d.premissas);set('card-nota1',d.nota1);set('card-nota2',d.nota2);
+    if(d.prazo&&n0(d.prazo.numero)>0){set('card-prazo',Math.round(n0(d.prazo.numero)));if(d.prazo.unidade)$('card-prazo-unid').value=d.prazo.unidade;}
+    if(n0(d.validade_dias)>0)set('card-validade',Math.round(n0(d.validade_dias)));
+    const p=d.pagamento||{};if(p.tipo){const pg={tipo:p.tipo,periodo:p.periodo||'mensal',sinal:n0(p.sinal_pct)||null,dias:p.dias==null?null:n0(p.dias)};if(p.tipo==='outra')pg.texto=p.texto;
+      preencherPagamentoForm(pg,p.tipo==='outra'?p.texto:'');marcarPreenchido('card-pag-tipo');}
+    feitos.push('objeto, escopo, premissas, prazo e pagamento');
+  }
+  const{c,r}=compDaBase(d,$('card-empresa-id').value);
+  if(modo!=='nenhum'){
+    let its=itensDaBase(d);
+    if(modo==='composicao')its=its.some(i=>n0(i.quantidade)>0)?reescalarItens(its,r.preco):itensDaComposicao(c,r);
+    if(its.length&&(!itensLocais.length||confirm('Substituir os itens do orçamento que já estão na proposta?'))){
+      itensLocais=its;renderItens(true);
+      const soma=its.reduce((s,i)=>s+n0(i.valor_total),0),v=modo==='composicao'?soma:(n0(d.valor_total)||soma); // centavos: o valor fecha com a planilha
+      if(v>0){$('card-valor').value=fmtMoeda(Math.round(v*100)/100);marcarPreenchido('card-valor');}
+      feitos.push(modo==='composicao'?'itens com preço da nossa composição':'itens com os preços da proposta');
+    }
+  }
+  if($('bp-comp').checked||modo==='composicao'){
+    composicaoLocal=c;resumoComposicaoNoCard();
+    const pmo=r.cd>0?Math.round(r.mo/r.cd*100):null;if(pmo!=null&&r.mo>0){$('card-pct-mao').value=pmo;$('card-pct-ins').value=100-pmo;}
+    if(cardEditandoId&&PERM.funil){const{error}=await sb.from('cards').update({composicao:c}).eq('id',cardEditandoId);if(error)console.error(error);else{const k=todosCards.find(x=>x.id===cardEditandoId);if(k)k.composicao=c;}}
+    feitos.push('composição de preço');
+  }
+  osBasePendente=$('bp-os').checked&&d.os&&Object.values(d.os).some(v=>String(v||'').trim())?d.os:null;
+  if(osBasePendente){if(cardEditandoId)await gravarOSBase(cardEditandoId);feitos.push('detalhe da OS'+(cardEditandoId?'':' (grava ao salvar)'));}
+  fecharModal('modal-base-prop');
+  $('card-base-info').innerHTML=`Aplicado de <strong>${esc(baseProp.nome)}</strong>: ${esc(feitos.join(', '))}. Confira os campos em amarelo e clique em <strong>Salvar</strong>.`;
+  baseProp=null;toast('Proposta adaptada — confira e salve');
+}
+// grava o detalhe da OS lido da proposta só nos campos ainda em branco
+async function gravarOSBase(cardId){
+  const o=osBasePendente;osBasePendente=null;if(!o)return;
+  const atual=await lerOSDetalhe(cardId,cardOriginal&&cardOriginal.card_pai_id);if(atual.falta){toast('Detalhe da OS não gravado: '+MSG_V51);return;}
+  const mesmo=atual.card_id===cardId?atual:{},dados={card_id:cardId,projeto_id:(cardOriginal&&cardOriginal.projeto_id)||mesmo.projeto_id||null};
+  ['condicoes_local','incluido','nao_incluido','resultado_final','pontos_parada','seguranca'].forEach(k=>{dados[k]=String(mesmo[k]||'').trim()||String(o[k]||'').trim()||null;});
+  dados.atualizado_por=(meuPerfil&&meuPerfil.nome)||(usuario&&usuario.email)||null;dados.atualizado_em=new Date().toISOString();
+  const{error}=await sb.from('os_detalhes').upsert(dados,{onConflict:'card_id'});
+  if(error){console.error(error);toast('Detalhe da OS não gravado: '+(error.message||error));}
 }
 
 /* ================= QUADRO DE TAREFAS (v24) ================= */

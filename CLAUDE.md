@@ -109,6 +109,7 @@ Boa parte disto já foi implementada nas versões v11 a v18 (acessos, documentos
 - Sem emojis no CRM (pedido do André: seriedade). Só o Painel mantém os ícones. Não acrescente emojis em telas, PDFs, e-mails ou WhatsApp.
 - Campos de enviar arquivo aceitam colar (Ctrl+V ou botão direito → Colar); print colado em campo só de PDF vira PDF.
 - Gerar proposta guarda o PDF sozinho na proposta e em `03_CLIENTES/C###_NOME/02_PROPOSTAS` (html2canvas em `vendor/` + pdf-lib).
+- Proposta pronta como base (v63): na proposta, "Usar proposta pronta como base" (PDF/Word em outro formato) chama a função `ler-proposta` (Claude, segredo `ANTHROPIC_API_KEY` no Supabase), que adapta ao nosso modelo: objeto, escopo, planilha por etapa, premissas, prazo, pagamento, composição e detalhe da OS. Custos da composição sempre da nossa base (Parâmetros/Fornecedores), nunca da IA; BDI/margem da proposta original são diluídos nos preços. O arquivo base não é guardado. Sem migração.
 - Normas ISO: versões do texto de cada requisito em `iso_requisitos_versoes`, com comparativo (o que entrou, saiu e mudou).
 
 **Treinamentos (v61)**
