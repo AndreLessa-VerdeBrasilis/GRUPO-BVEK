@@ -72,6 +72,34 @@ const SCHEMA = obj({
   alertas: lista(txt),
 });
 
+// O formato não é imposto pela API (o "grammar" desse formulário fica grande demais):
+// o modelo de resposta vai no pedido e a resposta é conferida e completada aqui.
+// deno-lint-ignore no-explicit-any
+function modelo(sc: any): unknown {
+  if (sc.type === "object") return Object.fromEntries(Object.keys(sc.properties).map((k) => [k, modelo(sc.properties[k])]));
+  if (sc.type === "array") return [modelo(sc.items)];
+  if (sc.enum) return sc.enum.filter((x: string) => x).join(" | ") + (sc.enum.includes("") ? " | (vazio)" : "");
+  return sc.type === "number" ? 0 : "";
+}
+// deno-lint-ignore no-explicit-any
+function completar(sc: any, v: any): any {
+  if (sc.type === "object") {
+    const o = v && typeof v === "object" && !Array.isArray(v) ? v : {};
+    return Object.fromEntries(Object.keys(sc.properties).map((k) => [k, completar(sc.properties[k], o[k])]));
+  }
+  if (sc.type === "array") return Array.isArray(v) ? v.map((x) => completar(sc.items, x)).filter((x) => x !== "") : [];
+  if (sc.type === "number") { const n = typeof v === "number" ? v : Number(String(v ?? "").replace(/\./g, "").replace(",", ".")); return isFinite(n) ? n : 0; }
+  const t = v == null ? "" : String(v);
+  if (sc.enum) return sc.enum.includes(t) ? t : (sc.enum.includes("") ? "" : sc.enum[0]);
+  return t;
+}
+function extrairJson(t: string): unknown {
+  const s = t.replace(/^[\s\S]*?```(?:json)?\s*/i, (m) => (m.includes("```") ? "" : m));
+  const i = s.indexOf("{"), f = s.lastIndexOf("}");
+  if (i < 0 || f <= i) throw new Error("sem JSON");
+  return JSON.parse(s.slice(i, f + 1));
+}
+
 const SISTEMA = `Você trabalha no comercial do Grupo BVEK (Rio de Janeiro): Engekat Construções (EK — construção civil, projetos técnicos, drywall, steel frame, solda, caldeiraria, tubulação, alpinismo, pintura), Verde Brasilis (VB — áreas verdes, poda, remoção, reflorestamento, paisagismo, jardinagem, legalizações), BrasiLimp (BL — limpeza, conservação, manutenção, segurança) e Kat Corretora de Seguros (KS).
 
 Você recebe uma proposta comercial pronta, feita em outro formato (muitas vezes com ajuda de IA), e deve ADAPTÁ-LA ao modelo de proposta do grupo, preenchendo os campos do gerador do CRM. Não é um resumo: aproveite todo o conteúdo técnico, reorganizado no nosso padrão.
@@ -94,7 +122,10 @@ Regras de cada campo (número desconhecido ou não informado = 0):
 - os: detalhe da execução para a equipe (sai só na Ordem de Serviço, sem valores): condições do local, o que está incluído, o que NÃO está incluído, como deve ficar no final, quando parar e consultar o responsável, cuidados de segurança (EPI, NR, isolamento). "" quando a proposta não disser.
 - alertas: avisos curtos para quem vai revisar (ex.: "a proposta original mostrava BDI de 25% — diluído nos preços", "item 2.3 sem preço", "a soma dos itens difere do valor global", "prazo não informado").
 
-Escreva tudo em português do Brasil, sem emojis.`;
+Escreva tudo em português do Brasil, sem emojis.
+
+Responda SOMENTE com um objeto JSON válido (sem texto antes ou depois, sem comentários), com exatamente estes campos. Onde o modelo mostra opções separadas por " | ", escolha uma delas ("(vazio)" = string vazia ""):
+` + JSON.stringify(modelo(SCHEMA), null, 1);
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
@@ -138,17 +169,17 @@ Materiais cadastrados: ${nomes(ctx.materiais, 600).join("; ") || "(nenhum)"}`;
       betas: ["server-side-fallback-2026-07-01"],
       fallbacks: "default",
       system: SISTEMA,
-      output_config: { effort: "medium", format: { type: "json_schema", schema: SCHEMA } },
+      output_config: { effort: "medium" },
       messages: [{ role: "user", content: conteudo }],
     };
     const msg = await client.beta.messages.stream(params).finalMessage();
     if (msg.stop_reason === "refusal") return json({ erro: "A IA recusou ler este arquivo. Preencha à mão." }, 422);
     if (msg.stop_reason === "max_tokens") return json({ erro: "A proposta é longa demais para ler de uma vez. Envie só a parte técnica e comercial." }, 422);
     // deno-lint-ignore no-explicit-any
-    const bloco = (msg.content as any[]).find((b) => b.type === "text");
-    if (!bloco) return json({ erro: "A IA não devolveu dados." }, 502);
+    const texto_ia = (msg.content as any[]).filter((b) => b.type === "text").map((b) => b.text).join("\n");
+    if (!texto_ia.trim()) return json({ erro: "A IA não devolveu dados." }, 502);
     let dados;
-    try { dados = JSON.parse(bloco.text); } catch (_) { return json({ erro: "A resposta da IA veio incompleta. Tente de novo." }, 502); }
+    try { dados = completar(SCHEMA, extrairJson(texto_ia)); } catch (_) { return json({ erro: "A resposta da IA veio fora do formato. Tente de novo." }, 502); }
     return json({ ok: true, dados, uso: msg.usage });
   } catch (e) {
     console.error(e);
