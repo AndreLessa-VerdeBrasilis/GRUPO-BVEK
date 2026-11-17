@@ -44,6 +44,12 @@ textarea:focus{border-color:var(--verde)}
 .btn:disabled{opacity:.6;cursor:wait}
 .erro{color:var(--vermelho);font-size:14px;margin-top:10px;text-align:center}
 .centro{text-align:center}
+.dados{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.dados label{display:flex;flex-direction:column;gap:4px;font-size:14px;font-weight:600}
+.dados input{padding:10px 12px;border:1.5px solid var(--borda);border-radius:10px;font-size:15px;font-family:inherit;outline:none;font-weight:400;width:100%}
+.dados input:focus{border-color:var(--verde)}
+#box-dados.falta h2{color:var(--vermelho)}#box-dados.falta input{border-color:var(--vermelho)}
+@media(max-width:480px){.dados{grid-template-columns:1fr}}
 .icone{font-size:44px;margin-bottom:8px}
 @media(max-width:480px){.opcoes label{font-size:10px;padding:6px 2px}.opcoes .n{font-size:15px}}
 </style>
@@ -76,12 +82,20 @@ async function iniciar(){
 
 function montar(nome){
   let salvo={};try{salvo=JSON.parse(localStorage.getItem(chave)||'{}');}catch(e){}
-  const q=salvo.q||{},ab=salvo.abertas||{};
+  const q=salvo.q||{},ab=salvo.abertas||{},idt=salvo.identificacao||{};
   $('pagina').innerHTML=`
   <div class="caixa">
     <h2>Olá${nome?', '+esc(nome):''}!</h2>
     <p>Este questionário ajuda a gente a conhecer o seu jeito de trabalhar. <strong>Não existe resposta certa ou errada</strong> — responda com sinceridade, pensando em como você é no dia a dia, não em como gostaria de ser. Leva uns 10 minutos.</p>
     <p style="margin-top:8px">Para cada frase, escolha de <strong>1 (discordo totalmente)</strong> a <strong>5 (concordo totalmente)</strong>.</p>
+  </div>
+  <div class="caixa" id="box-dados">
+    <h2>Seus dados</h2>
+    <p style="margin-bottom:6px">Para o RH localizar o seu cadastro.</p>
+    <div class="dados">
+      <label>CPF<input type="text" id="d-cpf" inputmode="numeric" autocomplete="off" maxlength="14" placeholder="000.000.000-00" value="${esc(idt.cpf||'')}"></label>
+      <label>Data de nascimento<input type="date" id="d-nasc" max="${new Date().toISOString().slice(0,10)}" value="${esc(idt.nascimento||'')}"></label>
+    </div>
   </div>
   <div class="progresso"><div class="trilho"><div class="cheio" id="barra"></div></div><small id="contagem"></small></div>
   <div class="caixa" id="lista">${Q.PERGUNTAS.map((p,i)=>`
@@ -100,13 +114,21 @@ function montar(nome){
   </div>`;
   document.querySelectorAll('#lista input').forEach(i=>i.addEventListener('change',()=>{$('box-'+i.name).classList.remove('falta');guardar();}));
   document.querySelectorAll('textarea').forEach(t=>t.addEventListener('input',guardar));
+  $('d-cpf').addEventListener('input',e=>{const d=e.target.value.replace(/\D/g,'').slice(0,11);e.target.value=d.replace(/^(\d{3})(\d)/,'$1.$2').replace(/^(\d{3})\.(\d{3})(\d)/,'$1.$2.$3').replace(/\.(\d{3})(\d{1,2})$/,'.$1-$2');$('box-dados').classList.remove('falta');guardar();});
+  $('d-nasc').addEventListener('change',()=>{$('box-dados').classList.remove('falta');guardar();});
   $('btn-enviar').onclick=enviar;
   atualizarProgresso();
 }
 function ler(){
   const q={};Q.PERGUNTAS.forEach(p=>{const m=document.querySelector(`input[name=${p.id}]:checked`);if(m)q[p.id]=Number(m.value);});
   const abertas={};Q.ABERTAS.forEach(a=>{const v=$('ab-'+a.id).value.trim();if(v)abertas[a.id]=v;});
-  return{versao:Q.versao,q,abertas};
+  const identificacao={cpf:$('d-cpf').value.trim(),nascimento:$('d-nasc').value};
+  return{versao:Q.versao,identificacao,q,abertas};
+}
+function cpfValido(c){
+  c=String(c||'').replace(/\D/g,'');if(c.length!==11||/^(\d)\1{10}$/.test(c))return false;
+  for(let t=9;t<11;t++){let s=0;for(let i=0;i<t;i++)s+=Number(c[i])*(t+1-i);if(((s*10)%11)%10!==Number(c[t]))return false;}
+  return true;
 }
 function guardar(){try{localStorage.setItem(chave,JSON.stringify(ler()));}catch(e){}atualizarProgresso();}
 function atualizarProgresso(){
@@ -115,6 +137,9 @@ function atualizarProgresso(){
 }
 async function enviar(){
   const r=ler();$('erro').textContent='';
+  const nasc=r.identificacao.nascimento,ano=Number(String(nasc).slice(0,4));
+  const erroDados=!cpfValido(r.identificacao.cpf)?'Confira o seu CPF (11 números).':!nasc||ano<1920||nasc>new Date().toISOString().slice(0,10)?'Informe a sua data de nascimento.':'';
+  if(erroDados){$('box-dados').classList.add('falta');$('box-dados').scrollIntoView({behavior:'smooth',block:'center'});$('erro').textContent=erroDados;return;}
   const faltam=Q.PERGUNTAS.filter(p=>!r.q[p.id]);
   if(faltam.length){
     faltam.forEach(p=>$('box-'+p.id).classList.add('falta'));

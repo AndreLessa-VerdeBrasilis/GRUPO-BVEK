@@ -1,16 +1,23 @@
 // =====================================================================
-// CRM Grupo BVEK — função "email-proposta" (Supabase Edge Function) — v59
+// CRM Grupo BVEK — função "email-proposta" (Supabase Edge Function) — v59 / v64
 // Funil → abrir a proposta → "Enviar por e-mail": manda o e-mail ao cliente
 // com o PDF da proposta (o arquivo guardado na proposta, bucket "propostas")
 // anexado, pelo Microsoft 365.
 // Usa os MESMOS segredos dos outros e-mails do CRM:
 //   MS_TENANT_ID, MS_CLIENT_ID, MS_CLIENT_SECRET, MS_REMETENTE
-// Remetente: a caixa do próprio usuário logado, quando ela é do mesmo
-// domínio da MS_REMETENTE; se o Microsoft 365 não aceitar, sai pela
-// MS_REMETENTE. Quem enviou vai sempre em cópia.
+// Remetente (v64): SEMPRE a caixa de quem está logado no CRM. Nunca cai
+// mais na MS_REMETENTE (a caixa da Sulamita, que é do RH/contabilidade).
+// Ordem de tentativa: a caixa informada na tela ("de", que precisa ter o
+// mesmo nome antes do @ que o login), o e-mail do login e o mesmo nome
+// no domínio da MS_REMETENTE (ex.: login andre.lessa@verdebrasilis.com.br
+// → caixa andre.lessa@bvek.com.br). Se nenhuma aceitar, NÃO envia e avisa.
+// Assinatura (v64): a assinatura padrão do grupo (logo Grupo BVEK
+// Soluções, nome, cargo, telefones, e-mail e empresas do grupo), a mesma
+// do carimbo do Outlook, montada aqui com os dados enviados pela tela.
 //
 // Pedido (POST com JSON):
-//   { card_id, para: [..], cc: [..], assunto, mensagem }
+//   { card_id, para: [..], cc: [..], assunto, mensagem, de?,
+//     assinatura?: { nome, cargo, fixo, celular } }
 // Só o Administrador (as propostas e os valores são só dele desde a v46).
 // =====================================================================
 import { createClient } from "npm:@supabase/supabase-js@2";
@@ -45,19 +52,46 @@ async function erroGraph(r: Response): Promise<string> {
 }
 const G = "https://graph.microsoft.com/v1.0";
 
+// ---- assinatura padrão do grupo (igual ao carimbo do Outlook) ----
+const LOGO_URL = "https://grupo-bvek.vercel.app/img/assinatura/grupo-bvek-solucoes.png";
+const FONTE = "font-family:Aptos,Calibri,Helvetica,sans-serif;font-size:12pt;color:rgb(0,0,0)";
+function assinaturaHtml(a: { nome: string; cargo: string; fixo: string; celular: string }, email: string, comLogo: boolean): string {
+  const A = "font-family:Arial,Helvetica,sans-serif";
+  const tel = [a.fixo && `Fixo <b>${escHtml(a.fixo)}</b>`, a.celular && `Cel. <b>${escHtml(a.celular)}</b>`].filter(Boolean).join(" · ");
+  return `<div style="${FONTE}"><br></div><div style="${FONTE}">Atenciosamente,</div><div style="${FONTE}"><br></div>
+<table style="background-color:#fff;color:rgb(46,58,70);border-collapse:collapse;border-spacing:0"><tbody><tr>
+${comLogo ? `<td style="text-align:center;padding:4px 16px 4px 0;vertical-align:middle;width:118px"><a href="https://linktr.ee/Grupo.BVEK" style="text-decoration:none"><img src="cid:logo-bvek" alt="Grupo BVEK Soluções" width="118" style="width:118px;height:auto;border:0"></a></td>` : ""}
+<td style="border-left:3px solid rgb(14,74,132);padding:2px 0 2px 16px;vertical-align:middle">
+<div style="line-height:20px;${A};font-size:16px;color:rgb(14,74,132)"><b>${escHtml(a.nome)}</b></div>
+${a.cargo ? `<div style="line-height:17px;${A};font-size:12px;color:rgb(74,86,99)">${escHtml(a.cargo)}</div>` : ""}
+${tel ? `<div style="line-height:17px;padding-top:6px;${A};font-size:12px">${tel}</div>` : ""}
+<div style="line-height:17px;${A};font-size:12px;color:rgb(74,86,99)"><a href="mailto:${escHtml(email)}" style="color:rgb(74,86,99);text-decoration:none">${escHtml(email)}</a></div>
+<div style="line-height:17px;${A};font-size:12px;color:rgb(14,74,132)"><a href="https://linktr.ee/Grupo.BVEK" style="color:rgb(14,74,132);text-decoration:none">www.bvek.com.br</a></div>
+</td></tr><tr><td colspan="2" style="padding-top:10px"><div style="line-height:16px;padding-top:7px;border-top:1px solid rgb(221,227,233);${A};font-size:11px">Empresas do grupo: <a href="https://www.engekat.com.br/" style="color:rgb(31,94,154);text-decoration:none"><b>Engekat Construções</b></a> · <a href="https://www.verdebrasilis.com.br/" style="color:rgb(11,90,18);text-decoration:none"><b>Verde Brasilis</b></a> · <a href="https://www.brasilimp.com.br/" style="color:rgb(31,78,121);text-decoration:none"><b>BrasiLimp</b></a> · <a href="https://www.katseguros.com.br/" style="color:rgb(30,90,150);text-decoration:none"><b>KAT Seguros</b></a></div></td></tr></tbody></table>`;
+}
+async function baixarLogo(): Promise<Uint8Array | null> {
+  try {
+    const r = await fetch(LOGO_URL);
+    if (!r.ok) return null;
+    const b = new Uint8Array(await r.arrayBuffer());
+    return b.length > 0 && b.length < 300 * 1024 ? b : null;
+  } catch (_) { return null; }
+}
+
 // envia pela caixa "de"; anexo até 3 MB vai junto; maior, por sessão de upload (rascunho → anexo → enviar)
 // deno-lint-ignore no-explicit-any
-async function enviar(tok: string, de: string, msg: any, anexo: { nome: string; bytes: Uint8Array }): Promise<string | null> {
+async function enviar(tok: string, de: string, msg: any, anexo: { nome: string; bytes: Uint8Array }, logo: Uint8Array | null): Promise<string | null> {
   const H = { Authorization: "Bearer " + tok, "Content-Type": "application/json" };
   const caixa = `${G}/users/${encodeURIComponent(de)}`;
+  const inline = logo ? [{ "@odata.type": "#microsoft.graph.fileAttachment", name: "grupo-bvek.png", contentType: "image/png", contentBytes: base64(logo), isInline: true, contentId: "logo-bvek" }] : [];
   if (anexo.bytes.length <= 3 * 1024 * 1024) {
     const r = await fetch(`${caixa}/sendMail`, {
       method: "POST", headers: H,
-      body: JSON.stringify({ message: { ...msg, attachments: [{ "@odata.type": "#microsoft.graph.fileAttachment", name: anexo.nome, contentType: "application/pdf", contentBytes: base64(anexo.bytes) }] }, saveToSentItems: true }),
+      body: JSON.stringify({ message: { ...msg, attachments: [...inline, { "@odata.type": "#microsoft.graph.fileAttachment", name: anexo.nome, contentType: "application/pdf", contentBytes: base64(anexo.bytes) }] }, saveToSentItems: true }),
     });
     return r.status === 202 ? null : await erroGraph(r);
   }
-  const rd = await fetch(`${caixa}/messages`, { method: "POST", headers: H, body: JSON.stringify(msg) });
+  const rd = await fetch(`${caixa}/messages`, { method: "POST", headers: H, body: JSON.stringify({ ...msg, attachments: inline }) });
   if (!rd.ok) return await erroGraph(rd);
   const rascunho = await rd.json();
   const rs = await fetch(`${caixa}/messages/${rascunho.id}/attachments/createUploadSession`, {
@@ -113,27 +147,55 @@ Deno.serve(async (req) => {
 
     const assunto = String(p.assunto || "").trim().slice(0, 250) || `Proposta ${card.numero_proposta || ""} — ${card.titulo || ""}`;
     const texto = String(p.mensagem || "").slice(0, 20000);
-    const corpo = `<div style="font-family:Calibri,Arial,sans-serif;font-size:15px;color:#222;line-height:1.5">${escHtml(texto).replace(/\n/g, "<br>")}</div>`;
     const meuEmail = String(user.email || "").toLowerCase();
-    const ccFinal = [...new Set([...cc, ...(EMAIL_OK.test(meuEmail) && !meuEmail.endsWith("@funcionario.bvek.com.br") ? [meuEmail] : [])])]
-      .filter((e) => !para.map((x: string) => x.toLowerCase()).includes(e.toLowerCase()));
-    const msg = {
-      subject: assunto,
-      body: { contentType: "HTML", content: corpo },
-      toRecipients: para.map((e: string) => ({ emailAddress: { address: e } })),
-      ccRecipients: ccFinal.map((e: string) => ({ emailAddress: { address: e } })),
+
+    // caixas possíveis — todas do próprio usuário (mesmo nome antes do @)
+    const local = (e: string) => e.split("@")[0] || "";
+    const dominio = (e: string) => e.split("@")[1] || "";
+    const pedida = String(p.de || "").trim().toLowerCase();
+    if (pedida && (!EMAIL_OK.test(pedida) || (pedida !== meuEmail && pedida !== String(perfil.email || "").toLowerCase() && local(pedida) !== local(meuEmail))))
+      return json({ erro: `A caixa ${pedida} não é a sua. O CRM só envia da caixa de quem está logado (${meuEmail}).` }, 403);
+    const candidatas = [...new Set([pedida, meuEmail, String(perfil.email || "").toLowerCase(), local(meuEmail) + "@" + dominio(padrao.toLowerCase())]
+      .filter((e) => e && EMAIL_OK.test(e) && !e.endsWith("@funcionario.bvek.com.br")))];
+    if (!candidatas.length) return json({ erro: "Não sei qual é a sua caixa de e-mail. Informe no campo \"Enviar da caixa\"." }, 400);
+
+    const a = p.assinatura && typeof p.assinatura === "object" ? p.assinatura : null;
+    const ass = a ? {
+      nome: String(a.nome || perfil.nome || "").trim().slice(0, 80),
+      cargo: String(a.cargo || "").trim().slice(0, 80),
+      fixo: String(a.fixo || "").trim().slice(0, 30),
+      celular: String(a.celular || "").trim().slice(0, 30),
+    } : null;
+    const logo = ass ? await baixarLogo() : null;
+    const corpoPara = (caixa: string) =>
+      `<div style="${FONTE};line-height:1.5">${escHtml(texto).replace(/\n/g, "<br>")}</div>` + (ass && ass.nome ? assinaturaHtml(ass, caixa, !!logo) : "");
+    const montar = (caixa: string) => {
+      // a cópia para si mesmo só quando o login é outro endereço (a mensagem já fica nos Itens Enviados da caixa)
+      const ccFinal = [...new Set(cc.map((e: string) => e.toLowerCase()))]
+        .filter((e) => !para.map((x: string) => x.toLowerCase()).includes(e) && e !== caixa);
+      return {
+        ccFinal,
+        msg: {
+          subject: assunto,
+          body: { contentType: "HTML", content: corpoPara(caixa) },
+          toRecipients: para.map((e: string) => ({ emailAddress: { address: e } })),
+          ccRecipients: ccFinal.map((e: string) => ({ emailAddress: { address: e } })),
+        },
+      };
     };
 
     const tok = await tokenM365(tenant, clientId, segredo);
-    const dominio = (e: string) => e.split("@")[1] || "";
-    let remetente = padrao, erro: string | null = null;
-    if (meuEmail && dominio(meuEmail) === dominio(padrao.toLowerCase()) && meuEmail !== padrao.toLowerCase()) {
-      erro = await enviar(tok, meuEmail, msg, { nome: nomeAnexo, bytes });
-      if (erro) { console.warn("caixa do usuário recusou:", erro); remetente = padrao; erro = await enviar(tok, padrao, msg, { nome: nomeAnexo, bytes }); }
-      else remetente = meuEmail;
-    } else erro = await enviar(tok, padrao, msg, { nome: nomeAnexo, bytes });
-    if (erro) return json({ erro: "O Microsoft 365 não enviou: " + erro }, 502);
-    return json({ ok: true, remetente, para, cc: ccFinal });
+    let remetente = "", erro: string | null = null, ccUsado: string[] = [];
+    const tentativas: string[] = [];
+    for (const caixa of candidatas) {
+      const m = montar(caixa);
+      erro = await enviar(tok, caixa, m.msg, { nome: nomeAnexo, bytes }, logo);
+      if (!erro) { remetente = caixa; ccUsado = m.ccFinal; break; }
+      console.warn(`caixa ${caixa} recusou:`, erro);
+      tentativas.push(`${caixa}: ${erro}`);
+    }
+    if (!remetente) return json({ erro: "Não consegui enviar pela sua caixa de e-mail (o CRM não usa mais a caixa padrão para propostas).\n" + tentativas.join("\n") }, 502);
+    return json({ ok: true, remetente, para, cc: ccUsado });
   } catch (e) {
     console.error(e);
     return json({ erro: String((e as Error)?.message || e) }, 500);

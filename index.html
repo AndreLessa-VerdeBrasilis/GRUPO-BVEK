@@ -503,6 +503,32 @@ tr.doc-vencido td{background:#fff5f5}
 .gxc{margin-top:18px;border-left:5px solid #1b5e20}
 .gxc-fontes{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--texto2);margin-bottom:12px}
 .gxc-fontes label{display:flex;gap:5px;align-items:center;cursor:pointer}
+/* v64: gráficos de colunas do painel (legenda, grade, rótulos e dica ao passar o mouse) */
+.gc-leg{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--texto2);margin:2px 0 8px}
+.gc-leg span{display:inline-flex;align-items:center;gap:6px}.gc-leg i{width:12px;height:12px;border-radius:3px;display:inline-block}
+.gc{position:relative;height:200px;margin:4px 0 6px;padding-left:46px}
+.gc-grade{position:absolute;left:46px;right:0;top:18px;bottom:22px;pointer-events:none}
+.gc-grade div{position:absolute;left:0;right:0;border-top:1px dashed #e3e7eb}
+.gc-grade span{position:absolute;left:-46px;width:40px;text-align:right;font-size:10px;color:#9aa4ae;transform:translateY(-50%)}
+.gc-cols{position:absolute;left:46px;right:0;top:0;bottom:0;display:flex;gap:4px;align-items:stretch}
+.gc-col{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;cursor:pointer;border-radius:6px;transition:background .15s}
+.gc-col:hover,.gc-col.sel{background:#eef3f8}
+.gc-col .tot{height:18px;font-size:10px;font-weight:700;color:var(--texto);white-space:nowrap;line-height:18px;font-variant-numeric:tabular-nums}
+.gc-col .area{flex:1;width:100%;display:flex;gap:2px;align-items:flex-end;justify-content:center;border-bottom:1.5px solid #cfd6dd}
+.gc-col .pilha{width:62%;max-width:34px;display:flex;flex-direction:column-reverse;gap:2px;height:100%}
+.gc-col .area.lado .pilha{width:40%;max-width:18px}
+.gc-col .seg{width:100%;border-radius:4px 4px 0 0;min-height:0;transition:height .6s ease;flex:none}
+.gc-col .rot{height:22px;font-size:10px;color:var(--texto2);line-height:22px}
+.gc-col.atual .rot{color:var(--texto);font-weight:700}
+.gc-col.futuro{opacity:.45}
+.gc-col .res{font-size:9px;font-weight:700;height:14px;line-height:14px;white-space:nowrap}
+.pd-tip{position:fixed;z-index:9999;pointer-events:none;background:#1f2a35;color:#fff;font-size:12px;line-height:1.45;padding:8px 10px;border-radius:8px;box-shadow:0 6px 20px rgba(0,0,0,.2);max-width:280px;display:none}
+.pd-tip i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:5px}
+.pd-tip .l{display:flex;justify-content:space-between;gap:14px}
+.pd-nota{font-size:11px;color:var(--texto2);margin:-4px 0 8px}
+.barra-trilho.multi{display:flex;gap:2px}.barra-trilho.multi .barra-cheia{border-radius:0}
+.em-ass{border:1.5px solid var(--borda);border-radius:10px;padding:10px 12px}.em-ass summary{cursor:pointer;font-size:13px;font-weight:600}
+.em-ass-previa{margin-top:10px;padding:12px;background:#fff;border:1px dashed var(--borda);border-radius:8px;overflow-x:auto}
 .gxc-graf{display:flex;gap:6px;align-items:flex-end;height:140px;margin:6px 0 14px;padding:0 4px;border-bottom:1.5px solid var(--borda)}
 .gxc-graf .m{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;height:100%;justify-content:flex-end;min-width:0}
 .gxc-graf .bs{display:flex;gap:2px;align-items:flex-end;height:100%;width:100%;justify-content:center}
@@ -761,11 +787,11 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
         <div class="painel" id="pa-campo" style="display:none"><h3>👷 Quem está onde hoje <span class="contagem" id="pa-campo-cont"></span></h3><div id="p-campo" class="lista-mini"></div></div>
         <div class="painel" id="pa-docs"><h3>📄 Documentos e certidões <span class="contagem" id="pa-docs-cont"></span></h3><div id="p-docs-resumo" class="resumo-docs"></div><div id="p-docs" class="lista-mini"></div></div>
         <div class="painel" id="pa-cobr" style="display:none"><h3>📞 Cobrar retorno de propostas <span class="contagem" id="pa-cobr-cont"></span></h3><div id="p-cobr" class="lista-mini"></div></div>
-        <div class="painel pd-cx-funil" id="pa-f-funil"><h3>Funil — propostas em aberto por etapa</h3><div id="p-funil"></div></div>
-        <div class="painel pd-cx-funil" id="pa-f-meses"><h3>Fechamentos por mês</h3><div id="p-meses"></div></div>
+        <div class="painel pd-cx-funil" id="pa-f-funil"><h3>Funil — propostas em aberto por etapa</h3><p class="pd-nota">Barra = quantidade de propostas na etapa · à direita, quantas e quanto valem. Clique para abrir o funil.</p><div id="p-funil"></div></div>
+        <div class="painel pd-cx-funil" id="pa-f-meses"><h3>Fechado por mês — propostas + contratos recorrentes</h3><div class="gc-leg"><span><i style="background:#1565c0"></i>Propostas fechadas</span><span><i style="background:#2e7d32"></i>Contratos recorrentes</span></div><p class="pd-nota" id="p-meses-nota"></p><div id="p-meses"></div></div>
         <div class="painel pd-cx-funil" id="pa-f-parados"><h3>Propostas paradas há mais de 15 dias</h3><div id="p-parados" class="lista-mini"></div></div>
         <div class="painel pd-cx-funil" id="pa-f-perdas"><h3>Motivos de perda</h3><div id="p-perdas"></div></div>
-        <div class="painel pd-cx-funil" id="pa-f-clientes"><h3>Maiores clientes (valor fechado)</h3><div id="p-clientes"></div></div>
+        <div class="painel pd-cx-funil" id="pa-f-clientes"><h3>Maiores clientes (propostas + recorrentes)</h3><div class="gc-leg"><span><i style="background:#1565c0"></i>Propostas fechadas</span><span><i style="background:#2e7d32"></i>Contratos recorrentes</span></div><div id="p-clientes"></div></div>
     <!-- v34: GANHOS × CUSTOS (só administradores) -->
     <div class="painel gxc" id="pa-gxc" style="display:none">
       <div class="barra-acoes" style="margin-bottom:8px">
@@ -777,6 +803,7 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
       </div>
       <div class="gxc-fontes" id="gxc-fontes"></div>
       <div class="kpis" id="gxc-kpis"></div>
+      <div class="gc-leg"><span><i style="background:#2e7d32"></i>Ganhos (contratos recorrentes + propostas fechadas)</span><span><i style="background:#c0392b"></i>Custos (fontes marcadas)</span><span>Número embaixo de cada mês = resultado · passe o mouse para ver a conta · clique para achar o mês na tabela</span></div>
       <div id="gxc-grafico"></div>
       <div class="tabela-wrap"><table class="tabela" id="gxc-tabela"></table></div>
       <p class="dica" id="gxc-dica"></p>
@@ -2662,13 +2689,23 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
     <h2>Enviar a proposta por e-mail</h2>
     <p class="modal-sub" id="em-sub"></p>
     <div class="form-grid" style="grid-template-columns:1fr">
+      <div class="campo"><label>Enviar da caixa (a sua) *</label><input type="email" id="em-de" placeholder="seu.nome@bvek.com.br" oninput="previaAssinaturaEmail()"><div class="dica">Sai da <strong>sua</strong> caixa de e-mail e fica nos seus Itens Enviados. O CRM não usa outra caixa para propostas.</div></div>
       <div class="campo"><label>Para *</label><input type="text" id="em-para" list="dl-em-emails" placeholder="email@cliente.com.br (vários: separe com vírgula)"><datalist id="dl-em-emails"></datalist></div>
       <div class="campo"><label>Cópia</label><input type="text" id="em-cc" list="dl-em-emails" placeholder="opcional"></div>
       <div class="campo"><label>Assunto</label><input type="text" id="em-assunto"></div>
       <div class="campo"><label>Mensagem</label><textarea id="em-msg" rows="9"></textarea></div>
+      <details class="em-ass" id="em-ass-box"><summary><input type="checkbox" id="em-ass-usar" checked onclick="event.stopPropagation()" onchange="previaAssinaturaEmail()"> Incluir a assinatura padrão do grupo <span class="dica" style="display:inline">(clique para conferir ou ajustar — fica salva no seu login)</span></summary>
+        <div class="form-grid" style="margin-top:8px">
+          <div class="campo"><label>Nome</label><input type="text" id="em-ass-nome" oninput="previaAssinaturaEmail()"></div>
+          <div class="campo"><label>Cargo</label><input type="text" id="em-ass-cargo" placeholder="Ex.: Diretor | Grupo BVEK" oninput="previaAssinaturaEmail()"></div>
+          <div class="campo"><label>Telefone fixo</label><input type="text" id="em-ass-fixo" oninput="previaAssinaturaEmail()"></div>
+          <div class="campo"><label>Celular</label><input type="text" id="em-ass-cel" placeholder="(21) 9xxxx-xxxx" oninput="previaAssinaturaEmail()"></div>
+        </div>
+        <div class="em-ass-previa" id="em-ass-previa"></div>
+      </details>
       <div class="info-box" id="em-anexo" style="display:block"></div>
       <div class="campo-check"><input type="checkbox" id="em-gerar"><label for="em-gerar">Gerar o PDF de novo antes de enviar (com os dados atuais da proposta)</label></div>
-      <div class="dica">Sai pelo Microsoft 365, da sua caixa de e-mail do grupo (ou da caixa padrão do CRM), com você em cópia. Fica registrado nas atividades da proposta.</div>
+      <div class="dica">Sai pelo Microsoft 365, da caixa acima. Fica registrado nas atividades da proposta.</div>
     </div>
     <div class="modal-btns">
       <button class="btn-cancelar" onclick="fecharModal('modal-email-proposta')">Cancelar</button>
@@ -4240,6 +4277,18 @@ function renderPainel(){
   const semProb=abertos.filter(c=>c.probabilidade==null).length;
   const conv=fechados.length+perdidos.length?Math.round(100*fechados.length/(fechados.length+perdidos.length)):null;
   const rotAno=ano==='todos'?'todos os anos':ano;
+  // v64: contratos recorrentes entram no "fechado" (mês a mês, só até o mês atual); a proposta que virou contrato não soma 2x
+  const contratosRec=PERM.painelCompleto&&PERM.funilVer?filtraEmpresa(todosContratosFixos).filter(c=>c.tipo!=='despesa'):[];
+  const cardsDeContrato=new Set(filtraEmpresa(todosContratosFixos).map(c=>c.card_id).filter(Boolean));
+  const hojeYM=hojeISO().slice(0,7);
+  const recNoMes=ym=>contratosRec.reduce((t,c)=>t+(contratoNoMes(c,ym)?Number(c.valor_mensal||0):0),0);
+  const mesesPeriodo=(()=>{let ini,fim=hojeYM;
+    if(ano==='todos')ini=[...contratosRec.map(c=>String(c.inicio||'').slice(0,7)),...fechados.map(c=>String(c.data_fechamento_real||c.atualizado_em||'').slice(0,7))].filter(Boolean).sort()[0]||hojeYM;
+    else{ini=ano+'-01';if(ano+'-12'<fim)fim=ano+'-12';}
+    const l=[];let[y,m]=ini.split('-').map(Number);while(l.length<600){const k=`${y}-${pad2(m)}`;if(k>fim)break;l.push(k);m++;if(m>12){m=1;y++;}}return l;})();
+  const fechadosAvulsos=fechados.filter(c=>!cardsDeContrato.has(c.id));
+  const totProp=soma(fechadosAvulsos),totRec=mesesPeriodo.reduce((t,m)=>t+recNoMes(m),0);
+  const recHoje=recNoMes(hojeYM),nRecHoje=contratosRec.filter(c=>contratoNoMes(c,hojeYM)).length;
   // v32: saudação, hora da atualização e indicadores clicáveis
   const h=new Date().getHours(),pn=String((meuPerfil&&meuPerfil.nome)||'').trim().split(/\s+/)[0];
   $('pd-saudacao').textContent=`${h<12?'Bom dia':h<18?'Boa tarde':'Boa noite'}${pn?', '+pn:''} · ${new Date().toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long'})}`;
@@ -4249,9 +4298,10 @@ function renderPainel(){
     ['Tarefas pendentes',String(tfPend.length),tfAtras?`${tfAtras} atrasada(s)`:'nenhuma atrasada 👍',tfAtras?'#c0392b':'#2980b9','✅',()=>{$('ativ-visao').value='quadro';abrirTab('atividades');}],
     ['Em aberto no funil',curtoV(soma(abertos)),`${abertos.length} atendimento(s)`,'#0C4982','📊',()=>abrirTab('funil')],
     ['Previsão ponderada',curtoV(ponderado),semProb?`${semProb} sem chance informada`:'valor × chance de fechar','#8e44ad','🎯',()=>abrirTab('funil')],
-    ['Fechado',curtoV(soma(fechados)),`${fechados.length} proposta(s) · ${rotAno}`,'#1565c0','🏆',()=>abrirTab('funil')],
+    ['Fechado (propostas + recorrentes)',curtoV(totProp+totRec),`${curtoV(totProp)} em ${fechadosAvulsos.length} proposta(s) + ${curtoV(totRec)} de contratos recorrentes · ${rotAno}`,'#1565c0','🏆',()=>$('pa-f-meses').scrollIntoView({behavior:'smooth'})],
+    ['Receita recorrente por mês',curtoV(recHoje),nRecHoje?`${nRecHoje} contrato(s) recorrente(s) ativo(s) hoje`:'nenhum contrato recorrente ativo','#2e7d32','🔁',()=>{abrirTab('funil');setTimeout(()=>{const e=$('funil-contratos');if(e)e.scrollIntoView({behavior:'smooth'});},150);}],
     ['Taxa de conversão',conv==null?'—':conv+'%',`${fechados.length} fechadas × ${perdidos.length} perdidas`,'#e67e22','📈',()=>abrirTab('funil')],
-    ['Ticket médio fechado',fechados.length?curtoV(soma(fechados)/fechados.length):'—',rotAno,'#00838f','💰',()=>abrirTab('funil')],
+    ['Ticket médio por proposta',fechados.length?curtoV(soma(fechados)/fechados.length):'—',`só propostas fechadas · ${rotAno}`,'#00838f','💰',()=>abrirTab('funil')],
   ].filter((k,i)=>i===0?PERM.ativ||tfPend.length:PERM.comercialVer&&PERM.funilVer&&PERM.painelCompleto);
   // v45: agenda do escritório e quem está em campo hoje (para todos)
   if(PERM.cronograma&&v45Ok){
@@ -4272,13 +4322,17 @@ function renderPainel(){
   const maxQ=Math.max(1,...porEtapa.map(e=>e.q));
   $('p-funil').innerHTML=porEtapa.map(e=>`<div class="barra-linha clicavel" onclick="abrirTab('funil')" title="Ver no funil"><span class="nome">${esc(e.n)}</span><div class="barra-trilho"><div class="barra-cheia" style="width:${100*e.q/maxQ}%"></div></div><span class="num">${e.q} · ${esc(curtoV(e.v))}</span></div>`).join('');
 
-  // meses
+  // meses (v64: colunas empilhadas — propostas + contratos recorrentes)
   const meses={};
-  fechados.forEach(c=>{const d=String(c.data_fechamento_real||c.atualizado_em||'').slice(0,7);if(d)meses[d]=(meses[d]||0)+Number(c.valor_estimado||0);});
-  const chaves=Object.keys(meses).sort().slice(-12);
-  const maxM=Math.max(1,...chaves.map(k=>meses[k]));
+  fechadosAvulsos.forEach(c=>{const d=String(c.data_fechamento_real||c.atualizado_em||'').slice(0,7);if(d)meses[d]=(meses[d]||0)+Number(c.valor_estimado||0);});
   const nomesMes=['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
-  $('p-meses').innerHTML=chaves.length?chaves.map(k=>`<div class="barra-linha"><span class="nome">${nomesMes[+k.slice(5)-1]}/${k.slice(2,4)}</span><div class="barra-trilho"><div class="barra-cheia" style="width:${100*meses[k]/maxM}%"></div></div><span class="num">${esc(curtoV(meses[k]))}</span></div>`).join(''):'<p class="vazio">Nenhuma proposta fechada no período.</p>';
+  const chaves=mesesPeriodo.slice(-12),rotM=k=>`${nomesMes[+k.slice(5)-1]}/${k.slice(2,4)}`;
+  $('p-meses-nota').textContent=`${ano==='todos'?'Últimos 12 meses':'Ano de '+ano}. Proposta fechada conta no mês do fechamento (valor total); contrato recorrente conta todo mês em que está ativo (valor mensal). Proposta ligada a um contrato recorrente não conta duas vezes. Passe o mouse sobre o mês para ver a conta.`;
+  const colsM=chaves.map(k=>{const p=meses[k]||0,r=recNoMes(k);return{rot:rotM(k),vals:[p,r],atual:k===hojeYM,
+    tip:`<b>${esc(rotM(k))}</b><div class="l"><span><i style="background:#1565c0"></i>Propostas fechadas</span><b>${esc(curtoV(p))}</b></div><div class="l"><span><i style="background:#2e7d32"></i>Contratos recorrentes</span><b>${esc(curtoV(r))}</b></div><div class="l" style="border-top:1px solid #455;margin-top:3px;padding-top:3px"><span>Total</span><b>${esc(curtoV(p+r))}</b></div>`,
+    clique:()=>abrirTab('funil')};});
+  if(colsM.some(c=>c.vals[0]||c.vals[1]))graficoColunas($('p-meses'),colsM,[{nome:'Propostas fechadas',cor:'#1565c0'},{nome:'Contratos recorrentes',cor:'#2e7d32'}],{modo:'pilha'});
+  else $('p-meses').innerHTML='<p class="vazio">Nada fechado no período (nem propostas nem contratos recorrentes).</p>';
 
   // parados
   const parados=abertos.filter(c=>diasDesde(c.etapa_desde||c.atualizado_em)>15).sort((a,b)=>new Date(a.etapa_desde||a.atualizado_em)-new Date(b.etapa_desde||b.atualizado_em)).slice(0,10);
@@ -4290,9 +4344,14 @@ function renderPainel(){
   $('p-perdas').innerHTML=lm.length?lm.map(([m,q])=>`<div class="barra-linha"><span class="nome" title="${esc(m)}">${esc(m)}</span><div class="barra-trilho"><div class="barra-cheia vermelha" style="width:${100*q/maxP}%"></div></div><span class="num">${q}</span></div>`).join(''):'<p class="vazio">Nenhuma proposta perdida no período.</p>';
 
   // clientes
-  const pc={};fechados.forEach(c=>{if(!c.clientes)return;const k=c.cliente_id;pc[k]=pc[k]||{c:c.clientes,v:0};pc[k].v+=Number(c.valor_estimado||0);});
-  const top=Object.values(pc).sort((a,b)=>b.v-a.v).slice(0,8);const maxC=Math.max(1,...top.map(x=>x.v));
-  $('p-clientes').innerHTML=top.length?top.map(x=>`<div class="barra-linha"><span class="nome" title="${esc(x.c.nome)}"><span class="cod">${esc(x.c.codigo||'')}</span> ${esc(x.c.nome)}</span><div class="barra-trilho"><div class="barra-cheia" style="width:${100*x.v/maxC}%"></div></div><span class="num">${esc(curtoV(x.v))}</span></div>`).join(''):'<p class="vazio">Sem fechamentos no período.</p>';
+  const pc={};fechadosAvulsos.forEach(c=>{if(!c.clientes)return;const k=c.cliente_id;pc[k]=pc[k]||{c:c.clientes,p:0,r:0};pc[k].p+=Number(c.valor_estimado||0);});
+  contratosRec.forEach(ct=>{if(!ct.cliente_id)return;const cli=todosClientes.find(x=>x.id===ct.cliente_id);if(!cli)return;
+    const v=mesesPeriodo.reduce((t,m)=>t+(contratoNoMes(ct,m)?Number(ct.valor_mensal||0):0),0);if(!v)return;
+    pc[ct.cliente_id]=pc[ct.cliente_id]||{c:cli,p:0,r:0};pc[ct.cliente_id].r+=v;});
+  const top=Object.values(pc).map(x=>({...x,v:x.p+x.r})).sort((a,b)=>b.v-a.v).slice(0,8);const maxC=Math.max(1,...top.map(x=>x.v));
+  const tipCli=x=>`<b>${esc(x.c.nome)}</b><div class="l"><span><i style="background:#1565c0"></i>Propostas fechadas</span><b>${esc(curtoV(x.p))}</b></div><div class="l"><span><i style="background:#2e7d32"></i>Contratos recorrentes</span><b>${esc(curtoV(x.r))}</b></div>`;
+  $('p-clientes').innerHTML=top.length?top.map(x=>`<div class="barra-linha" data-tip="${esc(tipCli(x))}"><span class="nome"><span class="cod">${esc(x.c.codigo||'')}</span> ${esc(x.c.nome)}</span><div class="barra-trilho multi">${x.p?`<div class="barra-cheia" style="width:${100*x.p/maxC}%;background:#1565c0"></div>`:''}${x.r?`<div class="barra-cheia" style="width:${100*x.r/maxC}%;background:#2e7d32"></div>`:''}</div><span class="num">${esc(curtoV(x.v))}</span></div>`).join(''):'<p class="vazio">Sem fechamentos no período.</p>';
+  ligarDicas($('p-clientes'));
 
   ligarCliques($('tab-painel'));
   animarBarras($('tab-painel'));
@@ -4342,7 +4401,11 @@ function renderGanhosCustos(){
   $('gxc-kpis').innerHTML=k('Ganhos '+ano,fmtCurto(tot.g),'contratos + propostas')+k('Custos '+ano,fmtCurto(tot.c),'fontes marcadas acima')+
     k('Resultado '+ano,fmtCurto(res),marg==null?'—':`margem de ${String(marg).replace('.',',')}%`,res>=0?'positivo':'negativo')+k('Receita fixa por mês',fmtCurto(recMensal),`${contratos.filter(c=>c.tipo!=='despesa'&&contratoNoMes(c,hojeYM)).length} contrato(s) ativo(s) hoje`);
   const mx=Math.max(1,...linhas.map(l=>Math.max(l.g,l.c))),nm=['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
-  $('gxc-grafico').innerHTML=`<div class="gxc-graf">${linhas.map((l,i)=>`<div class="m" title="${esc(nm[i])}: ganhos R$ ${esc(fmtMoeda(l.g))} · custos R$ ${esc(fmtMoeda(l.c))}"><div class="bs"><div class="b g" style="height:${100*l.g/mx}%"></div><div class="b c" style="height:${100*l.c/mx}%"></div></div><span class="r">${nm[i]}</span></div>`).join('')}</div>`;
+  const lt=(cor,t,v)=>v?`<div class="l"><span>${cor?`<i style="background:${cor}"></i>`:''}${esc(t)}</span><b>${esc(fmtCurto(v))}</b></div>`:'';
+  graficoColunas($('gxc-grafico'),linhas.map((l,i)=>({rot:nm[i],vals:[l.g,l.c],atual:l.m===hojeYM,futuro:l.m>hojeYM,res:l.g||l.c?l.r:null,
+    tip:`<b>${esc(nm[i])}/${esc(ano.slice(2))}${l.m>hojeYM?' (previsto)':''}</b>${lt('#2e7d32','Contratos (receita)',l.x.rc)}${lt('#2e7d32','Propostas fechadas',l.x.rp)}${lt('#c0392b','Contratos (custo)',l.x.cc)}${lt('#c0392b','Saídas',l.x.cs)}${lt('#c0392b','Pagamentos',l.x.cp)}${lt('#c0392b','Folha',l.x.cf)}<div class="l" style="border-top:1px solid #455;margin-top:3px;padding-top:3px"><span>Resultado</span><b style="color:${l.r>=0?'#8fe39a':'#ff9b8f'}">${esc(fmtCurto(l.r))}</b></div>`,
+    clique:()=>{const tr=$('gxc-tabela').querySelectorAll('tbody tr')[i];if(!tr)return;tr.scrollIntoView({behavior:'smooth',block:'center'});tr.style.transition='background .3s';tr.style.background='#fff6c8';setTimeout(()=>tr.style.background='',1600);}})),
+    [{nome:'Ganhos',cor:'#2e7d32'},{nome:'Custos',cor:'#c0392b'}],{modo:'lado'});
   const cel=v=>`<td class="num">${v?esc(fmtMoeda(v)):'<span style="color:#bbb">—</span>'}</td>`;
   $('gxc-tabela').innerHTML=`<thead><tr><th>Mês</th><th class="num">Contratos (receita)</th><th class="num">Propostas fechadas</th><th class="num"><strong>Ganhos</strong></th><th class="num">Contratos (custo)</th><th class="num">Saídas</th><th class="num">Pagamentos</th><th class="num">Folha</th><th class="num"><strong>Custos</strong></th><th class="num">Resultado</th></tr></thead><tbody>${
     linhas.map((l,i)=>`<tr${l.m>hojeYM?' style="color:var(--texto2)" title="mês futuro: só o que já está previsto"':''}><td>${nm[i]}/${ano.slice(2)}${l.m===hojeYM?' <span class="badge badge-hoje">atual</span>':''}</td>${cel(l.x.rc)}${cel(l.x.rp)}<td class="num"><strong>${esc(fmtMoeda(l.g))}</strong></td>${cel(l.x.cc)}${cel(l.x.cs)}${cel(l.x.cp)}${cel(l.x.cf)}<td class="num"><strong>${esc(fmtMoeda(l.c))}</strong></td><td class="num ${l.r>=0?'positivo':'negativo'}">${esc(fmtMoeda(l.r))}</td></tr>`).join('')
@@ -4498,6 +4561,32 @@ function renderTarefasPainel(todas){
   $('p-ativ').querySelectorAll('[data-pd-tarefa]').forEach(el=>el.onclick=()=>{const a=todasAtividades.find(x=>x.id===el.dataset.pdTarefa);if(!a)return;
     if(v24Ok)abrirTarefa(a.id);else if(a.card_id)abrirModalCard(a.card_id);else abrirTab('atividades');});
   animarNumeros($('p-tf-resumo'));
+}
+// v64: gráfico de colunas (empilhadas ou lado a lado), com grade, total em cima, dica ao passar o mouse e clique
+function valorCurtoEixo(v){v=Number(v||0);const a=Math.abs(v);return a>=1e6?(v/1e6).toLocaleString('pt-BR',{maximumFractionDigits:1})+' mi':a>=1e3?(v/1e3).toLocaleString('pt-BR',{maximumFractionDigits:a<1e5?1:0})+' mil':String(Math.round(v));}
+function graficoColunas(el,cols,series,o){
+  o=o||{};const lado=o.modo==='lado',mostra=PERM.verValores;
+  const topo=Math.max(1,...cols.map(c=>lado?Math.max(...c.vals):c.vals.reduce((a,b)=>a+b,0)));
+  const bruto=topo/3,p10=Math.pow(10,Math.floor(Math.log10(bruto))),passo=[1,2,2.5,5,10].map(m=>m*p10).find(x=>x>=bruto)||bruto;
+  const max=passo*Math.ceil(topo/passo-1e-9),linhas=[];for(let k=1;k*passo<=max+1e-6;k++)linhas.push(k*passo);
+  el.innerHTML=`<div class="gc">${mostra?`<div class="gc-grade" style="bottom:${22+(lado?14:0)}px">${linhas.map(v=>`<div style="bottom:${100*v/max}%"><span>${esc(valorCurtoEixo(v))}</span></div>`).join('')}</div>`:''}
+    <div class="gc-cols">${cols.map((c,i)=>{const tot=lado?0:c.vals.reduce((a,b)=>a+b,0);
+      const seg=(v,j)=>`<div class="seg" data-h="${100*v/max}" style="height:0;background:${series[j].cor}"></div>`;
+      const pilhas=lado?c.vals.map((v,j)=>`<div class="pilha">${seg(v,j)}</div>`).join(''):`<div class="pilha">${c.vals.map((v,j)=>v?seg(v,j):'').join('')}</div>`;
+      return`<div class="gc-col${c.atual?' atual':''}${c.futuro?' futuro':''}" data-i="${i}" data-tip="${esc(c.tip||'')}">
+        <div class="tot">${tot&&mostra?esc(valorCurtoEixo(tot)):''}</div><div class="area${lado?' lado':''}">${pilhas}</div>
+        ${lado?`<div class="res" style="color:${(c.res||0)>=0?'#2e7d32':'#c0392b'}">${c.res!=null&&mostra?esc(valorCurtoEixo(c.res)):''}</div>`:''}<div class="rot">${esc(c.rot)}</div></div>`;}).join('')}</div></div>`;
+  requestAnimationFrame(()=>requestAnimationFrame(()=>el.querySelectorAll('.seg').forEach(sg=>sg.style.height=sg.dataset.h+'%')));
+  el.querySelectorAll('.gc-col').forEach(cl=>{const c=cols[+cl.dataset.i];if(c.clique)cl.onclick=()=>{el.querySelectorAll('.gc-col.sel').forEach(x=>x.classList.remove('sel'));cl.classList.add('sel');c.clique();};});
+  ligarDicas(el);
+}
+// dica (tooltip) que segue o mouse: conteúdo em data-tip (HTML montado com esc())
+function ligarDicas(raiz){
+  let tip=document.getElementById('pd-tip');if(!tip){tip=document.createElement('div');tip.id='pd-tip';tip.className='pd-tip';document.body.appendChild(tip);}
+  raiz.querySelectorAll('[data-tip]').forEach(el=>{if(!el.dataset.tip)return;
+    el.addEventListener('mouseenter',()=>{tip.innerHTML=el.dataset.tip;tip.style.display='block';});
+    el.addEventListener('mousemove',e=>{const w=tip.offsetWidth,h=tip.offsetHeight;let x=e.clientX+14,y=e.clientY+14;if(x+w>innerWidth-8)x=e.clientX-w-14;if(y+h>innerHeight-8)y=e.clientY-h-14;tip.style.left=x+'px';tip.style.top=y+'px';});
+    el.addEventListener('mouseleave',()=>{tip.style.display='none';});});
 }
 // barras crescem do zero
 function animarBarras(raiz){
@@ -7260,21 +7349,54 @@ async function abrirEmailProposta(){
   $('em-para').value=(contato&&contato.email)||'';$('em-cc').value='';
   $('dl-em-emails').innerHTML=(cts||[]).filter(x=>x.email).map(x=>`<option value="${esc(x.email)}">${esc(x.nome||'')}</option>`).join('');
   $('em-assunto').value=`Proposta ${num} — ${card.titulo||''}`.trim();
-  $('em-msg').value=`${pn?'Prezado(a) '+pn+',':'Prezados,'}\n\nSegue em anexo a nossa proposta técnica e comercial ${num} para ${String(card.titulo||'os serviços solicitados').replace(/^./,c=>c.toLowerCase())}.\n\nFicamos à disposição para esclarecer qualquer dúvida e para uma visita técnica, se necessário.\n\nAtenciosamente,\n${(meuPerfil&&meuPerfil.nome)||''}\n${emp.nome||'Grupo BVEK'}`;
+  const A=assinaturaEmailSalva();
+  $('em-de').value=A.caixa;$('em-ass-usar').checked=A.usar!==false;
+  $('em-ass-nome').value=A.nome;$('em-ass-cargo').value=A.cargo;$('em-ass-fixo').value=A.fixo;$('em-ass-cel').value=A.celular;
+  $('em-ass-box').open=!A.cargo;previaAssinaturaEmail();
+  // a despedida ("Atenciosamente", nome e empresa) vem na assinatura padrão
+  $('em-msg').value=`${pn?'Prezado(a) '+pn+',':'Prezados,'}\n\nSegue em anexo a nossa proposta técnica e comercial ${num} para ${String(card.titulo||'os serviços solicitados').replace(/^./,c=>c.toLowerCase())}.\n\nFicamos à disposição para esclarecer qualquer dúvida e para uma visita técnica, se necessário.`;
   $('em-gerar').checked=!card.arquivo_proposta;
   $('em-anexo').innerHTML=card.arquivo_proposta?`Anexo: <strong>${esc(card.arquivo_proposta_nome||num+'.pdf')}</strong> (o PDF guardado na proposta). Marque abaixo para gerar de novo com os dados atuais.`:'Esta proposta ainda não tem PDF guardado: o CRM gera o PDF agora e anexa.';
   $('em-sub').textContent=`${num} · ${rotuloCliente(cli)||''}`;
   abrirModal('modal-email-proposta');
 }
 const listaEmails=t=>String(t||'').split(/[;,\s]+/).map(x=>x.trim()).filter(Boolean);
+// v64: caixa de quem está logado + assinatura padrão (a mesma do carimbo do Outlook), guardadas no login
+function assinaturaEmailSalva(){
+  let a={};try{a=(usuario&&usuario.user_metadata&&usuario.user_metadata.assinatura_email)||{};}catch(e){}
+  const login=String((usuario&&usuario.email)||'').toLowerCase(),loc=login.split('@')[0];
+  const nomeTit=String((meuPerfil&&meuPerfil.nome)||'').trim().toLowerCase().replace(/(^|\s)(\p{L})/gu,(m,e,l)=>e+l.toUpperCase()).replace(/\s(De|Da|Do|Dos|Das|E)(?=\s)/g,m=>m.toLowerCase());
+  return{caixa:a.caixa||(/@bvek\.com\.br$/.test(login)||!loc?login:loc+'@bvek.com.br'),usar:a.usar,
+    nome:a.nome||nomeTit,cargo:a.cargo||'',fixo:a.fixo!=null?a.fixo:'(21) 3040-3700',celular:a.celular||''};
+}
+function lerAssinaturaEmail(){return{nome:$('em-ass-nome').value.trim(),cargo:$('em-ass-cargo').value.trim(),fixo:$('em-ass-fixo').value.trim(),celular:$('em-ass-cel').value.trim()};}
+function previaAssinaturaEmail(){
+  const box=$('em-ass-previa');if(!box)return;
+  if(!$('em-ass-usar').checked){box.innerHTML='<em style="color:#999">O e-mail vai sem assinatura.</em>';return;}
+  const a=lerAssinaturaEmail(),de=$('em-de').value.trim()||'seu.email@bvek.com.br',F='font-family:Arial,Helvetica,sans-serif';
+  const tel=[a.fixo&&`Fixo <b>${esc(a.fixo)}</b>`,a.celular&&`Cel. <b>${esc(a.celular)}</b>`].filter(Boolean).join(' · ');
+  box.innerHTML=`<div style="font-size:14px;margin-bottom:10px">Atenciosamente,</div><table style="border-collapse:collapse;color:#2e3a46"><tr><td style="padding:4px 16px 4px 0;vertical-align:middle;width:118px"><img src="img/assinatura/grupo-bvek-solucoes.png" alt="Grupo BVEK Soluções" style="width:118px;height:auto"></td>
+    <td style="border-left:3px solid #0e4a84;padding:2px 0 2px 16px;vertical-align:middle"><div style="${F};font-size:16px;color:#0e4a84;line-height:20px"><b>${esc(a.nome||'Seu nome')}</b></div>${a.cargo?`<div style="${F};font-size:12px;color:#4a5663;line-height:17px">${esc(a.cargo)}</div>`:''}
+    ${tel?`<div style="${F};font-size:12px;padding-top:6px;line-height:17px">${tel}</div>`:''}<div style="${F};font-size:12px;color:#4a5663;line-height:17px">${esc(de)}</div><div style="${F};font-size:12px;color:#0e4a84;line-height:17px">www.bvek.com.br</div></td></tr>
+    <tr><td colspan="2" style="padding-top:10px"><div style="${F};font-size:11px;border-top:1px solid #dde3e9;padding-top:7px">Empresas do grupo: <b style="color:#1f5e9a">Engekat Construções</b> · <b style="color:#0b5a12">Verde Brasilis</b> · <b style="color:#1f4e79">BrasiLimp</b> · <b style="color:#1e5a96">KAT Seguros</b></div></td></tr></table>`;
+}
+async function guardarAssinaturaEmail(dados){
+  try{const at=(usuario&&usuario.user_metadata&&usuario.user_metadata.assinatura_email)||{};
+    if(JSON.stringify(at)===JSON.stringify(dados))return;
+    const{data,error}=await sb.auth.updateUser({data:{assinatura_email:dados}});if(!error&&data&&data.user)usuario=data.user;}catch(e){console.warn(e);}
+}
 async function enviarEmailProposta(){
   const para=listaEmails($('em-para').value),cc=listaEmails($('em-cc').value),re=/^[^\s@;,<>]+@[^\s@;,<>]+\.[^\s@;,<>]+$/;
   if(!para.length){alert('Informe o e-mail de quem vai receber.');return;}
   const ruim=para.concat(cc).find(e=>!re.test(e));if(ruim){alert('E-mail inválido: '+ruim);return;}
+  const de=$('em-de').value.trim().toLowerCase();if(!re.test(de)){alert('Informe a sua caixa de e-mail em "Enviar da caixa".');return;}
+  const usarAss=$('em-ass-usar').checked,ass=lerAssinaturaEmail();
+  if(usarAss&&!ass.nome){alert('Preencha o seu nome na assinatura (ou desmarque "Incluir a assinatura padrão").');$('em-ass-box').open=true;return;}
+  guardarAssinaturaEmail({caixa:de,usar:usarAss,...ass});
   const b=$('em-btn');b.disabled=true;b.textContent='Enviando…';
   try{
     if($('em-gerar').checked||!emCard.arquivo_proposta){b.textContent='Gerando o PDF…';const P=await htmlDaProposta(emCard.id);if(!await guardarPdfProposta(P,true))return;b.textContent='Enviando…';}
-    const{data,error}=await sb.functions.invoke('email-proposta',{body:{card_id:emCard.id,para,cc,assunto:$('em-assunto').value.trim(),mensagem:$('em-msg').value}});
+    const{data,error}=await sb.functions.invoke('email-proposta',{body:{card_id:emCard.id,para,cc,de,assinatura:usarAss?ass:null,assunto:$('em-assunto').value.trim(),mensagem:$('em-msg').value}});
     if(error||!data||!data.ok){let m=(data&&data.erro)||'';if(!m&&error){try{const j=await error.context.json();m=j.erro||'';}catch(e){}m=m||error.message||'erro';}
       if(/Failed to send|FunctionsFetchError|FunctionsRelayError|not found/i.test(m))m='a função "email-proposta" não está publicada no Supabase (Edge Functions → Deploy new function, com o conteúdo de supabase/functions/email-proposta/index.ts).';
       alert('O e-mail não foi enviado:\n'+m);return;}
@@ -9556,7 +9678,9 @@ function renderPerfilCV(){
     return;
   }
   const p=Q.pontuar(a.respostas),ab=(a.respostas&&a.respostas.abertas)||{};
+  const idt=(a.respostas&&a.respostas.identificacao)||{},idade=idt.nascimento?Math.floor((Date.now()-new Date(idt.nascimento+'T12:00:00').getTime())/(365.25*86400000)):null;
   box.innerHTML=`<p style="font-size:13px;margin-bottom:10px">Respondido em <strong>${esc(fmtDataHora(a.respondido_em))}</strong> · média <strong>${p.media}/100</strong>${anteriores?` · ${anteriores} questionário(s) anterior(es)`:''}</p>
+    ${idt.cpf||idt.nascimento?`<p style="font-size:13px;margin-bottom:10px">Informado pelo candidato: CPF <strong>${esc(idt.cpf||'—')}</strong> · nascimento <strong>${esc(idt.nascimento?fmtData(idt.nascimento):'—')}</strong>${idade!=null&&idade>=0?` (${idade} anos)`:''}</p>`:''}
     ${p.dims.map(d=>`<div class="dim-linha"><span title="${esc(d.desc)}">${esc(d.nome)}</span><div class="trilho"><div class="cheio niv-${esc(d.nivel.k)}" style="width:${Math.max(2,d.nota||0)}%"></div></div><span class="num"><strong>${d.nota??'—'}</strong> <span class="dica" style="display:inline">${esc(d.nivel.txt)}</span></span></div>`).join('')}
     ${p.concordaComTudo?'<div class="aviso" style="padding:8px 12px;font-size:12px;margin:8px 0">Concordou também com várias frases negativas: as respostas podem ter sido pouco cuidadosas ou tendendo a agradar. Confirme na entrevista.</div>':''}
     <div style="margin-top:12px">${Q.ABERTAS.map(q=>`<div class="resp-aberta"><strong>${esc(q.txt)}</strong>${ab[q.id]?esc(ab[q.id]).replace(/\n/g,'<br>'):'<em style="color:#999">sem resposta</em>'}</div>`).join('')}</div>
@@ -12347,11 +12471,14 @@ function renderInventario(){
   const ativos=base.filter(i=>i.ativo!==false);
   const l=base.filter(i=>(inat||i.ativo!==false)&&(!tp||i.tipo===tp)&&(!es||i.estado===es)&&(!ct||i.categoria===ct)&&(!baixo||estoqueBaixo(i))&&(!epiV||epiVencendo(i))
     &&(!q||norm([i.codigo,i.nome,i.marca_modelo,i.numero_serie,i.localizacao,i.categoria,i.observacoes].join(' ')).includes(q)));
+  ordenarPor(l,'inv',{codigo:i=>i.codigo||'',nome:i=>i.nome||'',tipo:i=>TIPO_INV_LABEL[i.tipo]||i.tipo||'',estoque:i=>Number(i.quantidade||0),
+    uso:i=>qtdEmPropostas(i.id),estado:i=>(ESTADOS_INV.findIndex(e=>e[0]===i.estado)+1)||99,local:i=>i.localizacao||'',empresa:i=>{const e=i.empresa_id&&empresaPorId(i.empresa_id);return e?e.sigla||'':'';}},'nome');
+  const T=(c,r,k,t)=>thOrd('inv',c,r,k).replace('title="Clique para ordenar"',`title="${t?esc(t)+' — ':''}Clique para ordenar (clique de novo para inverter)"`);
   const valor=ativos.reduce((s,i)=>s+Number(i.valor_unitario||0)*Number(i.quantidade||0),0);
   $('inv-kpis').innerHTML=[['Itens cadastrados',String(ativos.length),nomeEmpresaAtual()],['Estoque baixo',String(ativos.filter(estoqueBaixo).length),'no mínimo ou abaixo'],
     ['Em manutenção',String(ativos.filter(i=>i.estado==='manutencao').length),'fora de uso'],['EPI a comprar',String(ativos.filter(epiVencendo).length),'vencido ou perto de vencer'],['Valor estimado',valor?fmtCurto(valor):'—','quantidade × valor unitário']]
     .map(([r,v,s])=>`<div class="kpi"><div class="rot">${esc(r)}</div><div class="val">${esc(v)}</div><div class="sub">${esc(s)}</div></div>`).join('');
-  $('tabela-inventario').innerHTML=`<thead><tr><th>Código</th><th>Item</th><th>Tipo</th><th class="num">Estoque</th><th class="num" title="Separado em propostas não perdidas">Em propostas</th><th>Estado</th><th>Onde está</th><th>Empresa</th></tr></thead><tbody>${l.length?l.map(i=>{
+  $('tabela-inventario').innerHTML=`<thead><tr>${T('codigo','Código')}${T('nome','Item')}${T('tipo','Tipo')}${T('estoque','Estoque','num')}${T('uso','Em propostas','num','Separado em propostas não perdidas')}${T('estado','Estado')}${T('local','Onde está')}${T('empresa','Empresa')}</tr></thead><tbody>${l.length?l.map(i=>{
     const e=i.empresa_id&&empresaPorId(i.empresa_id),uso=qtdEmPropostas(i.id);
     return`<tr class="clicavel ${i.ativo===false?'inativo':''}" data-inv="${esc(i.id)}" style="cursor:pointer"><td style="white-space:nowrap"><strong>${esc(i.codigo||'')}</strong></td>
       <td><strong>${esc(i.nome)}</strong>${i.marca_modelo||i.numero_serie?`<div class="dica" style="margin:0">${esc([i.marca_modelo,i.numero_serie&&'série/CA '+i.numero_serie].filter(Boolean).join(' · '))}</div>`:''}${i.categoria?`<div class="dica" style="margin:0">${esc(i.categoria)}</div>`:''}</td>
@@ -12362,6 +12489,7 @@ function renderInventario(){
       <td>${esc(i.localizacao||'—')}</td><td>${e?`<span class="card-empresa-tag tag-${esc(e.sigla)}">${esc(e.sigla)}</span>`:'—'}</td></tr>`;}).join('')
     :`<tr><td colspan="8" class="vazio">${q||tp||es||ct||baixo?'Nenhum item com esses filtros.':'Nenhum item cadastrado ainda. Clique em <em>+ Novo item</em>.'}</td></tr>`}</tbody>`;
   $('tabela-inventario').querySelectorAll('[data-inv]').forEach(tr=>tr.onclick=()=>abrirItemInventario(tr.dataset.inv));
+  ligarOrdenacao('tabela-inventario','inv',renderInventario);
 }
 function abrirItemInventario(id){
   if(!v30InvOk){avisarMigracaoV30('inv-info');return;}
