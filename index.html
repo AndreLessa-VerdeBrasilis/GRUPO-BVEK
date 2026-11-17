@@ -7075,6 +7075,9 @@ const PROPOSTA_PADRAO={
   // v30: espaço de aceite para o cliente preencher e assinar
   aceite:'Declaramos estar de acordo com os termos e condições desta proposta técnica e comercial, inclusive valor, prazo e forma de pagamento, e autorizamos o início dos serviços.'
 };
+// v65: cláusula obrigatória em TODAS as propostas (texto fixo no código, não editável em Parâmetros)
+const CLAUSULA_REEQUILIBRIO_TRIBUTARIO={titulo:'OBSERVAÇÃO – REEQUILÍBRIO TRIBUTÁRIO (IBS/CBS):',
+  texto:'Os preços desta proposta consideram a legislação tributária vigente na data de sua emissão. A partir de 01/01/2027, se a implantação da CBS e do IBS (EC nº 132/2023 e LC nº 214/2025), ou suas alterações durante a transição, aumentar a carga tributária efetiva da CONTRATADA, todas as parcelas, medições e saldos a faturar ou a receber a partir dessa data serão recompostos na mesma proporção do aumento. O objetivo é preservar a receita líquida original. A recomposição será feita por simples notificação com memória de cálculo, sem necessidade de termo aditivo.'};
 // identidade visual de cada empresa (mesmas cores e logos das atas do grupo: 00.5.1.1_MODELOS/_sistema)
 const TEMAS_EMPRESA={
   EK:{sigla:'EK',principal:'1E3A5F',destaque:'2E6DB4',claro:'EAF1F9',zebra:'F5F8FC',linha:'C9D6E6',marca:true},
@@ -7178,7 +7181,7 @@ async function htmlDaProposta(cardId){
   sec('PREMISSAS E ESCLARECIMENTOS',premissas.length?premissas.map(blocoTexto).join(''):'');
   const cond=[['Valor global',esc(valorComExtenso(total||somaItens))],['Tributos',esc(M.tributos)],prazo?['Prazo de execução',esc(`Até ${prazo} a partir da emissão da Ordem de Serviço`)]:null,
     card.forma_pagamento?['Pagamento',br2(card.forma_pagamento)]:null,M.faturamento?['Faturamento',esc(M.faturamento)]:null,['Validade da proposta',esc(`${extensoDias(validade)} a contar de ${hojeCurto}`)]].filter(Boolean);
-  sec('CONDIÇÕES COMERCIAIS',`<table class="dados">${cond.map(([a,b])=>`<tr><th>${a}</th><td>${b}</td></tr>`).join('')}</table>`);
+  sec('CONDIÇÕES COMERCIAIS',`<table class="dados">${cond.map(([a,b])=>`<tr><th>${a}</th><td>${b}</td></tr>`).join('')}</table><p style="margin-top:10px;text-align:justify"><strong>${esc(CLAUSULA_REEQUILIBRIO_TRIBUTARIO.titulo)}</strong> ${esc(CLAUSULA_REEQUILIBRIO_TRIBUTARIO.texto)}</p>`);
   const ass=String(M.assinaturas||'').split('\n').map(l=>l.split('|').map(x=>x.trim())).filter(p=>p[0]);
   // v30: assinatura escaneada (Parâmetros) aparece em cima da linha de quem tiver
   const imgsAss=M.assinatura_imagens||{};
