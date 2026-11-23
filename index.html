@@ -1425,7 +1425,7 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
       <div class="legenda-perfis">
         <div><strong>Administrador</strong>Tudo: usuários, empresas, exclusões e todas as abas. É o único que vê o funil, as propostas, os valores e os contratos recorrentes.</div>
         <div><strong>Comercial</strong>Clientes, contatos, contratos, tarefas, cronograma e agenda do escritório. Documentos das empresas só consulta. Não vê funil, propostas, valores, contratos recorrentes nem RH.</div>
-        <div><strong>Administrativo</strong>Documentos e certidões, funcionários, RH (ficha, uniformes, contracheques, vales, adiantamentos, envio à contabilidade), currículos, contratos, tarefas, cronograma e agenda do escritório. Clientes só consulta. Não vê funil, propostas, valores nem contratos recorrentes.</div>
+        <div><strong>Administrativo</strong>Documentos e certidões, funcionários, RH (ficha, uniformes, contracheques, vales, adiantamentos, envio à contabilidade), currículos, contratos, tarefas, cronograma e agenda do escritório, fornecedores e materiais (cadastra e altera). Clientes só consulta. Não vê funil, propostas, valores nem contratos recorrentes.</div>
         <div><strong>Contabilidade</strong>Funcionários, benefícios, RH (salários, contracheques, vales e adiantamentos), documentos/certidões, cronograma e agenda do escritório. Não vê funil, propostas, clientes nem currículos.</div>
         <div><strong>Estagiário</strong>Painel próprio (tarefas atrasadas e pendentes, agenda, inventário e fornecedores; ela arruma as caixas), tarefas da equipe, cronograma e agenda do escritório (cria e altera, não apaga), inventário e fornecedores. Não vê o painel completo, funil, valores, clientes, contratos, financeiro, RH nem documentos.</div>
         <div><strong>Consultoria ISO</strong>Só a aba Gestão → Normas ISO 9001 / 14001: cadastra e altera requisitos e avalia as leis novas (não apaga, não muda as palavras da busca). Não vê Contas e acessos nem nada do resto do CRM.</div>
@@ -3451,7 +3451,8 @@ function calcularPermissoes(p){
     // v21: saídas · saidasTodas = vê todas, importa fatura e confere (o comercial vê só os próprios cartões)
     saidasTodas:adm||admv,
     // v22: fornecedores e preços (todos da área comercial veem; administrador e comercial editam)
-    fornEditar:adm||com||est,
+    // v66: o administrativo também cadastra e altera fornecedores, materiais e preços
+    fornEditar:adm||com||admv||est,
     // v30: inventário (administrador, comercial e administrativo cadastram; consulta só vê)
     invEditar:adm||com||admv||est,
     // v34: o comercial não vê valores de propostas nem gera o PDF; custo/lucro (composição, ganhos × custos) só administrador
