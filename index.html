@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>GRUPO-BVEK | CRM</title>
 <link rel="icon" href="/favicon.ico" sizes="any">
 <link rel="icon" type="image/png" sizes="32x32" href="/img/icone-32.png">
@@ -592,6 +592,86 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
 .vaga-grid{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:18px}
 .vaga-previa{white-space:pre-wrap;background:var(--fundo,#f6f7f9);border:1.5px solid var(--borda);border-radius:10px;padding:14px;font-size:13.5px;line-height:1.5;max-height:70vh;overflow:auto;word-break:break-word}
 @media (max-width:820px){.vaga-grid{grid-template-columns:1fr}}
+/* ===== v67: usabilidade no celular (Android e iPhone) ===== */
+.btn-menu-cel,.menu-cel-cab,.menu-cel-rodape,.menu-cel-fundo{display:none}
+@media(max-width:900px){
+  /* barra do topo: botão Menu + logo + empresa; Senha/Sair/avisos vão para dentro do menu */
+  #app .topbar{padding:0 10px;padding-top:env(safe-area-inset-top);height:calc(56px + env(safe-area-inset-top));gap:8px}
+  .btn-menu-cel{display:flex;flex-direction:column;justify-content:center;gap:4px;width:42px;height:42px;flex:none;border:none;border-radius:10px;background:rgba(255,255,255,.15);cursor:pointer;padding:0 11px}
+  .btn-menu-cel span{display:block;height:2.5px;border-radius:2px;background:#fff}
+  #app .topbar-logo{font-size:15px;gap:7px;flex:none}
+  #app .topbar-logo img{width:30px;height:30px}
+  #app .empresa-selector{flex:1 1 auto;min-width:0;padding:6px 8px;justify-content:flex-end}
+  #app .empresa-selector label{display:none}
+  #app .empresa-selector select{width:100%;max-width:100%;font-size:14px;text-overflow:ellipsis}
+  #app .topbar-right{display:none}
+  /* abas viram um menu lateral recolhido */
+  .tabs{position:fixed;top:0;left:0;bottom:0;width:min(300px,84vw);z-index:960;flex-direction:column;padding:0 0 env(safe-area-inset-bottom);border:none;overflow-y:auto;overflow-x:hidden;transform:translateX(-105%);transition:transform .22s ease;box-shadow:4px 0 24px rgba(0,0,0,.25);overscroll-behavior:contain}
+  body.menu-cel-aberto .tabs{transform:none}
+  .menu-cel-fundo{display:block;position:fixed;inset:0;z-index:950;background:rgba(0,0,0,.45);opacity:0;pointer-events:none;transition:opacity .22s}
+  body.menu-cel-aberto .menu-cel-fundo{opacity:1;pointer-events:auto}
+  body.menu-cel-aberto{overflow:hidden}
+  .menu-cel-cab{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--verde);color:#fff;padding:14px 12px 14px 18px;padding-top:calc(14px + env(safe-area-inset-top));position:sticky;top:0;z-index:2}
+  .menu-cel-cab strong{display:block;font-size:17px}
+  .menu-cel-cab span{display:block;font-size:12px;opacity:.85;margin-top:2px;word-break:break-word}
+  .menu-cel-cab .perfil-tag{display:inline-block;margin:4px 0 0}
+  .menu-cel-x{width:40px;height:40px;flex:none;border:none;border-radius:50%;background:rgba(255,255,255,.18);color:#fff;font-size:26px;line-height:1;cursor:pointer}
+  .tabs .tab{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:14px 18px;font-size:15px;color:var(--texto);border-bottom:1px solid #f0f0f0;margin:0;border-radius:0;white-space:normal;min-height:50px}
+  .tabs .tab:hover{background:var(--verde-claro)}
+  .tabs .tab.ativo{background:var(--verde-claro);color:var(--verde);border-bottom-color:#f0f0f0;box-shadow:inset 4px 0 0 var(--verde);border-radius:0}
+  .tabs .tab.ativo .badge{background:var(--verde);color:#fff}
+  .menu-cel-rodape{display:flex;flex-direction:column;gap:8px;padding:16px 14px;margin-top:auto;border-top:1px solid var(--borda);background:#fafafa}
+  .menu-cel-rodape button{width:100%;text-align:left;padding:12px 14px;border-radius:10px;font-size:15px;background:#fff;color:var(--verde);border:1.5px solid var(--borda);font-weight:600}
+  .menu-cel-rodape .btn-sair{color:var(--vermelho);border-color:#f1c1bb}
+  .menu-cel-rodape #user-nome{display:none!important}
+  /* título da tela fixo logo abaixo da barra do topo */
+  .conteudo>[id^="tab-"]>.barra-acoes:first-child{top:var(--alt-topbar,56px)}
+}
+@media(max-width:700px){
+  /* iPhone: campos com letra de 16px não dão zoom sozinhos ao tocar */
+  input:not([type=checkbox]):not([type=radio]):not([type=range]),select,textarea{font-size:16px!important}
+  .conteudo{padding:12px 12px calc(20px + env(safe-area-inset-bottom))}
+  .barra-acoes{gap:8px}
+  .barra-acoes h2{font-size:17px}
+  .barra-acoes>div:not(:first-child){display:flex;flex-wrap:wrap;gap:8px}
+  .btn-novo{padding:10px 16px}
+  .btn-sec,.btn-novo,.subaba,.pd-aba,.btn-cancelar,.btn-salvar,.btn-excluir,.btn-pdf,.btn-versao,.btn-projeto{min-height:40px}
+  /* filtros: cada campo ocupa a linha (ou meia linha), sem ficar cortado */
+  .filtros{gap:8px}
+  .filtros>input,.filtros>select{flex:1 1 140px;min-width:0;max-width:100%}
+  .filtros input[type=search]{flex-basis:100%}
+  /* subabas (RH, Financeiro, Gestão...) numa linha que desliza para o lado */
+  .subabas{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;margin-left:-12px;margin-right:-12px;padding:0 12px 10px}
+  .subabas::-webkit-scrollbar{display:none}
+  .subaba{flex:none}
+  /* painel: caixas uma embaixo da outra e números 2 por linha */
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .kpi{padding:12px 14px}.kpi .val{font-size:20px}.kpi .rot{font-size:11px}
+  .paineis,.avisos-dia,.legenda-perfis{grid-template-columns:minmax(0,1fr)}
+  .painel{padding:14px}
+  /* funil: uma coluna por vez, deslizando para o lado */
+  .funil-container{scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;margin:0 -12px;padding:0 12px 16px}
+  .funil .coluna{flex:0 0 82vw;min-width:82vw;scroll-snap-align:start}
+  /* tabelas deslizam para o lado dentro da própria caixa */
+  .tabela-wrap{-webkit-overflow-scrolling:touch}
+  table.tabela th,table.tabela td{padding:8px 10px}
+  /* cronograma: coluna do nome mais estreita */
+  .crg-grade .crg-nome{min-width:110px;max-width:130px}
+  /* janelas (pop-ups) ocupam a tela toda, com os botões sempre à mão */
+  .modal-overlay{padding:0}
+  .modal,.modal-lg,.modal-sm{max-width:100%;min-height:100%;border-radius:0;margin:0;padding:16px 14px calc(16px + env(safe-area-inset-bottom))}
+  .modal-cab{margin:-16px -14px 10px;padding:14px 56px 10px 14px;padding-top:calc(14px + env(safe-area-inset-top));border-radius:0;top:0}
+  .modal-x{top:calc(10px + env(safe-area-inset-top));right:10px;width:40px;height:40px}
+  .modal h2{font-size:18px}
+  .modal-btns{position:sticky;bottom:0;z-index:15;background:#fff;margin:16px -14px 0;padding:10px 14px;border-top:1px solid var(--borda);gap:8px}
+  .modal-btns>button{flex:1 1 auto}
+  .ativ-form{grid-template-columns:1fr}
+  .radios,.checks-linha{flex-wrap:wrap;gap:10px 18px}
+  .toast{bottom:calc(20px + env(safe-area-inset-bottom))}
+  .btn-flutuante{bottom:calc(14px + env(safe-area-inset-bottom));right:12px;padding:9px 14px}
+}
+/* telas de toque: sem o "pulo" dos cartões ao passar o mouse */
+@media(hover:none){.card:hover,.pd-kpis .kpi:hover{transform:none;box-shadow:none}}
 </style>
 </head>
 <body>
@@ -713,6 +793,8 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
 
 <div id="app">
   <div class="topbar">
+    <!-- v67: no celular as abas ficam num menu recolhido (botão Menu) -->
+    <button class="btn-menu-cel" id="btn-menu-cel" onclick="alternarMenuCel()" aria-label="Abrir o menu" aria-controls="tabs" aria-expanded="false"><span></span><span></span><span></span></button>
     <div class="topbar-logo" onclick="irParaPainel()" title="Ir para o Painel" role="link"><img src="img/icone-192.png" alt="">GRUPO-BVEK</div>
     <div class="empresa-selector">
       <label>Empresa:</label>
@@ -726,7 +808,9 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
       <button class="btn-sair" onclick="sair()">Sair</button>
     </div>
   </div>
+  <div class="menu-cel-fundo" id="menu-cel-fundo" onclick="fecharMenuCel()"></div>
   <div class="tabs" id="tabs">
+    <div class="menu-cel-cab"><div><strong>Menu</strong><span id="menu-cel-user"></span></div><button class="menu-cel-x" onclick="fecharMenuCel()" aria-label="Fechar o menu">&times;</button></div>
     <div class="tab ativo" data-tab="painel" data-comercial>Painel</div>
     <div class="tab" data-tab="inicio" id="tab-btn-inicio" style="display:none">Painel</div>
     <div class="tab" data-tab="atividades" data-comercial>Tarefas <span id="tab-ativ-badge"></span></div>
@@ -743,6 +827,7 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
     <div class="tab" data-tab="financeiro" id="tab-btn-financeiro" style="display:none">Financeiro <span id="tab-fin-badge"></span></div>
     <div class="tab" data-tab="gestao" id="tab-btn-gestao" style="display:none">Gestão <span id="tab-gestao-badge"></span></div>
     <div class="tab" data-tab="usuarios" id="tab-btn-usuarios" style="display:none">Usuários</div>
+    <div class="menu-cel-rodape" id="menu-cel-rodape"></div>
   </div>
   <div class="conteudo">
     <div class="aviso" id="aviso-migracao" style="display:none"></div>
@@ -4227,6 +4312,38 @@ function medirTopoFixo(){
 }
 window.addEventListener('resize',medirTopoFixo);
 if(window.ResizeObserver)document.addEventListener('DOMContentLoaded',()=>{const ro=new ResizeObserver(medirTopoFixo);['tabs'].forEach(i=>$(i)&&ro.observe($(i)));const tb=document.querySelector('#app .topbar');if(tb)ro.observe(tb);});
+/* v67: menu recolhido no celular — as abas ficam num menu lateral aberto pelo botão do topo */
+const MQ_CEL=window.matchMedia('(max-width:900px)');
+function menuCelAberto(){return document.body.classList.contains('menu-cel-aberto');}
+function abrirMenuCel(){
+  if(!MQ_CEL.matches||menuCelAberto())return;
+  atualizarMenuCel();document.body.classList.add('menu-cel-aberto');$('btn-menu-cel').setAttribute('aria-expanded','true');
+  const at=document.querySelector('#tabs .tab.ativo');if(at)at.scrollIntoView({block:'nearest'});
+  try{history.pushState({menuCel:1},'');}catch(e){} // botão "voltar" do Android fecha o menu
+}
+function fecharMenuCel(){
+  if(!menuCelAberto())return;
+  document.body.classList.remove('menu-cel-aberto');$('btn-menu-cel').setAttribute('aria-expanded','false');
+  try{if(history.state&&history.state.menuCel)history.back();}catch(e){}
+}
+function alternarMenuCel(){menuCelAberto()?fecharMenuCel():abrirMenuCel();}
+window.addEventListener('popstate',()=>{if(menuCelAberto()){document.body.classList.remove('menu-cel-aberto');$('btn-menu-cel').setAttribute('aria-expanded','false');}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')fecharMenuCel();});
+// no celular, Senha/Sair/avisos/instalar saem da barra do topo e vão para o rodapé do menu
+function atualizarMenuCel(){
+  const dir=document.querySelector('#app .topbar-right'),rod=$('menu-cel-rodape');if(!dir||!rod)return;
+  const de=MQ_CEL.matches?dir:rod,para=MQ_CEL.matches?rod:dir;
+  [...de.children].forEach(el=>para.appendChild(el));
+  const u=$('menu-cel-user'),n=$('user-nome');if(u&&n)u.innerHTML=n.innerHTML;
+  if(!MQ_CEL.matches)fecharMenuCel();
+  medirTopoFixo();
+}
+(MQ_CEL.addEventListener?MQ_CEL.addEventListener('change',atualizarMenuCel):MQ_CEL.addListener(atualizarMenuCel));
+document.addEventListener('DOMContentLoaded',()=>{
+  atualizarMenuCel();
+  // tocar numa aba ou num botão do rodapé fecha o menu
+  $('tabs').addEventListener('click',e=>{if(e.target.closest('.tab, .menu-cel-rodape button'))fecharMenuCel();});
+});
 function abrirTab(tab){
   if(tab==='usuarios'&&!PERM.admin)tab='painel';
   if(tab==='gestao'&&!PERM.gestao)tab='painel';

@@ -107,6 +107,7 @@ Boa parte disto já foi implementada nas versões v11 a v18 (acessos, documentos
 - Reunião do escritório marcada no Outlook: convidar `agenda@bvek.com.br` (senão vira alocação "sem cliente"; acrescentar a agenda depois e sincronizar tira a alocação do cronograma sem apagar o evento).
 
 **Padrões de tela (v59)**
+- Celular (v67, sem migração): até 900px de largura as abas ficam num menu lateral recolhido (botão de três linhas no topo; Senha, Sair, Ativar avisos e Instalar app ficam no rodapé desse menu; o "voltar" do Android fecha o menu). Até 700px: campos com letra de 16px (o iPhone não dá zoom ao tocar), janelas em tela cheia com os botões fixos embaixo, subabas deslizando para o lado, funil uma coluna por vez. CSS no bloco "v67" no fim do `<style>`; JS em `abrirMenuCel`/`atualizarMenuCel`. O computador não muda.
 - Sem emojis no CRM (pedido do André: seriedade). Só o Painel mantém os ícones. Não acrescente emojis em telas, PDFs, e-mails ou WhatsApp.
 - Campos de enviar arquivo aceitam colar (Ctrl+V ou botão direito → Colar); print colado em campo só de PDF vira PDF.
 - Gerar proposta guarda o PDF sozinho na proposta e em `03_CLIENTES/C###_NOME/02_PROPOSTAS` (html2canvas em `vendor/` + pdf-lib).
