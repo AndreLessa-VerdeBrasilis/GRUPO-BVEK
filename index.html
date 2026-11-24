@@ -7452,7 +7452,7 @@ async function htmlDaProposta(cardId){
     .rodape{margin-top:18px;padding-top:6px;border-top:1px solid var(--dest);font-size:9.5px;color:#5F6B7A;text-align:center;background:#fff}
     .rodape .logos{display:flex;justify-content:center;align-items:center;gap:22px;margin:4px 0 3px}.rodape .logos img{height:36px}
     .rodape strong{color:var(--pri)}
-    table.moldura{margin:0}table.moldura>thead td,table.moldura>tfoot td,table.moldura>tbody>tr>td{padding:0;border:0;background:transparent}
+    table.moldura{margin:0;table-layout:fixed;width:100%}td,th,p,li{overflow-wrap:break-word}table.tec td,table.dados td{overflow-wrap:anywhere}table.moldura>thead td,table.moldura>tfoot td,table.moldura>tbody>tr>td{padding:0;border:0;background:transparent}
     .quebra{break-after:page;page-break-after:always}
     h1{font-size:17px;color:var(--pri);margin:0 0 10px;letter-spacing:.02em}
     h2{font-size:13.5px;color:var(--pri);margin:16px 0 6px;padding-bottom:3px;border-bottom:1.5px solid var(--pri);break-after:avoid;letter-spacing:.04em}
@@ -7465,7 +7465,8 @@ async function htmlDaProposta(cardId){
     .destaque{margin:12px 0;border:1.5px solid var(--dest);border-radius:4px;border-collapse:separate;border-spacing:0}
     .destaque td{padding:6px 10px;border-bottom:1px solid var(--linha)}.destaque tr:last-child td{border-bottom:0}
     .destaque tr:first-child td{background:var(--claro);color:var(--pri);font-size:14.5px;font-weight:700}
-    .destaque td.n{text-align:right;white-space:nowrap}
+    .destaque td.n{text-align:right;white-space:nowrap}.destaque td:first-child{white-space:nowrap;width:1%}
+    .destaque td.n.txt{white-space:normal}
     table.plan{font-size:11px;border:1px solid var(--linha)}
     .fotos{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:6px 0 10px}.fotos figure{margin:0;break-inside:avoid;page-break-inside:avoid}
     .fotos img{width:100%;height:220px;object-fit:contain;border:1px solid var(--linha);background:#fff;display:block}.fotos figcaption{font-size:9.5px;color:#5F6B7A;text-align:center;margin-top:3px}
@@ -7510,7 +7511,7 @@ async function htmlDaProposta(cardId){
   ${String(cpp.abertura||'').trim()?blocoTexto(cpp.abertura):`<p>Em atenção à sua solicitação, apresentamos nossa proposta técnica e comercial para ${esc(String(card.titulo||'os serviços').replace(/^./,c=>c.toLowerCase()))}, com fornecimento de mão de obra, materiais e equipamentos conforme o escopo descrito a seguir.</p>`}
   <table class="destaque"><tr><td>VALOR GLOBAL DA PROPOSTA</td><td class="n">R$ ${fmtMoeda(total||somaItens)}</td></tr>
     ${prazo?`<tr><td>Prazo global de execução</td><td class="n">${esc(prazo)}</td></tr>`:''}
-    ${card.forma_pagamento?`<tr><td>Forma de pagamento</td><td class="n">${esc(String(card.forma_pagamento).split('\n')[0])}</td></tr>`:''}</table>
+    ${card.forma_pagamento?`<tr><td>Forma de pagamento</td><td class="n txt">${esc(String(card.forma_pagamento).split('\n')[0])}</td></tr>`:''}</table>
   ${secoes.join('\n')}
   ${aceite}
   </td></tr></tbody></table>
