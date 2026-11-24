@@ -7945,6 +7945,8 @@ async function pdfDiarioDia(){
   const d={...dioAtual.d,...lerFormDiario('dio')};
   try{await montarRelatorioDiario(win,d.projeto_id,[d],{ini:d.data,fim:d.data,fotos:true,os:dioAtual.os});}catch(e){console.error(e);win.close();alert(e.message||e);}
 }
+// v69.1: "nenhuma", "não há", "-"… não é pendência
+const semPendencia=t=>/^\s*(-+|n\/?a|nada( consta)?|nenhum[a]?( pend[eê]ncia)?|sem pend[eê]ncias?|n[aã]o( h[aá])?( pend[eê]ncias?)?)\s*[.!]?\s*$/i.test(String(t||''));
 async function montarRelatorioDiario(win,pid,dias,o){
   const p=todosProjetos.find(x=>x.id===pid)||{},cli=clientePorId(p.cliente_id)||{},emp=empresaPorId(p.empresa_id)||{},T=temaEmpresa(emp.sigla);
   const os=o.os!==undefined?o.os:await osDoProjeto(pid);
@@ -7969,10 +7971,10 @@ async function montarRelatorioDiario(win,pid,dias,o){
     table{width:100%;border-collapse:collapse;margin:4px 0;font-size:10.5px}th,td{border:1px solid #${T.linha};padding:5px 7px;text-align:left;vertical-align:top}
     thead th{background:#${T.claro};color:#${T.principal}}table.dados th{width:150px;background:#${T.claro};color:#${T.principal};font-weight:600}
     .div{background:#fff4e5;border-left:3px solid #e07a00;padding:5px 8px;margin:4px 0}
-    .dia{border:1px solid #${T.linha};border-radius:6px;padding:8px 10px;margin:8px 0;break-inside:avoid}
-    .fotos{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}.fotos figure{margin:0;width:31%;break-inside:avoid}.fotos img{width:100%;height:150px;object-fit:cover;border-radius:4px}.fotos figcaption{font-size:9.5px;color:#555}
-    .assin{display:flex;gap:30px;margin-top:52px}.assin div{flex:1;text-align:center;border-top:1px solid #222;padding-top:5px}
-    .bloco-ass{margin-top:22px}.bloco-ass p{margin:0;color:#444}
+    .dia{border:1px solid #${T.linha};border-radius:6px;padding:8px 10px;margin:8px 0}.dia h3{break-after:avoid}
+    .fotos{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:6px}.fotos figure{margin:0;break-inside:avoid;page-break-inside:avoid}.fotos img{width:100%;height:150px;object-fit:cover;border-radius:4px}.fotos figcaption{font-size:9.5px;color:#555}
+    .assin{display:flex;gap:30px;margin-top:70px}.assin div{flex:1;text-align:center;border-top:1px solid #222;padding-top:5px}
+    .bloco-ass{margin-top:22px;break-before:avoid;page-break-before:avoid}.bloco-ass p{margin:0;color:#444}
     .rodape{margin-top:20px;font-size:9px;color:#999;text-align:center}
     @media print{.pagina{padding:14px}}${CSS_QUEBRA_PAGINA}</style></head><body><div class="pagina">
   <div class="topo"><div><img src="${urlLogo(T.sigla,'logo')}" alt="${esc(emp.nome||'')}"><div style="color:#5F6B7A">Emitido em ${esc(new Date().toLocaleDateString('pt-BR'))}</div></div>
@@ -7983,7 +7985,7 @@ async function montarRelatorioDiario(win,pid,dias,o){
     <tr><th>Trabalho</th><td>${cont('normal')} normal · ${cont('parcial')} parcial · ${cont('parado')} parado</td></tr><tr><th>Mão de obra</th><td>${pessoasDia} pessoa(s)·dia</td></tr></table>`:''}
   ${andamento.length?`<h2>Andamento dos serviços</h2><table><thead><tr><th>Item</th><th>Serviço</th><th>Situação</th><th>%</th><th>Observação</th></tr></thead><tbody>${andamento.map(({i,s})=>`<tr><td>${esc(i.item||'')}</td><td>${esc(i.descricao||'')}</td><td>${esc(s?rotulo(DIO_SERV,s.situacao):'Sem registro')}</td><td>${s&&s.pct!=null&&s.pct!==''?esc(s.pct)+'%':''}</td><td>${esc(s&&s.obs||'')}</td></tr>`).join('')}</tbody></table>`:''}
   ${regs.some(d=>d.divergencias)?`<h2>Diferenças entre o previsto e o encontrado no local — e o que foi decidido</h2>${regs.filter(d=>d.divergencias).map(d=>`<div class="div"><strong>${esc(fmtData(d.data))}:</strong> ${br(d.divergencias)}</div>`).join('')}`:''}
-  ${(()=>{const u=[...regs].reverse().find(d=>d.pendencias);return u?`<h2>Pendências em aberto</h2><p>${br(u.pendencias)} <span style="color:#777">(registro de ${esc(fmtData(u.data))})</span></p>`:'';})()}
+  ${(()=>{const u=dias.length>1&&[...regs].reverse().find(d=>d.pendencias);return u&&!semPendencia(u.pendencias)?`<h2>Pendências em aberto</h2><p>${br(u.pendencias)} <span style="color:#777">(registro de ${esc(fmtData(u.data))})</span></p>`:'';})()}
   <h2>Registro diário</h2>
   ${regs.length?regs.map(d=>{const eq=nomesEquipe(d.presentes||d.equipe);const fs=(d.fotos||[]).filter(f=>urls[f.caminho]);
     return`<div class="dia"><h3>${esc(fmtData(d.data))} (${diaSemana(d.data)})${d.hora_inicio?` · ${fmtH(d.hora_inicio)}–${fmtH(d.hora_fim)}`:''} · ${esc(rotulo(DIO_COND,d.condicao))} · tempo: manhã ${esc(rotulo(DIO_CLIMA,d.clima_manha))}, tarde ${esc(rotulo(DIO_CLIMA,d.clima_tarde))}</h3>
