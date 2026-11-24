@@ -12545,7 +12545,7 @@ function mudouVisaoTarefas(){try{localStorage.setItem('bvek_tarefas_visao',$('at
 // são separados para o serviço e saem na Ordem de Serviço. "Em propostas" = soma do que está
 // separado em propostas que não foram perdidas.
 let todoInventario=[],todoInvOS=[],invEditandoId=null,v30InvOk=true,invCardLocal=[];
-const TIPOS_INV=[['equipamento','Equipamento'],['ferramenta','Ferramenta'],['material','Material de consumo'],['epi','EPI'],['veiculo','Veículo'],['outro','Outro']];
+const TIPOS_INV=[['equipamento','Equipamento'],['ferramenta','Ferramenta'],['material','Material de consumo'],['epi','EPI'],['uniforme','Uniformes'],['veiculo','Veículo'],['outro','Outro']];
 const ESTADOS_INV=[['novo','Novo'],['bom','Bom'],['regular','Regular'],['manutencao','Em manutenção'],['inservivel','Inservível']];
 const TIPO_INV_LABEL=Object.fromEntries(TIPOS_INV),ESTADO_INV_LABEL=Object.fromEntries(ESTADOS_INV);
 const COR_ESTADO_INV={novo:'badge-ok',bom:'badge-ok',regular:'badge-hoje',manutencao:'badge-atraso',inservivel:'badge-cinza'};
