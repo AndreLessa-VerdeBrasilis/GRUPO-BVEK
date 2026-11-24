@@ -2725,6 +2725,10 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
     <div class="form-grid">
       <div class="campo full"><label>Nome *</label><input type="text" id="inv-nome" placeholder="Ex.: Roçadeira Stihl FS 220"></div>
       <div class="campo"><label>Tipo</label><select id="inv-tipo" onchange="mostrarValidadeEPI()"></select></div>
+      <div class="campo inv-unif-box"><label>Modelo da peça</label><input type="text" id="inv-unif-modelo" list="dl-inv-unif-modelo" placeholder="Ex.: Camisa polo"></div>
+      <div class="campo inv-unif-box"><label>Tamanho</label><input type="text" id="inv-unif-tamanho" list="dl-inv-unif-tamanho" placeholder="Ex.: M, G, 42"></div>
+      <div class="campo inv-unif-box"><label>Cor</label><input type="text" id="inv-unif-cor" list="dl-inv-unif-cor" placeholder="Ex.: Azul-marinho"></div>
+      <div class="campo full inv-unif-box"><div class="dica" style="margin:0">Cadastre um item para cada combinação de modelo, tamanho e cor (cada um com o seu estoque). Use Duplicar para lançar os outros tamanhos rapidinho.</div></div>
       <div class="campo"><label>Categoria</label><input type="text" id="inv-categoria" list="dl-inv-cat" placeholder="Ex.: Jardinagem"></div>
       <div class="campo"><label>Quantidade em estoque</label><input type="number" min="0" step="any" id="inv-qtd" value="1"></div>
       <div class="campo"><label>Unidade</label><input type="text" id="inv-unidade" value="un" list="dl-inv-un"></div>
@@ -3361,7 +3365,7 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
   </div>
 </div>
 <datalist id="dl-fornecedores"></datalist>
-<datalist id="dl-inv-itens"></datalist><datalist id="dl-inv-cat"></datalist><datalist id="dl-inv-un"></datalist><datalist id="dl-inv-local"></datalist>
+<datalist id="dl-inv-itens"></datalist><datalist id="dl-inv-cat"></datalist><datalist id="dl-inv-un"></datalist><datalist id="dl-inv-local"></datalist><datalist id="dl-inv-unif-modelo"></datalist><datalist id="dl-inv-unif-tamanho"></datalist><datalist id="dl-inv-unif-cor"></datalist>
 
 <!-- MODAL FORNECEDOR (v22) -->
 <div class="modal-overlay" id="modal-fornecedor">
@@ -7572,7 +7576,7 @@ async function montarOS(win){
   const docs=cp?(cp.documentos||[]).map(d=>[esc(d.nome),esc(fmtNum(d.qtd)),'']):[];
   // v30: itens do inventário separados na proposta
   const{data:invOS}=await sb.from('inventario_os').select('*,inventario_itens(*)').eq('card_id',cardEditandoId);
-  const inv=(invOS||[]).filter(x=>x.inventario_itens).map(x=>{const i=x.inventario_itens;return[esc(i.codigo||''),esc(i.nome)+(i.marca_modelo||i.numero_serie?`<br><small>${esc([i.marca_modelo,i.numero_serie&&'série/CA '+i.numero_serie].filter(Boolean).join(' · '))}</small>`:''),esc(i.unidade||''),esc(fmtNum(x.quantidade)),esc(i.localizacao||''),'',''];});
+  const inv=(invOS||[]).filter(x=>x.inventario_itens).map(x=>{const i=x.inventario_itens;return[esc(i.codigo||''),esc(i.nome)+(i.marca_modelo||i.numero_serie||textoUniforme(i)?`<br><small>${esc([textoUniforme(i),i.marca_modelo,i.numero_serie&&'série/CA '+i.numero_serie].filter(Boolean).join(' · '))}</small>`:''),esc(i.unidade||''),esc(fmtNum(x.quantidade)),esc(i.localizacao||''),'',''];});
   // v51: detalhe da execução (condições do local, incluído / não incluído, como deve ficar, item a item)
   const det=await lerOSDetalhe(card.id,card.card_pai_id);
   const sec=secoesOSDetalhe(det&&!det.falta?det:null,itens,br);
@@ -12567,12 +12571,17 @@ const estoqueBaixo=i=>i.ativo!==false&&i.quantidade_minima!=null&&Number(i.quant
 // v57: EPI com validade — alerta de compra a partir de N dias antes de vencer (padrão 30)
 const epiVencendo=i=>i.ativo!==false&&i.tipo==='epi'&&!!i.data_validade&&diasAte(i.data_validade)<=Number(i.aviso_validade_dias??30);
 function textoValidadeEPI(i){const d=diasAte(i.data_validade);return d<0?`venceu em ${fmtData(i.data_validade)}`:d===0?'vence hoje':`vence em ${d} dia(s) (${fmtData(i.data_validade)})`;}
-function mostrarValidadeEPI(){const epi=$('inv-tipo').value==='epi';document.querySelectorAll('#modal-inventario .inv-epi-box').forEach(b=>b.style.display=epi?'':'none');}
+function mostrarValidadeEPI(){const t=$('inv-tipo').value;document.querySelectorAll('#modal-inventario .inv-epi-box').forEach(b=>b.style.display=t==='epi'?'':'none');document.querySelectorAll('#modal-inventario .inv-unif-box').forEach(b=>b.style.display=t==='uniforme'?'':'none');}
+// v68: uniformes — modelo da peça, tamanho e cor
+const textoUniforme=i=>i.tipo==='uniforme'?[i.unif_modelo,i.unif_tamanho&&'tam. '+i.unif_tamanho,i.unif_cor].filter(Boolean).join(' · '):'';
 function avisosEPI(){return PERM.comercialVer?todoInventario.filter(epiVencendo).sort((a,b)=>String(a.data_validade).localeCompare(String(b.data_validade))):[];}
 const fmtQtd=v=>Number(v||0).toLocaleString('pt-BR',{maximumFractionDigits:2});
 function atualizarListasInventario(){
   const uniq=k=>[...new Set(todoInventario.map(i=>String(i[k]||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'pt-BR'));
   $('dl-inv-itens').innerHTML=todoInventario.filter(i=>i.ativo!==false).map(i=>`<option value="${esc(rotuloItemInv(i))}">`).join('');
+  $('dl-inv-unif-modelo').innerHTML=[...new Set(['Camisa polo','Camiseta','Camisa social','Calça','Bermuda','Jaleco','Macacão','Jaqueta','Colete','Boné',...uniq('unif_modelo')])].map(x=>`<option value="${esc(x)}">`).join('');
+  $('dl-inv-unif-tamanho').innerHTML=[...new Set(['PP','P','M','G','GG','XG','XGG','36','38','40','42','44','46','48','50',...uniq('unif_tamanho')])].map(x=>`<option value="${esc(x)}">`).join('');
+  $('dl-inv-unif-cor').innerHTML=[...new Set(['Branca','Preta','Azul-marinho','Azul royal','Cinza','Verde','Laranja',...uniq('unif_cor')])].map(x=>`<option value="${esc(x)}">`).join('');
   $('dl-inv-cat').innerHTML=[...new Set(['Jardinagem','Limpeza','Construção civil','Elétrica','Hidráulica','Pintura','Altura / alpinismo','Solda','Informática','Escritório',...uniq('categoria')])].map(x=>`<option value="${esc(x)}">`).join('');
   $('dl-inv-un').innerHTML=[...new Set(['un','par','jogo','kit','m','m²','L','kg','cx','rolo','pç',...uniq('unidade')])].map(x=>`<option value="${esc(x)}">`).join('');
   $('dl-inv-local').innerHTML=[...new Set(['Depósito','Escritório',...uniq('localizacao')])].map(x=>`<option value="${esc(x)}">`).join('');
@@ -12591,7 +12600,7 @@ function renderInventario(){
   const base=todoInventario.filter(i=>empresaAtual==='todas'||!i.empresa_id||i.empresa_id===empresaAtual);
   const ativos=base.filter(i=>i.ativo!==false);
   const l=base.filter(i=>(inat||i.ativo!==false)&&(!tp||i.tipo===tp)&&(!es||i.estado===es)&&(!ct||i.categoria===ct)&&(!baixo||estoqueBaixo(i))&&(!epiV||epiVencendo(i))
-    &&(!q||norm([i.codigo,i.nome,i.marca_modelo,i.numero_serie,i.localizacao,i.categoria,i.observacoes].join(' ')).includes(q)));
+    &&(!q||norm([i.codigo,i.nome,i.marca_modelo,i.numero_serie,i.localizacao,i.categoria,i.observacoes,i.unif_modelo,i.unif_tamanho,i.unif_cor].join(' ')).includes(q)));
   ordenarPor(l,'inv',{codigo:i=>i.codigo||'',nome:i=>i.nome||'',tipo:i=>TIPO_INV_LABEL[i.tipo]||i.tipo||'',estoque:i=>Number(i.quantidade||0),
     uso:i=>qtdEmPropostas(i.id),estado:i=>(ESTADOS_INV.findIndex(e=>e[0]===i.estado)+1)||99,local:i=>i.localizacao||'',empresa:i=>{const e=i.empresa_id&&empresaPorId(i.empresa_id);return e?e.sigla||'':'';}},'nome');
   const T=(c,r,k,t)=>thOrd('inv',c,r,k).replace('title="Clique para ordenar"',`title="${t?esc(t)+' — ':''}Clique para ordenar (clique de novo para inverter)"`);
@@ -12603,7 +12612,7 @@ function renderInventario(){
     const e=i.empresa_id&&empresaPorId(i.empresa_id),uso=qtdEmPropostas(i.id);
     return`<tr class="clicavel ${i.ativo===false?'inativo':''}" data-inv="${esc(i.id)}" style="cursor:pointer"><td style="white-space:nowrap"><strong>${esc(i.codigo||'')}</strong></td>
       <td><strong>${esc(i.nome)}</strong>${i.marca_modelo||i.numero_serie?`<div class="dica" style="margin:0">${esc([i.marca_modelo,i.numero_serie&&'série/CA '+i.numero_serie].filter(Boolean).join(' · '))}</div>`:''}${i.categoria?`<div class="dica" style="margin:0">${esc(i.categoria)}</div>`:''}</td>
-      <td>${esc(TIPO_INV_LABEL[i.tipo]||i.tipo)}${i.tipo==='epi'&&i.data_validade?`<div class="dica" style="margin:0">validade ${esc(fmtData(i.data_validade))}</div>${epiVencendo(i)?` <span class="badge badge-atraso" title="${esc(textoValidadeEPI(i))}">${diasAte(i.data_validade)<0?'vencido':'comprar'}</span>`:''}`:i.tipo==='epi'&&i.ativo!==false?'<div class="dica" style="margin:0;color:var(--vermelho)">sem validade</div>':''}</td>
+      <td>${esc(TIPO_INV_LABEL[i.tipo]||i.tipo)}${textoUniforme(i)?`<div class="dica" style="margin:0">${esc(textoUniforme(i))}</div>`:''}${i.tipo==='epi'&&i.data_validade?`<div class="dica" style="margin:0">validade ${esc(fmtData(i.data_validade))}</div>${epiVencendo(i)?` <span class="badge badge-atraso" title="${esc(textoValidadeEPI(i))}">${diasAte(i.data_validade)<0?'vencido':'comprar'}</span>`:''}`:i.tipo==='epi'&&i.ativo!==false?'<div class="dica" style="margin:0;color:var(--vermelho)">sem validade</div>':''}</td>
       <td class="num"><strong>${esc(fmtQtd(i.quantidade))}</strong> ${esc(i.unidade||'')}${estoqueBaixo(i)?` <span class="badge badge-hoje" title="Mínimo: ${esc(fmtQtd(i.quantidade_minima))}">baixo</span>`:''}</td>
       <td class="num">${uso?`${esc(fmtQtd(uso))}${uso>Number(i.quantidade||0)?' <span class="badge badge-atraso" title="Separado mais do que tem em estoque">falta</span>':''}`:'—'}</td>
       <td><span class="badge ${COR_ESTADO_INV[i.estado]||'badge-cinza'}">${esc(ESTADO_INV_LABEL[i.estado]||i.estado)}</span></td>
@@ -12623,7 +12632,7 @@ function abrirItemInventario(id){
   $('inv-estado').value=i?i.estado:'bom';$('inv-marca').value=i&&i.marca_modelo||'';$('inv-serie').value=i&&i.numero_serie||'';$('inv-local').value=i&&i.localizacao||'';
   $('inv-empresa').value=i?(i.empresa_id||''):(empresaAtual!=='todas'?empresaAtual:'');
   $('inv-valor').value=i&&i.valor_unitario!=null?fmtMoeda(i.valor_unitario):'';$('inv-data').value=i&&i.data_aquisicao||'';$('inv-obs').value=i&&i.observacoes||'';
-  $('inv-validade').value=i&&i.data_validade||'';$('inv-aviso-dias').value=i&&i.aviso_validade_dias!=null?i.aviso_validade_dias:30;mostrarValidadeEPI();
+  $('inv-unif-modelo').value=i&&i.unif_modelo||'';$('inv-unif-tamanho').value=i&&i.unif_tamanho||'';$('inv-unif-cor').value=i&&i.unif_cor||'';$('inv-validade').value=i&&i.data_validade||'';$('inv-aviso-dias').value=i&&i.aviso_validade_dias!=null?i.aviso_validade_dias:30;mostrarValidadeEPI();
   const usos=i?todoInvOS.filter(x=>x.item_id===i.id).map(x=>({x,c:todosCards.find(c=>c.id===x.card_id)})).filter(u=>u.c):[];
   $('inv-uso').innerHTML=usos.length?`<div class="secao">Separado nestas propostas</div><div class="sub-lista">${usos.map(u=>`<div class="sub-item clicavel" data-inv-card="${esc(u.c.id)}"><span><strong>${esc(numeroProposta(u.c)||'')}</strong> ${esc(u.c.titulo||'')}</span><span>${esc(fmtQtd(u.x.quantidade))} ${esc(i.unidade||'')} · ${esc(ETAPA_LABEL[u.c.etapa]||u.c.etapa)}</span></div>`).join('')}</div>`:'';
   $('inv-uso').querySelectorAll('[data-inv-card]').forEach(el=>el.onclick=()=>{fecharModal('modal-inventario');abrirModalCard(el.dataset.invCard);});
@@ -12653,8 +12662,11 @@ async function salvarItemInventario(){
     if(!$('inv-validade').value&&!confirm('EPI sem data de validade: o CRM não vai conseguir avisar quando precisar comprar.\n\nSalvar mesmo assim?'))return;
     dados.data_validade=$('inv-validade').value||null;dados.aviso_validade_dias=Math.min(365,Math.max(0,Math.round(Number($('inv-aviso-dias').value)||30)));
   }else if(todoInventario.some(x=>'data_validade' in x))dados.data_validade=null;
+  if(dados.tipo==='uniforme'){dados.unif_modelo=$('inv-unif-modelo').value.trim()||null;dados.unif_tamanho=$('inv-unif-tamanho').value.trim()||null;dados.unif_cor=$('inv-unif-cor').value.trim()||null;}
+  else if(todoInventario.some(x=>'unif_tamanho' in x))Object.assign(dados,{unif_modelo:null,unif_tamanho:null,unif_cor:null});
   if(!invEditandoId&&todoInventario.some(i=>norm(i.nome)===norm(nome)&&norm(i.numero_serie)===norm(dados.numero_serie))&&!confirm(`Já existe "${nome}" no inventário. Cadastrar outro mesmo assim?`))return;
   const r=invEditandoId?await sb.from('inventario_itens').update(dados).eq('id',invEditandoId):await sb.from('inventario_itens').insert({...dados,criado_por:quemSou()});
+  if(r.error&&/unif_|inventario_tipo_chk/i.test(r.error.message||'')){alert('Para cadastrar uniformes (tipo, modelo, tamanho e cor), rode antes a migração v68 (supabase/migracao_crm_v68_inventario_tipo_uniforme.sql) no Supabase.');return;}
   if(r.error&&/data_validade|aviso_validade/i.test(r.error.message||'')){alert('Para guardar a validade do EPI, rode antes a migração v57 (supabase/migracao_crm_v57_os_funcionario_consultoria_iso_desligamento_epi.sql) no Supabase.');return;}
   if(erroSB(r.error))return;
   fecharModal('modal-inventario');await carregarInventario();renderInventario();toast('Item salvo');
