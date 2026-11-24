@@ -15,6 +15,13 @@
 // Pedido (POST com JSON):
 //   { nome, pdf_base64? , texto?, contexto: { funcoes:[], materiais:[], documentos:[], tipos_cliente:[] } }
 // Só o Administrador (as propostas e os valores são só dele desde a v46).
+//
+// v70 — conversa com a IA na proposta (modo "conversa"):
+//   { modo:"conversa", mensagens:[{papel:"usuario"|"ia", texto}], proposta:{…campos atuais},
+//     documento?:{ nome, pdf_base64? , texto? }, contexto }
+//   Responde { ok, resposta, mudancas } — "mudancas" só traz os campos que a IA
+//   sugere trocar; o CRM mostra e só aplica quando a pessoa clica em Aplicar.
+//   A conversa e o documento não são guardados (ficam só na tela).
 // =====================================================================
 import { createClient } from "npm:@supabase/supabase-js@2";
 import Anthropic from "npm:@anthropic-ai/sdk@1.8.0";
@@ -127,6 +134,93 @@ Escreva tudo em português do Brasil, sem emojis.
 Responda SOMENTE com um objeto JSON válido (sem texto antes ou depois, sem comentários), com exatamente estes campos. Onde o modelo mostra opções separadas por " | ", escolha uma delas ("(vazio)" = string vazia ""):
 ` + JSON.stringify(modelo(SCHEMA), null, 1);
 
+// ---------- v70: conversa ----------
+const CAMPOS_CONVERSA = ["titulo", "escopo", "premissas", "nota1", "nota2", "prazo", "validade_dias", "pagamento", "itens"];
+const SISTEMA_CONVERSA = `Você trabalha no comercial do Grupo BVEK (Rio de Janeiro): Engekat Construções (EK — construção civil, projetos técnicos, drywall, steel frame, solda, caldeiraria, tubulação, alpinismo, pintura), Verde Brasilis (VB — áreas verdes, poda, remoção, reflorestamento, paisagismo, jardinagem, legalizações), BrasiLimp (BL — limpeza, conservação, manutenção, segurança) e Kat Corretora de Seguros (KS).
+
+Você conversa com o administrador dentro do criador de propostas do CRM. Pode haver um documento anexado (proposta de terceiros, pedido do cliente, memorial, edital…) e sempre vem o estado atual da proposta que está sendo montada. Ajude a entender o documento, conferir a proposta, apontar lacunas e riscos e, quando ele pedir, alterar a proposta.
+
+Regras:
+- Responda em português do Brasil, direto e em linguagem simples, sem emojis. Quando citar o documento, diga onde está (página, item, seção) se der para saber. Não invente o que o documento não diz: se não estiver lá, diga.
+- Só sugira mudanças na proposta quando o administrador pedir uma alteração (ou concordar com uma sugestão sua). Para perguntas, só responda e deixe "mudancas" vazio.
+- Campos que você pode mudar: titulo, escopo, premissas, nota1, nota2, prazo, validade_dias, pagamento, itens. Coloque em "mudancas" SOMENTE os campos que mudam, já com o conteúdo final completo de cada um (o texto inteiro do escopo, a planilha inteira etc.), não só o trecho alterado.
+- Mesmos padrões do modelo do grupo: escopo com um título curto por grupo de serviços e cada atividade numa linha começando com "• "; premissas uma por linha começando com "• "; titulo é o objeto numa frase curta, sem o nome da nossa empresa e sem número de proposta.
+- itens = planilha inteira: linhas de etapa com tipo "etapa", item "1", "2"…, quantidade e valores 0; itens com tipo "item", item "1.1", "1.2"…, unidade, quantidade, valor_unitario e valor_total.
+- Preços: mantenha os preços que já estão na proposta. Não invente preço nem custo. Ao dividir ou juntar itens, redistribua o valor existente só se ele pedir, e avise na resposta. Nunca mostre margem de lucro, BDI ou impostos separados como item.
+- A composição de preço (equipe, materiais, custos) vem só da base do CRM; você pode comentar, mas não altera.
+- A carta de apresentação, condições gerais, seguros, tributos, assinaturas e aceite já são fixos no modelo: não coloque esses textos nos campos.
+
+Responda SOMENTE com um objeto JSON válido, sem texto antes ou depois:
+{"resposta": "sua resposta ao administrador (pode ter várias linhas)", "mudancas": {}}
+Formato de cada campo em "mudancas" (inclua só os que mudam):
+` + JSON.stringify(Object.fromEntries(CAMPOS_CONVERSA.map((k) => [k, modelo(SCHEMA.properties[k])])), null, 1);
+
+// deno-lint-ignore no-explicit-any
+async function conversar(client: Anthropic, p: any) {
+  const msgs = (Array.isArray(p.mensagens) ? p.mensagens : [])
+    // deno-lint-ignore no-explicit-any
+    .map((m: any) => ({ role: m?.papel === "ia" ? "assistant" : "user", texto: String(m?.texto ?? "").slice(0, 20000) }))
+    // deno-lint-ignore no-explicit-any
+    .filter((m: any) => m.texto.trim()).slice(-30);
+  while (msgs.length && msgs[0].role !== "user") msgs.shift();
+  if (!msgs.length || msgs[msgs.length - 1].role !== "user") return json({ erro: "Escreva a mensagem." }, 400);
+
+  const doc = p.documento && typeof p.documento === "object" ? p.documento : null;
+  const pdf = doc && typeof doc.pdf_base64 === "string" ? doc.pdf_base64.replace(/\s+/g, "") : "";
+  const texto = doc && typeof doc.texto === "string" ? doc.texto : "";
+  if (pdf.length > 30 * 1024 * 1024) return json({ erro: "Documento grande demais (máx. ~20 MB)." }, 400);
+  const nomeDoc = String((doc && doc.nome) || "").slice(0, 120);
+
+  // deno-lint-ignore no-explicit-any
+  const messages: any[] = [];
+  msgs.forEach((m: { role: string; texto: string }, i: number) => {
+    // deno-lint-ignore no-explicit-any
+    const content: any[] = [];
+    if (i === 0) {
+      if (pdf) content.push({ type: "document", source: { type: "base64", media_type: "application/pdf", data: pdf }, title: nomeDoc || "documento", cache_control: { type: "ephemeral" } });
+      else if (texto.trim()) content.push({ type: "text", text: `<documento arquivo="${nomeDoc}">\n${texto.slice(0, 400000)}\n</documento>`, cache_control: { type: "ephemeral" } });
+      else content.push({ type: "text", text: "(nenhum documento anexado à conversa)" });
+    }
+    if (i === msgs.length - 1) {
+      content.push({ type: "text", text: `<proposta_atual>\n${JSON.stringify(p.proposta || {}, null, 1).slice(0, 200000)}\n</proposta_atual>` });
+    }
+    content.push({ type: "text", text: m.texto });
+    messages.push({ role: m.role, content: m.role === "assistant" ? m.texto : content });
+  });
+
+  // deno-lint-ignore no-explicit-any
+  const params: any = {
+    model: "claude-opus-5-5",
+    max_tokens: 32000,
+    betas: ["server-side-fallback-2026-07-01"],
+    fallbacks: "default",
+    system: SISTEMA_CONVERSA,
+    output_config: { effort: "medium" },
+    messages,
+  };
+  const msg = await client.beta.messages.stream(params).finalMessage();
+  if (msg.stop_reason === "refusal") return json({ erro: "A IA recusou responder. Reformule a mensagem." }, 422);
+  if (msg.stop_reason === "max_tokens") return json({ erro: "A resposta ficou longa demais. Peça uma parte de cada vez." }, 422);
+  // deno-lint-ignore no-explicit-any
+  const t = (msg.content as any[]).filter((b) => b.type === "text").map((b) => b.text).join("\n").trim();
+  if (!t) return json({ erro: "A IA não respondeu." }, 502);
+  let resposta = t;
+  // deno-lint-ignore no-explicit-any
+  let mudancas: any = null;
+  try {
+    // deno-lint-ignore no-explicit-any
+    const o: any = extrairJson(t);
+    resposta = String(o.resposta ?? "").trim() || "Pronto.";
+    if (o.mudancas && typeof o.mudancas === "object") {
+      // deno-lint-ignore no-explicit-any
+      const m: any = {};
+      CAMPOS_CONVERSA.forEach((k) => { if (k in o.mudancas) m[k] = completar(SCHEMA.properties[k], o.mudancas[k]); });
+      if (Object.keys(m).length) mudancas = m;
+    }
+  } catch (_) { /* veio texto solto: mostra como resposta */ }
+  return json({ ok: true, resposta, mudancas, uso: msg.usage });
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
   if (req.method !== "POST") return json({ erro: "Use POST." }, 405);
@@ -142,6 +236,7 @@ Deno.serve(async (req) => {
     if (!chave) return json({ erro: "Falta configurar a leitura por IA: cadastre o segredo ANTHROPIC_API_KEY nas Edge Functions do Supabase." }, 500);
 
     const p = await req.json().catch(() => ({}));
+    if (p.modo === "conversa") return await conversar(new Anthropic({ apiKey: chave }), p);
     const pdf = typeof p.pdf_base64 === "string" ? p.pdf_base64.replace(/\s+/g, "") : "";
     const texto = typeof p.texto === "string" ? p.texto : "";
     if (!pdf && texto.trim().length < 30) return json({ erro: "Não recebi o conteúdo da proposta." }, 400);

@@ -344,6 +344,22 @@ table.tabela td.num{text-align:right;font-variant-numeric:tabular-nums;white-spa
 .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 14px}
 .linha-flex{display:flex;gap:8px}.linha-flex>*{flex:1;min-width:0}
 .caixa-pdf{border:1px dashed #b9c6bf;border-radius:8px;padding:10px 12px;background:#f7faf8}
+/* v70: conversa com a IA na proposta */
+.chat-prop{border:1px solid #d5ddd8;border-radius:8px;padding:10px 12px;background:#fbfcfb}
+.chat-prop-msgs{max-height:380px;overflow-y:auto;display:flex;flex-direction:column;gap:8px}
+.chat-prop-msgs:empty::before{content:'A IA conhece a proposta que está na tela e o documento lido em "Usar proposta pronta como base" (ou o que você anexar aqui). Ela responde e, quando você pedir, sugere a mudança: nada muda sem você clicar em Aplicar. A conversa não é guardada.';color:var(--texto2);font-size:12.5px;line-height:1.5}
+.chat-msg{max-width:88%;padding:8px 11px;border-radius:10px;font-size:13px;line-height:1.5;white-space:pre-wrap;word-wrap:break-word}
+.chat-msg.eu{align-self:flex-end;background:#e6f0ea}
+.chat-msg.ia{align-self:flex-start;background:#fff;border:1px solid #e1e6e3}
+.chat-msg.erro{align-self:flex-start;background:#fdecea;color:#b00020}
+.chat-mud{margin-top:8px;padding:8px 10px;border:1px dashed #c9b458;border-radius:8px;background:#fffbea;white-space:normal}
+.chat-mud ul{margin:4px 0 6px 18px}
+.chat-mud .linha-flex{gap:6px}
+.chat-mud .linha-flex button{flex:0 0 auto;padding:6px 18px}
+.chat-prop-doc{font-size:12px;color:var(--texto2);margin:8px 0 4px}
+.chat-prop-envio{display:flex;gap:8px;align-items:flex-end;margin-top:6px}
+.chat-prop-envio textarea{flex:1;resize:vertical}
+.chat-prop-rodape{display:flex;gap:14px;flex-wrap:wrap;margin-top:6px;font-size:12.5px}
 .caixa-pdf .info{font-size:12px;color:var(--texto2);margin-top:6px}
 /* v59: faixa para colar arquivo (Ctrl+V ou botão direito → Colar) */
 .zona-colar{margin-top:6px;border:1.5px dashed #9fb3c8;border-radius:8px;padding:7px 10px;font-size:12px;color:var(--texto2);background:#f7f9fc;cursor:text;min-height:18px;outline:none;caret-color:transparent;overflow:hidden;white-space:nowrap}
@@ -1614,6 +1630,21 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
         <div class="caixa-pdf">
           <input type="file" id="card-base-arquivo" accept="application/pdf,.pdf,.docx" onchange="lerPropostaBase(this.files[0]);this.value=''">
           <div class="info" id="card-base-info">A IA lê a proposta inteira e monta no nosso modelo: objeto, escopo, planilha por etapa, premissas, prazo, pagamento, composição de preço com a nossa base e o detalhe da OS. Você confere antes de aplicar. O arquivo não é guardado.</div>
+        </div>
+      </div>
+      <!-- v70: conversa com a IA sobre a proposta (e o documento lido) -->
+      <div class="campo full so-edicao so-lucro"><label>Conversar com a IA sobre esta proposta</label>
+        <div class="chat-prop">
+          <div class="chat-prop-msgs" id="chat-prop-msgs"></div>
+          <div class="chat-prop-doc" id="chat-prop-doc"></div>
+          <div class="chat-prop-envio">
+            <textarea id="chat-prop-txt" rows="2" placeholder="Pergunte ou peça uma mudança. Ex.: qual prazo o cliente pediu? · o que ficou fora do escopo? · separe a etapa 2 em duas · deixe as premissas mais objetivas" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();enviarChatProp();}"></textarea>
+            <button class="btn-sec" id="chat-prop-btn" onclick="enviarChatProp()">Enviar</button>
+          </div>
+          <div class="chat-prop-rodape">
+            <label class="btn-link" style="cursor:pointer">Anexar documento à conversa<input type="file" accept="application/pdf,.pdf,.docx" style="display:none" onchange="anexarDocChatProp(this.files[0]);this.value=''"></label>
+            <button class="btn-link" onclick="limparChatProp()">Limpar conversa</button>
+          </div>
         </div>
       </div>
       <div class="campo full"><label>Título / Objeto da proposta *</label><input type="text" id="card-titulo" placeholder="Ex: Retrofit Laboratório Arkema — Térreo"></div>
@@ -5236,7 +5267,7 @@ async function gerarNumeroProposta(empresaId,clienteId){
 async function abrirModalCard(id=null){
   if(!PERM.funilVer){toast('Seu perfil não acessa o funil de propostas');return;}
   cardEditandoId=id;cardOriginal=null;itensLocais=[];contatosDoCliente=[];composicaoLocal=null;$('cp-card-resumo').style.display='none';
-  baseProp=null;osBasePendente=null;{const bi=$('card-base-info');if(bi)bi.textContent='A IA lê a proposta inteira e monta no nosso modelo: objeto, escopo, planilha por etapa, premissas, prazo, pagamento, composição de preço com a nossa base e o detalhe da OS. Você confere antes de aplicar. O arquivo não é guardado.';}
+  limparChatProp(true);baseProp=null;osBasePendente=null;{const bi=$('card-base-info');if(bi)bi.textContent='A IA lê a proposta inteira e monta no nosso modelo: objeto, escopo, planilha por etapa, premissas, prazo, pagamento, composição de preço com a nossa base e o detalhe da OS. Você confere antes de aplicar. O arquivo não é guardado.';}
   ['card-cliente','card-titulo','card-responsavel','card-valor','card-fechamento','card-prazo','card-escopo','card-pagamento','card-obs','card-nota1','card-nota2','card-dias','nct-nome','nct-cargo','nct-tel','nct-email','card-motivo-detalhe','ca-desc','ca-data'].forEach(i=>{$(i).value='';});
   $('card-validade').value='30';$('card-pct-mao').value='30';$('card-pct-ins').value='70';
   $('card-prazo-unid').value='meses';preencherPagamentoForm(null,'');
@@ -12187,6 +12218,7 @@ async function lerPropostaBase(f){
   if(erro||!data||!data.dados){
     info.innerHTML=`Não foi possível ler a proposta: ${esc(erro||'sem resposta')}${/not found|404|Failed to send/i.test(erro||'')?'<br>A função <strong>ler-proposta</strong> ainda não foi publicada no Supabase.':''}`;return;}
   baseProp={nome:f.name,d:data.dados};
+  chatProp.doc={nome:f.name,pdf_base64:corpo.pdf_base64,texto:corpo.texto};renderChatProp(); // v70: a conversa usa o mesmo documento
   info.innerHTML=`<strong>${esc(f.name)}</strong> lida. Confira na janela e clique em <em>Aplicar na proposta</em>.`;
   $('bp-precos').value=(data.dados.itens||[]).some(i=>n0(i.valor_total)>0||n0(i.valor_unitario)>0)?'proposta':'composicao';
   abrirModal('modal-base-prop');renderPreviaBase();
@@ -12320,6 +12352,90 @@ async function gravarOSBase(cardId){
   dados.atualizado_por=(meuPerfil&&meuPerfil.nome)||(usuario&&usuario.email)||null;dados.atualizado_em=new Date().toISOString();
   const{error}=await sb.from('os_detalhes').upsert(dados,{onConflict:'card_id'});
   if(error){console.error(error);toast('Detalhe da OS não gravado: '+(error.message||error));}
+}
+
+/* ================= CONVERSA COM A IA NA PROPOSTA (v70) ================= */
+// Usa a mesma função "ler-proposta" (modo "conversa"). A IA vê a proposta da tela e o documento
+// lido/anexado; mudanças só entram quando a pessoa clica em Aplicar. Nada é guardado no banco.
+let chatProp={msgs:[],doc:null,enviando:false};
+function limparChatProp(tudo){chatProp.msgs=[];if(tudo)chatProp.doc=null;const t=$('chat-prop-txt');if(t&&tudo)t.value='';renderChatProp();}
+function estadoPropostaChat(){
+  const emp=todasEmpresas.find(e=>e.id===$('card-empresa-id').value);
+  const comp=composicaoLocal?{equipe:(composicaoLocal.equipe||[]).map(x=>`${n0(x.qtd)||1} ${x.funcao}`),
+    dias_uteis:composicaoLocal.dias_uteis,sabados:composicaoLocal.sabados,domingos:composicaoLocal.domingos,turno:composicaoLocal.turno,
+    materiais:(composicaoLocal.materiais||[]).map(x=>`${x.descricao} (${n0(x.qtd)} ${x.unidade||''})`),
+    equipamentos:(composicaoLocal.equipamentos||[]).map(x=>`${x.descricao} (${n0(x.qtd)} ${x.unidade||''})`)}:null;
+  return{cliente:$('card-cliente').value,empresa:emp?emp.nome:'',titulo:$('card-titulo').value,escopo:$('card-escopo').value,
+    premissas:$('card-obs').value,nota1:$('card-nota1').value,nota2:$('card-nota2').value,
+    prazo:{numero:n0($('card-prazo').value),unidade:$('card-prazo-unid').value},validade_dias:n0($('card-validade').value),
+    pagamento:$('card-pagamento').value,valor_total:$('card-valor').value,
+    itens:itensLocais.map(i=>({tipo:n0(i.quantidade)>0||n0(i.valor_total)>0?'item':'etapa',item:i.item,descricao:i.descricao,unidade:i.unidade,
+      quantidade:n0(i.quantidade),valor_unitario:n0(i.valor_unitario),valor_total:n0(i.valor_total)})),
+    composicao_resumo:comp};
+}
+const ROTULO_MUD={titulo:'Objeto',escopo:'Escopo de fornecimento',premissas:'Premissas e esclarecimentos',nota1:'Nota 1',nota2:'Nota 2',prazo:'Prazo de execução',validade_dias:'Validade',pagamento:'Forma de pagamento',itens:'Planilha de itens'};
+function resumoMudanca(k,v){
+  if(k==='prazo')return n0(v.numero)?`${n0(v.numero)} ${v.unidade||''}`:'sem prazo';
+  if(k==='validade_dias')return`${n0(v)} dias`;
+  if(k==='pagamento')return textoPagBase(v)||'—';
+  if(k==='itens'){const its=itensDaBase({itens:v});return`${its.filter(i=>n0(i.quantidade)).length} itens em ${its.filter(i=>!n0(i.quantidade)).length} etapa(s) · total R$ ${fmtMoeda(its.reduce((s,i)=>s+n0(i.valor_total),0))}`;}
+  const t=String(v||'');return t.length>160?t.slice(0,160)+'…':(t||'(em branco)');
+}
+function renderChatProp(){
+  const box=$('chat-prop-msgs');if(!box)return;
+  box.innerHTML=chatProp.msgs.map((m,i)=>{
+    if(m.papel==='usuario')return`<div class="chat-msg eu">${esc(m.texto)}</div>`;
+    if(m.papel==='erro')return`<div class="chat-msg erro">${esc(m.texto)}</div>`;
+    let mud='';
+    if(m.mudancas){const ks=Object.keys(m.mudancas);
+      mud=`<div class="chat-mud"><strong>Mudança sugerida</strong><ul>${ks.map(k=>`<li><strong>${esc(ROTULO_MUD[k]||k)}:</strong> ${esc(resumoMudanca(k,m.mudancas[k]))}</li>`).join('')}</ul>`+
+        (m.estado==='aplicada'?'<em>Aplicada na proposta. Confira e clique em Salvar.</em>':m.estado==='ignorada'?'<em>Ignorada.</em>':
+        `<div class="linha-flex"><button class="btn-salvar" onclick="aplicarMudancaChat(${i})">Aplicar</button><button class="btn-cancelar" onclick="ignorarMudancaChat(${i})">Ignorar</button></div>`)+'</div>';}
+    return`<div class="chat-msg ia">${esc(m.texto)}${mud}</div>`;
+  }).join('')+(chatProp.enviando?'<div class="chat-msg ia"><em>Pensando… pode levar até 1 minuto.</em></div>':'');
+  box.scrollTop=box.scrollHeight;
+  const d=$('chat-prop-doc');if(d)d.innerHTML=chatProp.doc?`Documento na conversa: <strong>${esc(chatProp.doc.nome)}</strong> (não é guardado) · <a href="#" onclick="chatProp.doc=null;renderChatProp();return false">tirar</a>`:'Nenhum documento na conversa: a IA vê só a proposta da tela.';
+  const b=$('chat-prop-btn');if(b){b.disabled=chatProp.enviando;b.textContent=chatProp.enviando?'Aguarde…':'Enviar';}
+}
+async function anexarDocChatProp(f){
+  if(!f)return;const pdf=/\.pdf$/i.test(f.name)||f.type==='application/pdf',docx=/\.docx$/i.test(f.name);
+  if(!pdf&&!docx){alert('Envie o documento em PDF ou Word (.docx).');return;}
+  if(f.size>20*1024*1024){alert('Arquivo maior que 20 MB.');return;}
+  try{chatProp.doc=pdf?{nome:f.name,pdf_base64:base64DeBytes(new Uint8Array(await f.arrayBuffer()))}:{nome:f.name,texto:(await textoDoDocx(f)).join('\n')};}
+  catch(e){console.error(e);alert('Não consegui abrir o arquivo: '+(e.message||e));return;}
+  renderChatProp();toast('Documento anexado à conversa');
+}
+async function enviarChatProp(){
+  if(chatProp.enviando)return;
+  if(!PERM.verLucro){alert('Só administradores usam a conversa da proposta.');return;}
+  const t=$('chat-prop-txt'),texto=t.value.trim();if(!texto)return;
+  chatProp.msgs.push({papel:'usuario',texto});t.value='';chatProp.enviando=true;renderChatProp();
+  const hist=chatProp.msgs.filter(m=>m.papel!=='erro').map(m=>({papel:m.papel,texto:m.papel==='ia'&&m.mudancas?m.texto+'\n[sugeri mudanças em: '+Object.keys(m.mudancas).join(', ')+(m.estado==='aplicada'?' — aplicadas':m.estado==='ignorada'?' — ignoradas':'')+']':m.texto}));
+  const corpo={modo:'conversa',mensagens:hist,proposta:estadoPropostaChat(),documento:chatProp.doc};
+  let data=null,erro=null;
+  try{const r=await sb.functions.invoke('ler-proposta',{body:corpo});data=r.data;erro=data&&data.erro;
+    if(r.error&&!erro){try{const j=await r.error.context.json();erro=j.erro;}catch(e){erro=r.error.message;}}}
+  catch(e){erro=e.message||String(e);}
+  chatProp.enviando=false;
+  if(erro||!data||!data.resposta)chatProp.msgs.push({papel:'erro',texto:'Não foi possível conversar: '+(erro||'sem resposta')+(/not found|404|Failed to send/i.test(erro||'')?' (publique a versão nova da função ler-proposta no Supabase)':'')});
+  else chatProp.msgs.push({papel:'ia',texto:data.resposta,mudancas:data.mudancas||null,estado:data.mudancas?'pendente':''});
+  renderChatProp();
+}
+function ignorarMudancaChat(i){const m=chatProp.msgs[i];if(m)m.estado='ignorada';renderChatProp();}
+function aplicarMudancaChat(i){
+  const m=chatProp.msgs[i];if(!m||!m.mudancas||m.estado!=='pendente')return;const d=m.mudancas;
+  const set=(id,v)=>{if(v==null)return;$(id).value=v;marcarPreenchido(id);};
+  if('titulo' in d)set('card-titulo',d.titulo);
+  if('escopo' in d)set('card-escopo',d.escopo);
+  if('premissas' in d)set('card-obs',d.premissas);
+  if('nota1' in d)set('card-nota1',d.nota1);
+  if('nota2' in d)set('card-nota2',d.nota2);
+  if(d.prazo&&n0(d.prazo.numero)>0){set('card-prazo',Math.round(n0(d.prazo.numero)));if(d.prazo.unidade)$('card-prazo-unid').value=d.prazo.unidade;}
+  if(n0(d.validade_dias)>0)set('card-validade',Math.round(n0(d.validade_dias)));
+  if(d.pagamento&&d.pagamento.tipo){const p=d.pagamento,pg={tipo:p.tipo,periodo:p.periodo||'mensal',sinal:n0(p.sinal_pct)||null,dias:n0(p.dias)>0?n0(p.dias):null};if(p.tipo==='outra')pg.texto=p.texto;
+    preencherPagamentoForm(pg,p.tipo==='outra'?p.texto:'');marcarPreenchido('card-pag-tipo');}
+  if(Array.isArray(d.itens)){const its=itensDaBase({itens:d.itens});if(its.length){itensLocais=its;renderItens(true);marcarPreenchido('card-valor');}}
+  m.estado='aplicada';renderChatProp();toast('Mudança aplicada — confira e salve');
 }
 
 /* ================= QUADRO DE TAREFAS (v24) ================= */
