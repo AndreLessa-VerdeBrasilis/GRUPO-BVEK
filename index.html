@@ -7209,6 +7209,15 @@ const TEMAS_EMPRESA={
   BVK:{sigla:'BVK',principal:'0C4982',destaque:'329948',claro:'EAF2F8',zebra:'F5F8FB',linha:'C8D7E5',marca:true}};
 function temaEmpresa(sigla){return TEMAS_EMPRESA[String(sigla||'').toUpperCase()]||TEMAS_EMPRESA.BVK;}
 function urlLogo(sigla,tipo){return new URL(`img/logos/${String(sigla).toLowerCase()}-${tipo}.png`,location.href).href;}
+// v69: regras de quebra de página comuns a todos os documentos impressos pelo CRM.
+// .junto = bloco que nunca é dividido entre páginas (ex.: último parágrafo + local/data + assinaturas).
+// Título nunca fica sozinho no pé da página; linha de tabela, foto e assinatura não são cortadas;
+// cabeçalho da tabela se repete na página seguinte.
+const CSS_QUEBRA_PAGINA=`
+  .junto,.assin,.ass,figure,tr,img{break-inside:avoid;page-break-inside:avoid}
+  h1,h2,h3,h4{break-after:avoid;page-break-after:avoid}
+  thead{display:table-header-group}
+  p,li{orphans:3;widows:3}`;
 // a janela do PDF só imprime depois que as logos carregarem (ou 4 s, o que vier antes)
 function imprimirQuandoCarregar(win){
   let feito=false;const vai=()=>{if(feito)return;feito=true;setTimeout(()=>win.print(),200);};
@@ -7307,8 +7316,8 @@ async function htmlDaProposta(cardId){
   const ass=String(M.assinaturas||'').split('\n').map(l=>l.split('|').map(x=>x.trim())).filter(p=>p[0]);
   // v30: assinatura escaneada (Parâmetros) aparece em cima da linha de quem tiver
   const imgsAss=M.assinatura_imagens||{};
-  sec('CONSIDERAÇÕES FINAIS',`${blocoTexto(M.consideracoes)}<p>Atenciosamente,</p><div class="ass">${ass.map(p=>{const img=imgsAss[chaveAssinatura(p[0])];
-    return`<div>${img?`<img class="img-ass" src="${esc(img)}" alt="">`:'<div class="espaco-ass"></div>'}<div class="linha"></div><strong>${esc(p[0])}</strong>${p.slice(1).filter(Boolean).map(x=>`<br>${esc(x)}`).join('')}</div>`;}).join('')}</div>`);
+  sec('CONSIDERAÇÕES FINAIS',`<div class="junto">${blocoTexto(M.consideracoes)}<p>Atenciosamente,</p><div class="ass">${ass.map(p=>{const img=imgsAss[chaveAssinatura(p[0])];
+    return`<div>${img?`<img class="img-ass" src="${esc(img)}" alt="">`:'<div class="espaco-ass"></div>'}<div class="linha"></div><strong>${esc(p[0])}</strong>${p.slice(1).filter(Boolean).map(x=>`<br>${esc(x)}`).join('')}</div>`;}).join('')}</div></div>`);
   // v30: aceite do cliente
   const aceite=`<div class="aceite"><h2>ACEITE DA PROPOSTA ${esc(num)}</h2>
     <p>${esc(M.aceite||PROPOSTA_PADRAO.aceite)}</p>
@@ -7316,7 +7325,7 @@ async function htmlDaProposta(cardId){
       <tr><th>Contratante (razão social)</th><td>${esc(nomeCliente)}</td></tr><tr><th>CNPJ / CPF</th><td>${esc(cli.documento||'')}</td></tr>
       <tr><th>Responsável pelo aceite</th><td></td></tr><tr><th>Cargo</th><td></td></tr><tr><th>CPF do responsável</th><td></td></tr><tr><th>E-mail / telefone</th><td></td></tr>
       <tr><th>Local e data</th><td>______________________________, ____/____/________</td></tr></table>
-    <div class="ass" style="margin-top:44px"><div><div class="linha"></div><strong>Assinatura e carimbo do contratante</strong><br>${esc(nomeCliente)}</div></div></div>`;
+    <div class="ass junto" style="margin-top:44px"><div><div class="linha"></div><strong>Assinatura e carimbo do contratante</strong><br>${esc(nomeCliente)}</div></div></div>`;
   function br2(s){return esc(s).replace(/\n/g,'<br>');}
   const nomeArquivo=semAcento(num||`${emp.sigla||'BVK'}-COM-PRP-${cli.codigo||'C000'}`).toUpperCase().replace(/[\\/:*?"<>|]/g,' ').replace(/\s+/g,' ').trim();
   const T=temaEmpresa(emp.sigla);
@@ -7361,8 +7370,8 @@ async function htmlDaProposta(cardId){
     table.plan tfoot td{background:var(--claro);color:var(--pri);font-weight:700;padding:6px;border-top:1.5px solid var(--dest)}
     tr{break-inside:avoid}.cod{color:#888;font-size:10px}
     .ass{display:flex;flex-wrap:wrap;gap:24px;margin-top:30px}.ass>div{flex:1 1 200px;font-size:11px;break-inside:avoid}.ass .linha{border-top:1px solid var(--pri);margin-bottom:5px}.ass strong{color:var(--pri)}
-    .ass .img-ass{display:block;height:60px;max-width:100%;object-fit:contain;margin:0 auto -4px 0}.ass .espaco-ass{height:40px}
-    .aceite{break-before:page;page-break-before:always}.aceite table.dados td{height:22px}
+    .ass .img-ass{display:block;height:60px;max-width:100%;object-fit:contain;margin:0 auto -4px 0}.ass .espaco-ass{height:52px}
+    .aceite{break-before:page;page-break-before:always}.aceite table.dados td{height:22px}${CSS_QUEBRA_PAGINA}
   </style></head><body>${T.marca?`<img class="marca-dagua" src="${urlLogo(T.sigla,'marca')}" alt="">`:''}<div class="pagina">
   <table class="moldura"><thead><tr><td>${topo}</td></tr></thead><tfoot><tr><td>${rodape}</td></tr></tfoot><tbody><tr><td>
   <div class="quebra apres">
@@ -7422,14 +7431,20 @@ async function pdfDeHtmlProposta(html,marcaUrl,nome){
     const hCab=ch?ch.height/pxMm:0,hRod=cf?cf.height/pxMm:0,util=297-2*MT-hCab-hRod;
     const limite=util*pxMm/ESC*(rc.width*ESC/cc.width);// altura útil em px do HTML
     const rel=el=>{const r=el.getBoundingClientRect();return[r.top-rc.top,r.bottom-rc.top];};
-    const atomos=[...corpo.querySelectorAll('tr,img,figure,h1,h2,h3,li,p,.ass>div,.destaque')].map(rel);
-    const depoisDeTitulo=new Set([...corpo.querySelectorAll('h1,h2,h3')].map(e=>Math.round(rel(e)[1])));
+    // v69: pontos onde a página pode terminar. Nunca no meio de uma linha, foto ou assinatura; nunca logo
+    // depois de um título; e nunca dentro de um bloco .junto (último parágrafo + assinaturas, aceite) que caiba numa página.
+    const atomos=[...corpo.querySelectorAll('tr,img,figure,h1,h2,h3,li,p,.ass,.ass>div,.destaque')].map(rel);
+    const juntos=[...corpo.querySelectorAll('.junto')].map(rel).filter(([t,b])=>b-t<limite*0.95);
+    const titulos=[...corpo.querySelectorAll('h1,h2,h3')].map(e=>rel(e)[1]);
+    const dentro=(l,y)=>l.some(([t,b])=>t+1<y&&y<b-1);
+    const todos=[...new Set(atomos.concat(juntos).flatMap(a=>[Math.round(a[0]),Math.round(a[1])]))].filter(y=>!titulos.some(b=>y>=b-1&&y<=b+16)).sort((a,b)=>a-b);
+    const fortes=todos.filter(y=>!dentro(atomos,y)&&!dentro(juntos,y)),fracos=todos.filter(y=>!dentro(atomos,y));
     const forcadas=[...corpo.querySelectorAll('.quebra')].map(e=>rel(e)[1]).concat([...corpo.querySelectorAll('.aceite')].map(e=>rel(e)[0])).filter(y=>y>1).sort((a,b)=>a-b);
-    const cands=[...new Set(atomos.map(a=>Math.round(a[1])).concat(atomos.map(a=>Math.round(a[0]))))].filter(y=>!depoisDeTitulo.has(y)&&!atomos.some(([t,b])=>t+1<y&&y<b-1)).sort((a,b)=>a-b);
+    const ultimo=(l,de,ate)=>{const r=l.filter(v=>v>de&&v<=ate);return r.length?r[r.length-1]:null;};
     const H=rc.height,cortes=[];let y=0;
     while(y<H-2){
       const lim=y+limite;let c=forcadas.find(f=>f>y+2&&f<=lim);
-      if(c==null){if(lim>=H)c=H;else{const l=cands.filter(v=>v>y+limite*0.3&&v<=lim);c=l.length?l[l.length-1]:lim;}}
+      if(c==null){if(lim>=H)c=H;else c=ultimo(fortes,y+limite*0.3,lim)??ultimo(fortes,y+2,lim)??ultimo(fracos,y+2,lim)??lim;}
       cortes.push([y,c]);y=c;
     }
     const L=await carregarPdfLib(),pdf=await L.PDFDocument.create();
@@ -7596,9 +7611,9 @@ async function montarOS(win){
     table.dados th{width:150px;background:#${T.claro};color:#${T.principal};font-weight:600}
     .campo-livre{border:1px solid #ccc;min-height:60px;padding:6px}
     .grade2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-    .assin{display:flex;gap:30px;margin-top:34px}.assin div{flex:1;text-align:center;border-top:1px solid #222;padding-top:5px}
+    .assin{display:flex;gap:30px;margin-top:52px}.assin div{flex:1;text-align:center;border-top:1px solid #222;padding-top:5px}
     .rodape{margin-top:20px;font-size:9px;color:#999;text-align:center}
-    @media print{.pagina{padding:14px}h2{break-after:avoid}tr{break-inside:avoid}}
+    @media print{.pagina{padding:14px}}${CSS_QUEBRA_PAGINA}
   </style></head><body><div class="pagina">
   <div class="topo"><div><img src="${urlLogo(T.sigla,'logo')}" alt="${esc(emp.nome||'')}"><div style="color:#5F6B7A">Emitida em ${esc(hoje)}</div></div>
     <div class="os"><span class="tit">ORDEM DE SERVIÇO</span><strong>${esc(num)}</strong>Ref. proposta ${esc(numeroProposta(card))}${proj?`<br>Contrato ${esc(proj.codigo)}`:''}</div></div>
@@ -7618,11 +7633,11 @@ async function montarOS(win){
   ${docs.length?`<h2>Documentação exigida</h2>${tabela(['Documento / exigência','Qtd','Entregue ✓'],docs)}`:''}
   ${(card.observacoes||cp&&cp.obs||card.nota1||card.nota2)?`<h2>Observações</h2>${card.observacoes?`<p>${br(card.observacoes)}</p>`:''}${cp&&cp.obs?`<p>${br(cp.obs)}</p>`:''}${card.nota1?`<p><strong>Nota 1:</strong> ${esc(card.nota1)}</p>`:''}${card.nota2?`<p><strong>Nota 2:</strong> ${esc(card.nota2)}</p>`:''}`:''}
   ${sec.final}
-  <h2>Execução</h2>
+  <div class="junto"><h2>Execução</h2>
   <p style="margin:2px 0 6px">Registre <strong>cada dia</strong> no Diário de obra (o escritório lança no CRM): o que foi feito, fotos e <strong>tudo o que for diferente desta OS, com o nome de quem autorizou</strong>.</p>
   <table class="dados"><tr><th>Início</th><td>____/____/______ às ____:____</td></tr><tr><th>Término</th><td>____/____/______ às ____:____</td></tr><tr><th>Encarregado</th><td></td></tr></table>
   <div class="grade2" style="margin-top:8px"><div><strong>Ocorrências</strong><div class="campo-livre"></div></div><div><strong>Pendências</strong><div class="campo-livre"></div></div></div>
-  <div class="assin"><div>Encarregado / responsável pela execução<br><small>${esc(emp.nome||'')}</small></div><div>${esc(quem.nome||'Cliente')} — aceite do serviço<br><small>${esc(nomeCliente)} · data ____/____/______</small></div></div>
+  <div class="assin"><div>Encarregado / responsável pela execução<br><small>${esc(emp.nome||'')}</small></div><div>${esc(quem.nome||'Cliente')} — aceite do serviço<br><small>${esc(nomeCliente)} · data ____/____/______</small></div></div></div>
   <div class="rodape">${esc(num)} · documento interno de execução — não contém valores</div>
   </div></body></html>`;
   win.document.open();win.document.write(html);win.document.close();
@@ -7956,9 +7971,10 @@ async function montarRelatorioDiario(win,pid,dias,o){
     .div{background:#fff4e5;border-left:3px solid #e07a00;padding:5px 8px;margin:4px 0}
     .dia{border:1px solid #${T.linha};border-radius:6px;padding:8px 10px;margin:8px 0;break-inside:avoid}
     .fotos{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}.fotos figure{margin:0;width:31%;break-inside:avoid}.fotos img{width:100%;height:150px;object-fit:cover;border-radius:4px}.fotos figcaption{font-size:9.5px;color:#555}
-    .assin{display:flex;gap:30px;margin-top:40px}.assin div{flex:1;text-align:center;border-top:1px solid #222;padding-top:5px}
+    .assin{display:flex;gap:30px;margin-top:52px}.assin div{flex:1;text-align:center;border-top:1px solid #222;padding-top:5px}
+    .bloco-ass{margin-top:22px}.bloco-ass p{margin:0;color:#444}
     .rodape{margin-top:20px;font-size:9px;color:#999;text-align:center}
-    @media print{.pagina{padding:14px}h2{break-after:avoid}tr{break-inside:avoid}}</style></head><body><div class="pagina">
+    @media print{.pagina{padding:14px}}${CSS_QUEBRA_PAGINA}</style></head><body><div class="pagina">
   <div class="topo"><div><img src="${urlLogo(T.sigla,'logo')}" alt="${esc(emp.nome||'')}"><div style="color:#5F6B7A">Emitido em ${esc(new Date().toLocaleDateString('pt-BR'))}</div></div>
     <div class="os"><span class="tit">${esc(titulo.toUpperCase())}</span><strong>${esc(p.codigo||'')}</strong>${os&&os.numero_os?'Ref. OS '+esc(os.numero_os)+'<br>':''}${o.ini===o.fim?esc(fmtData(o.ini)):esc(fmtData(o.ini))+' a '+esc(fmtData(o.fim))}</div></div>
   <table class="dados"><tr><th>Cliente</th><td>${esc([cli.codigo,cli.razao_social||cli.nome].filter(Boolean).join(' — '))}</td></tr><tr><th>Contrato</th><td>${esc(p.nome||'')}</td></tr>
@@ -7982,7 +7998,8 @@ async function montarRelatorioDiario(win,pid,dias,o){
       ${[['Ocorrências',d.ocorrencias],['Visitas / pedidos do cliente',d.visitas],['Segurança',d.seguranca],['Pendências',d.pendencias]].filter(x=>x[1]).map(([t,v])=>`<div style="margin-top:4px"><strong>${t}:</strong> ${br(v)}</div>`).join('')}
       ${fs.length?`<div class="fotos">${fs.map(f=>`<figure><img src="${esc(urls[f.caminho])}"><figcaption>${esc(rotulo(DIO_MOM,f.momento))}${f.legenda?' — '+esc(f.legenda):''}</figcaption></figure>`).join('')}</div>`:''}
       <div style="color:#888;font-size:9.5px;margin-top:4px">${d.preenchido_por?'Registrado por '+esc(d.preenchido_por):''}${d.fechado_por?' · conferido por '+esc(d.fechado_por):''}</div></div>`;}).join(''):'<p>Nenhum dia registrado no período.</p>'}
-  <div class="assin"><div>Responsável pela execução<br><small>${esc(emp.nome||'')}${os&&os.responsavel_tecnico?' — '+esc(os.responsavel_tecnico):''}</small></div><div>Ciência do cliente<br><small>${esc(cli.razao_social||cli.nome||'')} · nome e data: ____/____/______</small></div></div>
+  <div class="junto bloco-ass"><p>${esc(dias.length===1?'Diário de obra':'Relatório de serviços executados')} ${esc(p.codigo||'')} — ${o.ini===o.fim?esc(fmtData(o.ini)):esc(fmtData(o.ini))+' a '+esc(fmtData(o.fim))}. As partes declaram ciência dos registros acima.</p>
+  <div class="assin"><div>Responsável pela execução<br><small>${esc(emp.nome||'')}${os&&os.responsavel_tecnico?' — '+esc(os.responsavel_tecnico):''}</small></div><div>Ciência do cliente<br><small>${esc(cli.razao_social||cli.nome||'')} · nome e data: ____/____/______</small></div></div></div>
   <div class="rodape">${esc(nomeArq)} · gerado pelo CRM a partir dos diários de obra — não contém valores${regs.some(d=>(d.registros||[]).some(r=>r.audio))?' · = há relato em áudio guardado no CRM':''}</div></div></body></html>`;
   win.document.open();win.document.write(html);win.document.close();imprimirQuandoCarregar(win);
 }
@@ -13167,13 +13184,15 @@ async function pdfDocTimbrado(t,f,assinaturaEletronica){
   // Helvetica padrão não tem alguns caracteres: troca por equivalentes
   const lim=x=>String(x).replace(/[“”]/g,'"').replace(/[‘’]/g,"'").replace(/[–—]/g,'-').replace(/[^\x00-\xFF]/g,'');
   let pg,y;const novaPg=()=>{pg=doc.addPage([W,H]);pg.drawPage(fundo,{x:0,y:0,width:W,height:H});y=H-TOPO-6;};novaPg();
-  const par=(runs,{tam=9.5,alinhar='just',antes=0,depois=3,c=cor}={})=>{
-    y-=antes;const lh=tam*1.22,pal=[];runs.forEach(([tx,b])=>lim(tx).split(/(\s+)/).filter(x=>x!=='').forEach(w=>pal.push({w,f:b?fb:fn})));
+  const par=(runs,{tam=9.5,alinhar='just',antes=0,depois=3,c=cor,medir=false}={})=>{
+    const lh=tam*1.22,pal=[];runs.forEach(([tx,b])=>lim(tx).split(/(\s+)/).filter(x=>x!=='').forEach(w=>pal.push({w,f:b?fb:fn})));
     let linhas=[],at=[],la=0;
     pal.forEach(p=>{const esp=/^\s+$/.test(p.w);const wd=p.f.widthOfTextAtSize(esp?' ':p.w,tam);
       if(!esp&&la+wd>larg&&at.length){while(at.length&&/^\s+$/.test(at[at.length-1].w))at.pop();linhas.push(at);at=[];la=0;}
       if(esp&&!at.length)return;at.push({...p,wd});la+=wd;});
     if(at.length)linhas.push(at);
+    if(medir)return antes+linhas.length*lh+depois;
+    y-=antes;
     linhas.forEach((ln,i)=>{if(y-lh<RODAPE)novaPg();const esps=ln.filter(p=>/^\s+$/.test(p.w)).length,total=ln.reduce((s,p)=>s+p.wd,0);let x=M,extra=0;
       if(alinhar==='centro')x=M+(larg-total)/2;else if(alinhar==='just'&&i<linhas.length-1&&esps)extra=(larg-total)/esps;
       ln.forEach(p=>{if(/^\s+$/.test(p.w)){x+=p.wd+extra;return;}pg.drawText(p.w,{x,y:y-tam,size:tam,font:p.f,color:c});x+=p.wd;});y-=lh;});
@@ -13183,11 +13202,12 @@ async function pdfDocTimbrado(t,f,assinaturaEletronica){
   (t.partes||[]).forEach((r,i,a)=>par(r,{depois:i===a.length-1?8:3}));
   par([[t.abertura,false]],{depois:8});
   (t.clausulas||[]).forEach(([a,b])=>par([[a+' ',true],[b,false]]));
-  par([[t.fecho,false]],{depois:10});
   const hoje=new Date(),ms=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
-  par([[assinaturaEletronica?`Rio de Janeiro, ${fmtData(String(assinaturaEletronica.assinado_em).slice(0,10))}.`:`Rio de Janeiro, ${hoje.getDate()} de ${ms[hoje.getMonth()]} de ${hoje.getFullYear()}.`,false]],{alinhar:'centro',depois:6});
-  if(y<RODAPE+70)novaPg();
-  y-=42;const colW=(larg-30)/2,E=TERMO_EMPREGADORA;
+  const fecho=[[t.fecho,false]],local=[[assinaturaEletronica?`Rio de Janeiro, ${fmtData(String(assinaturaEletronica.assinado_em).slice(0,10))}.`:`Rio de Janeiro, ${hoje.getDate()} de ${ms[hoje.getMonth()]} de ${hoje.getFullYear()}.`,false]];
+  // v69: o fecho, o local/data e as assinaturas ficam sempre na mesma página (assinatura nunca sozinha nem colada no rodapé)
+  if(y-par(fecho,{depois:10,medir:true})-par(local,{alinhar:'centro',depois:6,medir:true})-ESPACO_ASS-40<RODAPE)novaPg();
+  par(fecho,{depois:10});par(local,{alinhar:'centro',depois:6});
+  y-=ESPACO_ASS;const colW=(larg-30)/2,E=TERMO_EMPREGADORA;
   const repPng=await bytesAssinaturaRep();
   if(repPng){try{const img=await doc.embedPng(repPng);const h=40,w=Math.min(colW*.8,img.width*h/img.height);pg.drawImage(img,{x:M+colW+30+(colW-w)/2,y:y+1,width:w,height:h});}catch(e){console.warn('assinatura',e);}}
   if(assinaturaEletronica&&assinaturaEletronica.assinatura){try{const img=await doc.embedPng(assinaturaEletronica.assinatura);const h=40,w=Math.min(colW,img.width*h/img.height);pg.drawImage(img,{x:M+(colW-w)/2,y:y+2,width:w,height:h});}catch(e){}}
@@ -13319,6 +13339,7 @@ function funcionariosDoPonto(){
 // guardado sem os textos de instrução em img/timbrado/bvk-timbrado.pdf e usado como fundo de cada página;
 // título em negrito/maiúsculas tam. 12, subtítulo Arial Bold 10, corpo Arial 10
 let timbradoBytes=null;
+const ESPACO_ASS=46;   // v69: espaço (pt) entre o local/data e a linha de assinatura ≈ 16 mm, dá para assinar à mão
 async function bytesTimbrado(){
   if(!timbradoBytes){const r=await fetch(new URL('img/timbrado/bvk-timbrado.pdf',location.href).href);if(!r.ok)throw new Error('Papel timbrado não encontrado (img/timbrado/bvk-timbrado.pdf).');timbradoBytes=await r.arrayBuffer();}
   return timbradoBytes;
@@ -13336,14 +13357,16 @@ async function pdfTermoAdesao(f){
   const novaPg=()=>{pg=doc.addPage([W,H]);pg.drawPage(fundo,{x:0,y:0,width:W,height:H});y=H-TOPO-6;};
   novaPg();
   // parágrafo com trechos em negrito: [[texto,negrito],...]
-  const par=(runs,{tam=9.5,alinhar='just',antes=0,depois=3,c=cor}={})=>{
-    y-=antes;const lh=tam*1.22;
+  const par=(runs,{tam=9.5,alinhar='just',antes=0,depois=3,c=cor,medir=false}={})=>{
+    const lh=tam*1.22;
     const pal=[];runs.forEach(([t,b])=>String(t).split(/(\s+)/).filter(x=>x!=='').forEach(w=>pal.push({w,f:b?fb:fn})));
     let linhas=[],at=[],la=0;
     pal.forEach(p=>{const esp=/^\s+$/.test(p.w);const wd=p.f.widthOfTextAtSize(esp?' ':p.w,tam);
       if(!esp&&la+wd>larg&&at.length){while(at.length&&/^\s+$/.test(at[at.length-1].w))at.pop();linhas.push(at);at=[];la=0;}
       if(esp&&!at.length)return;at.push({...p,wd});la+=wd;});
     if(at.length)linhas.push(at);
+    if(medir)return antes+linhas.length*lh+depois;
+    y-=antes;
     linhas.forEach((ln,i)=>{
       if(y-lh<RODAPE)novaPg();
       const esps=ln.filter(p=>/^\s+$/.test(p.w)).length,total=ln.reduce((s,p)=>s+p.wd,0);
@@ -13369,13 +13392,14 @@ async function pdfTermoAdesao(f){
    ['Cláusula 7ª – Dados pessoais.','Os dados pessoais tratados no CRM destinam-se exclusivamente à execução do contrato de trabalho e ao cumprimento de obrigações legais, conforme a Lei nº 13.709/2018 (LGPD).'],
    ['Cláusula 8ª – Vigência.','Este termo vigora enquanto durar o contrato de trabalho. O(A) EMPREGADO(A) poderá, a qualquer tempo, solicitar por escrito ao RH a volta da assinatura em papel, sem qualquer prejuízo.'],
   ].forEach(([t,x])=>par([[t+' ',true],[x,false]]));
-  par([['E, por estarem de acordo, assinam o presente termo em 2 (duas) vias de igual teor.',false]],{depois:10});
-  par([['Rio de Janeiro, ____ de ______________________ de ________.',false]],{alinhar:'centro',depois:6});
   // assinaturas lado a lado (não deixa o bloco quebrar entre páginas)
   // v34.1: assinatura do representante da empresa (imagem guardada no CRM) já sai no termo
   const repPng=await bytesAssinaturaRep();
-  if(y<RODAPE+(repPng?72:58))novaPg();
-  y-=repPng?42:28;const colW=(larg-30)/2;
+  // v69: o fecho, o local/data e as assinaturas ficam sempre na mesma página, com espaço para assinar à mão
+  const fecho=[['E, por estarem de acordo, assinam o presente termo em 2 (duas) vias de igual teor.',false]],local=[['Rio de Janeiro, ____ de ______________________ de ________.',false]];
+  if(y-par(fecho,{depois:10,medir:true})-par(local,{alinhar:'centro',depois:6,medir:true})-ESPACO_ASS-40<RODAPE)novaPg();
+  par(fecho,{depois:10});par(local,{alinhar:'centro',depois:6});
+  y-=ESPACO_ASS;const colW=(larg-30)/2;
   if(repPng){try{const img=await doc.embedPng(repPng);const h=40,w=Math.min(colW*.8,img.width*h/img.height);pg.drawImage(img,{x:M+colW+30+(colW-w)/2,y:y+1,width:w,height:h});}catch(e){console.warn('assinatura',e);}}
   [[M,['EMPREGADO(A)','Nome: '+String(f.nome||'').toUpperCase(),'CPF: '+(f.cpf?fmtCPF(f.cpf):'')]],
    [M+colW+30,[E.razao,'Representante: '+E.representante,'Cargo: '+E.cargo]]].forEach(([x0,ls])=>{
@@ -13464,7 +13488,7 @@ function htmlEspelhoAssinado(a,f){
   const tb=n=>new URL('img/timbrado/'+n,location.href).href;
   return`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>Ponto ${esc(String(a.competencia).slice(0,7))} ${esc(f.nome||'')}</title>
   <style>body{font-family:Arial,sans-serif;font-size:11px;color:#222;margin:24px}h1{font-size:15px;margin:0 0 4px}table{border-collapse:collapse;width:100%;margin-top:10px}th,td{border:1px solid #ccc;padding:4px 6px;text-align:left;white-space:nowrap}th{background:#eef3ee}tr.fds td{color:#888}tr.tot td{font-weight:700;background:#eef3ee}
-  .ass{margin-top:18px;border:1px solid #999;padding:10px;display:flex;gap:20px;align-items:center;flex-wrap:wrap}.ass img{height:90px;border-bottom:1px solid #222}.meta{font-size:10px;color:#555;line-height:1.5}@media print{button,.colinha-ponto{display:none}}
+  .ass{margin-top:18px;border:1px solid #999;padding:10px;display:flex;gap:20px;align-items:center;flex-wrap:wrap;break-inside:avoid;page-break-inside:avoid}tr{break-inside:avoid}thead{display:table-header-group}.ass img{height:90px;border-bottom:1px solid #222}.meta{font-size:10px;color:#555;line-height:1.5}@media print{button,.colinha-ponto{display:none}}
   .tb-topo,.tb-rodape{display:block;width:calc(100% + 48px);margin:0 -24px}.tb-topo{margin-top:-24px;margin-bottom:6px}.tb-rodape{margin-top:18px;break-inside:avoid}
   h1{color:#0C4982}th,tr.tot td{background:#EAF2F8}@page{size:A4;margin:0 0 6mm}@media print{body{margin:0 24px}}</style></head><body>
   <img class="tb-topo" src="${tb('bvk-topo.png')}" alt="Grupo BVEK">
@@ -14385,6 +14409,20 @@ function htmlListaPresenca(T,ps,turma){
   }
   return`<!DOCTYPE html><html><head><meta charset="utf-8"><style>${cssTrein()}</style></head><body>${html}</body></html>`;
 }
+// v69: a página do certificado/lista tem tamanho fixo. Se o texto (ou nomes longos) empurrar as assinaturas
+// para cima do rodapé ou para fora da página, diminui a letra aos poucos até caber (no máximo ~30%).
+function ajustarPaginaTrein(pg){
+  const inn=pg.querySelector('.in'),rod=pg.querySelector('.rod');if(!inn)return;
+  const limite=()=>(rod?rod.getBoundingClientRect().top:pg.getBoundingClientRect().bottom)-12;
+  const els=[...inn.querySelectorAll('*')].filter(e=>e.childNodes.length&&[...e.childNodes].some(n=>n.nodeType===3&&n.textContent.trim()));
+  const base=new Map(els.map(e=>[e,parseFloat(getComputedStyle(e).fontSize)]));
+  const tds=[...inn.querySelectorAll('.part td')],hTd=tds.length?parseFloat(getComputedStyle(tds[0]).height):0;
+  for(let i=1;i<=8&&inn.getBoundingClientRect().bottom>limite();i++){
+    const k=1-i*0.04;els.forEach(e=>{e.style.fontSize=(base.get(e)*k)+'px';});
+    if(hTd)tds.forEach(t=>{t.style.height=Math.max(22,hTd-i*1.5)+'px';});
+  }
+  if(inn.getBoundingClientRect().bottom>limite())console.warn('Treinamento: o conteúdo não coube inteiro na página',pg.className);
+}
 // cada parte = [html, largura, altura] (px a 96 dpi; A4 = 794 × 1123). Cada .pg vira uma página A4.
 async function pdfTrein(partes,nome){
   const L=await carregarPdfLib(),pdf=await L.PDFDocument.create();
@@ -14400,6 +14438,7 @@ async function pdfTrein(partes,nome){
       const h2c=ifr.contentWindow.html2canvas;if(!h2c)throw new Error('o gerador de imagem não carregou');
       const pw=W>H?841.89:595.28,ph=W>H?595.28:841.89;
       for(const pg of d.querySelectorAll('.pg')){
+        ajustarPaginaTrein(pg);
         const c=await h2c(pg,{scale:2,backgroundColor:'#ffffff',useCORS:true,logging:false,width:W,height:H,windowWidth:W});
         const blob=await new Promise(ok=>c.toBlob(ok,'image/jpeg',0.9));
         const img=await pdf.embedJpg(new Uint8Array(await blob.arrayBuffer()));
