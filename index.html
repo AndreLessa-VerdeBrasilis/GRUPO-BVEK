@@ -360,6 +360,15 @@ table.tabela td.num{text-align:right;font-variant-numeric:tabular-nums;white-spa
 .chat-prop-envio{display:flex;gap:8px;align-items:flex-end;margin-top:6px}
 .chat-prop-envio textarea{flex:1;resize:vertical}
 .chat-prop-rodape{display:flex;gap:14px;flex-wrap:wrap;margin-top:6px;font-size:12.5px}
+/* v71: figuras da proposta original e recorte */
+.bp-figs{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}
+.bp-fig{border:1px solid var(--borda);border-radius:8px;padding:8px;background:#fff;display:flex;flex-direction:column;gap:5px}
+.bp-fig.fora{opacity:.55}
+.bp-fig img{width:100%;height:140px;object-fit:contain;background:#f6f7f8;border:1px solid #eee}
+.bp-fig input[type=text],.bp-fig select{font-size:12px}
+.rc-area{position:relative;display:inline-block;max-width:100%;border:1px solid var(--borda);touch-action:none;cursor:crosshair;user-select:none}
+.rc-area canvas{display:block;max-width:100%;max-height:72vh;width:auto;height:auto}
+.rc-ret{position:absolute;border:2px solid #e9792a;background:rgba(233,121,42,.12);display:none;pointer-events:none}
 .caixa-pdf .info{font-size:12px;color:var(--texto2);margin-top:6px}
 /* v59: faixa para colar arquivo (Ctrl+V ou botão direito → Colar) */
 .zona-colar{margin-top:6px;border:1.5px dashed #9fb3c8;border-radius:8px;padding:7px 10px;font-size:12px;color:var(--texto2);background:#f7f9fc;cursor:text;min-height:18px;outline:none;caret-color:transparent;overflow:hidden;white-space:nowrap}
@@ -1629,7 +1638,7 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
       <div class="campo full so-edicao so-lucro"><label>Usar proposta pronta como base <span style="font-weight:400;color:var(--texto2)">(PDF ou Word em outro formato)</span></label>
         <div class="caixa-pdf">
           <input type="file" id="card-base-arquivo" accept="application/pdf,.pdf,.docx" onchange="lerPropostaBase(this.files[0]);this.value=''">
-          <div class="info" id="card-base-info">A IA lê a proposta inteira e monta no nosso modelo: objeto, escopo, planilha por etapa, premissas, prazo, pagamento, composição de preço com a nossa base e o detalhe da OS. Você confere antes de aplicar. O arquivo não é guardado.</div>
+          <div class="info" id="card-base-info">A IA lê a proposta inteira e monta no nosso modelo: objeto, escopo, planilha por etapa, premissas, prazo, pagamento, composição de preço com a nossa base, o detalhe da OS, as seções técnicas (com tabelas) e as imagens e esquemas. Você confere antes de aplicar. O arquivo não é guardado.</div>
         </div>
       </div>
       <!-- v70: conversa com a IA sobre a proposta (e o documento lido) -->
@@ -1648,6 +1657,9 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
         </div>
       </div>
       <div class="campo full"><label>Título / Objeto da proposta *</label><input type="text" id="card-titulo" placeholder="Ex: Retrofit Laboratório Arkema — Térreo"></div>
+      <!-- v71: objeto completo e abertura próprios desta proposta -->
+      <div class="campo full"><label>Objeto completo <span style="font-weight:400;color:var(--texto2)">(seção 1 do PDF; em branco = título + prazo)</span></label><textarea id="card-objeto" rows="3" placeholder="Ex.: Fornecimento de materiais, equipe e equipamentos para a execução de…"></textarea></div>
+      <div class="campo full"><label>Abertura da proposta <span style="font-weight:400;color:var(--texto2)">(parágrafos depois de "Prezados Senhores"; em branco = texto padrão)</span></label><textarea id="card-abertura" rows="3" placeholder="Ex.: Em continuidade às apresentações técnicas…"></textarea></div>
       <div class="campo"><label>Valor total (R$)</label><input type="text" inputmode="numeric" id="card-valor" placeholder="0,00" oninput="mascaraMoeda(this)"></div>
       <div class="campo"><label>Chance de fechar</label>
         <select id="card-prob"><option value="">—</option><option value="10">10%</option><option value="25">25%</option><option value="50">50%</option><option value="75">75%</option><option value="90">90%</option><option value="100">100%</option></select>
@@ -1671,7 +1683,12 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
         </div>
         <input type="text" id="card-pagamento" style="margin-top:6px" placeholder="Texto que sai na proposta" readonly>
       </div>
-      <div class="campo full"><label>Escopo dos serviços</label><textarea id="card-escopo" rows="4" placeholder="Descreva detalhadamente o escopo dos serviços..."></textarea></div>
+      <div class="campo full"><label>Seções técnicas antes da planilha <span style="font-weight:400;color:var(--texto2)">(ex.: por que a solução, solução técnica, método executivo)</span></label>
+        <textarea id="card-secoes-antes" rows="5" class="txt-secoes" onchange="renderImagensCard()" placeholder="# SOLUÇÃO TÉCNICA E MÉTODO EXECUTIVO&#10;Parágrafo de texto…&#10;| Característica | Especificação |&#10;| Extensão | 11,00 m |&#10;## Sequência executiva&#10;• Integração da equipe…"></textarea>
+        <div class="dica">Cada seção começa com uma linha <strong># TÍTULO</strong> e sai numerada no PDF. Dentro dela: <strong>## </strong>subtítulo · <strong>• </strong>item de lista · <strong>| a | b |</strong> linha de tabela (a primeira é o cabeçalho) · <strong>**negrito**</strong>.</div></div>
+      <div class="campo full"><label>Escopo de fornecimento</label><textarea id="card-escopo" rows="4" placeholder="O que fornecemos e executamos, em itens curtos (• ). Use ## para separar grupos."></textarea></div>
+      <div class="campo full"><label>Seções técnicas depois da planilha <span style="font-weight:400;color:var(--texto2)">(ex.: preços por faixa, comparativo, cronograma, SSMA, garantia)</span></label>
+        <textarea id="card-secoes-depois" rows="5" class="txt-secoes" onchange="renderImagensCard()" placeholder="# PRAZO E CRONOGRAMA&#10;| Etapa | Atividades |&#10;| Dia 1 | Liberação da frente… |"></textarea></div>
       <!-- v33: imagens da proposta -->
       <div class="campo full"><label>Imagens da proposta <span style="font-weight:400;color:var(--texto2)">(fotos do local, croquis, referências)</span></label>
         <div class="caixa-pdf" id="card-imgs-drop">
@@ -1682,7 +1699,8 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
       </div>
       <div class="campo"><label>% Mão de obra</label><input type="number" id="card-pct-mao" value="30"></div>
       <div class="campo"><label>% Insumos e equipamentos</label><input type="number" id="card-pct-ins" value="70"></div>
-      <div class="campo full"><label>Observações gerais</label><textarea id="card-obs" rows="2"></textarea></div>
+      <div class="campo full"><label>Observações gerais <span style="font-weight:400;color:var(--texto2)">(premissas e esclarecimentos)</span></label><textarea id="card-obs" rows="2"></textarea></div>
+      <div class="campo full"><label>Exclusões <span style="font-weight:400;color:var(--texto2)">(o que não está incluído; sai em seção própria)</span></label><textarea id="card-exclusoes" rows="2" placeholder="• Remoção de interferências existentes no traçado"></textarea></div>
       <div class="campo full"><label>Nota 1</label><input type="text" id="card-nota1" placeholder="Ex: Em dias chuvosos..."></div>
       <div class="campo full"><label>Nota 2</label><input type="text" id="card-nota2" placeholder="Ex: Caso haja necessidade de paralisação..."></div>
       <div class="campo full">
@@ -1805,9 +1823,29 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
     <div class="campo-check"><input type="checkbox" id="bp-comp" checked><label for="bp-comp">Guardar a composição de preço (equipe, materiais, equipamentos, dias) — a equipe e os equipamentos saem na proposta</label></div>
     <div class="campo-check"><input type="checkbox" id="bp-os" checked><label for="bp-os">Detalhe da execução da OS (condições do local, incluído / não incluído, segurança) — só preenche o que estiver em branco</label></div>
     <div id="bp-previa"></div>
+    <!-- v71: imagens e esquemas da proposta original -->
+    <div class="secao">Imagens e esquemas da proposta original</div>
+    <div id="bp-figs"><div class="dica">Preparando as imagens…</div></div>
     <div class="modal-btns">
       <button class="btn-cancelar" onclick="fecharModal('modal-base-prop')">Cancelar</button>
       <button class="btn-salvar" onclick="aplicarPropostaBase()">Aplicar na proposta</button>
+    </div>
+  </div>
+</div>
+<!-- MODAL RECORTE DE IMAGEM DO PDF (v71) -->
+<div class="modal-overlay" id="modal-recorte">
+  <div class="modal modal-lg" style="max-width:900px">
+    <h2>Recortar imagem do PDF</h2>
+    <p class="modal-sub">Arraste sobre a página para marcar a figura (de um canto ao outro). Use as setas para trocar de página.</p>
+    <div class="linha-flex" style="align-items:center;gap:8px;margin-bottom:8px">
+      <button class="btn-sec" onclick="recortePagina(-1)">&lsaquo; Página anterior</button>
+      <span id="rc-pag" style="min-width:110px;text-align:center"></span>
+      <button class="btn-sec" onclick="recortePagina(1)">Próxima página &rsaquo;</button>
+    </div>
+    <div id="rc-area" class="rc-area"><canvas id="rc-canvas"></canvas><div id="rc-ret" class="rc-ret"></div></div>
+    <div class="modal-btns">
+      <button class="btn-cancelar" onclick="fecharModal('modal-recorte')">Cancelar</button>
+      <button class="btn-salvar" onclick="usarRecorte()">Usar este recorte</button>
     </div>
   </div>
 </div>
@@ -5267,8 +5305,8 @@ async function gerarNumeroProposta(empresaId,clienteId){
 async function abrirModalCard(id=null){
   if(!PERM.funilVer){toast('Seu perfil não acessa o funil de propostas');return;}
   cardEditandoId=id;cardOriginal=null;itensLocais=[];contatosDoCliente=[];composicaoLocal=null;$('cp-card-resumo').style.display='none';
-  limparChatProp(true);baseProp=null;osBasePendente=null;{const bi=$('card-base-info');if(bi)bi.textContent='A IA lê a proposta inteira e monta no nosso modelo: objeto, escopo, planilha por etapa, premissas, prazo, pagamento, composição de preço com a nossa base e o detalhe da OS. Você confere antes de aplicar. O arquivo não é guardado.';}
-  ['card-cliente','card-titulo','card-responsavel','card-valor','card-fechamento','card-prazo','card-escopo','card-pagamento','card-obs','card-nota1','card-nota2','card-dias','nct-nome','nct-cargo','nct-tel','nct-email','card-motivo-detalhe','ca-desc','ca-data'].forEach(i=>{$(i).value='';});
+  limparChatProp(true);baseProp=null;osBasePendente=null;{const bi=$('card-base-info');if(bi)bi.textContent='A IA lê a proposta inteira e monta no nosso modelo: objeto, escopo, planilha por etapa, premissas, prazo, pagamento, composição de preço com a nossa base, o detalhe da OS, as seções técnicas (com tabelas) e as imagens e esquemas. Você confere antes de aplicar. O arquivo não é guardado.';}
+  ['card-cliente','card-titulo','card-objeto','card-abertura','card-secoes-antes','card-secoes-depois','card-exclusoes','card-responsavel','card-valor','card-fechamento','card-prazo','card-escopo','card-pagamento','card-obs','card-nota1','card-nota2','card-dias','nct-nome','nct-cargo','nct-tel','nct-email','card-motivo-detalhe','ca-desc','ca-data'].forEach(i=>{$(i).value='';});
   $('card-validade').value='30';$('card-pct-mao').value='30';$('card-pct-ins').value='70';
   $('card-prazo-unid').value='meses';preencherPagamentoForm(null,'');
   arquivoPdfNovo=null;$('card-arquivo').value='';delete $('card-valor').dataset.oculto;
@@ -5320,6 +5358,8 @@ async function abrirModalCard(id=null){
     $('card-prazo').value=card.prazo_execucao_meses||'';$('card-prazo-unid').value=card.prazo_execucao_unidade||'meses';
     $('card-validade').value=card.validade_proposta_dias||30;
     $('card-escopo').value=card.escopo||'';
+    {const cpp=card.conteudo_proposta||{};$('card-objeto').value=cpp.objeto||'';$('card-abertura').value=cpp.abertura||'';
+     $('card-secoes-antes').value=cpp.secoes_antes||'';$('card-secoes-depois').value=cpp.secoes_depois||'';$('card-exclusoes').value=cpp.exclusoes||'';}
     preencherPagamentoForm(card.pagamento,card.forma_pagamento||'');
     mostrarArquivoProposta(card);
     imagensCard=Array.isArray(card.imagens)?card.imagens.map(x=>({...x})):[];renderImagensCard();
@@ -5460,17 +5500,21 @@ async function salvarCard(){
       atualizado_em:new Date().toISOString(),
     };
     if(composicaoLocal&&PERM.verLucro)dados.composicao=composicaoLocal;
+    // v71: objeto completo, abertura, seções técnicas e exclusões (coluna conteudo_proposta)
+    {const cpp={objeto:$('card-objeto').value,abertura:$('card-abertura').value,secoes_antes:$('card-secoes-antes').value,secoes_depois:$('card-secoes-depois').value,exclusoes:$('card-exclusoes').value};
+     if(Object.values(cpp).some(v=>v.trim())||(cardOriginal&&cardOriginal.conteudo_proposta))dados.conteudo_proposta=cpp;}
+    const semV71=e=>{if(e&&/conteudo_proposta/.test(e.message||'')){alert('Para guardar o objeto completo, a abertura, as seções técnicas e as exclusões, rode antes a migração v71 no Supabase (supabase/migracao_crm_v71_secoes_tecnicas_proposta.sql).');return true;}return false;};
     // v36: quem não vê valores não grava valor (exceto o lido do PDF que ele mesmo enviou)
     if(!PERM.verValores&&!$('card-valor').dataset.oculto)delete dados.valor_estimado;
     let savedId=cardEditandoId;
     if(cardEditandoId){
       const{error}=await sb.from('cards').update(dados).eq('id',cardEditandoId);
-      if(erroSB(error))return;
+      if(semV71(error)||erroSB(error))return;
     }else{
       dados.numero_proposta=await gerarNumeroProposta(empId,cli.id);dados.versao=1;
       if(!dados.numero_proposta)return;
       const{data:nc,error}=await sb.from('cards').insert(dados).select('id').single();
-      if(erroSB(error))return;
+      if(semV71(error)||erroSB(error))return;
       savedId=nc.id;cardEditandoId=savedId;
     }
     // v36: os itens (com preços) só são regravados por quem vê valores
@@ -7139,13 +7183,20 @@ async function abrirArquivoProposta(caminho){
 /* ================= v33: IMAGENS DA PROPOSTA ================= */
 // imagensCard: [{path,nome,legenda,na_proposta}] (guardadas) + {arquivo,url,pendente:true} (ainda não enviadas)
 let imagensCard=[],imagensRemovidas=[],urlsImagens={};
+// v71: seções técnicas ("# TÍTULO" em cada linha de início) — a imagem pode sair dentro de uma delas
+function titulosSecoes(txt){return String(txt||'').split('\n').map(l=>l.match(/^#(?!#)\s*(.+)$/)).filter(Boolean).map(m=>m[1].trim()).filter(Boolean);}
+function titulosSecoesCard(){const a=$('card-secoes-antes'),d=$('card-secoes-depois');return[...titulosSecoes(a&&a.value),...titulosSecoes(d&&d.value)];}
+function opcoesSecaoImagem(atual){const ts=titulosSecoesCard();if(atual&&!ts.some(t=>norm(t)===norm(atual)))ts.push(atual);
+  return`<option value="">Sai em: Imagens de referência</option>`+ts.map(t=>`<option value="${esc(t)}" ${atual&&norm(t)===norm(atual)?'selected':''}>Sai em: ${esc(t)}</option>`).join('');}
 function renderImagensCard(){
   const box=$('card-imgs');if(!box)return;
   box.innerHTML=imagensCard.map((im,i)=>`<div class="img-item">${im.pendente?'<span class="img-pend">nova</span>':''}
     <img src="${esc(im.pendente?im.url:(urlsImagens[im.path]||''))}" alt="" data-img-ver="${i}" title="Ver em tamanho grande">
     ${PERM.funil?`<button type="button" class="img-x" data-img-x="${i}" title="Tirar esta imagem">×</button>`:''}
     <input type="text" placeholder="Legenda (sai no PDF)" value="${esc(im.legenda||'')}" data-img-leg="${i}" ${PERM.funil?'':'disabled'}>
-    <label><input type="checkbox" data-img-pdf="${i}" ${im.na_proposta!==false?'checked':''} ${PERM.funil?'':'disabled'}> sair no PDF da proposta</label></div>`).join('');
+    <label><input type="checkbox" data-img-pdf="${i}" ${im.na_proposta!==false?'checked':''} ${PERM.funil?'':'disabled'}> sair no PDF da proposta</label>
+    <select data-img-sec="${i}" title="Onde a imagem sai no PDF" ${PERM.funil?'':'disabled'}>${opcoesSecaoImagem(im.secao)}</select></div>`).join('');
+  box.querySelectorAll('[data-img-sec]').forEach(el=>el.onchange=()=>{imagensCard[+el.dataset.imgSec].secao=el.value;});
   box.querySelectorAll('[data-img-leg]').forEach(el=>el.oninput=()=>{imagensCard[+el.dataset.imgLeg].legenda=el.value;});
   box.querySelectorAll('[data-img-pdf]').forEach(el=>el.onchange=()=>{imagensCard[+el.dataset.imgPdf].na_proposta=el.checked;});
   box.querySelectorAll('[data-img-x]').forEach(el=>el.onclick=()=>{const im=imagensCard[+el.dataset.imgX];if(!im.pendente&&!confirm('Tirar esta imagem da proposta? (vale ao salvar)'))return;
@@ -7185,7 +7236,7 @@ async function salvarImagensProposta(cardId,numero){
     if(error){console.error(error);alert(/mime|not allowed|type/i.test(error.message||'')?'Para guardar imagens, rode antes a migração v33 no Supabase (supabase/migracao_crm_v33_imagens_proposta.sql).':'O atendimento foi salvo, mas uma imagem não pôde ser enviada: '+(error.message||error));return false;}
     URL.revokeObjectURL(im.url);delete im.arquivo;delete im.url;delete im.pendente;im.path=caminho;
   }
-  const lista=imagensCard.map(im=>({path:im.path,nome:im.nome,legenda:(im.legenda||'').trim(),na_proposta:im.na_proposta!==false}));
+  const lista=imagensCard.map(im=>({path:im.path,nome:im.nome,legenda:(im.legenda||'').trim(),na_proposta:im.na_proposta!==false,...(im.secao?{secao:im.secao}:{})}));
   const{error}=await sb.from('cards').update({imagens:lista}).eq('id',cardId);
   if(error){console.error(error);alert(/imagens/.test(error.message||'')?'Para guardar imagens, rode antes a migração v33 no Supabase (supabase/migracao_crm_v33_imagens_proposta.sql).':'As imagens foram enviadas, mas não ficaram ligadas ao atendimento: '+(error.message||error));return false;}
   // o arquivo não é apagado: a imagem pode estar em outra versão da mesma proposta
@@ -7298,9 +7349,24 @@ async function htmlDaProposta(cardId){
   const fmtNum=v=>v!=null&&v!==''?Number(v).toLocaleString('pt-BR',{maximumFractionDigits:2}):'';
   const nomeCliente=cli.razao_social||cli.empresa_cliente||cli.nome||'';
   const num=numeroProposta(card);
-  // texto com quebras de linha; linhas que começam com •, - ou * viram lista
-  const blocoTexto=s=>{const ls=String(s||'').split(/\n/);let h='',lista=[];const fecha=()=>{if(lista.length){h+='<ul>'+lista.map(x=>`<li>${esc(x)}</li>`).join('')+'</ul>';lista=[];}};
-    ls.forEach(l=>{const t=l.trim();if(!t){fecha();return;}const m=t.match(/^[•\-*–]\s*(.*)$/);if(m)lista.push(m[1]);else{fecha();h+=`<p>${esc(t)}</p>`;}});fecha();return h;};
+  // texto com quebras de linha: linhas que começam com •, - ou * viram lista;
+  // v71: "## " subtítulo, "| a | b |" tabela (1ª linha = cabeçalho), **negrito**, "Obs.:" nota de rodapé
+  const inl=t=>esc(t).replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>');
+  const blocoTexto=s=>{const ls=String(s||'').split(/\n/);let h='',lista=[],tab=[];
+    const fecha=()=>{if(lista.length){h+='<ul>'+lista.map(x=>`<li>${inl(x)}</li>`).join('')+'</ul>';lista=[];}
+      if(tab.length){const[cab,...lin]=tab;h+=`<table class="tec"><thead><tr>${cab.map(c=>`<th>${inl(c)}</th>`).join('')}</tr></thead><tbody>${lin.map(r=>`<tr>${cab.map((_,k)=>`<td>${inl(r[k]||'')}</td>`).join('')}</tr>`).join('')}</tbody></table>`;tab=[];}};
+    ls.forEach(l=>{const t=l.trim();
+      if(/^\|.*\|$/.test(t)){if(lista.length){const x=tab;tab=[];fecha();tab=x;}const cel=t.slice(1,-1).split('|').map(c=>c.trim());if(!cel.every(c=>/^:?-{2,}:?$/.test(c)))tab.push(cel);return;}
+      if(tab.length)fecha();
+      if(!t){fecha();return;}
+      const sub=t.match(/^##\s+(.+)$/);if(sub){fecha();h+=`<h3 class="sub">${inl(sub[1])}</h3>`;return;}
+      const m=t.match(/^(?:[•–]|[-*](?=\s))\s*(.*)$/);if(m){lista.push(m[1]);return;}
+      fecha();h+=/^obs\.?:/i.test(t)?`<p class="obs">${inl(t)}</p>`:`<p>${inl(t)}</p>`;});fecha();return h;};
+  // v71: seções técnicas — cada "# TÍTULO" abre uma seção numerada
+  const cpp=card.conteudo_proposta||{};
+  const secoesDe=(txt,padrao)=>{const r=[];let at=null;String(txt||'').split('\n').forEach(l=>{const m=l.trim().match(/^#(?!#)\s*(.+)$/);
+      if(m){at={titulo:m[1].trim(),corpo:[]};r.push(at);return;}if(!at){if(!l.trim())return;at={titulo:padrao,corpo:[]};r.push(at);}at.corpo.push(l);});
+    return r.filter(x=>x.titulo&&(x.corpo.join('').trim()));};
   const extensoDias=n=>{n=Number(n)||30;return`${n} (${extensoNumero(n)}) dias`;};
   const validade=card.validade_proposta_dias||30;
   const prazo=card.prazo_execucao_meses?textoPrazo(card.prazo_execucao_meses,card.prazo_execucao_unidade):'';
@@ -7320,27 +7386,38 @@ async function htmlDaProposta(cardId){
   // equipe e equipamentos previstos (da composição de preço, sem valores)
   const equipe=cp?(cp.equipe||[]).filter(x=>n0(x.qtd)>0).map(x=>`${fmtNum(x.qtd)} ${x.funcao||'profissional'}`):[];
   const equip=cp?(cp.equipamentos||[]).filter(x=>String(x.descricao||'').trim()).map(x=>x.descricao):[];
-  const premissas=[card.observacoes,card.nota1,card.nota2,cp&&cp.turno==='noturno'?'Trabalho considerado em período noturno.':''].filter(x=>String(x||'').trim());
+  // v71: a mesma frase não sai duas vezes (ex.: nota repetindo uma premissa)
+  const vistos=new Set(),chaveL=l=>norm(String(l).replace(/^[•\-*–]\s*/,'').replace(/[.;:\s]+$/,''));
+  const premissas=[card.observacoes,card.nota1,card.nota2,cp&&cp.turno==='noturno'?'Trabalho considerado em período noturno.':''].map(x=>String(x||'').split('\n').filter(l=>{const k=chaveL(l);if(!k)return true;if(vistos.has(k))return false;vistos.add(k);return true;}).join('\n')).filter(x=>x.trim());
   // seções numeradas
   const secoes=[];const sec=(titulo,html)=>{if(html)secoes.push(`<h2><span class="num">${secoes.length+1}</span>${titulo}</h2>${html}`);};
-  sec('OBJETO',`<p>${esc(card.titulo||'')}${prazo?`, com prazo de execução de até ${esc(prazo)}`:''}.</p>`);
-  sec('ESCOPO DE FORNECIMENTO',card.escopo?blocoTexto(card.escopo):'');
-  // v33: imagens marcadas para sair na proposta
+  // v33: imagens marcadas para sair na proposta (v71: dentro da seção escolhida ou em "Imagens de referência")
   const imgsProp=(Array.isArray(card.imagens)?card.imagens:[]).filter(x=>x&&x.path&&x.na_proposta!==false);
+  let urlImg={};
   if(imgsProp.length){
     const{data:urls,error:eUrls}=await sb.storage.from(BUCKET_PROPOSTAS).createSignedUrls(imgsProp.map(x=>x.path),3600);
     if(eUrls)console.error('imagens da proposta',eUrls);
     if(eUrls||(urls||[]).filter(x=>x.signedUrl).length<imgsProp.length)alert('Atenção: '+(eUrls?'as imagens':'algumas imagens')+' da proposta não puderam ser carregadas e não vão sair no PDF.');
-    const u=Object.fromEntries((urls||[]).filter(x=>x.signedUrl).map(x=>[x.path,x.signedUrl]));
-    const figs=imgsProp.filter(x=>u[x.path]).map((x,i)=>`<figure><img src="${esc(u[x.path])}" alt=""><figcaption>Figura ${i+1}${x.legenda?' – '+esc(x.legenda):''}</figcaption></figure>`).join('');
-    sec('IMAGENS DE REFERÊNCIA',figs?`<div class="fotos">${figs}</div>`:'');
+    urlImg=Object.fromEntries((urls||[]).filter(x=>x.signedUrl).map(x=>[x.path,x.signedUrl]));
   }
+  const secAntes=secoesDe(cpp.secoes_antes,'APRESENTAÇÃO TÉCNICA'),secDepois=secoesDe(cpp.secoes_depois,'INFORMAÇÕES COMPLEMENTARES');
+  const todasSec=[...secAntes,...secDepois].map(x=>norm(x.titulo));
+  let nFig=0;const usadas=new Set();
+  const figurasHtml=(lista,cls)=>{const f=lista.filter(x=>urlImg[x.path]).map(x=>{usadas.add(x.path);return`<figure><img src="${esc(urlImg[x.path])}" alt=""><figcaption>Figura ${++nFig}${x.legenda?' – '+esc(x.legenda):''}</figcaption></figure>`;}).join('');return f?`<div class="fotos ${cls||''}">${f}</div>`:'';};
+  const secTecnica=x=>sec(esc(String(x.titulo).toUpperCase()),blocoTexto(x.corpo.join('\n'))+figurasHtml(imgsProp.filter(i=>i.secao&&norm(i.secao)===norm(x.titulo)),'uma'));
+  sec('OBJETO',String(cpp.objeto||'').trim()?blocoTexto(cpp.objeto):`<p>${esc(card.titulo||'')}${prazo?`, com prazo de execução de até ${esc(prazo)}`:''}.</p>`);
+  secAntes.forEach(secTecnica);
+  sec('ESCOPO DE FORNECIMENTO',card.escopo?blocoTexto(card.escopo):'');
+  // imagens sem seção (ou cuja seção não existe mais) saem juntas, depois do escopo
+  {const resto=imgsProp.filter(x=>!(x.secao&&todasSec.includes(norm(x.secao))));const f=figurasHtml(resto);if(f)sec('IMAGENS DE REFERÊNCIA',f);}
   sec('PLANILHA DE PREÇOS',planilha?`<p>Preços unitários e totais em Reais (R$), com todos os custos diretos, encargos sociais e trabalhistas, administração, tributos e seguros (BDI) incluídos.</p>${planilha}
     <p><strong>Valor global:</strong> ${esc(valorComExtenso(total||somaItens))}.</p>${pmo?`<p><strong>Composição de custos:</strong> ${esc(fmtNum(pmo))}% de mão de obra e ${esc(fmtNum(pins))}% equipamentos e materiais.</p>`:''}`:'');
   if(comEtapas&&etapas.filter(e=>e.item).length>1){const T=etapas.reduce((s,e)=>s+e.total,0)||1;
     sec('RESUMO POR ETAPA',`<table class="plan"><thead><tr><th style="width:44px">Item</th><th>Etapa</th><th style="width:110px;text-align:right">Valor (R$)</th><th style="width:80px;text-align:right">% do total</th></tr></thead><tbody>${etapas.filter(e=>e.item).map(e=>`<tr><td>${esc(e.item)}</td><td>${esc(e.descricao)}</td><td class="n">${fmtMoeda(e.total)}</td><td class="n">${(e.total/T*100).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}%</td></tr>`).join('')}</tbody><tfoot><tr><td colspan="2">TOTAL</td><td class="n">${fmtMoeda(T)}</td><td class="n">100,00%</td></tr></tfoot></table>`);}
+  secDepois.forEach(secTecnica);
   sec('EQUIPE E EQUIPAMENTOS PREVISTOS',(equipe.length||equip.length)?`${equipe.length?`<p><strong>Equipe técnica e operacional</strong></p><ul>${equipe.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:''}${equip.length?`<p><strong>Principais equipamentos</strong></p><ul>${equip.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:''}`:'');
   sec('PREMISSAS E ESCLARECIMENTOS',premissas.length?premissas.map(blocoTexto).join(''):'');
+  sec('EXCLUSÕES',String(cpp.exclusoes||'').trim()?blocoTexto(cpp.exclusoes):'');
   const cond=[['Valor global',esc(valorComExtenso(total||somaItens))],['Tributos',esc(M.tributos)],prazo?['Prazo de execução',esc(`Até ${prazo} a partir da emissão da Ordem de Serviço`)]:null,
     card.forma_pagamento?['Pagamento',br2(card.forma_pagamento)]:null,M.faturamento?['Faturamento',esc(M.faturamento)]:null,['Validade da proposta',esc(`${extensoDias(validade)} a contar de ${hojeCurto}`)]].filter(Boolean);
   sec('CONDIÇÕES COMERCIAIS',`<table class="dados">${cond.map(([a,b])=>`<tr><th>${a}</th><td>${b}</td></tr>`).join('')}</table><p style="margin-top:10px;text-align:justify"><strong>${esc(CLAUSULA_REEQUILIBRIO_TRIBUTARIO.titulo)}</strong> ${esc(CLAUSULA_REEQUILIBRIO_TRIBUTARIO.texto)}</p>`);
@@ -7392,6 +7469,11 @@ async function htmlDaProposta(cardId){
     table.plan{font-size:11px;border:1px solid var(--linha)}
     .fotos{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:6px 0 10px}.fotos figure{margin:0;break-inside:avoid;page-break-inside:avoid}
     .fotos img{width:100%;height:220px;object-fit:contain;border:1px solid var(--linha);background:#fff;display:block}.fotos figcaption{font-size:9.5px;color:#5F6B7A;text-align:center;margin-top:3px}
+    .fotos.uma{grid-template-columns:1fr}.fotos.uma img{height:auto;max-height:330px}
+    h3.sub{font-size:12.5px;color:var(--dest);margin:10px 0 4px}
+    table.tec{font-size:11px;border:1px solid var(--linha)}table.tec th{background:var(--claro);color:var(--pri);padding:5px 7px;text-align:left;border-bottom:1.5px solid var(--dest)}
+    table.tec td{padding:4px 7px;border-bottom:1px solid var(--linha);vertical-align:top}table.tec td:first-child{font-weight:600;color:var(--pri)}
+    table.tec tbody tr:nth-child(even) td{background:var(--zebra)}p.obs{font-size:10px;font-style:italic;color:#5F6B7A}
     table.plan th{background:var(--claro);color:var(--pri);padding:5px 6px;text-align:left;border-bottom:1.5px solid var(--dest)}
     table.plan td{padding:4px 6px;border-bottom:1px solid var(--linha);vertical-align:top}
     table.plan tbody tr:nth-child(even) td{background:var(--zebra)}
@@ -7425,7 +7507,7 @@ async function htmlDaProposta(cardId){
     <tr><th>Validade</th><td>${esc(extensoDias(validade))} a contar da data de emissão</td></tr>
   </table>
   <p><strong>Prezados Senhores,</strong></p>
-  <p>Em atenção à sua solicitação, apresentamos nossa proposta técnica e comercial para ${esc(String(card.titulo||'os serviços').replace(/^./,c=>c.toLowerCase()))}, com fornecimento de mão de obra, materiais e equipamentos conforme o escopo descrito a seguir.</p>
+  ${String(cpp.abertura||'').trim()?blocoTexto(cpp.abertura):`<p>Em atenção à sua solicitação, apresentamos nossa proposta técnica e comercial para ${esc(String(card.titulo||'os serviços').replace(/^./,c=>c.toLowerCase()))}, com fornecimento de mão de obra, materiais e equipamentos conforme o escopo descrito a seguir.</p>`}
   <table class="destaque"><tr><td>VALOR GLOBAL DA PROPOSTA</td><td class="n">R$ ${fmtMoeda(total||somaItens)}</td></tr>
     ${prazo?`<tr><td>Prazo global de execução</td><td class="n">${esc(prazo)}</td></tr>`:''}
     ${card.forma_pagamento?`<tr><td>Forma de pagamento</td><td class="n">${esc(String(card.forma_pagamento).split('\n')[0])}</td></tr>`:''}</table>
@@ -12208,20 +12290,22 @@ async function lerPropostaBase(f){
   info.innerHTML=`Lendo <strong>${esc(f.name)}</strong> e adaptando ao nosso modelo… pode levar de 30 segundos a 2 minutos. Não feche a proposta.`;
   const corpo={nome:f.name,contexto:{funcoes:((precoCfg&&precoCfg.funcoes)||[]).map(x=>x.nome),tipos_cliente:((precoCfg&&precoCfg.tipos_cliente)||[]).map(x=>x.nome),
     documentos:((precoCfg&&precoCfg.documentos)||[]).map(x=>x.nome),materiais:(todosMateriais||[]).filter(m=>m.ativo!==false).map(m=>m.nome)}};
+  let pdfBytes=null,docx_=null;
   try{
-    if(pdf)corpo.pdf_base64=base64DeBytes(new Uint8Array(await f.arrayBuffer()));
-    else corpo.texto=(await textoDoDocx(f)).join('\n');
+    if(pdf){pdfBytes=new Uint8Array(await f.arrayBuffer());corpo.pdf_base64=base64DeBytes(pdfBytes);}
+    else{docx_=await lerDocxComImagens(f);corpo.texto=docx_.linhas.join('\n');} // v71: tabelas como "| a | b |" e imagens como [imagem NOME]
   }catch(e){console.error(e);info.textContent='Não consegui abrir o arquivo: '+(e.message||e);return;}
   const{data,error}=await sb.functions.invoke('ler-proposta',{body:corpo});
   let erro=data&&data.erro;
   if(error&&!erro){try{const j=await error.context.json();erro=j.erro;}catch(e){erro=error.message;}}
   if(erro||!data||!data.dados){
     info.innerHTML=`Não foi possível ler a proposta: ${esc(erro||'sem resposta')}${/not found|404|Failed to send/i.test(erro||'')?'<br>A função <strong>ler-proposta</strong> ainda não foi publicada no Supabase.':''}`;return;}
-  baseProp={nome:f.name,d:data.dados};
+  baseProp={nome:f.name,d:data.dados,pdfBytes,docxImgs:docx_?docx_.imagens:null,figs:[],paginas:{}};
   chatProp.doc={nome:f.name,pdf_base64:corpo.pdf_base64,texto:corpo.texto};renderChatProp(); // v70: a conversa usa o mesmo documento
   info.innerHTML=`<strong>${esc(f.name)}</strong> lida. Confira na janela e clique em <em>Aplicar na proposta</em>.`;
   $('bp-precos').value=(data.dados.itens||[]).some(i=>n0(i.valor_total)>0||n0(i.valor_unitario)>0)?'proposta':'composicao';
   abrirModal('modal-base-prop');renderPreviaBase();
+  prepararFigurasBase().catch(e=>{console.error(e);$('bp-figs').innerHTML=`<div class="dica">Não consegui preparar as imagens: ${esc(e.message||e)}</div>`;});
 }
 // monta a composição com a nossa base de custos a partir do que a proposta diz
 function compDaBase(d,empId){
@@ -12302,8 +12386,13 @@ function renderPreviaBase(){
       <tr><th style="text-align:left">Pagamento</th><td>${esc(textoPagBase(d.pagamento)||'—')}</td></tr>
       <tr><th style="text-align:left">Equipe prevista</th><td>${esc(eq||'—')}${k.dias_uteis||k.sabados||k.domingos?` · ${n0(k.dias_uteis)} dia(s) útil(eis)${n0(k.sabados)?` + ${n0(k.sabados)} sáb.`:''}${n0(k.domingos)?` + ${n0(k.domingos)} dom./fer.`:''}`:''}</td></tr>
     </tbody></table>
+    ${d.objeto?`<details><summary style="cursor:pointer;font-weight:600">Objeto completo</summary><pre style="white-space:pre-wrap;font-family:inherit;font-size:12.5px;margin:6px 0">${esc(d.objeto)}</pre></details>`:''}
+    ${d.abertura?`<details><summary style="cursor:pointer;font-weight:600">Abertura da proposta</summary><pre style="white-space:pre-wrap;font-family:inherit;font-size:12.5px;margin:6px 0">${esc(d.abertura)}</pre></details>`:''}
+    ${d.secoes_antes?`<details><summary style="cursor:pointer;font-weight:600">Seções técnicas antes da planilha: ${esc(titulosSecoes(d.secoes_antes).join(' · ')||'—')}</summary><pre style="white-space:pre-wrap;font-family:inherit;font-size:12.5px;margin:6px 0">${esc(d.secoes_antes)}</pre></details>`:''}
     <details><summary style="cursor:pointer;font-weight:600">Escopo de fornecimento</summary><pre style="white-space:pre-wrap;font-family:inherit;font-size:12.5px;margin:6px 0">${esc(d.escopo||'')}</pre></details>
+    ${d.secoes_depois?`<details><summary style="cursor:pointer;font-weight:600">Seções técnicas depois da planilha: ${esc(titulosSecoes(d.secoes_depois).join(' · ')||'—')}</summary><pre style="white-space:pre-wrap;font-family:inherit;font-size:12.5px;margin:6px 0">${esc(d.secoes_depois)}</pre></details>`:''}
     <details><summary style="cursor:pointer;font-weight:600">Premissas e esclarecimentos</summary><pre style="white-space:pre-wrap;font-family:inherit;font-size:12.5px;margin:6px 0">${esc([d.premissas,d.nota1,d.nota2].filter(Boolean).join('\n'))}</pre></details>
+    ${d.exclusoes?`<details><summary style="cursor:pointer;font-weight:600">Exclusões</summary><pre style="white-space:pre-wrap;font-family:inherit;font-size:12.5px;margin:6px 0">${esc(d.exclusoes)}</pre></details>`:''}
     ${modo!=='nenhum'&&its.length?`<details open><summary style="cursor:pointer;font-weight:600">Planilha (${its.filter(i=>n0(i.quantidade)).length} itens · total R$ ${fmtMoeda(its.reduce((s,i)=>s+n0(i.valor_total),0))})</summary>
       <div style="overflow-x:auto;max-height:320px"><table class="tabela-itens"><thead><tr><th style="width:50px">Item</th><th>Descrição</th><th style="width:60px">Un.</th><th style="width:80px;text-align:right">Qtd.</th><th style="width:110px;text-align:right">Total (R$)</th></tr></thead><tbody>${its.map(linhaIt).join('')}</tbody></table></div></details>`:''}`;
 }
@@ -12314,6 +12403,7 @@ async function aplicarPropostaBase(){
     const emp=empresaDaBase(d);if(emp&&!$('card-empresa-id').value){$('card-empresa-id').value=emp;feitos.push('empresa');}
     const cli=clienteDaBase(d);if(cli&&!$('card-cliente').value.trim()){$('card-cliente').value=rotuloCliente(cli);marcarPreenchido('card-cliente');await clienteEscolhidoNoCard();feitos.push('cliente');}
     set('card-titulo',d.titulo);set('card-escopo',d.escopo);set('card-obs',d.premissas);set('card-nota1',d.nota1);set('card-nota2',d.nota2);
+    set('card-objeto',d.objeto);set('card-abertura',d.abertura);set('card-secoes-antes',d.secoes_antes);set('card-secoes-depois',d.secoes_depois);set('card-exclusoes',d.exclusoes);
     if(d.prazo&&n0(d.prazo.numero)>0){set('card-prazo',Math.round(n0(d.prazo.numero)));if(d.prazo.unidade)$('card-prazo-unid').value=d.prazo.unidade;}
     if(n0(d.validade_dias)>0)set('card-validade',Math.round(n0(d.validade_dias)));
     const p=d.pagamento||{};if(p.tipo){const pg={tipo:p.tipo,periodo:p.periodo||'mensal',sinal:n0(p.sinal_pct)||null,dias:n0(p.dias)>0?n0(p.dias):null};if(p.tipo==='outra')pg.texto=p.texto;
@@ -12339,6 +12429,8 @@ async function aplicarPropostaBase(){
   }
   osBasePendente=$('bp-os').checked&&d.os&&Object.values(d.os).some(v=>String(v||'').trim())?d.os:null;
   if(osBasePendente){if(cardEditandoId)await gravarOSBase(cardEditandoId);feitos.push('detalhe da OS'+(cardEditandoId?'':' (grava ao salvar)'));}
+  {const n=await aplicarFigurasBase();if(n)feitos.push(`${n} imagem(ns)`);}
+  renderImagensCard();
   fecharModal('modal-base-prop');
   $('card-base-info').innerHTML=`Aplicado de <strong>${esc(baseProp.nome)}</strong>: ${esc(feitos.join(', '))}. Confira os campos em amarelo e clique em <strong>Salvar</strong>.`;
   baseProp=null;toast('Proposta adaptada — confira e salve');
@@ -12354,6 +12446,138 @@ async function gravarOSBase(cardId){
   if(error){console.error(error);toast('Detalhe da OS não gravado: '+(error.message||error));}
 }
 
+/* ================= v71: IMAGENS E ESQUEMAS DA PROPOSTA ORIGINAL ================= */
+// PDF: a IA diz a página e o retângulo (em % da página); o CRM desenha a página (pdf.js) e recorta.
+// O retângulo pode ser ajustado à mão (modal-recorte). Word: as imagens saem direto do arquivo.
+// Nada é guardado até "Aplicar na proposta" + "Salvar" (aí viram "Imagens da proposta").
+async function lerZip(bytes){
+  const dv=new DataView(bytes.buffer,bytes.byteOffset,bytes.byteLength),ent={};
+  let fim=-1;for(let i=bytes.length-22;i>=Math.max(0,bytes.length-66000);i--)if(dv.getUint32(i,true)===0x06054b50){fim=i;break;}
+  if(fim<0)throw new Error('Arquivo Word inválido.');
+  let p=dv.getUint32(fim+16,true);const n=dv.getUint16(fim+10,true);
+  for(let k=0;k<n;k++){
+    const metodo=dv.getUint16(p+10,true),tam=dv.getUint32(p+20,true),ln=dv.getUint16(p+28,true),le=dv.getUint16(p+30,true),lc=dv.getUint16(p+32,true),ofs=dv.getUint32(p+42,true);
+    ent[new TextDecoder().decode(bytes.subarray(p+46,p+46+ln))]={metodo,tam,ofs};p+=46+ln+le+lc;
+  }
+  const ler=async nome=>{const e=ent[nome];if(!e)return null;const ini=e.ofs+30+dv.getUint16(e.ofs+26,true)+dv.getUint16(e.ofs+28,true),d=bytes.subarray(ini,ini+e.tam);
+    return e.metodo===0?d.slice():new Uint8Array(await new Response(new Blob([d]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).arrayBuffer());};
+  return{nomes:Object.keys(ent),ler};
+}
+const xmlTexto=x=>x.replace(/<w:tab\/>/g,' ').replace(/<[^>]+>/g,'').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&apos;/g,"'").replace(/&amp;/g,'&');
+async function lerDocxComImagens(f){
+  const z=await lerZip(new Uint8Array(await f.arrayBuffer())),dec=b=>new TextDecoder().decode(b);
+  const docB=await z.ler('word/document.xml');if(!docB)throw new Error('Arquivo Word inválido.');
+  const relsB=await z.ler('word/_rels/document.xml.rels'),rels={};
+  if(relsB)(dec(relsB).match(/<Relationship\b[^>]*>/g)||[]).forEach(r=>{const id=(r.match(/\bId="([^"]+)"/)||[])[1],t=(r.match(/\bTarget="([^"]+)"/)||[])[1];if(id&&t)rels[id]=t.replace(/^\/?(word\/)?/,'');});
+  const imagens={};
+  let xml=dec(docB)
+    .replace(/<w:tbl\b[\s\S]*?<\/w:tbl>/g,tb=>'\n'+(tb.match(/<w:tr\b[\s\S]*?<\/w:tr>/g)||[]).map(tr=>'| '+(tr.match(/<w:tc\b[\s\S]*?<\/w:tc>/g)||[]).map(tc=>xmlTexto(tc.replace(/<\/w:p>/g,' ')).replace(/\|/g,'/').replace(/\s+/g,' ').trim()).join(' | ')+' |').join('\n')+'\n')
+    .replace(/<w:drawing\b[\s\S]*?<\/w:drawing>|<w:pict\b[\s\S]*?<\/w:pict>/g,dr=>{const id=(dr.match(/r:(?:embed|id)="([^"]+)"/)||[])[1],alvo=id&&rels[id];
+      if(!alvo||!/^media\//.test(alvo))return'';const nome=alvo.replace(/^media\//,'');imagens[nome]='word/'+alvo;return`\n[imagem ${nome}]\n`;});
+  const linhas=xmlTexto(xml.replace(/<w:br[^>]*\/>|<\/w:p>/g,'\n')).split('\n').map(l=>l.replace(/\s+/g,' ').trim()).filter(Boolean);
+  const lista=[];for(const[nome,cam]of Object.entries(imagens)){const b=await z.ler(cam);if(b)lista.push({nome,blob:new Blob([b],{type:/\.png$/i.test(nome)?'image/png':/\.jpe?g$/i.test(nome)?'image/jpeg':/\.gif$/i.test(nome)?'image/gif':'application/octet-stream'})});}
+  return{linhas,imagens:lista};
+}
+// página do PDF desenhada (escala 2 = boa para imprimir); guardada enquanto a conferência está aberta
+async function paginaBase(n){
+  if(!baseProp||!baseProp.pdfBytes)throw new Error('sem PDF');
+  if(baseProp.paginas[n])return baseProp.paginas[n];
+  const lib=await carregarPdfJs();
+  if(!baseProp.pdfDoc)baseProp.pdfDoc=await lib.getDocument({data:baseProp.pdfBytes.slice()}).promise;
+  const pg=await baseProp.pdfDoc.getPage(n),vp=pg.getViewport({scale:2});
+  const c=document.createElement('canvas');c.width=Math.round(vp.width);c.height=Math.round(vp.height);
+  const g=c.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,c.width,c.height);
+  await pg.render({canvasContext:g,viewport:vp}).promise;
+  return baseProp.paginas[n]=c;
+}
+function totalPaginasBase(){return baseProp&&baseProp.pdfDoc?baseProp.pdfDoc.numPages:1;}
+// recorte → JPEG
+async function recorteFig(fg){
+  if(fg.blob)return fg.blob;
+  const pg=await paginaBase(fg.pagina),cl=v=>Math.max(0,Math.min(100,n0(v)));
+  const x=Math.round(cl(fg.x)/100*pg.width),y=Math.round(cl(fg.y)/100*pg.height);
+  const w=Math.max(10,Math.round(Math.min(cl(fg.largura),100-cl(fg.x))/100*pg.width)),h=Math.max(10,Math.round(Math.min(cl(fg.altura),100-cl(fg.y))/100*pg.height));
+  const c=document.createElement('canvas');c.width=w;c.height=h;const g=c.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,w,h);g.drawImage(pg,x,y,w,h,0,0,w,h);
+  return await new Promise(ok=>c.toBlob(ok,'image/jpeg',.9));
+}
+async function imagemParaJpeg(blob){
+  const bmp=await createImageBitmap(blob),c=document.createElement('canvas');c.width=bmp.width;c.height=bmp.height;
+  const g=c.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,c.width,c.height);g.drawImage(bmp,0,0);
+  return await new Promise(ok=>c.toBlob(ok,'image/jpeg',.9));
+}
+async function prepararFigurasBase(){
+  const bp=baseProp;if(!bp)return;const d=bp.d,secs=[...titulosSecoes(d.secoes_antes),...titulosSecoes(d.secoes_depois)];
+  const secOk=t=>{const x=secs.find(s=>norm(s)===norm(t||''));return x||'';};
+  if(bp.pdfBytes){
+    await paginaBase(1);const np=totalPaginasBase();
+    bp.figs=(d.figuras||[]).filter(f=>n0(f.pagina)>=1&&n0(f.pagina)<=np&&n0(f.largura)>1&&n0(f.altura)>1)
+      .map(f=>({pagina:Math.round(n0(f.pagina)),x:n0(f.x),y:n0(f.y),largura:n0(f.largura),altura:n0(f.altura),legenda:f.legenda||'',secao:secOk(f.secao),levar:true}));
+  }else if(bp.docxImgs){
+    const porNome=Object.fromEntries((d.figuras||[]).filter(f=>f.arquivo).map(f=>[String(f.arquivo).trim(),f]));
+    bp.figs=[];
+    for(const im of bp.docxImgs){const f=porNome[im.nome];
+      try{const b=await imagemParaJpeg(im.blob);const bmp=await createImageBitmap(b);if(bmp.width<60||bmp.height<60)continue; // ícones e marcas
+        bp.figs.push({blob:b,nome:im.nome,legenda:f?f.legenda||'':'',secao:f?secOk(f.secao):'',levar:!!f});}
+      catch(e){console.warn('imagem do Word não lida',im.nome,e);}}
+  }
+  for(const fg of bp.figs){try{fg.url=URL.createObjectURL(await recorteFig(fg));}catch(e){console.warn(e);}}
+  if(baseProp===bp)renderFigurasBase();
+}
+function renderFigurasBase(){
+  const box=$('bp-figs');if(!box||!baseProp)return;const bp=baseProp,d=bp.d;
+  const secs=[...titulosSecoes(d.secoes_antes),...titulosSecoes(d.secoes_depois)];
+  const opc=a=>`<option value="">Imagens de referência</option>`+secs.map(t=>`<option value="${esc(t)}" ${a&&norm(a)===norm(t)?'selected':''}>${esc(t)}</option>`).join('');
+  box.innerHTML=(bp.figs.length?`<div class="dica" style="margin-bottom:6px">Marque as que vão para a proposta. ${bp.pdfBytes?'Se o recorte saiu largo ou cortado, clique em <em>Ajustar recorte</em>.':''}</div>`:
+      `<div class="dica">${bp.pdfBytes?'A IA não encontrou figuras ou esquemas neste PDF.':bp.docxImgs?'O arquivo Word não tem imagens.':''}</div>`)+
+    `<div class="bp-figs">${bp.figs.map((f,i)=>`<div class="bp-fig ${f.levar?'':'fora'}">
+      ${f.url?`<img src="${esc(f.url)}" alt="">`:'<div class="dica">sem prévia</div>'}
+      <label class="campo-check" style="margin:0"><input type="checkbox" ${f.levar?'checked':''} onchange="baseProp.figs[${i}].levar=this.checked;renderFigurasBase()"> levar para a proposta</label>
+      <input type="text" placeholder="Legenda (sai no PDF)" value="${esc(f.legenda)}" oninput="baseProp.figs[${i}].legenda=this.value">
+      <select onchange="baseProp.figs[${i}].secao=this.value" title="Onde sai no PDF">${opc(f.secao)}</select>
+      ${bp.pdfBytes?`<button class="btn-link" onclick="abrirRecorte(${i})">Ajustar recorte (página ${f.pagina})</button>`:''}
+    </div>`).join('')}</div>`+
+    (bp.pdfBytes?`<button class="btn-sec" style="margin-top:8px" onclick="abrirRecorte(-1)">Recortar outra imagem do PDF</button>`:'');
+}
+// ---- recorte à mão ----
+let rcFig=-1,rcPagina=1,rcRet=null;
+async function abrirRecorte(i){
+  if(!baseProp||!baseProp.pdfBytes)return;rcFig=i;const f=i>=0?baseProp.figs[i]:null;
+  rcPagina=f?f.pagina:1;rcRet=f?{x:f.x,y:f.y,largura:f.largura,altura:f.altura}:null;
+  abrirModal('modal-recorte');await desenharRecorte();
+}
+async function recortePagina(dlt){const np=totalPaginasBase(),n=Math.min(np,Math.max(1,rcPagina+dlt));if(n===rcPagina)return;rcPagina=n;rcRet=null;await desenharRecorte();}
+async function desenharRecorte(){
+  const pg=await paginaBase(rcPagina),c=$('rc-canvas');c.width=pg.width;c.height=pg.height;c.getContext('2d').drawImage(pg,0,0);
+  $('rc-pag').textContent=`página ${rcPagina} de ${totalPaginasBase()}`;mostrarRet();
+}
+function mostrarRet(){const r=$('rc-ret');if(!rcRet){r.style.display='none';return;}
+  Object.assign(r.style,{display:'block',left:rcRet.x+'%',top:rcRet.y+'%',width:rcRet.largura+'%',height:rcRet.altura+'%'});}
+(function(){const a=document.getElementById('rc-area');if(!a)return;let ini=null;
+  const pos=e=>{const b=$('rc-canvas').getBoundingClientRect();return{x:Math.max(0,Math.min(100,(e.clientX-b.left)/b.width*100)),y:Math.max(0,Math.min(100,(e.clientY-b.top)/b.height*100))};};
+  a.addEventListener('pointerdown',e=>{e.preventDefault();ini=pos(e);a.setPointerCapture(e.pointerId);rcRet={x:ini.x,y:ini.y,largura:0,altura:0};mostrarRet();});
+  a.addEventListener('pointermove',e=>{if(!ini)return;const p=pos(e);rcRet={x:Math.min(ini.x,p.x),y:Math.min(ini.y,p.y),largura:Math.abs(p.x-ini.x),altura:Math.abs(p.y-ini.y)};mostrarRet();});
+  const fim=()=>{ini=null;};a.addEventListener('pointerup',fim);a.addEventListener('pointercancel',fim);})();
+async function usarRecorte(){
+  if(!rcRet||rcRet.largura<1||rcRet.altura<1){alert('Arraste sobre a página para marcar a imagem.');return;}
+  let f=rcFig>=0?baseProp.figs[rcFig]:null;
+  if(!f){f={legenda:'',secao:'',levar:true};baseProp.figs.push(f);}
+  Object.assign(f,{pagina:rcPagina,...rcRet,levar:true});delete f.blob;
+  if(f.url)URL.revokeObjectURL(f.url);f.url=URL.createObjectURL(await recorteFig(f));
+  fecharModal('modal-recorte');renderFigurasBase();
+}
+// leva as marcadas para "Imagens da proposta" (sobem ao salvar)
+async function aplicarFigurasBase(){
+  if(!baseProp)return 0;const sel=baseProp.figs.filter(f=>f.levar);let n=0;
+  if(imagensCard.length+sel.length>30){alert(`No máximo 30 imagens por proposta: só ${Math.max(0,30-imagensCard.length)} das ${sel.length} marcadas vão entrar.`);}
+  for(const f of sel){if(imagensCard.length>=30)break;
+    try{const b=await recorteFig(f),nome=`figura-${String(imagensCard.length+1).padStart(2,'0')}.jpg`,arq=new File([b],nome,{type:'image/jpeg'});
+      imagensCard.push({pendente:true,arquivo:arq,url:URL.createObjectURL(arq),nome,legenda:f.legenda||'',secao:f.secao||'',na_proposta:true});n++;}
+    catch(e){console.error(e);}}
+  (baseProp.figs||[]).forEach(f=>{if(f.url)URL.revokeObjectURL(f.url);});
+  if(n)$('card-imgs-info').innerHTML=`${n} imagem(ns) trazida(s) da proposta original — <strong>clique em Salvar</strong> para guardar.`;
+  return n;
+}
+
 /* ================= CONVERSA COM A IA NA PROPOSTA (v70) ================= */
 // Usa a mesma função "ler-proposta" (modo "conversa"). A IA vê a proposta da tela e o documento
 // lido/anexado; mudanças só entram quando a pessoa clica em Aplicar. Nada é guardado no banco.
@@ -12365,7 +12589,9 @@ function estadoPropostaChat(){
     dias_uteis:composicaoLocal.dias_uteis,sabados:composicaoLocal.sabados,domingos:composicaoLocal.domingos,turno:composicaoLocal.turno,
     materiais:(composicaoLocal.materiais||[]).map(x=>`${x.descricao} (${n0(x.qtd)} ${x.unidade||''})`),
     equipamentos:(composicaoLocal.equipamentos||[]).map(x=>`${x.descricao} (${n0(x.qtd)} ${x.unidade||''})`)}:null;
-  return{cliente:$('card-cliente').value,empresa:emp?emp.nome:'',titulo:$('card-titulo').value,escopo:$('card-escopo').value,
+  return{cliente:$('card-cliente').value,empresa:emp?emp.nome:'',titulo:$('card-titulo').value,objeto:$('card-objeto').value,abertura:$('card-abertura').value,
+    secoes_antes:$('card-secoes-antes').value,escopo:$('card-escopo').value,secoes_depois:$('card-secoes-depois').value,exclusoes:$('card-exclusoes').value,
+    imagens:imagensCard.map(i=>({legenda:i.legenda||'',secao:i.secao||'Imagens de referência'})),
     premissas:$('card-obs').value,nota1:$('card-nota1').value,nota2:$('card-nota2').value,
     prazo:{numero:n0($('card-prazo').value),unidade:$('card-prazo-unid').value},validade_dias:n0($('card-validade').value),
     pagamento:$('card-pagamento').value,valor_total:$('card-valor').value,
@@ -12373,7 +12599,7 @@ function estadoPropostaChat(){
       quantidade:n0(i.quantidade),valor_unitario:n0(i.valor_unitario),valor_total:n0(i.valor_total)})),
     composicao_resumo:comp};
 }
-const ROTULO_MUD={titulo:'Objeto',escopo:'Escopo de fornecimento',premissas:'Premissas e esclarecimentos',nota1:'Nota 1',nota2:'Nota 2',prazo:'Prazo de execução',validade_dias:'Validade',pagamento:'Forma de pagamento',itens:'Planilha de itens'};
+const ROTULO_MUD={titulo:'Título',objeto:'Objeto completo',abertura:'Abertura',secoes_antes:'Seções técnicas antes da planilha',secoes_depois:'Seções técnicas depois da planilha',exclusoes:'Exclusões',escopo:'Escopo de fornecimento',premissas:'Premissas e esclarecimentos',nota1:'Nota 1',nota2:'Nota 2',prazo:'Prazo de execução',validade_dias:'Validade',pagamento:'Forma de pagamento',itens:'Planilha de itens'};
 function resumoMudanca(k,v){
   if(k==='prazo')return n0(v.numero)?`${n0(v.numero)} ${v.unidade||''}`:'sem prazo';
   if(k==='validade_dias')return`${n0(v)} dias`;
@@ -12425,11 +12651,10 @@ function ignorarMudancaChat(i){const m=chatProp.msgs[i];if(m)m.estado='ignorada'
 function aplicarMudancaChat(i){
   const m=chatProp.msgs[i];if(!m||!m.mudancas||m.estado!=='pendente')return;const d=m.mudancas;
   const set=(id,v)=>{if(v==null)return;$(id).value=v;marcarPreenchido(id);};
-  if('titulo' in d)set('card-titulo',d.titulo);
-  if('escopo' in d)set('card-escopo',d.escopo);
-  if('premissas' in d)set('card-obs',d.premissas);
-  if('nota1' in d)set('card-nota1',d.nota1);
-  if('nota2' in d)set('card-nota2',d.nota2);
+  const CAMPO_MUD={titulo:'card-titulo',objeto:'card-objeto',abertura:'card-abertura',secoes_antes:'card-secoes-antes',escopo:'card-escopo',
+    secoes_depois:'card-secoes-depois',premissas:'card-obs',exclusoes:'card-exclusoes',nota1:'card-nota1',nota2:'card-nota2'};
+  Object.entries(CAMPO_MUD).forEach(([k,id])=>{if(k in d)set(id,d[k]);});
+  if('secoes_antes' in d||'secoes_depois' in d)renderImagensCard();
   if(d.prazo&&n0(d.prazo.numero)>0){set('card-prazo',Math.round(n0(d.prazo.numero)));if(d.prazo.unidade)$('card-prazo-unid').value=d.prazo.unidade;}
   if(n0(d.validade_dias)>0)set('card-validade',Math.round(n0(d.validade_dias)));
   if(d.pagamento&&d.pagamento.tipo){const p=d.pagamento,pg={tipo:p.tipo,periodo:p.periodo||'mensal',sinal:n0(p.sinal_pct)||null,dias:n0(p.dias)>0?n0(p.dias):null};if(p.tipo==='outra')pg.texto=p.texto;
