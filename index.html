@@ -244,6 +244,15 @@ body.tela-larga .conteudo{max-width:none}
 .ie-ferr select{padding:3px 6px;font-size:12px;border-radius:6px;border:1px solid var(--borda)}
 .ie-ferr button{border:1px solid var(--borda);background:#fff;border-radius:6px;padding:3px 8px;cursor:pointer;font-size:12px}
 .ie-ferr button:hover{background:#f0f0f0}
+.inv-sel-barra{display:flex;gap:10px;align-items:center;flex-wrap:wrap;background:var(--verde-claro);border:1px solid var(--borda);border-radius:8px;padding:8px 12px;margin-bottom:8px;font-size:13px}
+#tabela-inventario th[draggable="true"]{cursor:grab}
+#tabela-inventario th.inv-arrastando{opacity:.4}
+#tabela-inventario th.inv-alvo{box-shadow:inset 3px 0 0 var(--verde)}
+#tabela-inventario td.inv-ck,#tabela-inventario th.inv-ck{width:30px;text-align:center;padding-left:6px;padding-right:6px}
+#tabela-inventario input[type=checkbox]{width:16px;height:16px;cursor:pointer}
+.inv-col-lista .inv-col-item{display:flex;align-items:center;gap:8px;padding:6px 4px;border-bottom:1px solid var(--borda)}
+.inv-col-lista .inv-col-item label{flex:1;display:flex;gap:8px;align-items:center;cursor:pointer}
+.inv-col-lista .inv-col-item button{padding:2px 9px;min-width:0}
 .ie-ferr .ie-puxar{cursor:grab;font-weight:700;letter-spacing:-1px;color:var(--texto2);padding:0 4px}
 .ie-editando .ie-ferr{display:flex}
 .ie-editando .ie-caixa{border-style:dashed;border-color:var(--verde)}
@@ -1239,6 +1248,7 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
         <div style="display:flex;gap:8px;flex-wrap:wrap">
           <button class="btn-sec inv-edita" onclick="$('inv-imp-arquivo').click()" title="Suba a planilha de vocês: o CRM lê as colunas, atualiza os itens e passa a exportar no mesmo formato">Importar planilha</button>
           <input type="file" id="inv-imp-arquivo" accept=".xlsx,.xls,.csv" style="display:none" onchange="lerPlanilhaInventario(this.files[0]);this.value=''">
+          <button class="btn-sec" onclick="abrirColunasInv()" title="Escolha quais colunas aparecem e em que ordem (também dá para arrastar o título da coluna)">Colunas</button>
           <button class="btn-sec" onclick="exportarInventario()">Excel</button>
           <button class="btn-novo inv-edita" onclick="abrirItemInventario(null)">+ Novo item</button>
         </div>
@@ -1254,6 +1264,7 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
         <label class="rot-filtro" style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="inv-epi-venc" onchange="renderInventario()"> só EPI vencido / a vencer</label>
         <label class="rot-filtro" style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="inv-inativos" onchange="renderInventario()"> mostrar desativados</label>
       </div>
+      <div class="inv-sel-barra" id="inv-sel-barra" style="display:none"></div>
       <div class="tabela-wrap"><table class="tabela" id="tabela-inventario"></table></div>
     </div>
 
@@ -2820,6 +2831,47 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
       <button class="btn-sec so-edicao" id="inv-btn-duplicar" style="display:none" onclick="duplicarItemInventario()" title="Abre um item novo com os mesmos dados deste (o nº de série fica em branco para preencher)">Duplicar</button>
       <button class="btn-cancelar" onclick="fecharModal('modal-inventario')">Cancelar</button>
       <button class="btn-salvar so-edicao" onclick="salvarItemInventario()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- v74: inventário — colunas (quais aparecem e em que ordem) -->
+<div class="modal-overlay" id="modal-inv-colunas">
+  <div class="modal modal-sm">
+    <h2>Colunas do inventário</h2>
+    <div class="dica" id="inv-col-dica"></div>
+    <div id="inv-col-lista" class="inv-col-lista"></div>
+    <div class="modal-btns">
+      <button class="btn-sec" onclick="padraoColunasInv()">Voltar ao padrão</button>
+      <button class="btn-salvar" onclick="fecharModal('modal-inv-colunas')">Pronto</button>
+    </div>
+  </div>
+</div>
+
+<!-- v74: inventário — alterar vários itens de uma vez -->
+<div class="modal-overlay" id="modal-inv-lote">
+  <div class="modal modal-sm">
+    <h2 id="inv-lote-titulo">Alterar itens selecionados</h2>
+    <div class="dica">Preencha só o que quer mudar. Campo em branco (ou "não mudar") fica como está em cada item.</div>
+    <div id="inv-lote-lista" class="dica" style="max-height:90px;overflow:auto;margin-bottom:10px"></div>
+    <div class="form-grid">
+      <div class="campo"><label>Estado</label><select id="inv-lote-estado"></select></div>
+      <div class="campo"><label>Situação</label><select id="inv-lote-ativo"><option value="">— não mudar —</option><option value="desativar">Desativar</option><option value="reativar">Reativar</option></select></div>
+      <div class="campo inv-lote-unif"><label>Modelo da peça</label><input type="text" id="inv-lote-modelo" list="dl-inv-unif-modelo"></div>
+      <div class="campo inv-lote-unif"><label>Tamanho</label><input type="text" id="inv-lote-tamanho" list="dl-inv-unif-tamanho"></div>
+      <div class="campo inv-lote-unif"><label>Cor</label><input type="text" id="inv-lote-cor" list="dl-inv-unif-cor"></div>
+      <div class="campo"><label>Categoria</label><input type="text" id="inv-lote-categoria" list="dl-inv-cat"></div>
+      <div class="campo"><label>Onde está</label><input type="text" id="inv-lote-local" list="dl-inv-local"></div>
+      <div class="campo"><label>Empresa dona</label><select id="inv-lote-empresa"></select></div>
+      <div class="campo"><label>Quantidade em estoque</label><input type="number" min="0" step="any" id="inv-lote-qtd"></div>
+      <div class="campo"><label>Unidade</label><input type="text" id="inv-lote-unidade" list="dl-inv-un"></div>
+      <div class="campo"><label>Estoque mínimo (alerta)</label><input type="number" min="0" step="any" id="inv-lote-min"></div>
+      <div class="campo"><label>Valor unitário (R$)</label><input type="text" inputmode="numeric" id="inv-lote-valor" oninput="mascaraMoeda(this)" placeholder="0,00"></div>
+      <div class="campo full"><label>Acrescentar às observações</label><textarea id="inv-lote-obs" rows="2" placeholder="O texto entra no fim das observações de cada item"></textarea></div>
+    </div>
+    <div class="modal-btns">
+      <button class="btn-cancelar" onclick="fecharModal('modal-inv-lote')">Cancelar</button>
+      <button class="btn-salvar" onclick="salvarLoteInventario()">Aplicar nos selecionados</button>
     </div>
   </div>
 </div>
@@ -13138,24 +13190,155 @@ function renderInventario(){
   const l=base.filter(i=>(inat||i.ativo!==false)&&(!tp||i.tipo===tp)&&(!es||i.estado===es)&&(!ct||i.categoria===ct)&&(!baixo||estoqueBaixo(i))&&(!epiV||epiVencendo(i))
     &&(!q||norm([i.codigo,i.nome,i.marca_modelo,i.numero_serie,i.localizacao,i.categoria,i.observacoes,i.unif_modelo,i.unif_tamanho,i.unif_cor].join(' ')).includes(q)));
   ordenarPor(l,'inv',{codigo:i=>i.codigo||'',nome:i=>i.nome||'',tipo:i=>TIPO_INV_LABEL[i.tipo]||i.tipo||'',estoque:i=>Number(i.quantidade||0),
-    uso:i=>qtdEmPropostas(i.id),estado:i=>(ESTADOS_INV_FILTRO.findIndex(e=>e[0]===i.estado)+1)||99,local:i=>i.localizacao||'',empresa:i=>{const e=i.empresa_id&&empresaPorId(i.empresa_id);return e?e.sigla||'':'';}},'nome');
+    uso:i=>qtdEmPropostas(i.id),estado:i=>(ESTADOS_INV_FILTRO.findIndex(e=>e[0]===i.estado)+1)||99,local:i=>i.localizacao||'',empresa:i=>{const e=i.empresa_id&&empresaPorId(i.empresa_id);return e?e.sigla||'':'';},
+    modelo:i=>i.unif_modelo||'',cor:i=>i.unif_cor||'',categoria:i=>i.categoria||'',tamanho:i=>{const t=String(i.unif_tamanho||'').toUpperCase().trim();if(!t)return'';const k=['PP','P','M','G','GG','XG','XGG','EG','EGG'].indexOf(t);return k>=0?k:/^\d+/.test(t)?100+parseFloat(t):1000;}},'nome');
   const T=(c,r,k,t)=>thOrd('inv',c,r,k).replace('title="Clique para ordenar"',`title="${t?esc(t)+' — ':''}Clique para ordenar (clique de novo para inverter)"`);
   const valor=ativos.reduce((s,i)=>s+Number(i.valor_unitario||0)*Number(i.quantidade||0),0);
   $('inv-kpis').innerHTML=[['Itens cadastrados',String(ativos.length),nomeEmpresaAtual()],['Estoque baixo',String(ativos.filter(estoqueBaixo).length),'no mínimo ou abaixo'],
     ['Em manutenção',String(ativos.filter(i=>i.estado==='manutencao').length),'fora de uso'],['EPI a comprar',String(ativos.filter(epiVencendo).length),'vencido ou perto de vencer'],['Valor estimado',valor?fmtCurto(valor):'—','quantidade × valor unitário']]
     .map(([r,v,s])=>`<div class="kpi"><div class="rot">${esc(r)}</div><div class="val">${esc(v)}</div><div class="sub">${esc(s)}</div></div>`).join('');
-  $('tabela-inventario').innerHTML=`<thead><tr>${T('codigo','Código')}${T('nome','Item')}${T('tipo','Tipo')}${T('estoque','Estoque','num')}${T('uso','Em propostas','num','Separado em propostas não perdidas')}${T('estado','Estado')}${T('local','Onde está')}${T('empresa','Empresa')}</tr></thead><tbody>${l.length?l.map(i=>{
-    const e=i.empresa_id&&empresaPorId(i.empresa_id),uso=qtdEmPropostas(i.id);
-    return`<tr class="clicavel ${i.ativo===false?'inativo':''}" data-inv="${esc(i.id)}" style="cursor:pointer"><td style="white-space:nowrap"><strong>${esc(i.codigo||'')}</strong></td>
-      <td><strong>${esc(i.nome)}</strong>${i.marca_modelo||i.numero_serie?`<div class="dica" style="margin:0">${esc([i.marca_modelo,i.numero_serie&&'série/CA '+i.numero_serie].filter(Boolean).join(' · '))}</div>`:''}${i.categoria?`<div class="dica" style="margin:0">${esc(i.categoria)}</div>`:''}</td>
-      <td>${esc(TIPO_INV_LABEL[i.tipo]||i.tipo)}${textoUniforme(i)?`<div class="dica" style="margin:0">${esc(textoUniforme(i))}</div>`:''}${i.tipo==='epi'&&i.data_validade?`<div class="dica" style="margin:0">validade ${esc(fmtData(i.data_validade))}</div>${epiVencendo(i)?` <span class="badge badge-atraso" title="${esc(textoValidadeEPI(i))}">${diasAte(i.data_validade)<0?'vencido':'comprar'}</span>`:''}`:i.tipo==='epi'&&i.ativo!==false?'<div class="dica" style="margin:0;color:var(--vermelho)">sem validade</div>':''}</td>
-      <td class="num"><strong>${esc(fmtQtd(i.quantidade))}</strong> ${esc(i.unidade||'')}${estoqueBaixo(i)?` <span class="badge badge-hoje" title="Mínimo: ${esc(fmtQtd(i.quantidade_minima))}">baixo</span>`:''}</td>
-      <td class="num">${uso?`${esc(fmtQtd(uso))}${uso>Number(i.quantidade||0)?' <span class="badge badge-atraso" title="Separado mais do que tem em estoque">falta</span>':''}`:'—'}</td>
-      <td><span class="badge ${COR_ESTADO_INV[i.estado]||'badge-cinza'}">${esc(estadoInvLabel(i))}</span></td>
-      <td>${esc(i.localizacao||'—')}</td><td>${e?`<span class="card-empresa-tag tag-${esc(e.sigla)}">${esc(e.sigla)}</span>`:'—'}</td></tr>`;}).join('')
-    :`<tr><td colspan="8" class="vazio">${q||tp||es||ct||baixo?'Nenhum item com esses filtros.':'Nenhum item cadastrado ainda. Clique em <em>+ Novo item</em>.'}</td></tr>`}</tbody>`;
-  $('tabela-inventario').querySelectorAll('[data-inv]').forEach(tr=>tr.onclick=()=>abrirItemInventario(tr.dataset.inv));
+  invSel.forEach(id=>{if(!todoInventario.some(i=>i.id===id))invSel.delete(id);});
+  const vis=colunasInvVisiveis(),ck=PERM.invEditar,todosSel=l.length&&l.every(i=>invSel.has(i.id));
+  $('tabela-inventario').innerHTML=`<thead><tr>${ck?`<th class="inv-ck"><input type="checkbox" id="inv-ck-todos" title="Selecionar todos da lista" ${todosSel?'checked':''}></th>`:''}${vis.map(c=>T(c.id,c.rot,c.cls,c.dica).replace('<th ',`<th draggable="true" data-col="${c.id}" `)).join('')}</tr></thead><tbody>${l.length?l.map(i=>
+    `<tr class="clicavel ${i.ativo===false?'inativo':''}" data-inv="${esc(i.id)}" style="cursor:pointer">${ck?`<td class="inv-ck"><input type="checkbox" data-inv-ck="${esc(i.id)}" ${invSel.has(i.id)?'checked':''}></td>`:''}${vis.map(c=>c.cel(i)).join('')}</tr>`).join('')
+    :`<tr><td colspan="${vis.length+(ck?1:0)}" class="vazio">${q||tp||es||ct||baixo?'Nenhum item com esses filtros.':'Nenhum item cadastrado ainda. Clique em <em>+ Novo item</em>.'}</td></tr>`}</tbody>`;
+  const tab=$('tabela-inventario');
+  tab.querySelectorAll('[data-inv]').forEach(tr=>tr.onclick=ev=>{if(ev.target.closest('.inv-ck'))return;abrirItemInventario(tr.dataset.inv);});
+  tab.querySelectorAll('[data-inv-ck]').forEach(c=>c.onclick=ev=>{ev.stopPropagation();c.checked?invSel.add(c.dataset.invCk):invSel.delete(c.dataset.invCk);renderInventario();});
+  tab.querySelectorAll('td.inv-ck').forEach(td=>td.onclick=ev=>{if(ev.target===td){const c=td.querySelector('input');c.click();}});
+  if($('inv-ck-todos'))$('inv-ck-todos').onclick=ev=>{ev.stopPropagation();l.forEach(i=>ev.target.checked?invSel.add(i.id):invSel.delete(i.id));renderInventario();};
+  ligarArrasteColunasInv();
+  const nSel=invSel.size,foraLista=[...invSel].filter(id=>!l.some(i=>i.id===id)).length;
+  $('inv-sel-barra').style.display=ck&&nSel?'':'none';
+  $('inv-sel-barra').innerHTML=nSel?`<strong>${nSel} ${nSel===1?'item selecionado':'itens selecionados'}</strong>${foraLista?`<span class="dica" style="margin:0">(${foraLista} fora dos filtros atuais)</span>`:''}
+    <button class="btn-salvar" onclick="abrirLoteInventario()">Alterar selecionados</button><button class="btn-sec" onclick="invSel.clear();renderInventario()">Limpar seleção</button>`:'';
   ligarOrdenacao('tabela-inventario','inv',renderInventario);
+}
+/* v74: colunas do inventário — escolher, esconder e reordenar (arrastando o título ou no botão Colunas).
+   Dois arranjos: um para a lista geral e outro para quando o filtro está em Uniformes (sem a coluna Tipo,
+   com Modelo, Tamanho e Cor em colunas próprias). Fica salvo no login (user_metadata.inventario_colunas) e no navegador. */
+let invSel=new Set(),invColLayout=null,invColTimer=null,invColArraste=null;
+const INV_COLS=[
+  {id:'codigo',rot:'Código',cel:i=>`<td style="white-space:nowrap"><strong>${esc(i.codigo||'')}</strong></td>`},
+  {id:'nome',rot:'Item',cel:i=>`<td><strong>${esc(i.nome)}</strong>${i.marca_modelo||i.numero_serie?`<div class="dica" style="margin:0">${esc([i.marca_modelo,i.numero_serie&&'série/CA '+i.numero_serie].filter(Boolean).join(' · '))}</div>`:''}${i.categoria?`<div class="dica" style="margin:0">${esc(i.categoria)}</div>`:''}</td>`},
+  {id:'tipo',rot:'Tipo',cel:i=>`<td>${esc(TIPO_INV_LABEL[i.tipo]||i.tipo)}${textoUniforme(i)&&invVisao()!=='uniforme'&&!colunasInvVisiveis().some(c=>c.id==='tamanho')?`<div class="dica" style="margin:0">${esc(textoUniforme(i))}</div>`:''}${i.tipo==='epi'&&i.data_validade?`<div class="dica" style="margin:0">validade ${esc(fmtData(i.data_validade))}</div>${epiVencendo(i)?` <span class="badge badge-atraso" title="${esc(textoValidadeEPI(i))}">${diasAte(i.data_validade)<0?'vencido':'comprar'}</span>`:''}`:i.tipo==='epi'&&i.ativo!==false?'<div class="dica" style="margin:0;color:var(--vermelho)">sem validade</div>':''}</td>`},
+  {id:'modelo',rot:'Modelo da peça',cel:i=>`<td>${esc(i.unif_modelo||'—')}</td>`},
+  {id:'tamanho',rot:'Tamanho',cel:i=>`<td>${esc(i.unif_tamanho||'—')}</td>`},
+  {id:'cor',rot:'Cor',cel:i=>`<td>${esc(i.unif_cor||'—')}</td>`},
+  {id:'estoque',rot:'Estoque',cls:'num',cel:i=>`<td class="num"><strong>${esc(fmtQtd(i.quantidade))}</strong> ${esc(i.unidade||'')}${estoqueBaixo(i)?` <span class="badge badge-hoje" title="Mínimo: ${esc(fmtQtd(i.quantidade_minima))}">baixo</span>`:''}</td>`},
+  {id:'uso',rot:'Em propostas',cls:'num',dica:'Separado em propostas não perdidas',cel:i=>{const uso=qtdEmPropostas(i.id);return`<td class="num">${uso?`${esc(fmtQtd(uso))}${uso>Number(i.quantidade||0)?' <span class="badge badge-atraso" title="Separado mais do que tem em estoque">falta</span>':''}`:'—'}</td>`;}},
+  {id:'estado',rot:'Estado',cel:i=>`<td><span class="badge ${COR_ESTADO_INV[i.estado]||'badge-cinza'}">${esc(estadoInvLabel(i))}</span></td>`},
+  {id:'local',rot:'Onde está',cel:i=>`<td>${esc(i.localizacao||'—')}</td>`},
+  {id:'categoria',rot:'Categoria',cel:i=>`<td>${esc(i.categoria||'—')}</td>`},
+  {id:'empresa',rot:'Empresa',cel:i=>{const e=i.empresa_id&&empresaPorId(i.empresa_id);return`<td>${e?`<span class="card-empresa-tag tag-${esc(e.sigla)}">${esc(e.sigla)}</span>`:'—'}</td>`;}}];
+const INV_COL_PADRAO={
+  geral:['codigo','nome','tipo','estoque','uso','estado','local','empresa'],
+  uniforme:['codigo','nome','modelo','tamanho','cor','estado','estoque','uso','local','empresa']};
+const invVisao=()=>($('inv-f-tipo')&&$('inv-f-tipo').value==='uniforme')?'uniforme':'geral';
+function invColChaveLocal(){return'bvek_inventario_colunas_'+((usuario&&usuario.id)||'');}
+function invColNormalizar(l,visao){
+  const ids=INV_COLS.map(c=>c.id),pad=INV_COL_PADRAO[visao];
+  l=(Array.isArray(l)?l:[]).filter(x=>x&&ids.includes(x.id));
+  if(!l.length)l=pad.map(id=>({id,oculta:false}));
+  ids.forEach(id=>{if(!l.some(x=>x.id===id))l.push({id,oculta:!pad.includes(id)});});
+  return l;
+}
+function invColCarregar(){
+  if(invColLayout)return;
+  let l=null;
+  try{l=usuario&&usuario.user_metadata&&usuario.user_metadata.inventario_colunas;}catch(e){}
+  if(!l||typeof l!=='object'){try{l=JSON.parse(localStorage.getItem(invColChaveLocal())||'null');}catch(e){l=null;}}
+  l=l&&typeof l==='object'?l:{};
+  invColLayout={geral:invColNormalizar(l.geral,'geral'),uniforme:invColNormalizar(l.uniforme,'uniforme')};
+}
+function invColSalvar(){
+  try{localStorage.setItem(invColChaveLocal(),JSON.stringify(invColLayout));}catch(e){}
+  clearTimeout(invColTimer);
+  invColTimer=setTimeout(async()=>{
+    const{data,error}=await sb.auth.updateUser({data:{inventario_colunas:invColLayout}});
+    if(error)console.warn('Colunas do inventário salvas só neste navegador',error);else if(data&&data.user)usuario=data.user;
+  },800);
+}
+function colunasInvVisiveis(){
+  invColCarregar();
+  const v=invColLayout[invVisao()].filter(x=>!x.oculta).map(x=>INV_COLS.find(c=>c.id===x.id)).filter(Boolean);
+  return v.length?v:[INV_COLS[1]];
+}
+function ligarArrasteColunasInv(){
+  const ths=[...$('tabela-inventario').querySelectorAll('th[data-col]')];
+  ths.forEach(th=>{
+    th.ondragstart=ev=>{invColArraste=th.dataset.col;th.classList.add('inv-arrastando');try{ev.dataTransfer.setData('text/plain',invColArraste);ev.dataTransfer.effectAllowed='move';}catch(e){}};
+    th.ondragend=()=>{invColArraste=null;ths.forEach(t=>t.classList.remove('inv-arrastando','inv-alvo'));};
+    th.ondragover=ev=>{if(!invColArraste)return;ev.preventDefault();ths.forEach(t=>t.classList.toggle('inv-alvo',t===th&&t.dataset.col!==invColArraste));};
+    th.ondrop=ev=>{ev.preventDefault();const de=invColArraste,para=th.dataset.col;invColArraste=null;if(!de||de===para)return renderInventario();
+      const l=invColLayout[invVisao()],a=l.findIndex(x=>x.id===de),it=l.splice(a,1)[0];l.splice(l.findIndex(x=>x.id===para),0,it);
+      invColSalvar();renderInventario();};
+  });
+}
+function abrirColunasInv(){invColCarregar();renderColunasInv();abrirModal('modal-inv-colunas');}
+function renderColunasInv(){
+  const visao=invVisao(),l=invColLayout[visao];
+  $('inv-col-dica').innerHTML=visao==='uniforme'
+    ?'Arranjo usado quando o filtro está em <strong>Uniformes</strong>. Marque as colunas que quer ver e use as setas para mudar a ordem. No computador também dá para arrastar o título da coluna na tabela.'
+    :'Arranjo da lista geral (quando o filtro está em Uniformes vale um arranjo próprio). Marque as colunas que quer ver e use as setas para mudar a ordem. No computador também dá para arrastar o título da coluna na tabela.';
+  $('inv-col-lista').innerHTML=l.map((x,k)=>{const c=INV_COLS.find(c=>c.id===x.id);return`<div class="inv-col-item">
+    <label><input type="checkbox" data-col-vis="${x.id}" ${x.oculta?'':'checked'}> ${esc(c.rot)}</label>
+    <button class="btn-sec" data-col-mover="${k}" data-dir="-1" ${k===0?'disabled':''} title="Mais para a esquerda">↑</button>
+    <button class="btn-sec" data-col-mover="${k}" data-dir="1" ${k===l.length-1?'disabled':''} title="Mais para a direita">↓</button></div>`;}).join('');
+  $('inv-col-lista').querySelectorAll('[data-col-vis]').forEach(c=>c.onchange=()=>{const x=l.find(x=>x.id===c.dataset.colVis);x.oculta=!c.checked;
+    if(!l.some(x=>!x.oculta)){x.oculta=false;c.checked=true;}invColSalvar();renderInventario();});
+  $('inv-col-lista').querySelectorAll('[data-col-mover]').forEach(b=>b.onclick=()=>{const k=+b.dataset.colMover,j=k+(+b.dataset.dir);if(j<0||j>=l.length)return;
+    [l[k],l[j]]=[l[j],l[k]];invColSalvar();renderInventario();renderColunasInv();});
+}
+function padraoColunasInv(){const v=invVisao();invColLayout[v]=invColNormalizar(null,v);invColSalvar();renderInventario();renderColunasInv();}
+/* v74: alterar vários itens de uma vez */
+function abrirLoteInventario(){
+  if(!PERM.invEditar)return;
+  const itens=[...invSel].map(itemInvPorId).filter(Boolean);if(!itens.length)return;
+  const unif=itens.filter(i=>i.tipo==='uniforme').length,soUnif=unif===itens.length;
+  $('inv-lote-titulo').textContent=`Alterar ${itens.length} ${itens.length===1?'item':'itens'}`;
+  $('inv-lote-lista').textContent=itens.map(i=>[i.codigo,i.nome,textoUniforme(i)].filter(Boolean).join(' · ')).join(' | ');
+  preencherSelect($('inv-lote-estado'),soUnif?ESTADOS_UNIF:ESTADOS_INV,'— não mudar —');
+  preencherSelect($('inv-lote-empresa'),[['__nenhuma','(sem empresa)'],...todasEmpresas.map(e=>[e.id,`${e.nome} (${e.sigla})`])],'— não mudar —');
+  ['inv-lote-ativo','inv-lote-modelo','inv-lote-tamanho','inv-lote-cor','inv-lote-categoria','inv-lote-local','inv-lote-qtd','inv-lote-unidade','inv-lote-min','inv-lote-valor','inv-lote-obs'].forEach(id=>$(id).value='');
+  document.querySelectorAll('#modal-inv-lote .inv-lote-unif').forEach(b=>b.style.display=unif?'':'none');
+  abrirModal('modal-inv-lote');
+}
+async function salvarLoteInventario(){
+  if(!PERM.invEditar)return;
+  const itens=[...invSel].map(itemInvPorId).filter(Boolean);if(!itens.length)return;
+  const v=id=>$(id).value.trim(),num=x=>Math.max(0,n0(x));
+  const comum={};
+  if(v('inv-lote-categoria'))comum.categoria=v('inv-lote-categoria');
+  if(v('inv-lote-local'))comum.localizacao=v('inv-lote-local');
+  if(v('inv-lote-empresa'))comum.empresa_id=v('inv-lote-empresa')==='__nenhuma'?null:v('inv-lote-empresa');
+  if(v('inv-lote-qtd'))comum.quantidade=num(v('inv-lote-qtd'));
+  if(v('inv-lote-unidade'))comum.unidade=v('inv-lote-unidade');
+  if(v('inv-lote-min'))comum.quantidade_minima=num(v('inv-lote-min'));
+  if(v('inv-lote-valor'))comum.valor_unitario=parseMoeda(v('inv-lote-valor'));
+  if(v('inv-lote-ativo'))comum.ativo=v('inv-lote-ativo')==='reativar';
+  const est=v('inv-lote-estado'),obs=v('inv-lote-obs'),unif={};
+  if(v('inv-lote-modelo'))unif.unif_modelo=v('inv-lote-modelo');
+  if(v('inv-lote-tamanho'))unif.unif_tamanho=v('inv-lote-tamanho');
+  if(v('inv-lote-cor'))unif.unif_cor=v('inv-lote-cor');
+  if(!Object.keys(comum).length&&!est&&!obs&&!Object.keys(unif).length){alert('Nada para mudar: preencha pelo menos um campo.');return;}
+  if(!confirm(`Aplicar as mudanças em ${itens.length} ${itens.length===1?'item':'itens'}?`))return;
+  // monta o que muda em cada item e junta os iguais numa gravação só
+  const grupos=new Map(),agora=new Date().toISOString();
+  itens.forEach(i=>{
+    const d={...comum};
+    if(est)d.estado=i.tipo==='uniforme'?(est==='novo'?'novo':'usado'):(est==='usado'?'bom':est);
+    if(i.tipo==='uniforme')Object.assign(d,unif);
+    if(obs)d.observacoes=(i.observacoes?i.observacoes+'\n':'')+obs;
+    if(!Object.keys(d).length)return;
+    const k=JSON.stringify(d);if(!grupos.has(k))grupos.set(k,{d,ids:[]});grupos.get(k).ids.push(i.id);
+  });
+  for(const{d,ids}of grupos.values()){
+    const{error}=await sb.from('inventario_itens').update({...d,atualizado_em:agora}).in('id',ids);
+    if(error&&/inventario_estado_chk/i.test(error.message||'')){alert('Para marcar uniforme como Usada, rode antes a migração v73 (supabase/migracao_crm_v73_uniforme_nova_usada.sql) no Supabase.');return;}
+    if(erroSB(error))return;
+  }
+  fecharModal('modal-inv-lote');invSel.clear();await carregarInventario();renderInventario();toast(`${itens.length} ${itens.length===1?'item alterado':'itens alterados'}`);
 }
 function abrirItemInventario(id){
   if(!v30InvOk){avisarMigracaoV30('inv-info');return;}
@@ -13200,6 +13383,11 @@ async function salvarItemInventario(){
   }else if(todoInventario.some(x=>'data_validade' in x))dados.data_validade=null;
   if(dados.tipo==='uniforme'){dados.unif_modelo=$('inv-unif-modelo').value.trim()||null;dados.unif_tamanho=$('inv-unif-tamanho').value.trim()||null;dados.unif_cor=$('inv-unif-cor').value.trim()||null;}
   else if(todoInventario.some(x=>'unif_tamanho' in x))Object.assign(dados,{unif_modelo:null,unif_tamanho:null,unif_cor:null});
+  // v74: uniforme repetido (mesmo modelo, tamanho, cor e estado) — melhor somar no estoque do que já existe
+  if(!invEditandoId&&dados.tipo==='uniforme'){
+    const igual=todoInventario.find(i=>i.tipo==='uniforme'&&i.ativo!==false&&norm(i.unif_modelo)===norm(dados.unif_modelo)&&norm(i.unif_tamanho)===norm(dados.unif_tamanho)&&norm(i.unif_cor)===norm(dados.unif_cor)&&i.estado===dados.estado);
+    if(igual&&!confirm(`Já existe este uniforme no inventário:\n${[igual.codigo,igual.nome,textoUniforme(igual),estadoInvLabel(igual)].filter(Boolean).join(' · ')} — estoque ${fmtQtd(igual.quantidade)} ${igual.unidade||''}\n\nO melhor é abrir esse item e somar a quantidade nele. Cadastrar outro mesmo assim?`))return;
+  }else
   if(!invEditandoId&&todoInventario.some(i=>norm(i.nome)===norm(nome)&&norm(i.numero_serie)===norm(dados.numero_serie))&&!confirm(`Já existe "${nome}" no inventário. Cadastrar outro mesmo assim?`))return;
   const r=invEditandoId?await sb.from('inventario_itens').update(dados).eq('id',invEditandoId):await sb.from('inventario_itens').insert({...dados,criado_por:quemSou()});
   if(r.error&&/inventario_estado_chk/i.test(r.error.message||'')){alert('Para marcar o uniforme como Usada, rode antes a migração v73 (supabase/migracao_crm_v73_uniforme_nova_usada.sql) no Supabase.');return;}
