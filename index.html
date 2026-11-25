@@ -13077,8 +13077,18 @@ function mudouVisaoTarefas(){try{localStorage.setItem('bvek_tarefas_visao',$('at
 let todoInventario=[],todoInvOS=[],invEditandoId=null,v30InvOk=true,invCardLocal=[];
 const TIPOS_INV=[['equipamento','Equipamento'],['ferramenta','Ferramenta'],['material','Material de consumo'],['epi','EPI'],['uniforme','Uniformes'],['veiculo','Veículo'],['outro','Outro']];
 const ESTADOS_INV=[['novo','Novo'],['bom','Bom'],['regular','Regular'],['manutencao','Em manutenção'],['inservivel','Inservível']];
-const TIPO_INV_LABEL=Object.fromEntries(TIPOS_INV),ESTADO_INV_LABEL=Object.fromEntries(ESTADOS_INV);
-const COR_ESTADO_INV={novo:'badge-ok',bom:'badge-ok',regular:'badge-hoje',manutencao:'badge-atraso',inservivel:'badge-cinza'};
+// v73: uniforme tem só dois estados — Nova ou Usada
+const ESTADOS_UNIF=[['novo','Nova'],['usado','Usada']];
+const ESTADOS_INV_FILTRO=[...ESTADOS_INV,['usado','Usado (uniforme)']];
+const TIPO_INV_LABEL=Object.fromEntries(TIPOS_INV),ESTADO_INV_LABEL={...Object.fromEntries(ESTADOS_INV),usado:'Usado'};
+const COR_ESTADO_INV={novo:'badge-ok',bom:'badge-ok',regular:'badge-hoje',usado:'badge-hoje',manutencao:'badge-atraso',inservivel:'badge-cinza'};
+const estadoInvLabel=i=>i.tipo==='uniforme'?((ESTADOS_UNIF.find(e=>e[0]===i.estado)||[])[1]||ESTADO_INV_LABEL[i.estado]||i.estado):(ESTADO_INV_LABEL[i.estado]||i.estado);
+// troca as opções do Estado conforme o tipo, mantendo o valor quando ele existe na lista nova
+function ajustarEstadoInv(valor){
+  const unif=$('inv-tipo').value==='uniforme',ops=unif?ESTADOS_UNIF:ESTADOS_INV,sel=$('inv-estado');
+  preencherSelect(sel,ops);
+  sel.value=ops.some(o=>o[0]===valor)?valor:(unif?(valor==='bom'||valor==='regular'?'usado':'novo'):'bom');
+}
 async function carregarInventario(){
   if(!PERM.comercialVer)return;
   const[a,b]=await Promise.all([sb.from('inventario_itens').select('*').order('nome'),sb.from('inventario_os').select('card_id,item_id,quantidade')]);
@@ -13097,7 +13107,7 @@ const estoqueBaixo=i=>i.ativo!==false&&i.quantidade_minima!=null&&Number(i.quant
 // v57: EPI com validade — alerta de compra a partir de N dias antes de vencer (padrão 30)
 const epiVencendo=i=>i.ativo!==false&&i.tipo==='epi'&&!!i.data_validade&&diasAte(i.data_validade)<=Number(i.aviso_validade_dias??30);
 function textoValidadeEPI(i){const d=diasAte(i.data_validade);return d<0?`venceu em ${fmtData(i.data_validade)}`:d===0?'vence hoje':`vence em ${d} dia(s) (${fmtData(i.data_validade)})`;}
-function mostrarValidadeEPI(){const t=$('inv-tipo').value;document.querySelectorAll('#modal-inventario .inv-epi-box').forEach(b=>b.style.display=t==='epi'?'':'none');document.querySelectorAll('#modal-inventario .inv-unif-box').forEach(b=>b.style.display=t==='uniforme'?'':'none');}
+function mostrarValidadeEPI(){const t=$('inv-tipo').value;ajustarEstadoInv($('inv-estado').value);document.querySelectorAll('#modal-inventario .inv-epi-box').forEach(b=>b.style.display=t==='epi'?'':'none');document.querySelectorAll('#modal-inventario .inv-unif-box').forEach(b=>b.style.display=t==='uniforme'?'':'none');}
 // v68: uniformes — modelo da peça, tamanho e cor
 const textoUniforme=i=>i.tipo==='uniforme'?[i.unif_modelo,i.unif_tamanho&&'tam. '+i.unif_tamanho,i.unif_cor].filter(Boolean).join(' · '):'';
 function avisosEPI(){return PERM.comercialVer?todoInventario.filter(epiVencendo).sort((a,b)=>String(a.data_validade).localeCompare(String(b.data_validade))):[];}
@@ -13120,7 +13130,7 @@ function renderInventario(){
   if(!v30InvOk){avisarMigracaoV30('inv-info');$('tabela-inventario').innerHTML='';$('inv-kpis').innerHTML='';return;}
   $('inv-info').innerHTML='Cadastre aqui os materiais e equipamentos do grupo, com quantidade, estado e onde estão. Ao montar a proposta (card do funil), separe os itens em <em>Materiais e equipamentos do inventário</em>: eles saem na <strong>Ordem de Serviço</strong>. A coluna <em>Em propostas</em> soma o que está separado em propostas não perdidas.';
   const sel=(id,ops,todos)=>{const s=$(id),v=s.value;preencherSelect(s,ops,todos);s.value=v;};
-  sel('inv-f-tipo',TIPOS_INV,'Todos os tipos');sel('inv-f-estado',ESTADOS_INV,'Todos os estados');
+  sel('inv-f-tipo',TIPOS_INV,'Todos os tipos');sel('inv-f-estado',ESTADOS_INV_FILTRO,'Todos os estados');
   sel('inv-f-cat',[...new Set(todoInventario.map(i=>i.categoria).filter(Boolean))].sort().map(c=>[c,c]),'Todas as categorias');
   const q=norm($('inv-busca').value),tp=$('inv-f-tipo').value,es=$('inv-f-estado').value,ct=$('inv-f-cat').value,baixo=$('inv-baixo').checked,inat=$('inv-inativos').checked,epiV=$('inv-epi-venc').checked;
   const base=todoInventario.filter(i=>empresaAtual==='todas'||!i.empresa_id||i.empresa_id===empresaAtual);
@@ -13128,7 +13138,7 @@ function renderInventario(){
   const l=base.filter(i=>(inat||i.ativo!==false)&&(!tp||i.tipo===tp)&&(!es||i.estado===es)&&(!ct||i.categoria===ct)&&(!baixo||estoqueBaixo(i))&&(!epiV||epiVencendo(i))
     &&(!q||norm([i.codigo,i.nome,i.marca_modelo,i.numero_serie,i.localizacao,i.categoria,i.observacoes,i.unif_modelo,i.unif_tamanho,i.unif_cor].join(' ')).includes(q)));
   ordenarPor(l,'inv',{codigo:i=>i.codigo||'',nome:i=>i.nome||'',tipo:i=>TIPO_INV_LABEL[i.tipo]||i.tipo||'',estoque:i=>Number(i.quantidade||0),
-    uso:i=>qtdEmPropostas(i.id),estado:i=>(ESTADOS_INV.findIndex(e=>e[0]===i.estado)+1)||99,local:i=>i.localizacao||'',empresa:i=>{const e=i.empresa_id&&empresaPorId(i.empresa_id);return e?e.sigla||'':'';}},'nome');
+    uso:i=>qtdEmPropostas(i.id),estado:i=>(ESTADOS_INV_FILTRO.findIndex(e=>e[0]===i.estado)+1)||99,local:i=>i.localizacao||'',empresa:i=>{const e=i.empresa_id&&empresaPorId(i.empresa_id);return e?e.sigla||'':'';}},'nome');
   const T=(c,r,k,t)=>thOrd('inv',c,r,k).replace('title="Clique para ordenar"',`title="${t?esc(t)+' — ':''}Clique para ordenar (clique de novo para inverter)"`);
   const valor=ativos.reduce((s,i)=>s+Number(i.valor_unitario||0)*Number(i.quantidade||0),0);
   $('inv-kpis').innerHTML=[['Itens cadastrados',String(ativos.length),nomeEmpresaAtual()],['Estoque baixo',String(ativos.filter(estoqueBaixo).length),'no mínimo ou abaixo'],
@@ -13141,7 +13151,7 @@ function renderInventario(){
       <td>${esc(TIPO_INV_LABEL[i.tipo]||i.tipo)}${textoUniforme(i)?`<div class="dica" style="margin:0">${esc(textoUniforme(i))}</div>`:''}${i.tipo==='epi'&&i.data_validade?`<div class="dica" style="margin:0">validade ${esc(fmtData(i.data_validade))}</div>${epiVencendo(i)?` <span class="badge badge-atraso" title="${esc(textoValidadeEPI(i))}">${diasAte(i.data_validade)<0?'vencido':'comprar'}</span>`:''}`:i.tipo==='epi'&&i.ativo!==false?'<div class="dica" style="margin:0;color:var(--vermelho)">sem validade</div>':''}</td>
       <td class="num"><strong>${esc(fmtQtd(i.quantidade))}</strong> ${esc(i.unidade||'')}${estoqueBaixo(i)?` <span class="badge badge-hoje" title="Mínimo: ${esc(fmtQtd(i.quantidade_minima))}">baixo</span>`:''}</td>
       <td class="num">${uso?`${esc(fmtQtd(uso))}${uso>Number(i.quantidade||0)?' <span class="badge badge-atraso" title="Separado mais do que tem em estoque">falta</span>':''}`:'—'}</td>
-      <td><span class="badge ${COR_ESTADO_INV[i.estado]||'badge-cinza'}">${esc(ESTADO_INV_LABEL[i.estado]||i.estado)}</span></td>
+      <td><span class="badge ${COR_ESTADO_INV[i.estado]||'badge-cinza'}">${esc(estadoInvLabel(i))}</span></td>
       <td>${esc(i.localizacao||'—')}</td><td>${e?`<span class="card-empresa-tag tag-${esc(e.sigla)}">${esc(e.sigla)}</span>`:'—'}</td></tr>`;}).join('')
     :`<tr><td colspan="8" class="vazio">${q||tp||es||ct||baixo?'Nenhum item com esses filtros.':'Nenhum item cadastrado ainda. Clique em <em>+ Novo item</em>.'}</td></tr>`}</tbody>`;
   $('tabela-inventario').querySelectorAll('[data-inv]').forEach(tr=>tr.onclick=()=>abrirItemInventario(tr.dataset.inv));
@@ -13158,7 +13168,7 @@ function abrirItemInventario(id){
   $('inv-estado').value=i?i.estado:'bom';$('inv-marca').value=i&&i.marca_modelo||'';$('inv-serie').value=i&&i.numero_serie||'';$('inv-local').value=i&&i.localizacao||'';
   $('inv-empresa').value=i?(i.empresa_id||''):(empresaAtual!=='todas'?empresaAtual:'');
   $('inv-valor').value=i&&i.valor_unitario!=null?fmtMoeda(i.valor_unitario):'';$('inv-data').value=i&&i.data_aquisicao||'';$('inv-obs').value=i&&i.observacoes||'';
-  $('inv-unif-modelo').value=i&&i.unif_modelo||'';$('inv-unif-tamanho').value=i&&i.unif_tamanho||'';$('inv-unif-cor').value=i&&i.unif_cor||'';$('inv-validade').value=i&&i.data_validade||'';$('inv-aviso-dias').value=i&&i.aviso_validade_dias!=null?i.aviso_validade_dias:30;mostrarValidadeEPI();
+  $('inv-unif-modelo').value=i&&i.unif_modelo||'';$('inv-unif-tamanho').value=i&&i.unif_tamanho||'';$('inv-unif-cor').value=i&&i.unif_cor||'';$('inv-validade').value=i&&i.data_validade||'';$('inv-aviso-dias').value=i&&i.aviso_validade_dias!=null?i.aviso_validade_dias:30;mostrarValidadeEPI();ajustarEstadoInv(i?i.estado:'bom');
   const usos=i?todoInvOS.filter(x=>x.item_id===i.id).map(x=>({x,c:todosCards.find(c=>c.id===x.card_id)})).filter(u=>u.c):[];
   $('inv-uso').innerHTML=usos.length?`<div class="secao">Separado nestas propostas</div><div class="sub-lista">${usos.map(u=>`<div class="sub-item clicavel" data-inv-card="${esc(u.c.id)}"><span><strong>${esc(numeroProposta(u.c)||'')}</strong> ${esc(u.c.titulo||'')}</span><span>${esc(fmtQtd(u.x.quantidade))} ${esc(i.unidade||'')} · ${esc(ETAPA_LABEL[u.c.etapa]||u.c.etapa)}</span></div>`).join('')}</div>`:'';
   $('inv-uso').querySelectorAll('[data-inv-card]').forEach(el=>el.onclick=()=>{fecharModal('modal-inventario');abrirModalCard(el.dataset.invCard);});
@@ -13192,6 +13202,7 @@ async function salvarItemInventario(){
   else if(todoInventario.some(x=>'unif_tamanho' in x))Object.assign(dados,{unif_modelo:null,unif_tamanho:null,unif_cor:null});
   if(!invEditandoId&&todoInventario.some(i=>norm(i.nome)===norm(nome)&&norm(i.numero_serie)===norm(dados.numero_serie))&&!confirm(`Já existe "${nome}" no inventário. Cadastrar outro mesmo assim?`))return;
   const r=invEditandoId?await sb.from('inventario_itens').update(dados).eq('id',invEditandoId):await sb.from('inventario_itens').insert({...dados,criado_por:quemSou()});
+  if(r.error&&/inventario_estado_chk/i.test(r.error.message||'')){alert('Para marcar o uniforme como Usada, rode antes a migração v73 (supabase/migracao_crm_v73_uniforme_nova_usada.sql) no Supabase.');return;}
   if(r.error&&/unif_|inventario_tipo_chk/i.test(r.error.message||'')){alert('Para cadastrar uniformes (tipo, modelo, tamanho e cor), rode antes a migração v68 (supabase/migracao_crm_v68_inventario_tipo_uniforme.sql) no Supabase.');return;}
   if(r.error&&/data_validade|aviso_validade/i.test(r.error.message||'')){alert('Para guardar a validade do EPI, rode antes a migração v57 (supabase/migracao_crm_v57_os_funcionario_consultoria_iso_desligamento_epi.sql) no Supabase.');return;}
   if(erroSB(r.error))return;
@@ -13219,7 +13230,7 @@ function valorParaCampo(campo,v){
   if(campo==='data_aquisicao'){if(typeof v==='number'){const d=new Date(Math.round((v-25569)*86400000));return isNaN(d)?null:d.toISOString().slice(0,10);}
     const m=String(v).match(/(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);if(m)return`${m[3].length===2?'20'+m[3]:m[3]}-${pad2(m[2])}-${pad2(m[1])}`;return/^\d{4}-\d{2}-\d{2}/.test(String(v))?String(v).slice(0,10):null;}
   if(campo==='tipo'){const k=norm(v);const t=TIPOS_INV.find(([id,l])=>norm(id)===k||norm(l)===k||norm(l).startsWith(k)||k.startsWith(norm(id)));return t?t[0]:'outro';}
-  if(campo==='estado'){const k=norm(v);const t=ESTADOS_INV.find(([id,l])=>norm(id)===k||norm(l)===k||norm(l).includes(k));return t?t[0]:'bom';}
+  if(campo==='estado'){const k=norm(v);if(/^usad/.test(k))return'usado';if(/^nova$/.test(k))return'novo';const t=ESTADOS_INV.find(([id,l])=>norm(id)===k||norm(l)===k||norm(l).includes(k));return t?t[0]:'bom';}
   if(campo==='empresa'){const k=norm(v);const e=todasEmpresas.find(e=>norm(e.sigla)===k||norm(e.nome)===k||norm(e.nome).includes(k));return e?e.id:null;}
   return String(v).trim();
 }
@@ -13289,14 +13300,14 @@ async function confirmarImportacaoInventario(){
 }
 async function exportarInventario(){
   const linhas=[['Código','Item','Tipo','Categoria','Marca / modelo','Nº de série / CA','Quantidade','Unidade','Estoque mínimo','Em propostas','Estado','Onde está','Empresa','Valor unitário','Aquisição','Observações','Ativo']];
-  todoInventario.forEach(i=>{const e=empresaPorId(i.empresa_id);linhas.push([i.codigo||'',i.nome,TIPO_INV_LABEL[i.tipo]||i.tipo,i.categoria||'',i.marca_modelo||'',i.numero_serie||'',Number(i.quantidade||0),i.unidade||'',i.quantidade_minima!=null?Number(i.quantidade_minima):'',qtdEmPropostas(i.id),ESTADO_INV_LABEL[i.estado]||i.estado,i.localizacao||'',e?e.sigla:'',i.valor_unitario!=null?Number(i.valor_unitario):'',i.data_aquisicao?fmtData(i.data_aquisicao):'',i.observacoes||'',i.ativo===false?'não':'sim']);});
+  todoInventario.forEach(i=>{const e=empresaPorId(i.empresa_id);linhas.push([i.codigo||'',i.nome,TIPO_INV_LABEL[i.tipo]||i.tipo,i.categoria||'',i.marca_modelo||'',i.numero_serie||'',Number(i.quantidade||0),i.unidade||'',i.quantidade_minima!=null?Number(i.quantidade_minima):'',qtdEmPropostas(i.id),estadoInvLabel(i),i.localizacao||'',e?e.sigla:'',i.valor_unitario!=null?Number(i.valor_unitario):'',i.data_aquisicao?fmtData(i.data_aquisicao):'',i.observacoes||'',i.ativo===false?'não':'sim']);});
   // v34: nome no padrão (planilha viva, sem data) e, se houver modelo importado, as mesmas colunas e ordem dele
   const nome=nomeArquivoPadrao({area:'PAT',tipo:'CTL',desc:'INVENTARIO'});
   let aba='Inventário';const lay=await carregarLayoutInventario();
   if(lay&&lay.colunas&&lay.colunas.length){
     aba=lay.aba||aba;
     const val=(i,c)=>{if(!c.campo)return(i.extras||{})[c.titulo]??'';const e=empresaPorId(i.empresa_id);
-      return{empresa:e?e.sigla:'',tipo:TIPO_INV_LABEL[i.tipo]||i.tipo,estado:ESTADO_INV_LABEL[i.estado]||i.estado,data_aquisicao:i.data_aquisicao?fmtData(i.data_aquisicao):'',
+      return{empresa:e?e.sigla:'',tipo:TIPO_INV_LABEL[i.tipo]||i.tipo,estado:estadoInvLabel(i),data_aquisicao:i.data_aquisicao?fmtData(i.data_aquisicao):'',
         quantidade:Number(i.quantidade||0),quantidade_minima:i.quantidade_minima!=null?Number(i.quantidade_minima):'',valor_unitario:i.valor_unitario!=null?Number(i.valor_unitario):''}[c.campo]??(i[c.campo]??'');};
     linhas.length=0;linhas.push(lay.colunas.map(c=>c.titulo));
     todoInventario.filter(i=>i.ativo!==false).forEach(i=>linhas.push(lay.colunas.map(c=>val(i,c))));
