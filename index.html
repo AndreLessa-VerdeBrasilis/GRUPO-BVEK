@@ -13220,8 +13220,11 @@ function renderInventario(){
 let invSel=new Set(),invColLayout=null,invColTimer=null,invColArraste=null;
 const INV_COLS=[
   {id:'codigo',rot:'Código',cel:i=>`<td style="white-space:nowrap"><strong>${esc(i.codigo||'')}</strong></td>`},
-  {id:'nome',rot:'Item',cel:i=>`<td><strong>${esc(i.nome)}</strong>${i.tipo==='uniforme'?`<div class="dica" style="margin:0">${esc([textoUniforme(i),estadoInvLabel(i)].filter(Boolean).join(' · '))}</div>`:''}${i.marca_modelo||i.numero_serie?`<div class="dica" style="margin:0">${esc([i.marca_modelo,i.numero_serie&&'série/CA '+i.numero_serie].filter(Boolean).join(' · '))}</div>`:''}${i.categoria?`<div class="dica" style="margin:0">${esc(i.categoria)}</div>`:''}</td>`},
-  {id:'tipo',rot:'Tipo',cel:i=>`<td>${esc(TIPO_INV_LABEL[i.tipo]||i.tipo)}${i.tipo==='epi'&&i.data_validade?`<div class="dica" style="margin:0">validade ${esc(fmtData(i.data_validade))}</div>${epiVencendo(i)?` <span class="badge badge-atraso" title="${esc(textoValidadeEPI(i))}">${diasAte(i.data_validade)<0?'vencido':'comprar'}</span>`:''}`:i.tipo==='epi'&&i.ativo!==false?'<div class="dica" style="margin:0;color:var(--vermelho)">sem validade</div>':''}</td>`},
+  // v74.2: Item = nome + categoria, marca/modelo (e nº de série/CA) · Tipo = tipo + estado, tamanho e cor
+  {id:'nome',rot:'Item',cel:i=>{const r=[i.categoria,i.tipo==='uniforme'&&i.unif_modelo,i.marca_modelo,i.numero_serie&&'série/CA '+i.numero_serie].filter(Boolean).join(' · ');
+    return`<td><strong>${esc(i.nome)}</strong>${r?`<div class="dica" style="margin:0">${esc(r)}</div>`:''}</td>`;}},
+  {id:'tipo',rot:'Tipo',cel:i=>{const r=[estadoInvLabel(i),i.tipo==='uniforme'&&i.unif_tamanho&&'tam. '+i.unif_tamanho,i.tipo==='uniforme'&&i.unif_cor].filter(Boolean).join(' · ');
+    return`<td>${esc(TIPO_INV_LABEL[i.tipo]||i.tipo)}${r?`<div class="dica" style="margin:0">${esc(r)}</div>`:''}${i.tipo==='epi'&&i.data_validade?`<div class="dica" style="margin:0">validade ${esc(fmtData(i.data_validade))}</div>${epiVencendo(i)?` <span class="badge badge-atraso" title="${esc(textoValidadeEPI(i))}">${diasAte(i.data_validade)<0?'vencido':'comprar'}</span>`:''}`:i.tipo==='epi'&&i.ativo!==false?'<div class="dica" style="margin:0;color:var(--vermelho)">sem validade</div>':''}</td>`;}},
   {id:'modelo',rot:'Modelo da peça',cel:i=>`<td>${esc(i.unif_modelo||'—')}</td>`},
   {id:'tamanho',rot:'Tamanho',cel:i=>`<td>${esc(i.unif_tamanho||'—')}</td>`},
   {id:'cor',rot:'Cor',cel:i=>`<td>${esc(i.unif_cor||'—')}</td>`},
@@ -13233,7 +13236,7 @@ const INV_COLS=[
   {id:'empresa',rot:'Empresa',cel:i=>{const e=i.empresa_id&&empresaPorId(i.empresa_id);return`<td>${e?`<span class="card-empresa-tag tag-${esc(e.sigla)}">${esc(e.sigla)}</span>`:'—'}</td>`;}}];
 const INV_COL_PADRAO={
   geral:['codigo','nome','tipo','estoque','uso','estado','local','empresa'],
-  uniforme:['codigo','nome','modelo','tamanho','cor','estado','estoque','uso','local','empresa']};
+  uniforme:['codigo','nome','tipo','modelo','tamanho','cor','estado','estoque','uso','local','empresa']};
 const invVisao=()=>($('inv-f-tipo')&&$('inv-f-tipo').value==='uniforme')?'uniforme':'geral';
 function invColChaveLocal(){return'bvek_inventario_colunas_'+((usuario&&usuario.id)||'');}
 function invColNormalizar(l,visao){
