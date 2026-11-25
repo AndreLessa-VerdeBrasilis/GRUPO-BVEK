@@ -975,6 +975,7 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
       <div class="barra-acoes">
         <h2>Clientes</h2>
         <button class="btn-novo" id="btn-novo-cliente" onclick="abrirModalCliente()">+ Novo Cliente</button>
+        <button class="btn-sec" id="btn-portal-acessos" style="display:none" onclick="abrirPortalAcessos()">Portal: acessos</button>
       </div>
       <div class="filtros">
         <input type="search" id="cli-busca" placeholder="Buscar por código, nome, razão social, CNPJ ou contato" oninput="renderClientes()">
@@ -2883,6 +2884,32 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
     </div>
   </div>
 </div>
+<!-- v72: portal do cliente — acessos por contrato (pendências e envio) -->
+<div class="modal-overlay" id="modal-portal-acessos">
+  <div class="modal" style="max-width:980px">
+    <h2>Portal do cliente — acessos</h2>
+    <p class="modal-sub">Cada contrato liberado no portal é visto só pelos contatos marcados nele. Aqui ficam o que falta preencher e os logins que ainda precisam ser enviados.</p>
+    <div id="pa-trava"></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0">
+      <button class="btn-sec" onclick="prepararAcessosPortal()">Preparar acessos de todos os contratos</button>
+      <button class="btn-sec" onclick="carregarPortalAcessos()">Atualizar</button>
+    </div>
+    <div id="pa-corpo"><div class="info-box" style="display:block">Carregando…</div></div>
+    <details style="margin-top:12px"><summary style="cursor:pointer;font-weight:600">Texto do e-mail de acesso</summary>
+      <div class="form-grid" style="margin-top:8px">
+        <div class="campo full"><label>Assunto</label><input type="text" id="pa-assunto" placeholder="Seu acesso ao Portal do Cliente — Grupo BVEK"></div>
+        <div class="campo full"><label>Mensagem <span class="dica" style="display:inline;margin:0">— {nome} = primeiro nome do contato, {contratos} = lista dos contratos dele. O endereço, o login e a senha provisória entram sozinhos depois do texto.</span></label><textarea id="pa-mensagem" rows="6" placeholder="(em branco = texto padrão)"></textarea></div>
+        <div class="campo full"><button class="btn-sec" onclick="salvarTextoPortal()">Salvar texto</button> <button class="btn-sec" onclick="previaEmailPortal()">Ver como fica o e-mail</button></div>
+      </div>
+      <div id="pa-previa"></div>
+    </details>
+    <div class="modal-btns">
+      <button class="btn-cancelar" onclick="fecharModal('modal-portal-acessos')">Fechar</button>
+      <button class="btn-salvar" id="pa-btn-enviar" onclick="enviarAcessosPortal()">Enviar acessos marcados</button>
+    </div>
+  </div>
+</div>
+
 <!-- v58: portal do cliente — o que cada contrato mostra -->
 <div class="modal-overlay" id="modal-portal-contrato">
   <div class="modal">
@@ -2891,6 +2918,10 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
     <div class="info-box" id="pc-logins" style="display:block"></div>
     <div class="campo-check" style="margin:10px 0"><input type="checkbox" id="pc-liberado" onchange="pcMostrar()"><label for="pc-liberado"><strong>Mostrar este contrato no portal do cliente</strong></label></div>
     <div id="pc-opcoes">
+      <!-- v72: quem vê este contrato -->
+      <div class="secao">Contatos com acesso a este contrato</div>
+      <div class="dica" style="margin-bottom:6px">Só os contatos marcados veem este contrato no portal (cada um com o próprio login, pelo e-mail). O contato da proposta já vem marcado. Os logins são criados e enviados em <strong>Clientes → Portal: acessos</strong>.</div>
+      <div id="pc-contatos" style="margin:4px 0 12px;border:1px solid var(--borda);border-radius:8px;padding:8px 10px"></div>
       <div class="secao">O que o cliente vê neste contrato</div>
       <div class="campo-check"><input type="checkbox" id="pc-ver-proposta" onchange="pcMostrar()"><label for="pc-ver-proposta">Proposta (o PDF guardado na proposta)</label></div>
       <div class="campo" id="pc-card-box" style="margin:4px 0 10px 26px"><select id="pc-card" onchange="pcMostrar()"></select><div class="dica" id="pc-card-info"></div></div>
@@ -3119,6 +3150,8 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
       <div class="campo"><label>ID do número (Phone number ID) *</label><input type="text" id="wc-phone"></div>
       <div class="campo"><label>Nome do modelo aprovado</label><input type="text" id="wc-modelo" placeholder="ex.: convocacao_cronograma"></div>
       <div class="campo"><label>Idioma do modelo</label><input type="text" id="wc-idioma" placeholder="pt_BR"></div>
+      <div class="campo full"><label>ID da conta do WhatsApp (WABA) <span class="dica" style="display:inline;margin:0">— opcional; ajuda o Diagnóstico a conferir o modelo (Gerenciador do WhatsApp → Configurações da conta → ID da conta)</span></label><input type="text" id="wc-waba" inputmode="numeric"></div>
+      <div class="campo full"><div class="info-box" style="display:block;line-height:1.55;border-left:4px solid var(--vermelho)"><strong>Erro 138000 ("Calling not enabled")</strong>: o modelo tem botão de <strong>ligação pelo WhatsApp</strong> (chamada de voz) e as chamadas não estão ligadas no número. A Meta recusa a mensagem inteira. Crie na Meta um modelo novo <strong>sem esse botão</strong> (o botão "Ligar" comum, de telefone, pode ficar), espere a aprovação e troque o nome do modelo acima.</div></div>
       <div class="campo full"><div class="info-box" style="display:block;line-height:1.6">Crie na Meta um modelo da categoria <strong>Utilidade</strong> com 7 variáveis, por exemplo:<br>
         <code>Grupo BVEK — {{1}}<br>Olá, {{2}}!<br>Data: {{3}}<br>Horário: {{4}}<br>Local: {{5}}<br>Serviço: {{6}}<br>Observações: {{7}}<br>Em caso de dúvida, fale com o escritório.</code><br>
         Nos eventos do escritório, {{6}} recebe o assunto e {{7}} a pauta.<br>
@@ -5690,6 +5723,7 @@ function renderClientes(){
     aberto:c=>(stats[c.id]||{}).ab||0,fechado:c=>(stats[c.id]||{}).fe||0},'codigo');
   $('cli-ir').innerHTML=`<option value="">Ir para o cliente… (${l.length})</option>`+l.map(c=>`<option value="${esc(c.id)}">${esc(rotuloCliente(c))}</option>`).join('');
   $('cli-contagem').textContent=`${l.length} de ${todosClientes.filter(c=>c.ativo!==false).length} clientes`;
+  atualizarBotaoPortal();
   const T=(c,r,k)=>thOrd('cli',c,r,k);
   const fv=PERM.funilVer;
   $('tabela-clientes').innerHTML=`<thead><tr>${T('codigo','Código')}${T('nome','Nome')}${T('razao','Razão social / CPF-CNPJ')}${T('situacao','Situação')}${T('empresas','Empresas')}${fv?T('aberto','Em aberto','num')+T('fechado','Fechado','num'):''}</tr></thead><tbody>`+
@@ -8294,7 +8328,103 @@ function renderAcessosPortalCliente(c){
     return`<div class="sub-item"><div><strong>${esc(p.nome||'')}</strong> ${p.ativo===false?'<span class="badge badge-cinza">desativado</span>':'<span class="badge badge-ok">ativo</span>'}${p.senha_definida_em?'':' <span class="badge badge-hoje">ainda não entrou</span>'}<div style="font-size:12px;color:var(--texto2)">${esc(p.email||'')}</div>
       <div style="font-size:12px;color:var(--texto2)">${outros.length?`Também vê: ${esc(outros.map(x=>x.codigo||x.nome).join(', '))}`:'Vê só este cliente'}</div></div>
     <div class="acoes"><button class="btn-link" onclick="abrirClientesDoLogin('${esc(p.id)}')">outros clientes</button><button class="btn-link" onclick="abrirRedefinirSenha('${esc(p.id)}')">senha</button><button class="btn-link" style="color:var(--texto2)" onclick="alternarAcessoPortal('${esc(p.id)}')">${p.ativo===false?'reativar':'desativar'}</button></div></div>`;}).join('')+'</div>'
-    :'<p class="vazio">Nenhum login no portal.</p>')+`<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:6px"><button class="btn-sec" onclick="liberarTodosContratosPortal()">Liberar todos os contratos deste cliente</button><span class="dica" style="margin:0">O cliente só vê os contratos liberados (um a um em Contratos → abrir o contrato → Portal do cliente, ou todos de uma vez por este botão).</span></div>`;
+    :'<p class="vazio">Nenhum login no portal.</p>')+`<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:6px"><button class="btn-sec" onclick="liberarTodosContratosPortal()">Liberar todos os contratos deste cliente</button><span class="dica" style="margin:0">Cada contato só vê os contratos liberados em que está marcado (Contratos → abrir o contrato → Portal do cliente). Logins a enviar: Clientes → Portal: acessos.</span></div><div id="mc-portal-aviso"></div>`;
+  avisoContatosPortal(c);
+}
+// v72: sinaliza cliente com contrato e sem contato / contato sem e-mail
+async function avisoContatosPortal(c){
+  const ps=todosProjetos.filter(p=>p.cliente_id===c.id);if(!ps.length)return;
+  const{data}=await sb.from('contatos').select('id,nome,email').eq('cliente_id',c.id);const l=data||[];
+  const sem=l.filter(x=>!emailOk(x.email));const box=$('mc-portal-aviso');if(!box||clienteEditandoId!==c.id)return;
+  box.innerHTML=!l.length?`<div class="info-box" style="display:block;margin-top:8px;border-left:4px solid var(--vermelho)"><strong>Preencher:</strong> este cliente tem ${ps.length} contrato(s) e nenhum contato. Cadastre o contato (com e-mail) em <strong>Contatos → + Contato</strong> para liberar o acesso dele ao portal.</div>`
+    :sem.length?`<div class="info-box" style="display:block;margin-top:8px;border-left:4px solid var(--laranja,#E67E22)"><strong>Preencher o e-mail:</strong> ${esc(sem.map(x=>x.nome).join(', '))} — sem e-mail não há login no portal.</div>`:'';
+}
+/* ---- v72: Clientes → Portal: acessos (pendências, preparar e enviar) ---- */
+let portalPend=null,portalPendCache=null,portalPendEm=0,portalCfg=null;
+async function atualizarBotaoPortal(){
+  const b=$('btn-portal-acessos');if(!b)return;if(!PERM.admin){b.style.display='none';return;}b.style.display='';
+  if(portalPendCache&&Date.now()-portalPendEm<120000){rotuloBotaoPortal(portalPendCache);return;}
+  if(!await temV72()){b.textContent='Portal: acessos';return;}
+  portalPendEm=Date.now();const{data,error}=await sb.rpc('bvek_portal_pendencias');if(error){console.warn(error);return;}
+  portalPendCache=data;rotuloBotaoPortal(data);
+}
+function contaPendPortal(d){return d?(d.sem_contato||[]).length+(d.sem_email||[]).length+(d.a_enviar||[]).length+(d.clientes_sem_contato||[]).length:0;}
+function rotuloBotaoPortal(d){const n=contaPendPortal(d),b=$('btn-portal-acessos');b.textContent=n?`Portal: acessos (${n} pendência${n>1?'s':''})`:'Portal: acessos';b.style.borderColor=n?'var(--vermelho)':'';}
+async function abrirPortalAcessos(){
+  if(!PERM.admin)return;
+  if(!await temV72()){alert('Rode antes a migração v72 no Supabase (supabase/migracao_crm_v72_portal_por_contrato_whatsapp.sql).');return;}
+  $('pa-previa').innerHTML='';abrirModal('modal-portal-acessos');await carregarPortalAcessos();
+}
+async function carregarPortalAcessos(){
+  $('pa-corpo').innerHTML='<div class="info-box" style="display:block">Carregando…</div>';
+  const[a,b]=await Promise.all([sb.rpc('bvek_portal_pendencias'),sb.from('portal_config').select('*').eq('id',1).maybeSingle()]);
+  if(a.error||b.error){$('pa-corpo').innerHTML=`<div class="info-box" style="display:block;color:var(--vermelho)">${esc((a.error||b.error).message)}</div>`;return;}
+  await carregarPerfis();
+  portalPend=portalPendCache=a.data||{};portalPendEm=Date.now();portalCfg=b.data||{};rotuloBotaoPortal(portalPend);
+  $('pa-assunto').value=portalCfg.assunto||'';$('pa-mensagem').value=portalCfg.mensagem||'';
+  renderPortalAcessos();
+}
+function renderPortalAcessos(){
+  const d=portalPend||{},lib=!!(portalCfg&&portalCfg.envio_liberado);
+  $('pa-trava').innerHTML=`<div class="info-box" style="display:block;border-left:4px solid ${lib?'#329948':'var(--vermelho)'}">
+    <div class="campo-check" style="margin:0"><input type="checkbox" id="pa-liberado" ${lib?'checked':''} onchange="alternarEnvioPortal(this)"><label for="pa-liberado"><strong>Envio dos acessos por e-mail ${lib?'LIGADO':'DESLIGADO'}</strong></label></div>
+    <div class="dica" style="margin:4px 0 0">${lib?'Ao clicar em Enviar, o CRM cria o login e manda o e-mail com a senha provisória, da sua caixa e com a sua assinatura.':'Nenhum e-mail sai enquanto estiver desligado. Você pode preparar, conferir as pendências e ver a prévia do e-mail.'}</div></div>`;
+  $('pa-btn-enviar').disabled=!lib;$('pa-btn-enviar').title=lib?'':'Ligue o envio acima para mandar os acessos';
+  const cli=(id,txt)=>`<button class="btn-link" onclick="fecharModal('modal-portal-acessos');abrirModalCliente('${esc(id)}')">${esc(txt)}</button>`;
+  const ctr=(id,txt)=>`<button class="btn-link" onclick="fecharModal('modal-portal-acessos');abrirPortalContrato('${esc(id)}')">${esc(txt)}</button>`;
+  const sec=(tit,n,cor,html)=>`<div class="secao" style="margin-top:14px">${tit} <span class="badge ${n?cor:'badge-ok'}">${n}</span></div>${n?html:'<p class="vazio">Nada pendente.</p>'}`;
+  const csc=d.clientes_sem_contato||[],sc=d.sem_contato||[],se=d.sem_email||[],ae=d.a_enviar||[];
+  $('pa-corpo').innerHTML=
+    `<div class="dica">Com acesso ativo (já entraram e criaram a senha): <strong>${Number(d.com_acesso||0)}</strong> contato(s).</div>`+
+    sec('Para enviar o login',ae.length,'badge-hoje',`<div style="margin:4px 0"><label style="font-weight:500"><input type="checkbox" id="pa-todos" checked onchange="document.querySelectorAll('[data-pa-env]').forEach(i=>{if(!i.disabled)i.checked=this.checked})"> marcar todos</label></div>
+      <div class="tabela-wrap"><table class="tabela"><thead><tr><th></th><th>Contato</th><th>E-mail</th><th>Contratos</th><th>Situação</th><th></th></tr></thead><tbody>${ae.map(x=>{const u=x.ultimo_envio;const bloq=!!x.conflito;
+        return`<tr><td><input type="checkbox" data-pa-env="${esc(x.email)}" ${bloq?'disabled':'checked'}></td><td><strong>${esc(x.nome||'')}</strong></td><td>${esc(x.email)}</td><td style="font-size:12px">${esc((x.contratos||[]).join(', '))}</td>
+        <td style="font-size:12px">${bloq?'<span class="badge badge-atraso">e-mail é login do escritório</span>':x.tem_login?'<span class="badge badge-hoje">login criado, ainda não entrou</span>':'<span class="badge badge-cinza">sem login</span>'}${u?`<div>${u.ok?'enviado':'<span style="color:var(--vermelho)">erro</span>'} em ${esc(fmtDataHora(u.em))}${u.erro&&!u.ok?': '+esc(u.erro):''}</div>`:''}</td>
+        <td><button class="btn-link" onclick="previaEmailPortal('${esc(x.email)}')">prévia</button></td></tr>`;}).join('')}</tbody></table></div>`)+
+    sec('Clientes com contrato e sem nenhum contato',csc.length,'badge-atraso',`<div class="sub-lista">${csc.map(x=>`<div class="sub-item"><span><span class="cod">${esc(x.cliente_codigo||'')}</span> ${esc(x.cliente||'')}</span>${cli(x.cliente_id,'cadastrar contato')}</div>`).join('')}</div>`)+
+    sec('Contatos sem e-mail (sem e-mail não há login)',se.length,'badge-atraso',`<div class="sub-lista">${se.map(x=>`<div class="sub-item"><span><strong>${esc(x.nome||'')}</strong> · <span class="cod">${esc(x.cliente_codigo||'')}</span> ${esc(x.cliente||'')}</span>${cli(x.cliente_id,'preencher e-mail')}</div>`).join('')}</div>`)+
+    sec('Contratos sem contato com acesso',sc.length,'badge-atraso',`<div class="dica">Contrato fora do portal ou sem contato marcado. "Preparar acessos" põe todos no portal com o contato da proposta; os que continuarem aqui não têm contato na proposta — marque o contato no contrato.</div><div class="sub-lista">${sc.map(x=>`<div class="sub-item"><span><span class="cod">${esc(x.codigo)}</span> ${esc(x.nome||'')} · ${esc(x.cliente||'')}${x.status?` · <span class="dica" style="display:inline">${esc(x.status)}</span>`:''}${!x.no_portal?' <span class="badge badge-cinza">fora do portal</span>':!x.liberado?' <span class="badge badge-cinza">não liberado</span>':''}${!x.contatos_do_cliente?' <span class="badge badge-atraso">cliente sem contato</span>':''}</span>${x.contatos_do_cliente?ctr(x.projeto_id,'marcar contato'):cli(x.cliente_id,'cadastrar contato')}</div>`).join('')}</div>`);
+}
+async function alternarEnvioPortal(el){
+  const liga=el.checked;
+  if(liga&&!confirm('Ligar o envio dos acessos?\n\nA partir de agora, ao clicar em "Enviar acessos marcados", o CRM cria os logins e manda os e-mails com a senha provisória aos contatos dos clientes.'))
+    {el.checked=false;return;}
+  const{error}=await sb.from('portal_config').update({envio_liberado:liga,atualizado_por:quemSou(),atualizado_em:new Date().toISOString()}).eq('id',1);
+  if(erroSB(error)){el.checked=!liga;return;}
+  portalCfg.envio_liberado=liga;renderPortalAcessos();toast(liga?'Envio dos acessos ligado':'Envio dos acessos desligado');
+}
+async function salvarTextoPortal(){
+  const{error}=await sb.from('portal_config').update({assunto:$('pa-assunto').value.trim()||null,mensagem:$('pa-mensagem').value.trim()||null,atualizado_por:quemSou(),atualizado_em:new Date().toISOString()}).eq('id',1);
+  if(erroSB(error))return;toast('Texto do e-mail salvo');
+}
+async function prepararAcessosPortal(){
+  if(!confirm('Preparar os acessos de todos os contratos?\n\n• Os contratos que ainda não estão no portal entram LIBERADOS, sem a proposta (tem valores) e sem documentos da empresa: dados do contrato, OS, diário (só dias fechados), documentos de início, medições e notas fiscais.\n• Em cada contrato sem contato entra o contato da proposta.\n\nNenhum e-mail é enviado.'))return;
+  const{data,error}=await sb.rpc('bvek_portal_preparar',{p_quem:quemSou()});if(erroSB(error))return;
+  toast(`${data.contratos_novos} contrato(s) postos no portal · ${data.contratos_com_contato} recebeu(ram) o contato da proposta`);
+  await carregarPortalAcessos();
+}
+async function previaEmailPortal(email){
+  if(!email&&($('pa-assunto').value.trim()!==(portalCfg.assunto||'')||$('pa-mensagem').value.trim()!==(portalCfg.mensagem||''))){await salvarTextoPortal();portalCfg.assunto=$('pa-assunto').value.trim()||null;portalCfg.mensagem=$('pa-mensagem').value.trim()||null;}
+  const box=$('pa-previa');box.closest('details').open=true;box.innerHTML='<div class="info-box" style="display:block">Montando a prévia…</div>';
+  const{data,error}=await sb.functions.invoke('portal-acessos',{body:{acao:'previa',email:email||((portalPend&&portalPend.a_enviar||[])[0]||{}).email||''}});
+  if(error||!data||!data.ok){let m=await erroDaFuncao(error,data);if(/Failed to send|FunctionsFetchError|FunctionsRelayError|not found/i.test(m))m='a função "portal-acessos" não está publicada no Supabase.';box.innerHTML=`<div class="info-box" style="display:block;color:var(--vermelho)">${esc(m)}</div>`;return;}
+  box.innerHTML=`<div class="info-box" style="display:block;background:#fff"><div class="dica">Prévia (senha de exemplo) — nada foi enviado.</div><div><strong>Assunto:</strong> ${esc(data.assunto)}</div><iframe sandbox style="width:100%;height:380px;border:1px solid var(--borda);border-radius:6px;margin-top:6px;background:#fff"></iframe></div>`;
+  box.querySelector('iframe').srcdoc=data.html;
+  box.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+async function enviarAcessosPortal(){
+  if(!portalCfg||!portalCfg.envio_liberado){alert('O envio está desligado. Ligue o envio no topo desta janela quando quiser que os e-mails saiam.');return;}
+  const emails=[...document.querySelectorAll('[data-pa-env]:checked')].map(i=>i.dataset.paEnv);
+  if(!emails.length){alert('Marque quem vai receber o acesso.');return;}
+  if(!confirm(`Enviar o acesso ao portal para ${emails.length} contato(s)?\n\nCada um recebe um e-mail da sua caixa com o endereço, o login e uma senha provisória.`))return;
+  const btn=$('pa-btn-enviar');btn.disabled=true;btn.textContent='Enviando…';
+  try{
+    const{data,error}=await sb.functions.invoke('portal-acessos',{body:{acao:'enviar',emails}});
+    if(error||!data||!data.ok){let m=await erroDaFuncao(error,data);if(/Failed to send|FunctionsFetchError|FunctionsRelayError|not found/i.test(m))m='a função "portal-acessos" não está publicada no Supabase.';alert('Nada foi enviado:\n'+m);return;}
+    const erros=(data.resultado||[]).filter(r=>!r.ok);
+    alert(`${data.enviados} acesso(s) enviado(s).`+(erros.length?`\n\nCom erro (${erros.length}):\n`+erros.map(r=>`${r.email}: ${r.erro}`).join('\n'):''));
+  }catch(e){console.warn(e);alert('Não foi possível enviar agora.');}
+  finally{btn.textContent='Enviar acessos marcados';await carregarPortalAcessos();}
 }
 /* ---- v59: um login do portal pode ver VÁRIOS clientes (ex.: o mesmo contato em todas as unidades da FGV) ---- */
 const clientesDoLogin=p=>[p.cliente_id,...(Array.isArray(p.clientes_extras)?p.clientes_extras:[])].filter(Boolean);
@@ -8336,11 +8466,14 @@ async function liberarTodosContratosPortal(){
   const{data:ex,error:e1}=await sb.from('portal_contratos').select('projeto_id,liberado').in('projeto_id',ps.map(p=>p.id));
   if(e1){if(faltaV58(e1)){alert(msgV58(e1));return;}erroSB(e1);return;}
   const tem=new Set((ex||[]).map(x=>x.projeto_id)),agora=new Date().toISOString(),quem=quemSou();
-  const novos=ps.filter(p=>!tem.has(p.id)).map(p=>({projeto_id:p.id,liberado:true,ver_os:true,ver_diario:true,ver_inicio:true,ver_medicoes:true,atualizado_por:quem,atualizado_em:agora}));
+  const v72=await temV72();
+  const ctsProp=pid=>{const p=todosProjetos.find(x=>x.id===pid)||{};return[...new Set(todosCards.filter(k=>(k.projeto_id===pid||k.id===p.card_id)&&k.contato_id).map(k=>k.contato_id))];};
+  const novos=ps.filter(p=>!tem.has(p.id)).map(p=>Object.assign({projeto_id:p.id,liberado:true,ver_os:true,ver_diario:true,ver_inicio:true,ver_medicoes:true,atualizado_por:quem,atualizado_em:agora},v72?{contatos:ctsProp(p.id)}:{}));
   if(novos.length){const{error}=await sb.from('portal_contratos').insert(novos);if(erroSB(error))return;}
   const fechados=(ex||[]).filter(x=>!x.liberado).map(x=>x.projeto_id);
   if(fechados.length){const{error}=await sb.from('portal_contratos').update({liberado:true,atualizado_por:quem,atualizado_em:agora}).in('projeto_id',fechados);if(erroSB(error))return;}
   toast(`${novos.length+fechados.length} contrato(s) liberado(s) no portal`+((ex||[]).length-fechados.length?` · ${(ex||[]).length-fechados.length} já estavam liberados`:''));
+  portalPendCache=null;if(v72)setTimeout(()=>alert('Contratos liberados. Cada contrato só aparece para os contatos marcados nele (o contato da proposta já vem marcado).\n\nConfira em Clientes → Portal: acessos quem ainda precisa receber o login.'),50);
 }
 async function abrirNovoAcessoPortal(){
   const c=clientePorId(clienteEditandoId);if(!c||!PERM.admin)return;
@@ -8388,8 +8521,13 @@ async function abrirPortalContrato(pid){
   const cli=clientePorId(p.cliente_id),emp=empresaPorId(p.empresa_id);
   $('pc-titulo').textContent=`Portal do cliente — ${p.codigo}`;
   $('pc-sub').textContent=`${p.nome} · ${cli?cli.nome:''}${emp?' · executora '+emp.sigla:''}`;
-  const logins=todosPerfis.filter(x=>x.perfil==='cliente'&&x.cliente_id===p.cliente_id&&x.ativo!==false);
-  $('pc-logins').innerHTML=logins.length?`Quem vê: ${logins.map(x=>esc(x.nome||x.email)).join(', ')}`:'Este cliente ainda não tem login no portal. Crie em <strong>Clientes → abrir o cliente → Portal do cliente → + Criar acesso</strong>.';
+  // v72: contatos do cliente e quem tem acesso a este contrato
+  pcV72=await temV72();
+  const{data:cts}=await sb.from('contatos').select('id,nome,cargo,email').eq('cliente_id',p.cliente_id).order('principal',{ascending:false}).order('nome');
+  pcContatos=cts||[];
+  const daProposta=[...new Set(todosCards.filter(c=>(c.projeto_id===p.id||c.id===p.card_id)&&c.contato_id).map(c=>c.contato_id))];
+  const marcados=new Set(pcV72&&Array.isArray(r.contatos)&&r.contatos.length?r.contatos:daProposta);
+  renderPcContatos(marcados,new Set(daProposta));
   const ck=(id,v)=>$(id).checked=!!v;
   ck('pc-liberado',r.liberado);ck('pc-ver-proposta',r.ver_proposta);ck('pc-ver-os',r.ver_os);ck('pc-ver-diario',r.ver_diario);ck('pc-ver-docs',r.ver_documentos);ck('pc-ver-inicio',r.ver_inicio);ck('pc-ver-medicoes',r.ver_medicoes);
   const cards=todosCards.filter(c=>c.projeto_id===p.id||c.id===p.card_id).sort((x,y)=>(ganha(y)-ganha(x))||String(y.criado_em||'').localeCompare(String(x.criado_em||'')));
@@ -8403,6 +8541,29 @@ async function abrirPortalContrato(pid){
     :'<span class="dica">Nenhum documento das empresas cadastrado (aba Documentos e certidões).</span>';
   ['pc-a-titulo','pc-a-num','pc-a-data'].forEach(i=>$(i).value='');$('pc-a-arq').value='';
   renderPcArquivos();pcMostrar();abrirModal('modal-portal-contrato');
+}
+/* v72: contatos com acesso ao contrato */
+let pcContatos=[],pcV72=false,v72Ok=null;
+async function temV72(){if(v72Ok!==null)return v72Ok;const{error}=await sb.from('portal_config').select('id').limit(1);v72Ok=!error;return v72Ok;}
+const emailOk=e=>/^[^\s@;,<>]+@[^\s@;,<>]+\.[^\s@;,<>]+$/.test(String(e||'').trim());
+function loginDoEmail(e){e=String(e||'').trim().toLowerCase();return e?todosPerfis.find(x=>String(x.email||'').toLowerCase()===e):null;}
+function situacaoLoginContato(ct){
+  if(!emailOk(ct.email))return'<span class="badge badge-atraso">sem e-mail</span>';
+  const l=loginDoEmail(ct.email);
+  if(!l)return'<span class="badge badge-hoje">login a enviar</span>';
+  if(l.perfil!=='cliente')return`<span class="badge badge-atraso">e-mail é login do escritório</span>`;
+  if(l.ativo===false)return'<span class="badge badge-cinza">login desativado</span>';
+  return l.senha_definida_em?'<span class="badge badge-ok">com acesso</span>':'<span class="badge badge-hoje">ainda não entrou</span>';
+}
+function renderPcContatos(marcados,daProposta){
+  const box=$('pc-contatos'),p=pcProjeto;
+  const logins=todosPerfis.filter(x=>x.perfil==='cliente'&&x.ativo!==false&&pcContatos.some(c=>marcados.has(c.id)&&String(c.email||'').trim().toLowerCase()===String(x.email||'').toLowerCase()));
+  $('pc-logins').innerHTML=!pcV72?'Para separar o acesso por contrato, rode antes a migração <strong>v72</strong> no Supabase (supabase/migracao_crm_v72_portal_por_contrato_whatsapp.sql).'
+    :logins.length?`Quem vê hoje: ${logins.map(x=>esc(x.nome||x.email)).join(', ')}`:'Ninguém vê este contrato ainda: marque os contatos abaixo e envie os acessos em <strong>Clientes → Portal: acessos</strong>.';
+  if(!pcContatos.length){box.innerHTML=`<span style="color:var(--vermelho)">Este cliente não tem contato cadastrado.</span> <button class="btn-link" onclick="fecharModal('modal-portal-contrato');abrirModalCliente('${esc(p.cliente_id)}')">Cadastrar contato no cliente</button>`;return;}
+  box.innerHTML=pcContatos.map(ct=>`<label style="display:flex;gap:8px;align-items:flex-start;font-weight:500;margin:4px 0"><input type="checkbox" value="${esc(ct.id)}" ${marcados.has(ct.id)?'checked':''} ${pcV72?'':'disabled'}>
+    <span><strong>${esc(ct.nome)}</strong>${ct.cargo?' — '+esc(ct.cargo):''}${daProposta.has(ct.id)?' <span class="dica" style="display:inline">(contato da proposta)</span>':''}<br><span class="dica" style="display:inline">${esc(ct.email||'sem e-mail')}</span> ${situacaoLoginContato(ct)}</span></label>`).join('')
+    +`<div style="margin-top:6px"><button class="btn-link" onclick="fecharModal('modal-portal-contrato');abrirModalCliente('${esc(p.cliente_id)}')">Cadastrar ou corrigir contato no cliente</button></div>`;
 }
 function pcMostrar(){
   const lib=$('pc-liberado').checked;$('pc-opcoes').style.opacity=lib?'':'.55';
@@ -8444,8 +8605,10 @@ async function salvarPortalContrato(){
     atualizado_por:quemSou(),atualizado_em:new Date().toISOString()};
   if(dados.ver_proposta&&!dados.card_id){alert('Escolha a proposta que o cliente vai ver (ou desmarque “Proposta”).');return;}
   if(dados.ver_documentos&&!dados.documentos.length){alert('Marque quais documentos da empresa o cliente vai ver (ou desmarque “Documentos da empresa”).');return;}
+  if(pcV72){dados.contatos=[...$('pc-contatos').querySelectorAll('input:checked')].map(i=>i.value);
+    if(dados.liberado&&!dados.contatos.length&&!confirm('Nenhum contato marcado: ninguém vai ver este contrato no portal.\n\nSalvar assim mesmo?'))return;}
   const{error}=await sb.from('portal_contratos').upsert(dados,{onConflict:'projeto_id'});if(erroSB(error))return;
-  fecharModal('modal-portal-contrato');toast(dados.liberado?'Portal do cliente atualizado':'Contrato fora do portal');
+  fecharModal('modal-portal-contrato');toast(dados.liberado?'Portal do cliente atualizado':'Contrato fora do portal');portalPendCache=null;
 }
 
 /* ---- v51: diário de obra no celular do funcionário (login CPF) ---- */
@@ -10664,12 +10827,14 @@ async function abrirConfigConvocacao(){
   const c=waConvConfig=data||{};
   $('wc-ativo').checked=c.ativo!==false;$('wc-token').value=c.meta_token||'';$('wc-phone').value=c.meta_phone_id||'';
   $('wc-modelo').value=c.meta_modelo||'';$('wc-idioma').value=c.meta_idioma||'pt_BR';$('wc-teste').value='';$('wc-diag').style.display='none';
+  $('wc-waba').value=c.meta_waba_id||'';$('wc-waba').disabled=!('meta_waba_id' in c);$('wc-waba').title='meta_waba_id' in c?'':'Rode a migração v72 para usar este campo';
   abrirModal('modal-wa-conv');
 }
 async function salvarConfigConvocacao(silencioso){
   if(!PERM.admin)return false;
   const dados={ativo:$('wc-ativo').checked,meta_token:$('wc-token').value.trim()||null,meta_phone_id:$('wc-phone').value.trim()||null,
     meta_modelo:$('wc-modelo').value.trim()||null,meta_idioma:$('wc-idioma').value.trim()||'pt_BR',atualizado_em:new Date().toISOString()};
+  if(waConvConfig&&'meta_waba_id' in waConvConfig)dados.meta_waba_id=$('wc-waba').value.replace(/\D/g,'')||null;  // v72
   if(dados.ativo&&(!dados.meta_token||!dados.meta_phone_id)){alert('Para mandar pelo WhatsApp, preencha o token e o ID do número da Meta.');return false;}
   const{error}=await sb.from('whatsapp_convocacao_config').update(dados).eq('id',1);
   if(erroSB(error))return false;

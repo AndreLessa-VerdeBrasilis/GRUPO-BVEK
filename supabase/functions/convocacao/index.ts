@@ -1,5 +1,7 @@
 // =====================================================================
-// CRM Grupo BVEK — função "convocacao" (Supabase Edge Function) — v47
+// CRM Grupo BVEK — função "convocacao" (Supabase Edge Function) — v47 / v72
+// v72: erro 138000 (botão de ligação pelo WhatsApp no modelo) explicado e
+//      apontado pelo diagnóstico; conta do WhatsApp (WABA) informada na tela.
 // Cronograma → avisa cada funcionário da equipe pelo WhatsApp (API oficial
 // da Meta, configurada em Cronograma → WhatsApp — tabela
 // whatsapp_convocacao_config, v48, separada do lembrete de pagamentos) e pelo e-mail
@@ -148,6 +150,9 @@ const ERROS_META: Record<string, string> = {
   "132016": "o modelo foi desativado pela Meta",
   "133010": "o número da empresa não está registrado na API da Meta. No painel: WhatsApp → Configuração da API → registre o número (código PIN de 6 dígitos)",
   "135000": "erro genérico da Meta — tente de novo em alguns minutos",
+  // v72: o modelo tem botão "Ligar no WhatsApp" (chamada de voz) ou pedido de permissão de chamada,
+  // e as chamadas (Calling API) não estão ligadas no número. A Meta recusa a mensagem inteira.
+  "138000": "o modelo de mensagem tem um botão de LIGAÇÃO PELO WHATSAPP (\"Ligar no WhatsApp\" / chamada de voz) ou pedido de permissão de chamada, e as chamadas não estão ligadas no número da empresa (a Meta só libera chamadas para números com limite de 2.000 conversas ou mais). Solução: no Gerenciador do WhatsApp → Modelos de mensagem, crie um modelo novo SEM esse botão (pode ter o botão \"Ligar\" comum, de telefone) e troque o nome do modelo em Cronograma → WhatsApp",
 };
 function erroMeta(t: string): string {
   try {
@@ -193,9 +198,22 @@ async function diagnosticoMeta(cfg: Linha): Promise<Linha> {
     if (n.name_status && !/APPROVED|AVAILABLE_WITHOUT_REVIEW/.test(n.name_status)) itens.push({ ok: null, item: "Nome de exibição", texto: `Situação do nome na Meta: ${n.name_status}. Enquanto não for aprovado, a Meta limita os envios.` });
     if (/^\+?1\s?555/.test(String(n.display_phone_number || ""))) itens.push({ ok: null, item: "Número de teste", texto: "Este é o número de TESTE da Meta: só manda para até 5 celulares cadastrados no painel. Para avisar todos os funcionários, registre o número oficial da empresa." });
   } else itens.push({ ok: false, item: "Número", texto: erroMeta(nr.t) });
+  // v72: conta do WhatsApp (WABA) — informada na tela ou achada pelas empresas do token
+  const wabaCfg = String(cfg.meta_waba_id || "").replace(/\D/g, "");
+  if (wabaCfg) wabas = [wabaCfg, ...wabas.filter((w) => w !== wabaCfg)];
+  if (!wabas.length) {
+    const bs = await get(`${GRAPH}/me/businesses?fields=id&limit=20`);
+    for (const b of ((bs.j.data || []) as Linha[])) {
+      for (const tipo of ["owned_whatsapp_business_accounts", "client_whatsapp_business_accounts"]) {
+        const w = await get(`${GRAPH}/${encodeURIComponent(b.id)}/${tipo}?fields=id&limit=50`);
+        for (const x of ((w.j.data || []) as Linha[])) if (x.id) wabas.push(String(x.id));
+      }
+    }
+    wabas = [...new Set(wabas)];
+  }
   // 3. modelo
   if (!modelo) itens.push({ ok: null, item: "Modelo", texto: "Sem modelo: a Meta só entrega a quem mandou mensagem para o número da empresa nas últimas 24 horas — e mesmo assim responde \"ok\" aqui, sem avisar quando não entrega. Por isso a mensagem parece enviada mas não chega. Cadastre um modelo aprovado." });
-  else if (!wabas.length) itens.push({ ok: null, item: "Modelo", texto: `Não deu para conferir o modelo "${modelo}" (o token não mostra a conta do WhatsApp). Confira no Gerenciador do WhatsApp se ele está APROVADO, no idioma ${cfg.meta_idioma || "pt_BR"} e com 7 variáveis.` });
+  else if (!wabas.length) itens.push({ ok: null, item: "Modelo", texto: `Não deu para conferir o modelo "${modelo}" (o token não mostra a conta do WhatsApp). Preencha o "ID da conta do WhatsApp (WABA)" em Cronograma → WhatsApp e diagnostique de novo, ou confira no Gerenciador do WhatsApp se ele está APROVADO, no idioma ${cfg.meta_idioma || "pt_BR"}, com 7 variáveis e SEM botão de ligação pelo WhatsApp.` });
   else {
     let achou: Linha[] = [];
     for (const w of wabas) {
@@ -216,6 +234,13 @@ async function diagnosticoMeta(cfg: Linha): Promise<Linha> {
       else if (vars.size !== 7) probs.push(`tem ${vars.size} variável(is) no corpo — precisa ter exatamente 7 ({{1}} a {{7}})`);
       if (cab && /\{\{/.test(String(cab.text || ""))) probs.push("tem variável no cabeçalho — tire a variável do cabeçalho (o CRM só preenche o corpo)");
       if (cab && cab.format && cab.format !== "TEXT") probs.push(`o cabeçalho é ${cab.format} (imagem/documento) — use cabeçalho de texto ou nenhum`);
+      // v72: botão de ligação pelo WhatsApp / pedido de permissão de chamada → erro 138000 se as chamadas não estão ligadas
+      const comps = (certo.components || []) as Linha[];
+      const botoes = comps.filter((c) => c.type === "BUTTONS").flatMap((c) => (c.buttons || []) as Linha[]);
+      if (comps.some((c) => /CALL_PERMISSION/i.test(String(c.type))) || botoes.some((b) => /VOICE_CALL|CALL_PERMISSION/i.test(String(b.type))))
+        probs.push("tem botão de LIGAÇÃO PELO WHATSAPP (chamada de voz) ou pedido de permissão de chamada — isso dá o erro 138000 enquanto as chamadas não estiverem ligadas no número. Crie um modelo sem esse botão");
+      else if (botoes.some((b) => b.type === "URL" && /\{\{/.test(String(b.url || ""))))
+        probs.push("tem botão de link com variável — o CRM não preenche botões; use link fixo ou tire o botão");
       itens.push(probs.length ? { ok: false, item: "Modelo", texto: `"${modelo}" ${probs.join("; ")}.` } : { ok: true, item: "Modelo", texto: `"${modelo}" aprovado, ${idioma}, 7 variáveis (${certo.category}).` });
     }
   }
