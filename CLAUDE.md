@@ -26,7 +26,7 @@ Sempre responda em português. O dono do sistema é o André Lessa (sócio do Gr
 1. **Antes de mexer**, leia o `index.html` atual e as migrações em `supabase/`. Não reescreva o que já funciona; faça a menor mudança que resolve.
 2. **Decisões do André**: se algo exigir regra de negócio, nome, campo novo ou mudança de comportamento visível, pergunte antes de implementar.
 3. **Banco de dados**:
-   - Toda mudança de banco vira um arquivo novo em `supabase/` no formato `migracao_crm_vNN_descricao.sql`, com o próximo número (confira o maior existente; em 25/nov/2026 a última era a v72; o número segue a versão do CRM).
+   - Toda mudança de banco vira um arquivo novo em `supabase/` no formato `migracao_crm_vNN_descricao.sql`, com o próximo número (confira o maior existente; em 25/nov/2026 a última era a v75; o número segue a versão do CRM).
    - A migração precisa poder rodar mais de uma vez sem duplicar nada (`if not exists`, `where not exists`, `create or replace`, `on conflict do nothing`).
    - Termine o arquivo com um `select` que permita ao André conferir o resultado.
    - **Funil só do administrador (desde a v46):** propostas (`cards`, `itens_proposta`, histórico), contratos fixos, valores e PDFs das propostas só chegam ao Administrador — o banco não manda para os outros perfis. Antes (v36) a regra era: o perfil Comercial não recebe `cards.valor_estimado`, `cards.composicao`, `itens_proposta.valor_unitario/valor_total` nem `contratos_recorrentes.valor_mensal/custo_mensal`. O front-end lê propostas, itens e contratos pelas funções `bvek_cards`, `bvek_itens_proposta` e `bvek_contratos` (nunca `select('*')` direto nessas tabelas). Migração que criar coluna nova nessas três tabelas deve terminar com `select public.bvek_proteger_valores();`.
@@ -89,9 +89,9 @@ Boa parte disto já foi implementada nas versões v11 a v18 (acessos, documentos
   - injustificada: desconta o dia + VT + VR;
   - justificada (atestado, licença): desconta VT e VR;
   - abonada: desconta só VT.
-- Envio mensal à contabilidade Innove (thais.ribeiro@innovecontabil.com.br e dp@innovecontabil.com.br) todo dia 25: a Sulamita (perfil administrador) confere no CRM e clica Enviar, via Microsoft 365, usando a caixa sulamita.decanio@bvek.com.br como remetente.
+- Envio mensal à contabilidade Innove (thais.ribeiro@innovecontabil.com.br e dp@innovecontabil.com.br) todo dia 26 (v75; era dia 25 — a folha fecha no dia 25 e o envio fica para o dia seguinte): a Sulamita (perfil administrador) confere no CRM e clica Enviar, via Microsoft 365, usando a caixa sulamita.decanio@bvek.com.br como remetente.
 - Adiantamento de 40% do salário no dia 15 para quem solicita; vales (empréstimos informais) descontados com valor livre mês a mês.
-- Regra de prazos (dia 25 e dia 15): sábado → sexta anterior; domingo → segunda seguinte; feriado → dia útil anterior.
+- Regra de prazos: adiantamento (dia 15) — sábado → sexta anterior; domingo → segunda seguinte; feriado → dia útil anterior. Envio à contabilidade (dia 26, v75) — nunca antes do dia 26: fim de semana ou feriado → próximo dia útil (`prazoRHDepois`).
 - Contracheques: a contabilidade manda um PDF único sem CPF; o CRM separa por funcionário e acrescenta nome, CPF, admissão e função.
 - Salário, contracheques e vales visíveis para admin, administrativo e contabilidade. Ponto/benefícios visíveis para admin, administrativo e contabilidade (desde a v28 o comercial não acessa o RH).
 
