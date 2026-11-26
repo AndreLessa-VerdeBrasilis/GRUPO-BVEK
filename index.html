@@ -3077,6 +3077,22 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
   </div>
 </div>
 
+<!-- v84: datas das faltas injustificadas (envio à contabilidade) -->
+<div class="modal-overlay" id="modal-datas-falta">
+  <div class="modal modal-sm">
+    <h2>Datas das faltas injustificadas</h2>
+    <p class="modal-sub" id="df-sub"></p>
+    <div class="campo"><label>Dia da falta</label>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><input type="date" id="df-dia" style="max-width:180px"><button class="btn-sec" type="button" onclick="addDataFalta()">+ incluir dia</button></div>
+      <div id="df-dias" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px"></div>
+      <div class="dica">A quantidade de faltas injustificadas passa a ser o número de dias incluídos. A contabilidade precisa das datas para calcular o desconto do descanso semanal.</div></div>
+    <div class="modal-btns">
+      <button class="btn-cancelar" onclick="fecharModal('modal-datas-falta')">Cancelar</button>
+      <button class="btn-salvar" onclick="salvarDatasFalta()">Salvar</button>
+    </div>
+  </div>
+</div>
+
 <!-- v34: premiação / extra do mês (RH) -->
 <div class="modal-overlay" id="modal-premiacao">
   <div class="modal modal-sm">
@@ -10483,9 +10499,16 @@ function dadosFechamento(iso){
     const itens=l?l.itens:[],a=adiantDoMes(f.id,iso);
     return{f,dias,fx,faltas:totalFaltas(fx),detalhe:cf&&cf.detalhe||null,itens,totalBenef:r2(itens.reduce((s,i)=>s+i.valor_total,0)),descBenef:r2(itens.reduce((s,i)=>s+i.desconto,0)),
       descVale:descontoValesNoMes(f.id,iso),adiant:a?Number(a.valor):0,adiantPago:a?a.pago_em:null,obs:(cf&&cf.observacoes)||'',
-      premio:premioDoMes(f.id,iso),premioValor:(()=>{const p=premioDoMes(f.id,iso);return p?r2(Number(p.valor)):0;})()};
+      datasInj:datasInjCF(cf),premio:premioDoMes(f.id,iso),premioValor:(()=>{const p=premioDoMes(f.id,iso);return p?r2(Number(p.valor)):0;})()};
   }).sort((a,b)=>a.f.nome.localeCompare(b.f.nome,'pt-BR'));
   return Object.assign({},b,{cols,linhas});
+}
+function celulaInjEnvio(l,edita){
+  const falta=l.fx.inj&&l.datasInj.length!==l.fx.inj;
+  const datas=l.datasInj.length?`<div class="dica" style="margin:2px 0 0;white-space:nowrap">${l.datasInj.map(x=>esc(dataCurta(x))).join(', ')}</div>`:'';
+  const aviso=falta?`<div class="dica" style="margin:2px 0 0;color:var(--vermelho);white-space:nowrap">${l.datasInj.length?`${l.datasInj.length} de ${l.fx.inj} com data`:'sem data'}</div>`:'';
+  const val=edita?`<input type="number" min="0" max="31" value="${l.fx.inj||''}" placeholder="0" data-env-fx="${esc(l.f.id)}" data-campo="inj">`:(l.fx.inj?`<span class="menos">${esc(l.fx.inj)}</span>`:'—');
+  return val+datas+aviso+(edita?`<div><button class="btn-link" style="font-size:11px" onclick="abrirDatasFalta('${esc(l.f.id)}')">datas</button></div>`:'');
 }
 function corpoPadraoEnvio(iso,d){
   const sm=k=>d.linhas.reduce((s,l)=>s+l.fx[k],0);
@@ -10496,7 +10519,10 @@ function corpoPadraoEnvio(iso,d){
 Segue o fechamento do RH do Grupo BVEK referente a ${nomeMes(iso)}, com faltas, benefícios de ${nomeMes(mesSeguinte(iso))} (vale-refeição, vale-transporte, plano odontológico e demais), descontos de vales/empréstimos, adiantamentos${pr.length?' e premiações':''} do mês, na planilha em anexo.
 
 Resumo: ${d.linhas.length} funcionário(s) · faltas de ${fmtData(periodoPonto(iso).inicio)} a ${fmtData(periodoPonto(iso).fim)}: ${faltas}${sm('sab')?` · ${sm('sab')} sábado(s) trabalhado(s) (somados só no VT)`:''} · descontos de vales R$ ${fmtMoeda(vale)} · adiantamentos R$ ${fmtMoeda(ad)}${pr.length?` · premiações R$ ${fmtMoeda(tPr)} (${pr.length} funcionário(s))`:''}.
-${pr.length?`
+${d.linhas.some(l=>l.fx.inj)?`
+Faltas injustificadas (datas):
+${d.linhas.filter(l=>l.fx.inj).map(l=>`- ${l.f.nome}: ${l.datasInj.length?l.datasInj.map(dataComSemana).join(', '):'data não informada'}${l.datasInj.length&&l.datasInj.length!==l.fx.inj?` (${l.fx.inj} falta(s) lançada(s), ${l.datasInj.length} com data)`:''}`).join('\n')}
+`:''}${pr.length?`
 Premiações do mês (incluir no contracheque):
 ${pr.map(l=>`- ${l.f.nome}: R$ ${fmtMoeda(l.premioValor)} — dia(s) ${diasTexto(l.premio.dias)}${l.premio.pago_em?` — pago em ${fmtData(l.premio.pago_em)}`:''}`).join('\n')}
 `:''}
@@ -10520,6 +10546,8 @@ async function renderRHEnvio(){
     (()=>{const per=periodoPonto(iso),sinc=d.linhas.map(l=>l.fx.sinc).filter(Boolean).sort().pop(),incompl=d.linhas.reduce((s,l)=>s+l.fx.incompl,0);
       return it(!!sinc&&!incompl,`Faltas de ${esc(fmtData(per.inicio))} a ${esc(fmtData(per.fim))}: ${nFaltas?`<strong>${nFaltas}</strong> funcionário(s) com falta/férias`:'nenhuma falta lançada'}${sinc?` · ponto lido em ${esc(fmtDataHora(sinc))}`:' · <strong>ponto ainda não lido</strong>'}${incompl?` · <strong>${incompl} marcação(ões) incompleta(s)</strong> para conferir`:''}`,
         edita?`<button class="btn-sec" data-btn-ponto onclick="puxarFaltasPonto()">Faltas do ponto (Secullum)</button>`:'');})(),
+    (()=>{const sem=d.linhas.filter(l=>l.fx.inj&&l.datasInj.length!==l.fx.inj);
+      return d.linhas.some(l=>l.fx.inj)?it(!sem.length,sem.length?`Faltas injustificadas sem data: <strong>${sem.map(l=>esc(l.f.nome)).join(', ')}</strong> — a contabilidade precisa da data para o desconto do descanso semanal (clique em "datas" na coluna Injust.)`:'Faltas injustificadas: todas com data'):'';})(),
     (()=>{const f=resumoFolha();return it(true,`Folha de ${esc(nomeMes(iso))}: <strong>${f.total}</strong> funcionário(s)${f.inter?` · ${f.interDentro} de ${f.inter} intermitente(s) incluído(s)`:''}`,`<button class="btn-sec" onclick="abrirFolha()">Folha do mês</button>`);})(),
     it(true,`Vales/empréstimos: <strong>R$ ${esc(fmtMoeda(tVale))}</strong> a descontar neste mês`,`<button class="btn-link" onclick="rhSub='vales';renderRH()">ver vales</button>`),
     it(!adSemData,`Adiantamentos: ${ads.length} lançado(s)${adSemData?` · <strong>${adSemData} sem data de pagamento</strong>`:''}`,`<button class="btn-link" onclick="rhSub='vales';renderRH()">ver adiantamentos</button>`),
@@ -10531,7 +10559,7 @@ async function renderRHEnvio(){
   const cols=d.cols;
   $('tabela-envio').innerHTML=`<thead><tr><th>Funcionário</th><th class="num">Dias base</th><th class="num" title="Desconta o dia, VR/VA e VT">Injust.</th><th class="num" title="Atestado, licença: desconta VR/VA e VT">Just.</th><th class="num" title="Perdoada pela empresa: desconta só VT">Abon.</th><th class="num">Férias</th><th class="num" title="Sábados trabalhados (somam só no VT)">Sáb.</th><th class="num" title="Atrasos e saídas antecipadas (ponto)">Atrasos</th>${cols.map(n=>`<th class="num">${esc(siglaBenef(n))}</th>`).join('')}<th class="num">Desc. benef.</th><th class="num">Desc. vale</th><th class="num">Adiant.</th><th class="num" title="Premiação / extra do mês (lançada em Contracheques e premiações)">Premiação</th><th>Observação do mês</th></tr></thead><tbody>`+
     (d.linhas.length?d.linhas.map(l=>`<tr><td>${linkNome(l.f)}${tagEmpresa(l.f)}${ehIntermitente(l.f)?' <span class="badge badge-cinza">intermitente</span>':''}</td><td class="num">${esc(l.dias)}</td>
-      ${['inj','just','abon','fer','sab'].map(k=>`<td class="num">${edita?`<input type="number" min="0" max="${k==='sab'?6:31}" value="${l.fx[k]||''}" placeholder="0" data-env-fx="${esc(l.f.id)}" data-campo="${k}">`:(l.fx[k]?`<span class="${k==='sab'?'':'menos'}">${esc(l.fx[k])}</span>`:'—')}</td>`).join('')}
+      ${['inj','just','abon','fer','sab'].map(k=>`<td class="num">${k==='inj'&&(l.fx.inj||l.datasInj.length||edita)?celulaInjEnvio(l,edita):edita?`<input type="number" min="0" max="${k==='sab'?6:31}" value="${l.fx[k]||''}" placeholder="0" data-env-fx="${esc(l.f.id)}" data-campo="${k}">`:(l.fx[k]?`<span class="${k==='sab'?'':'menos'}">${esc(l.fx[k])}</span>`:'—')}</td>`).join('')}
       <td class="num">${esc(fmtMin(l.fx.parcMin))}${l.fx.incompl?` <span class="badge badge-hoje" title="Dias com marcação incompleta no ponto (não contados como falta)">${l.fx.incompl} inc.</span>`:''}${l.fx.origem==='secullum'?' <span class="badge badge-cinza" title="Lido do ponto (Secullum)">ponto</span>':''}</td>
       ${cols.map(n=>{const i=l.itens.find(x=>x.tipo_nome===n);return`<td class="num">${i?esc(fmtMoeda(i.valor_total)):'<span style="color:#bbb">—</span>'}</td>`;}).join('')}
       <td class="num">${l.descBenef?esc(fmtMoeda(l.descBenef)):'—'}</td><td class="num">${l.descVale?esc(fmtMoeda(l.descVale)):'—'}</td><td class="num">${l.adiant?esc(fmtMoeda(l.adiant)):'—'}</td><td class="num">${l.premio?`<span title="dia(s) ${esc(diasTexto(l.premio.dias))}">${esc(fmtMoeda(l.premioValor))}</span>`:'—'}</td>
@@ -10571,16 +10599,16 @@ async function gerarPlanilhaFechamento(iso){
   const sig=f=>(empresaPorId(f.empresa_id)||{}).sigla||'';
   const resumo=[['Grupo BVEK — Fechamento do RH',nomeMes(iso)],['Benefícios referentes a',nomeMes(mesSeguinte(iso)),'Os benefícios são sempre do mês seguinte'],['Dias úteis de '+nomeMes(mesSeguinte(iso)),d.diasUteis,d.fechada?'Benefícios fechados':'Benefícios em aberto (valores podem mudar)'],['Gerado em',fmtDataHora(new Date().toISOString()),quemSou()||''],[],
     ['Período de apuração das faltas',fmtData(periodoPonto(iso).inicio)+' a '+fmtData(periodoPonto(iso).fim),'Injustificada: desconta o dia, VR e VT · Justificada: desconta VR e VT · Abonada: desconta só VT · Sábado trabalhado: soma só no VT'],[],
-    ['Funcionário','CPF','Empresa','Função','Admissão','Dias base','Faltas injustificadas','Faltas justificadas','Faltas abonadas','Férias (dias)','Sábados trabalhados','Atrasos/saídas (h)',...d.cols,'Total benefícios','Desconto benefícios (funcionário)','Desconto vale/empréstimo','Adiantamento','Adiantamento pago em','Premiação / extra','Premiação paga em','Observações']];
+    ['Funcionário','CPF','Empresa','Função','Admissão','Dias base','Faltas injustificadas','Datas das faltas injustificadas','Faltas justificadas','Faltas abonadas','Férias (dias)','Sábados trabalhados','Atrasos/saídas (h)',...d.cols,'Total benefícios','Desconto benefícios (funcionário)','Desconto vale/empréstimo','Adiantamento','Adiantamento pago em','Premiação / extra','Premiação paga em','Observações']];
   const tot=new Array(d.cols.length+4).fill(0);let totPr=0;
   d.linhas.forEach(l=>{
     const vals=d.cols.map(n=>{const i=l.itens.find(x=>x.tipo_nome===n);return i?r2(i.valor_total):0;});
     const nums=[...vals,l.totalBenef,l.descBenef,l.descVale,r2(l.adiant)];nums.forEach((v,k)=>tot[k]+=v);
     totPr+=l.premioValor;
-    resumo.push([l.f.nome,l.f.cpf||'',sig(l.f),l.f.cargo||'',l.f.data_admissao?fmtData(l.f.data_admissao):'',l.dias,l.fx.inj,l.fx.just,l.fx.abon,l.fx.fer,l.fx.sab,l.fx.parcMin?fmtMin(l.fx.parcMin):'',...nums,l.adiantPago?fmtData(l.adiantPago):'',l.premioValor,l.premio&&l.premio.pago_em?fmtData(l.premio.pago_em):'',l.obs]);
+    resumo.push([l.f.nome,l.f.cpf||'',sig(l.f),l.f.cargo||'',l.f.data_admissao?fmtData(l.f.data_admissao):'',l.dias,l.fx.inj,l.datasInj.map(x=>fmtData(x)).join(', ')+(l.fx.inj&&l.datasInj.length!==l.fx.inj?` (${l.fx.inj-l.datasInj.length} sem data)`:''),l.fx.just,l.fx.abon,l.fx.fer,l.fx.sab,l.fx.parcMin?fmtMin(l.fx.parcMin):'',...nums,l.adiantPago?fmtData(l.adiantPago):'',l.premioValor,l.premio&&l.premio.pago_em?fmtData(l.premio.pago_em):'',l.obs]);
   });
   const sm=k=>d.linhas.reduce((s,l)=>s+l.fx[k],0);
-  resumo.push(['TOTAL','','','','','',sm('inj'),sm('just'),sm('abon'),sm('fer'),sm('sab'),fmtMin(sm('parcMin')),...tot.map(r2),'',r2(totPr),'','']);
+  resumo.push(['TOTAL','','','','','',sm('inj'),'',sm('just'),sm('abon'),sm('fer'),sm('sab'),fmtMin(sm('parcMin')),...tot.map(r2),'',r2(totPr),'','']);
   const ponto=[['Funcionário','CPF','Data','Tipo','Detalhe']];
   d.linhas.forEach(l=>((l.detalhe&&l.detalhe.dias)||[]).filter(x=>x.t!=='parcial').forEach(x=>ponto.push([l.f.nome,l.f.cpf||'',fmtData(x.d),{injustificada:'Falta injustificada',justificada:'Falta justificada',abonada:'Falta abonada',ferias:'Férias',incompleta:'Marcação incompleta (não contada como falta)',sabado:'Sábado trabalhado (soma só no VT)'}[x.t]||x.t,x.x||''])));
   const detalhe=[['Funcionário','CPF','PIS','Empresa','Benefício','Cálculo','Valor unitário','Dias','Valor total','Desconto funcionário']];
@@ -10596,7 +10624,7 @@ async function gerarPlanilhaFechamento(iso){
   d.linhas.filter(l=>l.premio).forEach(l=>{const p=l.premio;premios.push([l.f.nome,l.f.cpf||'',l.f.cargo||'',diasTexto(p.dias),r2(Number(p.valor)),p.motivo||'',p.pago_em?fmtData(p.pago_em):'',p.assinado_em?(p.concorda?'assinada em '+fmtData(p.assinado_em):'funcionário discordou'):'aguardando assinatura']);});
   const wb=X.utils.book_new();
   const ws=(aoa,larg)=>{const w=X.utils.aoa_to_sheet(aoa);w['!cols']=larg.map(x=>({wch:x}));return w;};
-  X.utils.book_append_sheet(wb,ws(resumo,[32,15,8,20,11,9,12,11,11,9,10,11,...d.cols.map(()=>13),13,14,14,12,12,14,12,30]),'Resumo');
+  X.utils.book_append_sheet(wb,ws(resumo,[32,15,8,20,11,9,12,30,11,11,9,10,11,...d.cols.map(()=>13),13,14,14,12,12,14,12,30]),'Resumo');
   if(ponto.length>1)X.utils.book_append_sheet(wb,ws(ponto,[32,15,11,40,20]),'Faltas dia a dia');
   X.utils.book_append_sheet(wb,ws(detalhe,[32,15,15,8,28,18,12,6,12,12]),'Benefícios');
   X.utils.book_append_sheet(wb,ws(vales,[32,15,11,24,14,14,16]),'Vales');
@@ -10632,6 +10660,7 @@ async function enviarContabilidade(){
   const d=dadosFechamento(iso),av=[];
   if(!d.fechada)av.push('os benefícios do mês ainda estão ABERTOS');
   if(empresaAtual!=='todas')av.push(`a planilha terá só ${nomeEmpresaAtual()}`);
+  {const sem=d.linhas.filter(l=>l.fx.inj&&l.datasInj.length!==l.fx.inj);if(sem.length)av.push(`falta(s) injustificada(s) sem data: ${sem.map(l=>l.f.nome).join(', ')}`);}
   const ja=todosEnvios.filter(e=>e.competencia===iso&&e.situacao==='enviado').length;
   if(ja)av.push(`este mês já foi enviado ${ja} vez(es)`);
   if(!confirm(`Enviar o fechamento de ${nomeMes(iso)} para:\n${para.join('\n')}${cc.length?`\n\nCópia: ${cc.join(', ')}`:''}\n\nAnexos: ${[comPlanilha?'planilha do fechamento':'',comPremios?`${premiosMes.length} declaração(ões) de premiação`:'',...anexosEnvioExtra.map(f=>f.name)].filter(Boolean).join(', ')||'nenhum'}${av.length?'\n\nAtenção: '+av.join('; ')+'.':''}`))return;
@@ -11446,6 +11475,43 @@ function faltasCF(cf){cf=cf||{};return{inj:Number(cf.faltas_injustificadas)||0,j
   parcMin:Number(cf.horas_falta_min)||0,incompl:Number(cf.marcacoes_incompletas)||0,origem:cf.origem||'manual',sinc:cf.sincronizado_em||null,
   sab:Number(cf.sabados_trabalhados)||0};}
 function totalFaltas(fx){return fx.inj+fx.just+fx.abon;}
+// v84: datas das faltas injustificadas (do ponto ou lançadas à mão), para a contabilidade calcular o desconto do descanso semanal
+function datasInjCF(cf){const d=(cf&&cf.detalhe&&cf.detalhe.dias)||[];return[...new Set(d.filter(x=>x&&x.t==='injustificada'&&x.d).map(x=>x.d))].sort();}
+const DIA_SEM_CURTO=['dom','seg','ter','qua','qui','sex','sáb'];
+function dataComSemana(iso){return`${dataCurta(iso)} (${DIA_SEM_CURTO[new Date(iso+'T12:00:00').getDay()]})`;}
+let dataFaltaEdit=null,dataFaltaDias=[];
+function abrirDatasFalta(fid){
+  if(!PERM.rhEditar)return;const f=funcPorId(fid);if(!f)return;
+  const iso=mesRH(),per=periodoPonto(iso),cf=compFuncs.find(x=>x.funcionario_id===fid);
+  dataFaltaEdit={fid,cf};dataFaltaDias=datasInjCF(cf);
+  $('df-sub').textContent=`${f.nome} · período de ${fmtData(per.inicio)} a ${fmtData(per.fim)}`;
+  $('df-dia').min=per.inicio;$('df-dia').max=per.fim;$('df-dia').value='';
+  renderDatasFalta();abrirModal('modal-datas-falta');
+}
+function addDataFalta(){
+  const d=$('df-dia').value;if(!d)return;
+  if((d<$('df-dia').min)||(d>$('df-dia').max)){alert('A data precisa estar dentro do período de apuração das faltas.');return;}
+  if(!dataFaltaDias.includes(d))dataFaltaDias.push(d);dataFaltaDias.sort();$('df-dia').value='';renderDatasFalta();
+}
+function renderDatasFalta(){
+  $('df-dias').innerHTML=dataFaltaDias.length?dataFaltaDias.map(d=>`<span class="badge badge-cinza" style="font-size:12px">${esc(fmtData(d))} (${DIA_SEM_CURTO[new Date(d+'T12:00:00').getDay()]}) <a href="#" data-rmdf="${d}" style="color:var(--vermelho);text-decoration:none">×</a></span>`).join(''):'<span class="dica">nenhum dia incluído</span>';
+  $('df-dias').querySelectorAll('[data-rmdf]').forEach(a=>a.onclick=e=>{e.preventDefault();dataFaltaDias=dataFaltaDias.filter(x=>x!==a.dataset.rmdf);renderDatasFalta();});
+}
+async function salvarDatasFalta(){
+  if(!PERM.rhEditar||!dataFaltaEdit)return;
+  if($('df-dia').value)addDataFalta();
+  const iso=mesRH(),per=periodoPonto(iso),{fid}=dataFaltaEdit;
+  const c=await garantirCompetencia();if(!c)return;
+  const existe=compFuncs.find(x=>x.funcionario_id===fid),det=(existe&&existe.detalhe)||{};
+  const outros=(det.dias||[]).filter(x=>x&&x.t!=='injustificada');
+  const novos=dataFaltaDias.map(d=>{const ant=(det.dias||[]).find(x=>x&&x.t==='injustificada'&&x.d===d);return ant||{d,t:'injustificada',x:'lançada à mão'};});
+  const dias=[...outros,...novos].sort((a,b)=>String(a.d).localeCompare(String(b.d)));
+  const dados={faltas_injustificadas:dataFaltaDias.length,detalhe:Object.assign({},det,{periodo:det.periodo||per,dias,editado:true}),atualizado_em:new Date().toISOString()};
+  const r=existe?await sb.from('competencia_funcionarios').update(dados).eq('id',existe.id)
+    :await sb.from('competencia_funcionarios').insert(Object.assign({competencia_id:c.id,funcionario_id:fid,dias_trabalhados:null,origem:'manual'},dados));
+  if(erroSB(r.error))return;
+  fecharModal('modal-datas-falta');await carregarCompetenciaAtual();renderTabAtual();toast('Datas das faltas salvas');
+}
 // dias pagos de um benefício "por dia": base − injustificadas − justificadas − férias (− abonadas, se o benefício desconta abonada: VT)
 // v19: + sábados trabalhados, se o benefício conta sábado (VT sim; VR não, porque o sábado é só 4h)
 function diasDoBeneficio(base,fx,t){return Math.max(0,base-fx.inj-fx.just-fx.fer-(t&&t.desconta_abonada?fx.abon:0)+(t&&t.conta_sabado?(fx.sab||0):0));}
