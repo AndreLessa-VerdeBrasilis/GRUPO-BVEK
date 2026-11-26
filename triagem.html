@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Grupo BVEK | Triagem do processo seletivo</title>
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="/img/icone-32.png">
+<meta name="theme-color" content="#1a6b3c">
+<script src="/vendor/supabase-js-2.117.3.js"></script>
+<script src="/triagem-questionario.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--verde:#1a6b3c;--verde-escuro:#145530;--verde-claro:#e8f5ee;--cinza:#f4f4f4;--borda:#ddd;--texto:#222;--texto2:#666;--vermelho:#c0392b}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--cinza);color:var(--texto);line-height:1.5}
+.topo{background:linear-gradient(135deg,#1a6b3c,#0d3d22);color:#fff;padding:28px 16px 34px;text-align:center}
+.topo h1{font-size:22px;font-weight:700;letter-spacing:.5px}
+.topo p{font-size:14px;opacity:.85;margin-top:4px}
+.pagina{max-width:720px;margin:-18px auto 40px;padding:0 16px}
+.caixa{background:#fff;border-radius:14px;padding:22px 20px;box-shadow:0 6px 24px rgba(0,0,0,.08);margin-bottom:16px}
+.caixa h2{font-size:18px;color:var(--verde);margin-bottom:8px}
+.caixa p{font-size:14px;color:var(--texto2)}
+.caixa.falta{box-shadow:0 0 0 2px var(--vermelho)}
+.caixa.falta h2{color:var(--vermelho)}
+.num{color:var(--verde);margin-right:4px}
+.comp{font-size:14px;color:var(--texto2);margin:6px 0 10px}
+.grade{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+label.cmp{display:flex;flex-direction:column;gap:4px;font-size:14px;font-weight:600}
+input[type=text],input[type=tel],textarea{padding:10px 12px;border:1.5px solid var(--borda);border-radius:10px;font-size:16px;font-family:inherit;outline:none;font-weight:400;width:100%;background:#fff}
+textarea{min-height:84px;resize:vertical}
+input:focus,textarea:focus{border-color:var(--verde)}
+.exp{border:1.5px solid var(--borda);border-radius:12px;padding:12px;margin-bottom:10px;position:relative}
+.exp .tit{font-size:13px;font-weight:700;color:var(--verde);margin-bottom:8px}
+.exp .tirar{position:absolute;top:8px;right:10px;background:none;border:none;color:var(--texto2);font-size:13px;cursor:pointer;text-decoration:underline}
+.exp .grade{grid-template-columns:1fr 1fr}
+.exp .full{grid-column:1/-1}
+.btn{width:100%;padding:14px;background:var(--verde);color:#fff;border:none;border-radius:10px;font-size:16px;font-weight:600;cursor:pointer;font-family:inherit}
+.btn:hover{background:var(--verde-escuro)}
+.btn:disabled{opacity:.6;cursor:wait}
+.btn2{padding:9px 14px;background:#fff;color:var(--verde);border:1.5px solid var(--verde);border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit}
+.btn2.gravando{background:var(--vermelho);border-color:var(--vermelho);color:#fff}
+.btn2:disabled{opacity:.6;cursor:wait}
+.simnao{display:flex;gap:10px;margin:6px 0 4px}
+.simnao label{flex:1;display:flex;align-items:center;justify-content:center;border:1.5px solid var(--borda);border-radius:10px;padding:12px;font-weight:600;cursor:pointer}
+.simnao input{position:absolute;opacity:0;pointer-events:none}
+.simnao label:has(input:checked){border-color:var(--verde);background:var(--verde-claro);color:var(--verde)}
+.audio{margin-top:12px;padding-top:12px;border-top:1px dashed var(--borda)}
+.audio .linha{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.audio small{font-size:12px;color:var(--texto2)}
+.audio .lista{margin-top:8px;display:flex;flex-direction:column;gap:6px}
+.audio .item{display:flex;gap:8px;align-items:center}
+.audio audio{flex:1;min-width:0;height:36px}
+.audio .item button{background:none;border:none;color:var(--texto2);text-decoration:underline;cursor:pointer;font-size:13px}
+.erro{color:var(--vermelho);font-size:14px;margin-top:10px;text-align:center}
+.centro{text-align:center}
+@media(max-width:480px){.grade,.exp .grade{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="topo"><h1>GRUPO BVEK</h1><p>Engekat · Verde Brasilis · BrasiLimp</p></div>
+<div class="pagina" id="pagina">
+  <div class="caixa centro"><p>Carregando…</p></div>
+</div>
+<script>
+const SUPABASE_URL='https://smusenaszgkqkjjwblyi.supabase.co';
+const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNtdXNlbmFzemdrcWtqandibHlpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0MTIwNTMsImV4cCI6MjA5Nzk4ODA1M30.IU1Z9ddIUpktjHvWqrSZaEWuo4gbmZfrfmYJ_NoXbWs';
+const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:false}});
+const T=window.BVEK_TRIAGEM;
+const $=id=>document.getElementById(id);
+const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const token=new URLSearchParams(location.search).get('t')||'';
+const chave='bvek_triagem_'+token;
+let audios={disponibilidade:[],experiencias:[],outras:[]};   // caminhos já enviados ao servidor
+const audioLocal={};                                          // caminho -> endereço para ouvir neste aparelho
+function mensagem(titulo,texto){$('pagina').innerHTML=`<div class="caixa centro"><h2>${esc(titulo)}</h2><p>${texto}</p></div>`;}
+
+async function iniciar(){
+  if(!/^[0-9a-f-]{36}$/i.test(token)){mensagem('Link incompleto','Abra o link exatamente como recebeu. Se o problema continuar, peça um novo link ao RH do Grupo BVEK.');return;}
+  const{data,error}=await sb.rpc('bvek_triagem_form',{p_token:token});
+  if(error){console.error(error);mensagem('Não foi possível abrir as perguntas','Tente de novo em alguns minutos.');return;}
+  if(!data){mensagem('Link inválido','Este link não existe mais. Peça um novo link ao RH do Grupo BVEK.');return;}
+  if(data.respondido){mensagem('Respostas já enviadas','Obrigado! Suas respostas já estão com o RH do Grupo BVEK.');return;}
+  if(data.expirado){mensagem('Link vencido','Este link valia por 30 dias. Peça um novo link ao RH do Grupo BVEK.');return;}
+  montar(data);
+}
+
+const P=id=>T.PERGUNTAS.find(p=>p.id===id);
+const blocoAudio=id=>`<div class="audio" id="au-${id}">
+  <div class="linha"><button type="button" class="btn2" id="au-btn-${id}" onclick="gravar('${id}')">Responder por áudio</button>
+  <button type="button" class="btn2" onclick="$('au-arq-${id}').click()">Enviar arquivo de áudio</button>
+  <input type="file" id="au-arq-${id}" accept="audio/*" style="display:none" onchange="arquivoAudio('${id}',this)"></div>
+  <small id="au-info-${id}">Se preferir, grave um áudio no lugar de escrever (ou além do texto).</small>
+  <div class="lista" id="au-lista-${id}"></div></div>`;
+const linhaExp=(e,i)=>`<div class="exp" data-exp="${i}"><div class="tit">Experiência ${i+1}</div>${i>0?`<button type="button" class="tirar" onclick="tirarExp(${i})">remover</button>`:''}
+  <div class="grade">
+    <label class="cmp">Empresa<input type="text" class="ex-empresa" maxlength="120" value="${esc(e.empresa||'')}" placeholder="Nome da empresa"></label>
+    <label class="cmp">Cargo<input type="text" class="ex-cargo" maxlength="80" value="${esc(e.cargo||'')}" placeholder="Ex.: pedreiro"></label>
+    <label class="cmp full">Período<input type="text" class="ex-periodo" maxlength="80" value="${esc(e.periodo||'')}" placeholder="Ex.: mar/2022 a jan/2024, ou: 2 anos"></label>
+  </div></div>`;
+
+function montar(info){
+  let s={};try{s=JSON.parse(localStorage.getItem(chave)||'{}');}catch(e){}
+  if(s.audios)Object.keys(audios).forEach(k=>{if(Array.isArray(s.audios[k]))audios[k]=s.audios[k];});
+  const loc=s.local||{},exps=(s.experiencias&&s.experiencias.length?s.experiencias:[{}]),out=s.outras||{};
+  $('pagina').innerHTML=`
+  <div class="caixa">
+    <h2>Olá${info.nome?', '+esc(info.nome):''}!</h2>
+    <p>${esc(T.abertura(info.cargo,info.indicacao))}</p>
+    <p style="margin-top:8px">Para darmos continuidade à avaliação, pedimos, por gentileza, que responda às perguntas abaixo. Se preferir, você também poderá responder por áudio.</p>
+  </div>
+  <div class="caixa" id="cx-local">
+    <h2><span class="num">1.</span>${esc(P('local').txt)}</h2>
+    <div class="grade" style="margin-top:8px">
+      <label class="cmp">Bairro<input type="text" id="r-bairro" maxlength="60" value="${esc(loc.bairro||'')}"></label>
+      <label class="cmp">Cidade<input type="text" id="r-cidade" maxlength="60" value="${esc(loc.cidade||'')}"></label>
+    </div>
+  </div>
+  <div class="caixa" id="cx-disponibilidade">
+    <h2><span class="num">2.</span>${esc(P('disponibilidade').txt)}</h2>
+    <p class="comp">Ex.: segunda a sexta em horário comercial, também aos sábados, só à noite, disponibilidade para viajar.</p>
+    <textarea id="r-disp" maxlength="1000">${esc(s.disponibilidade||'')}</textarea>
+    ${blocoAudio('disponibilidade')}
+  </div>
+  <div class="caixa" id="cx-experiencias">
+    <h2><span class="num">3.</span>${esc(P('experiencias').txt)}</h2>
+    <div id="lista-exp" style="margin-top:10px">${exps.map(linhaExp).join('')}</div>
+    <button type="button" class="btn2" id="btn-mais-exp" onclick="maisExp()">Adicionar outra experiência</button>
+    <label class="cmp" style="margin-top:12px">Quer contar algo mais sobre essas experiências? (opcional)<textarea id="r-exp-obs" maxlength="2000">${esc(s.experiencias_obs||'')}</textarea></label>
+    ${blocoAudio('experiencias')}
+  </div>
+  <div class="caixa" id="cx-outras">
+    <h2><span class="num">4.</span>${esc(P('outras').txt)}</h2>
+    <div class="simnao">
+      <label><input type="radio" name="r-fez" value="sim" ${out.fez==='sim'?'checked':''}>Sim</label>
+      <label><input type="radio" name="r-fez" value="nao" ${out.fez==='nao'?'checked':''}>Não</label>
+    </div>
+    <div id="bloco-outras" style="display:${out.fez==='sim'?'block':'none'}">
+      <p class="comp">${esc(P('outras').complemento)}</p>
+      <label class="cmp">Quais atividades realizava?<textarea id="r-out-ativ" maxlength="2000">${esc(out.atividades||'')}</textarea></label>
+      <div class="grade" style="margin-top:10px">
+        <label class="cmp">Por quanto tempo?<input type="text" id="r-out-tempo" maxlength="80" value="${esc(out.tempo||'')}" placeholder="Ex.: 3 anos"></label>
+        <label class="cmp">Quem pode recomendar ou confirmar? (opcional)<input type="text" id="r-out-ref" maxlength="160" value="${esc(out.referencia||'')}" placeholder="Nome e telefone"></label>
+      </div>
+    </div>
+    ${blocoAudio('outras')}
+  </div>
+  <div class="caixa">
+    <button class="btn" id="btn-enviar">Enviar respostas</button>
+    <div class="erro" id="erro"></div>
+    <p style="margin-top:10px;font-size:12px;text-align:center">Suas respostas ficam só com o RH do Grupo BVEK e são usadas apenas neste processo de seleção.</p>
+  </div>`;
+  document.querySelectorAll('#pagina input,#pagina textarea').forEach(el=>el.addEventListener(el.type==='radio'?'change':'input',()=>{el.closest('.caixa').classList.remove('falta');guardar();}));
+  document.querySelectorAll('input[name=r-fez]').forEach(r=>r.addEventListener('change',()=>{$('bloco-outras').style.display=(document.querySelector('input[name=r-fez]:checked')||{}).value==='sim'?'block':'none';}));
+  Object.keys(audios).forEach(listarAudios);
+  atualizarBotaoExp();
+  $('btn-enviar').onclick=enviar;
+}
+function lerExps(){return[...document.querySelectorAll('#lista-exp .exp')].map(d=>({empresa:d.querySelector('.ex-empresa').value.trim(),cargo:d.querySelector('.ex-cargo').value.trim(),periodo:d.querySelector('.ex-periodo').value.trim()}));}
+function redesenharExps(l){$('lista-exp').innerHTML=l.map(linhaExp).join('');document.querySelectorAll('#lista-exp input').forEach(el=>el.addEventListener('input',()=>{$('cx-experiencias').classList.remove('falta');guardar();}));atualizarBotaoExp();guardar();}
+function maisExp(){const l=lerExps();if(l.length>=T.MAX_EXPERIENCIAS)return;l.push({});redesenharExps(l);const u=document.querySelectorAll('#lista-exp .ex-empresa');u[u.length-1].focus();}
+function tirarExp(i){const l=lerExps();l.splice(i,1);redesenharExps(l.length?l:[{}]);}
+function atualizarBotaoExp(){$('btn-mais-exp').style.display=document.querySelectorAll('#lista-exp .exp').length>=T.MAX_EXPERIENCIAS?'none':'inline-block';}
+function ler(){
+  const fez=(document.querySelector('input[name=r-fez]:checked')||{}).value||'';
+  return{versao:T.versao,
+    local:{bairro:$('r-bairro').value.trim(),cidade:$('r-cidade').value.trim()},
+    disponibilidade:$('r-disp').value.trim(),
+    experiencias:lerExps().filter(e=>e.empresa||e.cargo||e.periodo),
+    experiencias_obs:$('r-exp-obs').value.trim(),
+    outras:fez==='sim'?{fez,atividades:$('r-out-ativ').value.trim(),tempo:$('r-out-tempo').value.trim(),referencia:$('r-out-ref').value.trim()}:{fez},
+    audios:JSON.parse(JSON.stringify(audios))};
+}
+function guardar(){try{const r=ler();r.experiencias=lerExps();localStorage.setItem(chave,JSON.stringify(r));}catch(e){}}
+
+/* ---------- áudio: grava pelo navegador ou envia um arquivo do celular ---------- */
+let gravando=null;
+const extDe=t=>/mp4|m4a|aac/.test(t)?'m4a':/mpeg|mp3/.test(t)?'mp3':/ogg|opus/.test(t)?'ogg':/wav/.test(t)?'wav':/3gpp/.test(t)?'3gp':/amr/.test(t)?'amr':'webm';
+const tipoBase=t=>{t=String(t||'').split(';')[0].trim().toLowerCase();return t==='audio/x-m4a'?'audio/mp4':t||'audio/webm';};
+async function gravar(id){
+  if(gravando){if(gravando.id===id)gravando.rec.stop();return;}
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia||!window.MediaRecorder){infoAudio(id,'Este celular não grava áudio pela página. Use "Enviar arquivo de áudio" (grave no gravador do celular ou no WhatsApp) ou escreva a resposta.');return;}
+  let stream;
+  try{stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true}});}
+  catch(e){infoAudio(id,'Não foi possível usar o microfone. Permita o microfone para esta página, ou use "Enviar arquivo de áudio".');return;}
+  const tipo=['audio/webm;codecs=opus','audio/mp4','audio/webm','audio/ogg;codecs=opus'].find(t=>MediaRecorder.isTypeSupported&&MediaRecorder.isTypeSupported(t))||'';
+  let rec;try{rec=new MediaRecorder(stream,tipo?{mimeType:tipo,audioBitsPerSecond:32000}:undefined);}catch(e){rec=new MediaRecorder(stream);}
+  const partes=[],inicio=Date.now();
+  rec.ondataavailable=e=>{if(e.data&&e.data.size)partes.push(e.data);};
+  const btn=$('au-btn-'+id);btn.classList.add('gravando');
+  const relogio=setInterval(()=>{const s=Math.floor((Date.now()-inicio)/1000);btn.textContent=`Parar e salvar (${Math.floor(s/60)}:${String(s%60).padStart(2,'0')})`;if(s>=600)rec.stop();},500);
+  rec.onstop=async()=>{
+    clearInterval(relogio);stream.getTracks().forEach(t=>t.stop());gravando=null;
+    btn.classList.remove('gravando');btn.textContent='Responder por áudio';
+    const blob=new Blob(partes,{type:rec.mimeType||tipo||'audio/webm'});
+    if(blob.size<800){infoAudio(id,'O áudio ficou vazio. Tente de novo.');return;}
+    await subirAudio(id,blob);
+  };
+  gravando={id,rec};rec.start(1000);btn.textContent='Parar e salvar (0:00)';
+  infoAudio(id,'Gravando… toque de novo para parar e salvar.');
+}
+async function arquivoAudio(id,input){const f=input.files&&input.files[0];input.value='';if(!f)return;
+  if(!/^audio\//.test(f.type)&&!/\.(m4a|mp3|ogg|opus|wav|aac|amr|3gp|webm)$/i.test(f.name)){infoAudio(id,'Escolha um arquivo de áudio.');return;}
+  if(f.size>15*1024*1024){infoAudio(id,'O áudio passa de 15 MB. Grave um áudio mais curto.');return;}
+  await subirAudio(id,f);}
+async function subirAudio(id,blob){
+  const tipo=tipoBase(blob.type||(blob.name&&/\.m4a$/i.test(blob.name)?'audio/mp4':''));
+  const caminho=`${token}/${id}_${Date.now()}.${extDe(tipo)}`;
+  infoAudio(id,'Enviando o áudio…');document.querySelectorAll(`#au-${id} button`).forEach(b=>b.disabled=true);
+  const{error}=await sb.storage.from('triagem').upload(caminho,blob,{contentType:tipo,upsert:false});
+  document.querySelectorAll(`#au-${id} button`).forEach(b=>b.disabled=false);
+  if(error){console.error(error);infoAudio(id,'Não foi possível enviar o áudio agora. Verifique a internet e tente de novo, ou escreva a resposta.');return;}
+  audios[id].push(caminho);try{audioLocal[caminho]=URL.createObjectURL(blob);}catch(e){}
+  $('cx-'+id).classList.remove('falta');guardar();listarAudios(id);infoAudio(id,'Áudio salvo. Você pode gravar outro se quiser.');
+}
+function infoAudio(id,t){const el=$('au-info-'+id);if(el)el.textContent=t;}
+function listarAudios(id){
+  const el=$('au-lista-'+id);if(!el)return;
+  el.innerHTML=audios[id].map((c,i)=>`<div class="item">${audioLocal[c]?`<audio controls preload="metadata" src="${esc(audioLocal[c])}"></audio>`:`<span style="flex:1;font-size:13px">Áudio ${i+1} enviado</span>`}<button type="button" onclick="tirarAudio('${id}',${i})">remover</button></div>`).join('');
+}
+function tirarAudio(id,i){audios[id].splice(i,1);guardar();listarAudios(id);}
+
+/* ---------- envio ---------- */
+async function enviar(){
+  if(gravando){gravando.rec.stop();$('erro').textContent='Terminando de salvar o áudio. Toque em Enviar de novo em seguida.';return;}
+  const r=ler();$('erro').textContent='';
+  document.querySelectorAll('.caixa.falta').forEach(c=>c.classList.remove('falta'));
+  const faltam=[];
+  if(!r.local.bairro||!r.local.cidade)faltam.push(['local','Informe o bairro e a cidade onde você mora.']);
+  if(!T.respondida(r,'disponibilidade'))faltam.push(['disponibilidade','Conte a sua disponibilidade de horários (por escrito ou por áudio).']);
+  if(!T.respondida(r,'experiencias'))faltam.push(['experiencias','Conte suas experiências mais recentes (por escrito ou por áudio). Se for o primeiro emprego, escreva isso.']);
+  if(!r.outras.fez)faltam.push(['outras','Responda Sim ou Não na pergunta 4.']);
+  else if(r.outras.fez==='sim'&&!r.outras.atividades&&!T.temAudio(r,'outras'))faltam.push(['outras','Conte quais atividades realizava (por escrito ou por áudio).']);
+  if(faltam.length){faltam.forEach(([id])=>$('cx-'+id).classList.add('falta'));$('cx-'+faltam[0][0]).scrollIntoView({behavior:'smooth',block:'center'});$('erro').textContent=faltam[0][1];return;}
+  const btn=$('btn-enviar');btn.disabled=true;btn.textContent='Enviando…';
+  r.enviado_em=new Date().toISOString();
+  const{data,error}=await sb.rpc('bvek_triagem_responder',{p_token:token,p_respostas:r});
+  if(error||!data){
+    console.error(error);btn.disabled=false;btn.textContent='Enviar respostas';
+    $('erro').textContent=error?'Não foi possível enviar agora. Suas respostas estão guardadas neste aparelho; tente de novo em alguns minutos.':'Este link já foi usado ou venceu. Peça um novo ao RH.';
+    return;
+  }
+  try{localStorage.removeItem(chave);}catch(e){}
+  window.scrollTo(0,0);
+  mensagem('Respostas enviadas!','Obrigado pelo seu tempo. O RH do Grupo BVEK vai analisar e, se o seu perfil avançar, entrará em contato para agendar a entrevista.');
+}
+iniciar();
+</script>
+</body>
+</html>

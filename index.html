@@ -17,6 +17,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <script src="/vendor/supabase-js-2.117.3.js"></script>
 <script src="/perfil-questionario.js"></script>
+<script src="/triagem-questionario.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{/* tema azul (v32.1) — as variáveis mantêm o nome antigo */--verde:#0C4982;--verde-escuro:#083463;--verde-claro:#EAF2F8;--cinza:#f4f4f4;--borda:#ddd;--texto:#222;--texto2:#666;--branco:#fff;--vermelho:#c0392b;--azul:#2980b9;--amarelo:#fff3cd;--laranja:#e67e22}
@@ -2620,6 +2621,8 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
     </div>
     <div class="secao">Certidões entregues pelo candidato</div>
     <div id="cv-certidoes"></div>
+    <div class="secao">Triagem inicial (antes da entrevista)</div>
+    <div id="cv-triagem"></div>
     <div class="secao">Questionário de perfil comportamental</div>
     <div id="cv-perfil"></div>
     <div class="modal-btns">
@@ -10666,6 +10669,7 @@ async function carregarCurriculos(){
   const e=c.error||a.error;
   if(e){if(/curriculos|avaliacoes_perfil|does not exist|schema cache/i.test(e.message||''))avisarMigracaoV14();else console.error(e);return;}
   todosCurriculos=c.data||[];todasAvaliacoes=a.data||[];
+  await carregarTriagens();
   atualizarDatalistsRH();
 }
 function badgePerfil(cvId){
@@ -10693,22 +10697,25 @@ function renderCurriculos(){
   if(busca)l=l.filter(c=>norm([c.nome,c.funcao,c.cidade,c.telefone,c.email].join(' ')).includes(busca));
   const aguard=base.filter(c=>{const a=avaliacaoAtual(c.id);return a&&!a.respondido_em&&!linkVencido(a);}).length;
   const semParecer=base.filter(c=>{const a=avaliacaoAtual(c.id);return a&&a.respondido_em&&!a.parecer;}).length;
+  const triAguard=base.filter(c=>{const t=triagemAtual(c.id);return t&&!t.respondido_em&&!triagemVencida(t);}).length;
+  const triSemDecisao=base.filter(c=>{const t=triagemAtual(c.id);return t&&t.respondido_em&&!t.resultado;}).length;
   $('cv-kpis').innerHTML=[
     ['No banco',String(base.filter(c=>c.situacao!=='arquivado').length),'currículos ativos'],
     ['Aprovados',String(base.filter(c=>c.situacao==='aprovado').length),'banco de talentos'],
     ['Freelas para chamar',String(base.filter(c=>['freela','qualquer'].includes(c.vinculo)&&['sim','prioridade'].includes(c.chamar_novamente)).length),'sem reavaliar'],
+    ...(triOk?[['Triagens',`${triAguard} aguardando`,triSemDecisao?`${triSemDecisao} respondida(s) sem decisão`:'nenhuma decisão pendente']]:[]),
     ['Questionários',`${aguard} aguardando`,semParecer?`${semParecer} respondido(s) sem parecer`:'nenhum parecer pendente'],
   ].map(([r,v,s])=>`<div class="kpi"><div class="rot">${esc(r)}</div><div class="val">${esc(v)}</div><div class="sub">${esc(s)}</div></div>`).join('');
   $('cv-contagem').textContent=`${l.length} currículo(s)`;
   const zap=t=>{const d=String(t||'').replace(/\D/g,'');return d.length>=10?`<a href="https://wa.me/55${esc(d)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="Abrir no WhatsApp">${esc(fmtTel(t))}</a>`:esc(t||'');};
-  $('tabela-cv').innerHTML='<thead><tr><th>Nome</th><th>Vínculo</th><th>Cidade</th><th>Contato</th><th>Situação</th><th>Técnica</th><th>Comport.</th><th>Chamar de novo</th><th>Perfil</th></tr></thead><tbody>'+
+  $('tabela-cv').innerHTML='<thead><tr><th>Nome</th><th>Vínculo</th><th>Cidade</th><th>Contato</th><th>Situação</th><th>Técnica</th><th>Comport.</th><th>Chamar de novo</th><th>Triagem</th><th>Perfil</th></tr></thead><tbody>'+
     (l.length?l.map(c=>`<tr class="clicavel" data-cv="${esc(c.id)}"><td><strong>${esc(c.nome)}</strong>${c.funcao?`<div style="font-size:12px;color:var(--texto2)">${esc(c.funcao)}</div>`:''}</td>
       <td>${esc(CV_VINC_LABEL[c.vinculo]||'—')}</td><td>${esc(c.cidade||'')}</td><td style="white-space:nowrap">${zap(c.telefone)}</td>
       <td><span class="badge ${CV_SIT_CLS[c.situacao]||'badge-cinza'}">${esc(CV_SIT_LABEL[c.situacao]||c.situacao)}</span></td>
       <td>${estrelas(c.nota_tecnica)}</td><td>${estrelas(c.nota_comportamental)}</td>
       <td>${c.chamar_novamente?`<span class="badge ${c.chamar_novamente==='nao'?'badge-atraso':c.chamar_novamente==='talvez'?'badge-cinza':'badge-ok'}">${esc(CV_CHAMAR_LABEL[c.chamar_novamente]||'')}</span>`:'—'}</td>
-      <td>${badgePerfil(c.id)}</td></tr>`).join('')
-    :'<tr><td colspan="9" class="vazio">Nenhum currículo nesta lista.</td></tr>')+'</tbody>';
+      <td>${badgeTriagem(c.id)}</td><td>${badgePerfil(c.id)}</td></tr>`).join('')
+    :'<tr><td colspan="10" class="vazio">Nenhum currículo nesta lista.</td></tr>')+'</tbody>';
   $('tabela-cv').querySelectorAll('[data-cv]').forEach(tr=>tr.onclick=()=>abrirCurriculo(tr.dataset.cv));
 }
 /* v49: DIVULGAR VAGA — modelos por função (tabela vagas_modelos) + texto pronto para WhatsApp, sites e PDF */
@@ -10828,7 +10835,7 @@ function abrirCurriculo(id){
   $('cv-sub').textContent=c?[c.funcao,CV_VINC_LABEL[c.vinculo],c.criado_em&&'cadastrado em '+fmtData(c.criado_em)].filter(Boolean).join(' · '):'Candidatos e freelas que já conhecemos, para não precisar avaliar de novo.';
   $('cv-excluir').style.display=c&&PERM.excluir?'inline-block':'none';
   $('cv-contratar').style.display=c&&c.situacao!=='contratado'&&!c.funcionario_id?'inline-block':'none';
-  renderPerfilCV();renderCertidoesCV();
+  triManual=false;renderTriagemCV();renderPerfilCV();renderCertidoesCV();
   abrirModal('modal-curriculo');
   if(!c)setTimeout(()=>$('cv-nome').focus(),50);
 }
@@ -10983,6 +10990,159 @@ async function salvarParecerPerfil(){
   const{data,error}=await sb.from('avaliacoes_perfil').update(dados).eq('id',a.id).select().single();
   if(erroSB(error))return;
   todasAvaliacoes=todasAvaliacoes.map(x=>x.id===a.id?data:x);renderPerfilCV();renderCurriculos();toast('Parecer salvo');
+}
+/* ===== v81: TRIAGEM INICIAL — perguntas rápidas antes da entrevista (página triagem.html, tabela triagens, áudios no bucket "triagem") ===== */
+let todasTriagens=[],triOk=true,triManual=false;const triAudioUrls={};
+const TRI=()=>window.BVEK_TRIAGEM;
+const TRI_RESULT=[['entrevistar','Chamar para entrevista'],['talvez','Talvez / deixar na reserva'],['nao','Não avançar']];
+const TRI_RESULT_CURTO={entrevistar:'Entrevistar',talvez:'Talvez',nao:'Não avançar'};
+const TRI_RESULT_CLS={entrevistar:'badge-ok',talvez:'badge-hoje',nao:'badge-atraso'};
+function linkTriagem(t){return`${location.origin}/triagem.html?t=${t.token}`;}
+function triagemAtual(cvId){return todasTriagens.filter(t=>t.curriculo_id===cvId).sort((a,b)=>String(b.criado_em).localeCompare(String(a.criado_em)))[0]||null;}
+const triagemVencida=t=>t&&!t.respondido_em&&(Date.now()-new Date(t.criado_em).getTime())>30*86400000;
+const ehIndicacao=c=>/^indica/i.test(String(c&&c.origem||''));
+async function carregarTriagens(){
+  if(!PERM.curriculos)return;
+  const{data,error}=await sb.from('triagens').select('*').order('criado_em',{ascending:false});
+  if(error){todasTriagens=[];if(/triagens|does not exist|schema cache/i.test(error.message||''))triOk=false;else console.error(error);return;}
+  triOk=true;todasTriagens=data||[];
+}
+function badgeTriagem(cvId){
+  if(!triOk)return'—';
+  const t=triagemAtual(cvId);if(!t)return'—';
+  if(!t.respondido_em)return triagemVencida(t)?'<span class="badge badge-atraso">link vencido</span>':'<span class="badge badge-hoje">aguardando</span>';
+  return t.resultado?`<span class="badge ${TRI_RESULT_CLS[t.resultado]||'badge-cinza'}">${esc(TRI_RESULT_CURTO[t.resultado]||t.resultado)}</span>`:'<span class="badge badge-cinza">respondida</span>';
+}
+const txtTri=v=>esc(String(v||'')).replace(/\n/g,'<br>');
+function renderTriagemCV(){
+  const box=$('cv-triagem');if(!box)return;const T=TRI();
+  const aviso='<p class="dica" style="margin-top:8px">Perguntas rápidas antes da entrevista: bairro e cidade, disponibilidade de horários, experiências recentes e experiência fora da carteira. O candidato responde pelo celular, sem login, por escrito ou por áudio; o link vale 30 dias e só pode ser respondido uma vez. As respostas aparecem aqui sozinhas (e preenchem cidade/bairro e disponibilidade da ficha, se estiverem em branco).</p>';
+  if(!T){box.innerHTML='<p class="vazio">Não foi possível carregar as perguntas da triagem (arquivo triagem-questionario.js).</p>';return;}
+  if(!triOk){box.innerHTML='<p class="vazio">Falta atualizar o banco de dados: no Supabase, rode a migração v81 (supabase/migracao_crm_v81_triagem_curriculos.sql) e recarregue a página.</p>';return;}
+  if(!cvEditandoId){box.innerHTML='<p class="vazio">Salve o currículo para gerar o link da triagem.</p>'+aviso;return;}
+  const c=todosCurriculos.find(x=>x.id===cvEditandoId),t=triagemAtual(cvEditandoId);
+  if(!c){box.innerHTML='';return;}
+  if(triManual){box.innerHTML=formTriagemManual(t,c);return;}
+  const manual='<button class="btn-link" onclick="abrirTriagemManual()">registrar respostas recebidas por mensagem</button>';
+  if(!t||triagemVencida(t)){
+    box.innerHTML=`${t?'<p class="vazio">O último link venceu sem resposta.</p>':''}
+      <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">
+        <div class="campo" style="flex:1;min-width:220px;margin:0"><label>Vaga citada na mensagem</label><input type="text" id="tri-cargo" list="dl-funcoes" value="${esc((t&&t.cargo)||c.funcao||'')}" placeholder="Ex.: pedreiro, auxiliar de limpeza"></div>
+        <button class="btn-sec" onclick="gerarLinkTriagem()">Gerar link da triagem</button>
+      </div>
+      <div style="margin-top:6px">${manual}</div>${aviso}`;
+    return;
+  }
+  if(!t.respondido_em){
+    const url=linkTriagem(t),tel=String(c.telefone||'').replace(/\D/g,''),msg=T.mensagemLink(c.nome,t.cargo,ehIndicacao(c),url);
+    box.innerHTML=`<div class="link-perfil"><span>Aguardando resposta${t.cargo?' · vaga: <strong>'+esc(t.cargo)+'</strong>':''} · link criado em ${esc(fmtData(t.criado_em))}, vale até ${esc(fmtData(somarDias(String(t.criado_em).slice(0,10),30)))}</span>
+      <input type="text" readonly value="${esc(url)}" id="tri-link" onclick="this.select()">
+      <button class="btn-sec" onclick="copiarTextoTri('link')">Copiar link</button>
+      <button class="btn-sec" onclick="copiarTextoTri('mensagem')">Copiar mensagem</button>
+      ${tel.length>=10?`<a class="btn-sec" style="text-decoration:none" target="_blank" rel="noopener" href="https://wa.me/55${esc(tel)}?text=${encodeURIComponent(msg)}">WhatsApp</a>`:''}
+      ${c.email?`<a class="btn-sec" style="text-decoration:none" href="mailto:${esc(c.email)}?subject=${encodeURIComponent('Grupo BVEK — processo seletivo'+(t.cargo?' ('+t.cargo+')':''))}&body=${encodeURIComponent(msg)}">E-mail</a>`:''}</div>
+      <div style="margin-top:6px;display:flex;gap:16px;flex-wrap:wrap"><button class="btn-link" onclick="copiarTextoTri('perguntas')">copiar as perguntas por escrito (para o candidato responder na conversa)</button>${manual}</div>${aviso}`;
+    return;
+  }
+  // respondida
+  const r=t.respostas||{},au=r.audios||{},anteriores=todasTriagens.filter(x=>x.curriculo_id===cvEditandoId&&x!==t&&x.respondido_em).length;
+  const audios=id=>(au[id]||[]).map(p=>`<audio controls preload="none" data-tri-audio="${esc(p)}" style="display:block;width:100%;max-width:440px;height:36px;margin-top:6px"></audio>`).join('');
+  const bloco=(n,id,html)=>`<div class="resp-aberta"><strong>${n}. ${esc(T.ROTULO[id])}</strong>${html||((au[id]||[]).length?'<em style="color:#999">respondeu por áudio</em>':'<em style="color:#999">sem resposta</em>')}${audios(id)}</div>`;
+  const loc=r.local||{},exps=(r.experiencias||[]).filter(e=>e.empresa||e.cargo||e.periodo),out=r.outras||{};
+  const htmlExp=[exps.map(e=>`<div>• ${e.empresa?`<span style="font-weight:700">${esc(e.empresa)}</span>`:'<em>empresa não informada</em>'}${e.cargo?' — '+esc(e.cargo):''}${e.periodo?' — '+esc(e.periodo):''}</div>`).join(''),r.experiencias_obs?`<div style="margin-top:${exps.length?'6px':'0'}">${txtTri(r.experiencias_obs)}</div>`:''].join('');
+  const htmlOut=out.fez==='nao'?'Não':out.fez==='sim'?[`<div><span style="font-weight:700">Sim.</span>${out.atividades?' '+txtTri(out.atividades):''}</div>`,out.tempo?`<div>Por quanto tempo: ${esc(out.tempo)}</div>`:'',out.referencia?`<div>Quem pode confirmar: ${esc(out.referencia)}</div>`:''].join(''):'';
+  box.innerHTML=`<p style="font-size:13px;margin-bottom:10px">Respondida em <strong>${esc(fmtDataHora(t.respondido_em))}</strong>${t.respondido_por?` · registrada por ${esc(t.respondido_por)} (respostas recebidas por mensagem)`:' pelo candidato'}${t.cargo?` · vaga: <strong>${esc(t.cargo)}</strong>`:''}${anteriores?` · ${anteriores} triagem(ns) anterior(es)`:''}</p>
+    ${bloco(1,'local',[loc.bairro,loc.cidade].filter(Boolean).map(esc).join(' — '))}
+    ${bloco(2,'disponibilidade',txtTri(r.disponibilidade))}
+    ${bloco(3,'experiencias',htmlExp)}
+    ${bloco(4,'outras',htmlOut)}
+    <div class="form-grid" style="margin-top:8px">
+      <div class="campo"><label>Decisão da triagem</label><select id="tri-res"><option value="">—</option>${TRI_RESULT.map(([v,x])=>`<option value="${v}" ${t.resultado===v?'selected':''}>${x}</option>`).join('')}</select></div>
+      <div class="campo"></div>
+      <div class="campo full"><label>Observação do RH sobre a triagem</label><textarea id="tri-obs" rows="2">${esc(t.observacao||'')}</textarea>${t.resultado_por?`<div class="dica">Decisão de ${esc(t.resultado_por)} em ${esc(fmtDataHora(t.resultado_em))}</div>`:''}</div>
+      <div class="campo full" style="display:flex;gap:8px;justify-content:space-between;flex-wrap:wrap"><button class="btn-link" onclick="gerarLinkTriagem()">enviar uma nova triagem</button><button class="btn-sec" onclick="salvarResultadoTriagem()">Salvar decisão</button></div>
+    </div>`;
+  carregarAudiosTri(box);
+}
+async function carregarAudiosTri(box){
+  const els=[...box.querySelectorAll('[data-tri-audio]')];if(!els.length)return;
+  const faltam=[...new Set(els.map(e=>e.dataset.triAudio).filter(p=>!triAudioUrls[p]||triAudioUrls[p].ate<Date.now()))];
+  if(faltam.length){
+    let data=null,error=null;
+    try{({data,error}=await sb.storage.from('triagem').createSignedUrls(faltam,3600));}catch(e){error=e;}
+    if(error||!Array.isArray(data)){console.error(error);return;}
+    (data||[]).forEach(d=>{if(d.signedUrl)triAudioUrls[d.path]={url:d.signedUrl,ate:Date.now()+55*60000};});
+  }
+  els.forEach(e=>{const u=triAudioUrls[e.dataset.triAudio];if(u)e.src=u.url;else e.outerHTML='<div class="dica">Áudio não encontrado.</div>';});
+}
+function copiarTextoTri(tipo){
+  const c=todosCurriculos.find(x=>x.id===cvEditandoId),t=triagemAtual(cvEditandoId),T=TRI();if(!c||!T)return;
+  const cargo=t?t.cargo:c.funcao,txt=tipo==='link'?linkTriagem(t):tipo==='mensagem'?T.mensagemLink(c.nome,cargo,ehIndicacao(c),linkTriagem(t)):T.mensagemPerguntas(c.nome,cargo,ehIndicacao(c));
+  const ok=()=>toast(tipo==='link'?'Link copiado':tipo==='mensagem'?'Mensagem copiada':'Perguntas copiadas — cole na conversa com o candidato');
+  (navigator.clipboard?navigator.clipboard.writeText(txt):Promise.reject()).then(ok,()=>{const a=document.createElement('textarea');a.value=txt;document.body.appendChild(a);a.select();document.execCommand('copy');a.remove();ok();});
+}
+async function gerarLinkTriagem(){
+  if(!cvEditandoId||!triOk)return;
+  const t=triagemAtual(cvEditandoId);
+  if(t&&t.respondido_em&&!confirm('Este candidato já respondeu a triagem. Gerar um novo link? (as respostas anteriores continuam guardadas)'))return;
+  const cargo=String($('tri-cargo')?$('tri-cargo').value:(t&&t.cargo)||'').trim()||null;
+  const{data,error}=await sb.from('triagens').insert({curriculo_id:cvEditandoId,versao:TRI().versao,cargo,criado_por:quemSou()}).select().single();
+  if(erroSB(error))return;
+  todasTriagens.unshift(data);
+  const c=todosCurriculos.find(x=>x.id===cvEditandoId);
+  if(c&&c.situacao==='novo'){const r=await sb.from('curriculos').update({situacao:'analise',atualizado_em:new Date().toISOString()}).eq('id',c.id);if(!r.error){c.situacao='analise';$('cv-sit').value='analise';}}
+  renderTriagemCV();renderCurriculos();toast('Link da triagem criado — envie ao candidato');
+}
+function abrirTriagemManual(){triManual=true;renderTriagemCV();}
+function cancelarTriagemManual(){triManual=false;renderTriagemCV();}
+function formTriagemManual(t,c){
+  const T=TRI(),pend=t&&!t.respondido_em&&!triagemVencida(t);
+  const [cid,bai]=String(c.cidade||'').split(' / ');
+  return`<p style="font-size:13px;margin-bottom:8px">Digite o que o candidato respondeu por WhatsApp, e-mail ou telefone.${pend?' O link enviado deixa de aceitar respostas.':''}</p>
+  <div class="form-grid">
+    <div class="campo"><label>Vaga</label><input type="text" id="tri-m-cargo" list="dl-funcoes" value="${esc((t&&t.cargo)||c.funcao||'')}"></div>
+    <div class="campo"></div>
+    <div class="campo"><label>Bairro</label><input type="text" id="tri-m-bairro" value="${esc(bai||'')}"></div>
+    <div class="campo"><label>Cidade</label><input type="text" id="tri-m-cidade" value="${esc(cid||'')}"></div>
+    <div class="campo full"><label>2. ${esc(T.ROTULO.disponibilidade)}</label><textarea id="tri-m-disp" rows="2">${esc(c.disponibilidade||'')}</textarea></div>
+    <div class="campo full"><label>3. Experiências mais recentes (empresa, cargo e período)</label><textarea id="tri-m-exp" rows="3"></textarea></div>
+    <div class="campo"><label>4. Já fez a função de outras formas (autônomo, freela, informal…)?</label><select id="tri-m-fez"><option value="">—</option><option value="sim">Sim</option><option value="nao">Não</option></select></div>
+    <div class="campo"><label>Por quanto tempo?</label><input type="text" id="tri-m-tempo"></div>
+    <div class="campo full"><label>Quais atividades realizava?</label><textarea id="tri-m-ativ" rows="2"></textarea></div>
+    <div class="campo full"><label>Quem pode recomendar ou confirmar</label><input type="text" id="tri-m-ref" placeholder="Nome e telefone"></div>
+    <div class="campo full" style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap"><button class="btn-cancelar" onclick="cancelarTriagemManual()">Cancelar</button><button class="btn-sec" onclick="salvarTriagemManual()">Salvar respostas</button></div>
+  </div>`;
+}
+async function salvarTriagemManual(){
+  const v=id=>$(id).value.trim(),fez=$('tri-m-fez').value;
+  const r={versao:TRI().versao,local:{bairro:v('tri-m-bairro'),cidade:v('tri-m-cidade')},disponibilidade:v('tri-m-disp'),
+    experiencias:[],experiencias_obs:v('tri-m-exp'),
+    outras:fez==='sim'?{fez,atividades:v('tri-m-ativ'),tempo:v('tri-m-tempo'),referencia:v('tri-m-ref')}:{fez},
+    audios:{},registrado_em:new Date().toISOString()};
+  if(!r.local.bairro&&!r.local.cidade&&!r.disponibilidade&&!r.experiencias_obs&&!fez){alert('Preencha pelo menos uma resposta.');return;}
+  const t=triagemAtual(cvEditandoId),pend=t&&!t.respondido_em?t:null,agora=new Date().toISOString();
+  const dados={respostas:r,respondido_em:agora,respondido_por:quemSou(),cargo:v('tri-m-cargo')||null};
+  const res=pend?await sb.from('triagens').update(dados).eq('id',pend.id).select().single()
+    :await sb.from('triagens').insert(Object.assign(dados,{curriculo_id:cvEditandoId,versao:TRI().versao,criado_por:quemSou()})).select().single();
+  if(erroSB(res.error))return;
+  todasTriagens=pend?todasTriagens.map(x=>x.id===pend.id?res.data:x):[res.data,...todasTriagens];
+  // completa a ficha só onde está em branco (igual à resposta pelo link)
+  const c=todosCurriculos.find(x=>x.id===cvEditandoId);
+  if(c){
+    const lugar=r.local.cidade&&r.local.bairro?`${r.local.cidade} / ${r.local.bairro}`:(r.local.cidade||r.local.bairro);
+    const upd={};if(!String(c.cidade||'').trim()&&lugar)upd.cidade=lugar.slice(0,125);if(!String(c.disponibilidade||'').trim()&&r.disponibilidade)upd.disponibilidade=r.disponibilidade.slice(0,120);
+    if(c.situacao==='novo')upd.situacao='analise';
+    if(Object.keys(upd).length){upd.atualizado_em=agora;const u=await sb.from('curriculos').update(upd).eq('id',c.id);
+      if(!u.error){Object.assign(c,upd);if(upd.cidade&&!$('cv-cidade').value.trim())$('cv-cidade').value=upd.cidade;if(upd.disponibilidade&&!$('cv-disp').value.trim())$('cv-disp').value=upd.disponibilidade;if(upd.situacao)$('cv-sit').value=upd.situacao;}}
+  }
+  triManual=false;renderTriagemCV();renderCurriculos();toast('Respostas da triagem salvas');
+}
+async function salvarResultadoTriagem(){
+  const t=triagemAtual(cvEditandoId);if(!t)return;
+  const dados={resultado:$('tri-res').value||null,observacao:$('tri-obs').value.trim()||null,resultado_por:quemSou(),resultado_em:new Date().toISOString()};
+  const{data,error}=await sb.from('triagens').update(dados).eq('id',t.id).select().single();
+  if(erroSB(error))return;
+  todasTriagens=todasTriagens.map(x=>x.id===t.id?data:x);renderTriagemCV();renderCurriculos();toast('Decisão da triagem salva');
 }
 async function salvarCurriculo(){
   const nome=$('cv-nome').value.trim().toUpperCase().replace(/\s+/g,' ');if(!nome){alert('Informe o nome.');return;}
