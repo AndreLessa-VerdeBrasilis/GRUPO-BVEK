@@ -3154,6 +3154,7 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
       <div class="campo"><label>De *</label><input type="date" id="dio-r-ini"></div>
       <div class="campo"><label>Até *</label><input type="date" id="dio-r-fim"></div>
       <div class="campo"><label>Fotos por dia</label><select id="dio-r-fotos"><option value="0">Nenhuma</option><option value="1">1</option><option value="3" selected>3 (recomendado)</option><option value="6">6</option><option value="999">Todas</option></select><div class="dica">O CRM escolhe sozinho: a foto marcada como "antes", a de "depois" e as do começo, meio e fim do dia.</div></div>
+      <div class="campo full campo-check"><input type="checkbox" id="dio-r-anexo" checked onchange="try{localStorage.setItem('bvek_dio_anexo',this.checked?'1':'0')}catch(e){}"><label for="dio-r-anexo">Anexar no fim todas as fotos do período (registro fotográfico completo, dia a dia, com o que foi relatado)</label></div>
       <div class="campo full campo-check"><input type="checkbox" id="dio-r-sofech"><label for="dio-r-sofech">Só os dias já conferidos e fechados pelo escritório</label></div>
     </div>
     <div class="modal-btns"><button class="btn-cancelar" onclick="fecharModal('modal-diario-rel')">Fechar</button><button class="btn-salvar" onclick="gerarRelatorioDiario()">Gerar relatório</button></div>
@@ -8158,7 +8159,7 @@ function abrirRelatorioDiario(){
   const ids=[...new Set(todosDiarios.map(d=>d.projeto_id))];
   preencherSelect($('dio-r-proj'),todosProjetos.filter(p=>ids.includes(p.id)).concat(todosProjetos.filter(p=>!ids.includes(p.id))).map(p=>[p.id,projetoRotulo(p)]),'Selecione');
   if($('dio-projeto').value)$('dio-r-proj').value=$('dio-projeto').value;
-  $('dio-r-ini').value=$('dio-ini').value||somarDias(hojeISO(),-14);$('dio-r-fim').value=$('dio-fim').value||hojeISO();
+  $('dio-r-ini').value=$('dio-ini').value||somarDias(hojeISO(),-14);try{$('dio-r-anexo').checked=localStorage.getItem('bvek_dio_anexo')!=='0';}catch(e){}$('dio-r-fim').value=$('dio-fim').value||hojeISO();
   abrirModal('modal-diario-rel');
 }
 async function gerarRelatorioDiario(){
@@ -8170,7 +8171,7 @@ async function gerarRelatorioDiario(){
     const{data,error}=await sb.from('diarios_obra').select('*').eq('projeto_id',pid).gte('data',ini).lte('data',fim).neq('situacao','cancelado').order('data');
     if(error)throw error;
     const so=$('dio-r-sofech').checked;
-    await montarRelatorioDiario(win,pid,(data||[]).filter(d=>so?d.situacao==='fechado':true),{ini,fim,fotos:Number($('dio-r-fotos').value)});
+    await montarRelatorioDiario(win,pid,(data||[]).filter(d=>so?d.situacao==='fechado':true),{ini,fim,fotos:Number($('dio-r-fotos').value),anexo:$('dio-r-anexo').checked});
     fecharModal('modal-diario-rel');
   }catch(e){console.error(e);win.close();alert('Não foi possível gerar o relatório:\n'+(e&&e.message||e));}
 }
@@ -8178,7 +8179,7 @@ async function pdfDiarioDia(){
   if(!dioAtual)return;const win=window.open('','_blank');if(!win)return;
   win.document.write('<p style="font-family:Arial;padding:30px">Montando…</p>');
   const d={...dioAtual.d,...lerFormDiario('dio')};
-  try{await montarRelatorioDiario(win,d.projeto_id,[d],{ini:d.data,fim:d.data,fotos:6,os:dioAtual.os});}catch(e){console.error(e);win.close();alert(e.message||e);}
+  try{await montarRelatorioDiario(win,d.projeto_id,[d],{ini:d.data,fim:d.data,fotos:6,anexo:true,os:dioAtual.os});}catch(e){console.error(e);win.close();alert(e.message||e);}
 }
 // v69.1: "nenhuma", "não há", "-"… não é pendência
 const semPendencia=t=>/^\s*(-+|n\/?a|nada( consta)?|nenhum[a]?( pend[eê]ncia)?|sem pend[eê]ncias?|n[aã]o( h[aá])?( pend[eê]ncias?)?)\s*[.!]?\s*$/i.test(String(t||''));
@@ -8203,7 +8204,7 @@ async function montarRelatorioDiario(win,pid,dias,o){
   const br=s=>esc(s).replace(/\n/g,'<br>');
   const nFotos=o.fotos===true?3:o.fotos===false?0:Number(o.fotos)||0;
   const regs=dias.filter(d=>d.situacao!=='pendente');
-  const urls=nFotos?await urlsFotos([...regs.flatMap(d=>d.fotos||[]),...regs.flatMap(d=>(d.registros||[]).filter(r=>r.foto).map(r=>({caminho:r.foto})))],7*24*3600):{};
+  const urls=nFotos||o.anexo?await urlsFotos([...regs.flatMap(d=>d.fotos||[]),...regs.flatMap(d=>(d.registros||[]).filter(r=>r.foto).map(r=>({caminho:r.foto})))],7*24*3600):{};
   const umDia=dias.length===1;
   // andamento: a situação mais recente de cada serviço
   const ult=new Map();regs.forEach(d=>(d.servicos||[]).forEach(s=>ult.set(s.ref||s.descricao,{...s,data:d.data})));
@@ -8220,7 +8221,7 @@ async function montarRelatorioDiario(win,pid,dias,o){
   // antes e depois do período: a 1ª foto "antes" (ou a 1ª do 1º dia) e a última "depois" (ou a última do último dia)
   const todas=regs.flatMap(d=>[...(d.fotos||[]).map(f=>({c:f.caminho,m:f.momento,t:f.legenda,d:d.data})),...(d.registros||[]).filter(r=>r.foto).map(r=>({c:r.foto,m:'',t:r.texto,d:d.data}))]).filter(f=>f.c&&urls[f.c]);
   const fAntes=todas.find(f=>f.m==='antes')||todas[0],fDepois=[...todas].reverse().find(f=>f.m==='depois')||todas[todas.length-1];
-  const antesDepois=!umDia&&fAntes&&fDepois&&fAntes.c!==fDepois.c&&fAntes.d!==fDepois.d;
+  const antesDepois=nFotos>0&&!umDia&&fAntes&&fDepois&&fAntes.c!==fDepois.c&&fAntes.d!==fDepois.d;
   const MES=['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
   const COND_CLI={normal:['Dia normal','ok'],parcial:['Dia parcial','parc'],parado:['Sem trabalho','par']};
   const CLIMA_CLI={bom:'tempo bom',nublado:'nublado',chuva:'chuva',chuva_forte:'chuva forte'};
@@ -8261,6 +8262,9 @@ async function montarRelatorioDiario(win,pid,dias,o){
     .fotos.n4{grid-template-columns:1fr 1fr}.fotos.n4 img{height:150px}
     .fotos figcaption{position:absolute;left:0;right:0;bottom:0;font-size:9px;color:#fff;padding:12px 7px 4px;border-radius:0 0 6px 6px;background:linear-gradient(transparent,rgba(0,0,0,.62))}.fotos figcaption b{color:#fff;text-transform:uppercase;letter-spacing:.06em}
     .mais{font-size:9.5px;color:#6B7785;margin-top:3px}
+    .anexo{break-before:page;page-break-before:always;padding-top:4px}.anexo h2{break-after:avoid}
+    .galeria{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.galeria figure{margin:0}.galeria img{width:100%;height:165px;object-fit:cover;border-radius:6px;display:block}
+    .galeria figcaption{font-size:9.5px;color:#444;margin-top:3px;line-height:1.35}.galeria figcaption b{color:#${T.principal};text-transform:uppercase;font-size:8.5px;letter-spacing:.06em}
     .assin{display:flex;gap:30px;margin-top:60px}.assin div{flex:1;text-align:center;border-top:1px solid #222;padding-top:5px}
     .bloco-ass{margin-top:22px;break-before:avoid;page-break-before:avoid}.bloco-ass p{margin:0;color:#444}
     .rodape{margin-top:20px;font-size:9px;color:#999;text-align:center}
@@ -8288,10 +8292,13 @@ async function montarRelatorioDiario(win,pid,dias,o){
       ${textos.length?`<ul>${textos.map(t=>`<li>${br(t)}</li>`).join('')}</ul>`:''}
       ${umDia&&(d.servicos||[]).length?`<ul>${d.servicos.filter(s=>s.situacao!=='nao_se_aplica').map(s=>`<li>${esc(s.item?s.item+' ':'')}${esc(s.descricao)} — ${esc((SIT_CLI[s.situacao]||[rotulo(DIO_SERV,s.situacao)])[0])}${s.pct!=null&&s.pct!==''&&s.situacao!=='concluido'?' ('+esc(s.pct)+'%)':''}${s.obs?' · '+esc(s.obs):''}</li>`).join('')}</ul>`:''}
       ${notas(d)}
-      ${figs(es.sel)}${es.total>es.sel.length&&es.sel.length?`<div class="mais">${es.sel.length} de ${es.total} fotos do dia</div>`:''}
+      ${figs(es.sel)}${es.total>es.sel.length&&es.sel.length?`<div class="mais">${es.sel.length} de ${es.total} fotos do dia${o.anexo?' — todas no anexo':''}</div>`:''}
       ${umDia&&eq.length?`<div class="mais">Equipe: ${esc(eq.join(', '))}</div>`:''}</div></div>`;}).join(''):'<p>Nenhum dia registrado no período.</p>'}
   <div class="junto bloco-ass"><p>${esc(titulo)} ${esc(p.codigo||'')} — ${esc(periodo)}. As partes declaram ciência dos registros acima.</p>
   <div class="assin"><div>Responsável pela execução<br><small>${esc(emp.nome||'')}${os&&os.responsavel_tecnico?' — '+esc(os.responsavel_tecnico):''}</small></div><div>Ciência do cliente<br><small>${esc(cli.razao_social||cli.nome||'')} · nome e data: ____/____/______</small></div></div></div>
+  ${(()=>{if(!o.anexo)return'';const grupos=regs.map(d=>({d,fs:escolherFotosDia(d,urls,9999).sel})).filter(g=>g.fs.length);if(!grupos.length)return'';
+    return`<div class="anexo"><div class="topo"><div><img src="${urlLogo(T.sigla,'logo')}" alt=""></div><div class="os"><span class="tit">ANEXO — REGISTRO FOTOGRÁFICO</span><strong>${esc(p.nome||p.codigo||'')}</strong>${esc(p.codigo||'')} · ${esc(periodo)}<br>${totFotos} foto(s)</div></div>
+      ${grupos.map(({d,fs})=>`<h2>${esc(fmtData(d.data))} (${diaSemana(d.data)}) · ${fs.length} foto${fs.length>1?'s':''}</h2><div class="galeria">${fs.map(f=>`<figure><img src="${esc(urls[f.c])}" alt=""><figcaption>${f.m==='antes'?'<b>Antes</b>':f.m==='depois'?'<b>Depois</b>':f.m==='durante'?'<b>Durante</b>':''}${f.m&&f.t?' · ':''}${esc(f.t||'')}</figcaption></figure>`).join('')}</div>`).join('')}</div>`;})()}
   <div class="rodape">${esc(nomeArq)}${totFotos?` · ${totFotos} foto(s) registradas no período`:''}</div></div></body></html>`;
   win.document.open();win.document.write(html);win.document.close();imprimirQuandoCarregar(win);
 }
