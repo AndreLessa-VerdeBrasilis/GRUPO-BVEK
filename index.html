@@ -1177,18 +1177,22 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
         <div class="subaba" data-gs="acessos" id="gs-sub-acessos">Contas e acessos</div>
       </div>
       <div class="painel-rh ativo" id="gs-p-iso">
-        <div class="info-box" style="display:block;line-height:1.5">Lista das leis, normas e requisitos que as empresas precisam cumprir para a <strong>ISO 9001</strong> (qualidade) e a <strong>ISO 14001</strong> (meio ambiente) — a "matriz de requisitos legais" que o auditor pede. Para cada item: se se aplica, como cumprimos, o comprovante e a próxima revisão.<br>
-          Toda segunda-feira o CRM procura no <strong>LexML</strong> (portal oficial de legislação) leis novas — federais, do estado e do município do Rio — com as palavras da busca. O que aparecer fica em <strong>Novidades para avaliar</strong>: inclua na lista ou descarte.<br>
+        <div class="info-box" style="display:block;line-height:1.5">Lista das leis, normas e requisitos que as empresas precisam cumprir para a <strong>ISO 9001</strong> (qualidade) e a <strong>ISO 14001</strong> (meio ambiente) — a "matriz de requisitos legais" que o auditor pede. Para cada lei: o local (federal, estado ou município), as <strong>obrigações</strong> que ela impõe à empresa (artigo, o que exige, como cumprimos, evidência) e quem <strong>validou a interpretação</strong> (especialista técnico ou advogado).<br>
+          <strong>Prazo legal:</strong> lei nova ou alterada tem de ser atendida dentro do prazo da lei — padrão de <strong>90 dias a partir da publicação</strong> (ajuste quando a lei disser outro). A conferência geral a cada 12 meses continua como checagem extra.<br>
+          Toda segunda-feira o CRM procura no <strong>LexML</strong> (portal oficial de legislação) leis novas — federais, dos estados e dos <strong>municípios em Locais de atuação</strong> — com as palavras da busca. O que aparecer fica em <strong>Leis novas para avaliar</strong>, já com o prazo correndo: inclua na lista ou descarte.<br>
           <span class="dica">A lista inicial foi pré-cadastrada pelo CRM como ponto de partida: confira se cada item se aplica e se o texto ainda é o vigente (de preferência com a consultoria da certificação).</span></div>
         <div class="kpis" id="iso-kpis"></div>
         <div id="iso-novidades"></div>
         <div class="filtros" style="margin-top:12px">
           <select id="iso-norma" onchange="renderISO()"><option value="">ISO 9001 e 14001</option><option value="9001">Só ISO 9001 (qualidade)</option><option value="14001">Só ISO 14001 (meio ambiente)</option></select>
           <select id="iso-sit" onchange="renderISO()"></select>
-          <select id="iso-esfera" onchange="renderISO()"><option value="">Todas as esferas</option><option value="federal">Federal</option><option value="estadual">Estadual (RJ)</option><option value="municipal">Municipal (Rio)</option><option value="outro">Normas técnicas / outros</option></select>
+          <select id="iso-esfera" onchange="renderISO()"><option value="">Todas as esferas</option><option value="federal">Federal</option><option value="estadual">Estadual</option><option value="municipal">Municipal</option><option value="outro">Normas técnicas / outros</option></select>
+          <select id="iso-local" onchange="renderISO()"><option value="">Todos os locais</option></select>
           <input type="search" id="iso-busca" placeholder="Buscar lei, órgão, assunto" oninput="renderISO()">
           <button class="btn-novo" onclick="abrirRequisito(null)">+ Requisito</button>
           <button class="btn-sec" id="iso-btn-buscar" onclick="buscarNormasAgora()">Buscar novidades agora</button>
+          <button class="btn-sec" onclick="abrirLocaisISO()">Locais de atuação <span id="iso-locais-badge"></span></button>
+          <button class="btn-sec" onclick="abrirValidadoresISO()">Quem valida</button>
           <button class="btn-sec" id="iso-btn-config" onclick="abrirConfigISO()">Palavras da busca</button>
           <button class="btn-sec" onclick="exportarISO()">Excel</button>
         </div>
@@ -3328,25 +3332,41 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
 <div class="modal-overlay" id="modal-requisito">
   <div class="modal modal-lg">
     <h2 id="rq-titulo-modal">Requisito</h2>
-    <p class="modal-sub">Uma linha da matriz de requisitos legais: o que diz, se se aplica e como a empresa cumpre.</p>
+    <p class="modal-sub">Uma lei, norma ou requisito da matriz: de onde é, o prazo para atender e as obrigações que ela impõe à empresa.</p>
     <div class="form-grid">
       <div class="campo full"><label>Lei / norma / requisito *</label><input type="text" id="rq-titulo" placeholder="Ex.: Lei 12.305/2010 — Política Nacional de Resíduos Sólidos"></div>
       <div class="campo"><label>Norma ISO</label><select id="rq-norma"><option value="ambas">9001 e 14001</option><option value="9001">ISO 9001 (qualidade)</option><option value="14001">ISO 14001 (meio ambiente)</option></select></div>
       <div class="campo"><label>Tipo</label><select id="rq-tipo"></select></div>
-      <div class="campo"><label>Esfera</label><select id="rq-esfera"><option value="federal">Federal</option><option value="estadual">Estadual (RJ)</option><option value="municipal">Municipal (Rio)</option><option value="outro">Norma técnica / outro</option></select></div>
+      <div class="campo"><label>Esfera</label><select id="rq-esfera" onchange="rqLocalVisivel()"><option value="federal">Federal</option><option value="estadual">Estadual</option><option value="municipal">Municipal</option><option value="outro">Norma técnica / outro</option></select></div>
+      <div class="campo" id="rq-uf-box"><label>Estado (UF)</label><select id="rq-uf" onchange="rqLocalVisivel()"></select></div>
+      <div class="campo" id="rq-mun-box"><label>Município</label><input type="text" id="rq-mun" list="dl-iso-municipios" placeholder="Ex.: Duque de Caxias"><datalist id="dl-iso-municipios"></datalist></div>
       <div class="campo"><label>Órgão</label><input type="text" id="rq-orgao" placeholder="Ex.: CONAMA, INEA, ABNT"></div>
       <div class="campo full"><label>Do que trata (resumo)</label><textarea id="rq-ementa" rows="2"></textarea></div>
       <div class="campo full"><label>Link do texto oficial</label><input type="url" id="rq-link" placeholder="https://"></div>
       <div class="campo full"><label>Empresas a que se aplica (nenhuma marcada = todas)</label><div id="rq-empresas" style="display:flex;gap:14px;flex-wrap:wrap"></div></div>
-      <div class="campo"><label>Situação</label><select id="rq-sit"></select></div>
+      <div class="secao full" style="grid-column:1/-1">Prazo legal</div>
+      <div class="campo"><label>Publicação</label><input type="date" id="rq-pub" onchange="rqPrazoSugerido()"></div>
+      <div class="campo"><label>Prazo para atender</label><input type="date" id="rq-prazo"><div class="dica" id="rq-prazo-dica">Padrão: publicação + 90 dias.</div></div>
+      <div class="campo"><label>Adequação concluída em</label><input type="date" id="rq-adequado"><div class="dica">Preencha quando as obrigações do texto novo estiverem atendidas.</div></div>
+      <div class="campo"><label>De onde veio o prazo</label><input type="text" id="rq-prazo-obs" placeholder="Ex.: padrão 90 dias · art. 20: vigência em 180 dias"></div>
+      <div class="secao full" style="grid-column:1/-1">Situação geral</div>
+      <div class="campo"><label>Situação</label><select id="rq-sit"></select><div class="dica" id="rq-sit-dica"></div></div>
       <div class="campo"><label>Responsável</label><input type="text" id="rq-resp" list="dl-pessoas-ms"></div>
-      <div class="campo full"><label>Como cumprimos (o que a empresa faz)</label><textarea id="rq-como" rows="3" placeholder="Ex.: PGRCC por obra, caçamba licenciada, MTR emitido no SINIR"></textarea></div>
+      <div class="campo full"><label>Como cumprimos — visão geral (o detalhe fica em cada obrigação)</label><textarea id="rq-como" rows="2" placeholder="Ex.: PGRCC por obra, caçamba licenciada, MTR emitido no SINIR"></textarea></div>
       <div class="campo full"><label>Comprovante / evidência</label><input type="text" id="rq-evid" placeholder="Ex.: pasta 00_GESTAO/ISO/14001/MTR · licença nº…"></div>
-      <div class="campo"><label>Última revisão</label><input type="date" id="rq-ultima"></div>
-      <div class="campo"><label>Revisar a cada (meses)</label><input type="number" id="rq-period" min="1" max="60" value="12"></div>
-      <div class="campo"><label>Próxima revisão</label><input type="date" id="rq-prox"></div>
+      <div class="campo"><label>Última conferência geral</label><input type="date" id="rq-ultima"></div>
+      <div class="campo"><label>Conferência geral a cada (meses)</label><input type="number" id="rq-period" min="1" max="60" value="12"></div>
+      <div class="campo"><label>Próxima conferência geral</label><input type="date" id="rq-prox"></div>
       <div class="campo campo-check" style="align-self:end"><input type="checkbox" id="rq-ativo" checked><label for="rq-ativo">Ativo (desmarque se foi revogado)</label></div>
     </div>
+    <!-- v79: obrigações (requisitos aplicáveis) da lei -->
+    <div id="rq-obrig-box" style="display:none">
+      <div class="secao">Obrigações da lei para a empresa</div>
+      <div class="dica" style="margin:0 0 8px">O que a lei exige de nós, artigo por artigo: é isto que o auditor confere. Cada obrigação mostra como cumprimos, a evidência e quem validou a interpretação (especialista técnico ou advogado).</div>
+      <div id="rq-obrig"></div>
+      <div style="margin-top:8px"><button class="btn-sec" onclick="abrirObrigacaoISO(null)">+ Obrigação</button></div>
+    </div>
+    <div id="rq-obrig-novo" class="dica" style="display:none;margin-top:10px">Salve a lei primeiro; depois abra de novo para cadastrar as obrigações.</div>
     <!-- v59: versões do texto da lei e comparativo entre elas -->
     <div id="rq-versoes-box" style="display:none">
       <div class="secao">Versões do texto e comparativo</div>
@@ -3359,7 +3379,7 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
     </div>
     <div class="modal-btns">
       <button class="btn-excluir" id="rq-btn-excluir" style="display:none" onclick="excluirRequisito()">Excluir</button>
-      <button class="btn-sec" id="rq-btn-revisado" onclick="requisitoRevisadoHoje()" title="Marca a revisão de hoje e calcula a próxima">✔ Revisado hoje</button>
+      <button class="btn-sec" id="rq-btn-revisado" onclick="requisitoRevisadoHoje()" title="Marca a conferência geral de hoje e calcula a próxima">Conferido hoje</button>
       <button class="btn-cancelar" onclick="fecharModal('modal-requisito')">Cancelar</button>
       <button class="btn-salvar" onclick="salvarRequisito()">Salvar</button>
     </div>
@@ -3372,7 +3392,9 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
     <p class="modal-sub" id="iv-sub"></p>
     <div class="form-grid">
       <div class="campo full"><label>Nome desta versão *</label><input type="text" id="iv-nome" placeholder="Ex.: Decreto 10.936/2022 (substitui o Decreto 7.404/2010) · ou: texto com a redação da Lei 14.260/2021"></div>
+      <div class="campo"><label>Publicação</label><input type="date" id="iv-pub" onchange="ivPrazoSugerido()"></div>
       <div class="campo"><label>Em vigor desde</label><input type="date" id="iv-vigencia"></div>
+      <div class="campo"><label>Prazo para atender</label><input type="date" id="iv-prazo"><div class="dica">Padrão: publicação + 90 dias. Ajuste se a lei der outro prazo.</div></div>
       <div class="campo"><label>Link do texto oficial</label><input type="url" id="iv-link" placeholder="https://www.planalto.gov.br/..."></div>
       <div class="campo full"><label>Texto da lei / do requisito</label>
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px"><button class="btn-sec" id="iv-btn-buscar" onclick="buscarTextoLeiISO()">Buscar o texto no link</button><span class="dica" style="margin:0;align-self:center">ou cole o texto (pode ser só os artigos que interessam)</span></div>
@@ -3408,7 +3430,7 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
     <p class="modal-sub">Toda segunda-feira o CRM procura no LexML leis novas com estas palavras (no título ou no resumo da lei). Uma palavra ou expressão por linha.</p>
     <div class="form-grid">
       <div class="campo full"><label>Palavras / expressões</label><textarea id="ic-termos" rows="10"></textarea></div>
-      <div class="campo"><label>Lugares</label><input type="text" id="ic-locais" placeholder="federal, rio.de.janeiro"><div class="dica">federal = leis nacionais · rio.de.janeiro = estado e município do Rio</div></div>
+      <div class="campo"><label>Lugares extras</label><input type="text" id="ic-locais" placeholder="federal"><div class="dica">As leis federais e as dos estados e municípios em <strong>Locais de atuação</strong> já entram sozinhas. Aqui só lugares a mais (nome no formato do LexML, ex.: sao.paulo).</div></div>
       <div class="campo"><label>Olhar leis dos últimos (dias)</label><input type="number" id="ic-dias" min="7" max="365" value="30"></div>
       <div class="campo full dica" id="ic-ultimo"></div>
     </div>
@@ -3416,6 +3438,83 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
       <button class="btn-cancelar" onclick="fecharModal('modal-iso-config')">Cancelar</button>
       <button class="btn-salvar" onclick="salvarConfigISO()">Salvar</button>
     </div>
+  </div>
+</div>
+<!-- v79: OBRIGAÇÃO DA LEI (requisito aplicável) -->
+<div class="modal-overlay" id="modal-iso-obrig">
+  <div class="modal modal-lg">
+    <h2 id="ob-titulo-modal">Obrigação</h2>
+    <p class="modal-sub" id="ob-sub"></p>
+    <div class="form-grid">
+      <div class="campo"><label>Artigo / trecho</label><input type="text" id="ob-artigo" placeholder="Ex.: Art. 20, § 1º"></div>
+      <div class="campo"><label>Situação</label><select id="ob-sit"></select></div>
+      <div class="campo full"><label>O que a lei exige da empresa *</label><textarea id="ob-obrig" rows="3" placeholder="Ex.: emitir o MTR no SINIR antes de cada transporte de resíduo e guardar o CDF do destinador"></textarea></div>
+      <div class="campo full"><label>Aplica-se a (atividade, processo, local)</label><input type="text" id="ob-aplica" placeholder="Ex.: obras com geração de entulho · oficina · escritório"></div>
+      <div class="campo full"><label>Empresas (nenhuma marcada = as mesmas da lei)</label><div id="ob-empresas" style="display:flex;gap:14px;flex-wrap:wrap"></div></div>
+      <div class="campo full"><label>Como cumprimos</label><textarea id="ob-como" rows="2"></textarea></div>
+      <div class="campo full"><label>Evidência (comprovante)</label><input type="text" id="ob-evid" placeholder="Ex.: pasta 00_GESTAO/ISO/14001/MTR · licença nº…"></div>
+      <div class="campo"><label>Responsável</label><input type="text" id="ob-resp" list="dl-pessoas-ms"></div>
+      <div class="campo"><label>Frequência</label><input type="text" id="ob-freq" placeholder="Ex.: a cada transporte · anual · na renovação"></div>
+      <div class="campo"><label>Última avaliação de atendimento</label><input type="date" id="ob-aval"></div>
+      <div class="campo campo-check" style="align-self:end"><input type="checkbox" id="ob-ativo" checked><label for="ob-ativo">Ativa</label></div>
+    </div>
+    <div class="secao">Validação da interpretação</div>
+    <div class="dica" id="ob-valid-dica" style="margin:0 0 8px">Quem confirmou que a leitura da lei está correta e se aplica a nós. Especialista técnico basta para a norma ISO; marque "precisa de parecer jurídico" quando houver dúvida de aplicação, conflito entre leis, prazo controverso ou risco de multa — aí só vale com advogado.</div>
+    <div class="form-grid" id="ob-valid-campos">
+      <div class="campo full campo-check"><input type="checkbox" id="ob-parecer-obrig"><label for="ob-parecer-obrig">Precisa de parecer jurídico (advogado)</label></div>
+      <div class="campo"><label>Validado por</label><select id="ob-validador"></select></div>
+      <div class="campo"><label>Validado em</label><input type="date" id="ob-valid-em"></div>
+      <div class="campo full"><label>Onde está o registro / parecer</label><input type="text" id="ob-parecer" placeholder="Ex.: link do SharePoint ou pasta 00_GESTAO/ISO/PARECERES"></div>
+      <div class="campo full"><label>Observações da validação</label><textarea id="ob-valid-obs" rows="2"></textarea></div>
+      <div class="campo full dica" id="ob-valid-info"></div>
+    </div>
+    <div class="modal-btns">
+      <button class="btn-excluir" id="ob-btn-excluir" style="display:none" onclick="excluirObrigacaoISO()">Excluir</button>
+      <button class="btn-sec" id="ob-btn-avaliado" onclick="obrigacaoAvaliadaHoje()">Avaliado hoje</button>
+      <button class="btn-cancelar" onclick="fecharModal('modal-iso-obrig')">Cancelar</button>
+      <button class="btn-salvar" onclick="salvarObrigacaoISO()">Salvar</button>
+    </div>
+  </div>
+</div>
+<!-- v79: LOCAIS DE ATUAÇÃO (municípios e estados) -->
+<div class="modal-overlay" id="modal-iso-locais">
+  <div class="modal modal-lg">
+    <h2>Locais de atuação</h2>
+    <p class="modal-sub">Municípios onde as empresas atuam. A matriz precisa ter a legislação de cada um, e a busca automática olha as leis do estado e de cada município daqui.</p>
+    <div id="lc-lista"></div>
+    <div class="secao">Incluir / alterar município</div>
+    <div class="form-grid">
+      <div class="campo"><label>Município *</label><input type="text" id="lc-mun" placeholder="Ex.: Magé"></div>
+      <div class="campo"><label>Estado (UF)</label><select id="lc-uf"></select></div>
+      <div class="campo full"><label>Empresas que atuam aqui (nenhuma marcada = todas)</label><div id="lc-empresas" style="display:flex;gap:14px;flex-wrap:wrap"></div></div>
+      <div class="campo full"><label>Observações</label><input type="text" id="lc-obs"></div>
+      <div class="campo full campo-check"><input type="checkbox" id="lc-ativo" checked><label for="lc-ativo">Ativo (desmarque se deixamos de atuar lá — o histórico fica)</label></div>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn-cancelar" id="lc-btn-limpar" onclick="limparLocalISO()">Limpar</button><button class="btn-salvar" onclick="salvarLocalISO()">Salvar município</button></div>
+    <div id="lc-clientes"></div>
+    <div class="modal-btns"><button class="btn-cancelar" onclick="fecharModal('modal-iso-locais')">Fechar</button></div>
+  </div>
+</div>
+<!-- v79: QUEM VALIDA A INTERPRETAÇÃO -->
+<div class="modal-overlay" id="modal-iso-validadores">
+  <div class="modal modal-lg">
+    <h2>Quem valida a interpretação legal</h2>
+    <p class="modal-sub">Especialista técnico (ex.: engenheiro ambiental ou de segurança, com registro no conselho) para o dia a dia; advogado para os casos de dúvida. Guarde onde está o comprovante de competência (currículo, certificados, carteira do conselho ou da OAB) — o auditor pode pedir.</p>
+    <div id="vl-lista"></div>
+    <div id="vl-form">
+      <div class="secao">Incluir / alterar</div>
+      <div class="form-grid">
+        <div class="campo"><label>Nome *</label><input type="text" id="vl-nome"></div>
+        <div class="campo"><label>Tipo</label><select id="vl-tipo"><option value="especialista">Especialista técnico</option><option value="advogado">Advogado</option></select></div>
+        <div class="campo"><label>Formação</label><input type="text" id="vl-formacao" placeholder="Ex.: Engenheiro ambiental · Direito ambiental"></div>
+        <div class="campo"><label>Registro</label><input type="text" id="vl-registro" placeholder="Ex.: CREA-RJ 2012345678 · OAB/RJ 123.456"></div>
+        <div class="campo full"><label>Onde está o comprovante de competência</label><input type="text" id="vl-comprovante" placeholder="Link ou pasta (currículo, certificados, carteira)"></div>
+        <div class="campo"><label>Contato</label><input type="text" id="vl-contato" placeholder="E-mail ou telefone"></div>
+        <div class="campo campo-check" style="align-self:end"><input type="checkbox" id="vl-ativo" checked><label for="vl-ativo">Ativo</label></div>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn-cancelar" onclick="limparValidadorISO()">Limpar</button><button class="btn-salvar" onclick="salvarValidadorISO()">Salvar</button></div>
+    </div>
+    <div class="modal-btns"><button class="btn-cancelar" onclick="fecharModal('modal-iso-validadores')">Fechar</button></div>
   </div>
 </div>
 <!-- v56: CONTA / ACESSO (sem senha) -->
@@ -14594,24 +14693,35 @@ async function carregarGestao(){
   if(e){if(faltaV56(e))v56Ok=false;else console.warn(e);return;}
   todosRequisitos=r.data||[];isoNovidades=n.data||[];isoConfig=c.data||{};todosAcessos=a.data||[];
   await carregarVersoesISO();
+  await carregarV79ISO();
+  // v79: a situação da lei com obrigações é a calculada por elas (grava no próximo salvar)
+  if(v79IsoOk)todosRequisitos.forEach(r=>{const x=situacaoPelasObrig(r.id);if(x)r.situacao=x;});
   atualizarBadgeGestao();
 }
 function atualizarBadgeGestao(){
   const rev=isoRevisaoVencida().length,nov=isoNovidades.length,b=$('tab-gestao-badge'),bi=$('gs-iso-badge');
-  const h=(nov?`<span class="badge badge-hoje" title="Leis novas para avaliar">${nov}</span>`:'')+(rev?` <span class="badge badge-atraso" title="Revisões vencidas">${rev}</span>`:'');
+  const pz=v79IsoOk?isoPrazoPendente().length:0,cf=v79IsoOk?cidadesForaISO().length:0;
+  const h=(nov?`<span class="badge badge-hoje" title="Leis novas para avaliar">${nov}</span>`:'')+(pz?` <span class="badge badge-atraso" title="Prazo legal vencido ou vencendo em até 30 dias">${pz}</span>`:'')+(rev?` <span class="badge badge-atraso" title="Conferências gerais vencidas">${rev}</span>`:'');
   if(b)b.innerHTML=h;if(bi)bi.innerHTML=h;
+  const bl=$('iso-locais-badge');if(bl)bl.innerHTML=cf?`<span class="badge badge-hoje" title="Contratos em cidade fora da lista">${cf}</span>`:'';
 }
 
 /* ---------- NORMAS ISO 9001 / 14001 ---------- */
 const ISO_SIT=[['avaliar','A avaliar'],['atendido','Atendido'],['parcial','Atendido em parte'],['nao_atendido','Não atendido'],['nao_aplicavel','Não se aplica']];
 const ISO_TIPOS=[['lei','Lei'],['decreto','Decreto'],['resolucao','Resolução'],['portaria','Portaria / instrução'],['nr','Norma regulamentadora (NR)'],['norma_tecnica','Norma técnica (ABNT/ISO)'],['licenca','Licença / autorização'],['requisito_cliente','Requisito de cliente'],['outro','Outro']];
-const ISO_ESF={federal:'Federal',estadual:'Estadual (RJ)',municipal:'Municipal (Rio)',outro:'Norma / outro'};
+const ISO_ESF={federal:'Federal',estadual:'Estadual',municipal:'Municipal',outro:'Norma / outro'};
 let todosRequisitos=[],isoNovidades=[],isoConfig={},rqEditId=null,rqDeNovidade=null;
 const isoRevisaoVencida=()=>todosRequisitos.filter(r=>r.ativo!==false&&r.situacao!=='nao_aplicavel'&&r.proxima_revisao&&r.proxima_revisao<hojeISO());
 function renderISO(){
   if(!PERM.gestao)return;
   if(!v56Ok){avisoV56($('iso-novidades'));$('tabela-iso').innerHTML='';$('iso-kpis').innerHTML='';return;}
-  if(!$('iso-sit').options.length)preencherSelect($('iso-sit'),ISO_SIT.concat([['revisar','Revisão vencida'],['inativos','Revogados / inativos']]),'Todas as situações');
+  if(!$('iso-sit').options.length)preencherSelect($('iso-sit'),ISO_SIT.concat([['prazo','Prazo legal vencido / vencendo'],['sem_obrig','Sem obrigações cadastradas'],['sem_valid','Com obrigação a validar'],['revisar','Conferência geral vencida'],['inativos','Revogados / inativos']]),'Todas as situações');
+  {const sel=$('iso-local'),atual=sel.value,ufs=[...new Set(isoLocais.filter(l=>l.ativo!==false).map(l=>String(l.uf).toUpperCase()).concat(todosRequisitos.filter(r=>r.uf).map(r=>String(r.uf).toUpperCase())))].sort();
+    const muns=new Map();isoLocais.filter(l=>l.ativo!==false).forEach(l=>muns.set(slugLex(l.municipio)+'|'+String(l.uf).toUpperCase(),l.municipio+'/'+String(l.uf).toUpperCase()));
+    todosRequisitos.filter(r=>r.esfera==='municipal'&&r.municipio).forEach(r=>{const k=slugLex(r.municipio)+'|'+String(r.uf||'RJ').toUpperCase();if(!muns.has(k))muns.set(k,r.municipio+'/'+String(r.uf||'RJ').toUpperCase());});
+    sel.innerHTML='<option value="">Todos os locais</option><option value="federal">Federal (Brasil)</option>'+ufs.map(u=>`<option value="uf:${esc(u)}">Estado: ${esc(UF_NOMES[u]||u)}</option>`).join('')+
+      [...muns.entries()].sort((a,b)=>a[1].localeCompare(b[1],'pt-BR')).map(([k,t])=>`<option value="mun:${esc(k)}">Município: ${esc(t)}</option>`).join('');
+    sel.value=[...sel.options].some(o=>o.value===atual)?atual:'';}
   const at=todosRequisitos.filter(r=>r.ativo!==false),cont=k=>at.filter(r=>r.situacao===k).length,rev=isoRevisaoVencida().length;
   const aplic=at.filter(r=>r.situacao!=='nao_aplicavel'),pct=aplic.length?Math.round(100*aplic.filter(r=>r.situacao==='atendido').length/aplic.length):0;
   $('iso-kpis').innerHTML=[
@@ -14619,41 +14729,54 @@ function renderISO(){
     ['Atendidos',pct+'%',`${cont('atendido')} de ${aplic.length} que se aplicam`],
     ['A avaliar',String(cont('avaliar')),cont('avaliar')?'confirme se se aplica':'—'],
     ['Não atendidos / em parte',String(cont('nao_atendido')+cont('parcial')),'precisam de plano de ação'],
-    ['Revisão vencida',String(rev),rev?'revise e clique ✔ Revisado hoje':'em dia '],
+    ['Prazo legal',String(v79IsoOk?isoPrazoPendente().length:0),v79IsoOk?(isoPrazoPendente().length?'vencidos ou vencendo em 30 dias':'em dia'):'rode a migração v79'],
+    ['Obrigações a validar',String(v79IsoOk?isoObrigAValidar().length:0),v79IsoOk?`${isoObrig.filter(o=>o.ativo!==false).length} obrigação(ões) cadastrada(s)`:'—'],
+    ['Municípios sem lei municipal',String(v79IsoOk?locaisSemLei().length:0),v79IsoOk?`de ${isoLocais.filter(l=>l.ativo!==false).length} em Locais de atuação`:'—'],
+    ['Conferência geral vencida',String(rev),rev?'confira e clique Conferido hoje':'em dia '],
     ['Leis novas para avaliar',String(isoNovidades.length),'da busca automática'],
   ].map(([r,v,s])=>`<div class="kpi"><div class="rot">${esc(r)}</div><div class="val">${esc(v)}</div><div class="sub">${esc(s)}</div></div>`).join('');
   $('iso-ultima').textContent=isoConfig.ultima_busca?`Última busca: ${isoConfig.ultimo_resultado||fmtDataHora(isoConfig.ultima_busca)}`:'Ainda não houve busca automática. Clique em Buscar novidades agora.';
   // novidades
-  const nv=isoNovidades;
-  $('iso-novidades').innerHTML=nv.length?`<div class="painel" style="margin-top:10px"><h3 style="margin:0 0 6px">Leis novas para avaliar (${nv.length})</h3><div class="dica" style="margin:0 0 8px">Encontradas pela busca no LexML. Leia o resumo: se afeta alguma empresa, clique em <strong>Incluir na lista</strong>; se não, <strong>descartar</strong>.</div>
-    <div class="tabela-wrap"><table class="tabela"><thead><tr><th>Publicação</th><th>Lei / norma</th><th>Esfera</th><th>Palavra</th><th></th></tr></thead><tbody>${nv.slice(0,60).map(x=>`<tr>
-      <td>${x.data_publicacao?esc(fmtData(x.data_publicacao)):'—'}</td>
+  const nv=isoNovidades.slice().sort((a,b)=>prazoNovidade(a).localeCompare(prazoNovidade(b)));
+  $('iso-novidades').innerHTML=nv.length?`<div class="painel" style="margin-top:10px"><h3 style="margin:0 0 6px">Leis novas para avaliar (${nv.length})</h3><div class="dica" style="margin:0 0 8px">Encontradas pela busca no LexML. O prazo para atender já está correndo (padrão: 90 dias da publicação) — avalie primeiro as mais antigas. Se afeta alguma empresa, clique em <strong>Incluir na lista</strong>; se não, <strong>descartar</strong>.</div>
+    <div class="tabela-wrap"><table class="tabela"><thead><tr><th>Publicação</th><th>Prazo para atender</th><th>Lei / norma</th><th>Local</th><th>Palavra</th><th></th></tr></thead><tbody>${nv.slice(0,60).map(x=>`<tr>
+      <td>${x.data_publicacao?esc(fmtData(x.data_publicacao)):'—'}</td><td style="white-space:nowrap">${esc(fmtData(prazoNovidade(x)))}<br>${etiquetaDias(diasAte(prazoNovidade(x)))}</td>
       <td><strong>${esc(x.titulo)}</strong>${x.ementa?`<div class="dica" style="margin:0">${esc(String(x.ementa).slice(0,300))}${String(x.ementa).length>300?'…':''}</div>`:''}${(()=>{const ra=requisitoAlteradoPor(x);return ra?`<div style="font-size:12px;margin-top:3px"><span class="badge badge-hoje">Altera um item da lista</span> ${esc(ra.titulo)} — <button class="btn-link" data-nv-cmp="${esc(x.id)}">registrar como nova versão e comparar</button></div>`:'';})()}</td>
-      <td>${esc(ISO_ESF[x.esfera]||x.esfera||'')}</td><td><span class="badge badge-cinza">${esc(x.termo||'')}</span></td>
+      <td>${esc(ISO_ESF[x.esfera]||x.esfera||'')}${(()=>{const lc=localDaUrnISO(x.chave);return lc.municipio?'<br>'+esc(lc.municipio+'/'+lc.uf):lc.uf?'<br>'+esc(lc.uf):'';})()}</td><td><span class="badge badge-cinza">${esc(x.termo||'')}</span></td>
       <td style="white-space:nowrap">${x.link?`<a class="btn-link" href="${esc(x.link)}" target="_blank" rel="noopener">ler</a> `:''}<button class="btn-salvar" style="padding:5px 10px;font-size:12px" data-nv-inc="${esc(x.id)}">Incluir na lista</button> <button class="btn-link" style="color:var(--texto2)" data-nv-desc="${esc(x.id)}">descartar</button></td></tr>`).join('')}</tbody></table></div>${nv.length>60?`<p class="dica">… e mais ${nv.length-60}.</p>`:''}</div>`:'';
   $('iso-novidades').querySelectorAll('[data-nv-inc]').forEach(b=>b.onclick=()=>incluirNovidade(b.dataset.nvInc));
   $('iso-novidades').querySelectorAll('[data-nv-desc]').forEach(b=>b.onclick=()=>descartarNovidade(b.dataset.nvDesc));
   $('iso-novidades').querySelectorAll('[data-nv-cmp]').forEach(b=>b.onclick=()=>compararNovidadeISO(b.dataset.nvCmp));
   // lista
-  const fn=$('iso-norma').value,fs=$('iso-sit').value,fe=$('iso-esfera').value,q=norm($('iso-busca').value);
+  const fn=$('iso-norma').value,fs=$('iso-sit').value,fe=$('iso-esfera').value,fl=$('iso-local').value,q=norm($('iso-busca').value);
   const ordemSit={nao_atendido:0,parcial:1,avaliar:2,atendido:3,nao_aplicavel:4};
   const l=todosRequisitos.filter(r=>{
     if(fs==='inativos'?r.ativo!==false:r.ativo===false)return false;
     if(fn&&r.norma!==fn&&r.norma!=='ambas')return false;
     if(fs==='revisar'){if(!(r.proxima_revisao&&r.proxima_revisao<hojeISO()&&r.situacao!=='nao_aplicavel'))return false;}
+    else if(fs==='prazo'){if(r.situacao==='nao_aplicavel'||!['vencido','alerta'].includes(prazoLegal(r).estado))return false;}
+    else if(fs==='sem_obrig'){if(r.situacao==='nao_aplicavel'||obrigAtivasDe(r.id).length)return false;}
+    else if(fs==='sem_valid'){if(!obrigAtivasDe(r.id).some(o=>validacaoObrig(o)!=='ok'))return false;}
     else if(fs&&fs!=='inativos'&&r.situacao!==fs)return false;
     if(fe&&r.esfera!==fe)return false;
-    return!q||norm([r.titulo,r.orgao,r.ementa,r.como_atende,r.responsavel].join(' ')).includes(q);})
+    if(fl==='federal'&&r.esfera!=='federal')return false;
+    if(fl.startsWith('uf:')&&!(r.esfera==='estadual'&&String(r.uf||'').toUpperCase()===fl.slice(3)))return false;
+    if(fl.startsWith('mun:')){const[ms,mu]=fl.slice(4).split('|');if(!(r.esfera==='municipal'&&slugLex(r.municipio)===ms&&String(r.uf||'RJ').toUpperCase()===mu))return false;}
+    return!q||norm([r.titulo,r.orgao,r.ementa,r.como_atende,r.responsavel,r.municipio,obrigDe(r.id).map(o=>[o.artigo,o.obrigacao,o.como_atende].join(' ')).join(' ')].join(' ')).includes(q);})
     .sort((a,b)=>(ordemSit[a.situacao]??9)-(ordemSit[b.situacao]??9)||String(a.titulo).localeCompare(String(b.titulo),'pt-BR'));
   const emp=r=>(r.empresas||[]).length?(r.empresas||[]).map(id=>{const e=empresaPorId(id);return e?e.sigla:'';}).filter(Boolean).join(', '):'Todas';
-  $('tabela-iso').innerHTML='<thead><tr><th>Lei / norma / requisito</th><th>ISO</th><th>Esfera</th><th>Empresas</th><th>Situação</th><th>Responsável</th><th>Próxima revisão</th><th></th></tr></thead><tbody>'+
+  const celObrig=r=>{if(!v79IsoOk)return'—';const l=obrigAtivasDe(r.id);if(!l.length)return r.situacao==='nao_aplicavel'?'—':'<span class="badge badge-atraso">nenhuma</span>';
+    const ok=l.filter(o=>validacaoObrig(o)==='ok').length,par=l.filter(o=>validacaoObrig(o)==='parecer').length;
+    return`${l.length}<div class="dica" style="margin:0">${ok} validada(s)${par?` · <span style="color:var(--perigo,#c0392b)">${par} aguardando parecer</span>`:''}</div>`;};
+  $('tabela-iso').innerHTML='<thead><tr><th>Lei / norma / requisito</th><th>ISO</th><th>Local</th><th>Empresas</th><th>Obrigações</th><th>Situação</th><th>Prazo legal</th><th>Conferência geral</th><th></th></tr></thead><tbody>'+
     (l.length?l.map(r=>{const venc=r.proxima_revisao&&r.proxima_revisao<hojeISO()&&r.situacao!=='nao_aplicavel';return`<tr class="${r.ativo===false?'inativo':''}" data-rq="${esc(r.id)}" style="cursor:pointer">
       <td><strong>${esc(r.titulo)}</strong>${r.orgao?` <span class="dica">· ${esc(r.orgao)}</span>`:''}${r.ementa?`<div class="dica" style="margin:0">${esc(r.ementa)}</div>`:''}${r.como_atende?`<div style="font-size:12px;margin-top:2px">✔ ${esc(r.como_atende)}</div>`:''}</td>
-      <td>${r.norma==='ambas'?'9001 · 14001':esc(r.norma)}</td><td>${esc(ISO_ESF[r.esfera]||r.esfera)}</td><td>${esc(emp(r))}</td>
-      <td>${esc(rotuloDe(ISO_SIT,r.situacao))}</td><td>${esc(r.responsavel||'')}</td>
+      <td>${r.norma==='ambas'?'9001 · 14001':esc(r.norma)}</td><td>${esc(ISO_ESF[r.esfera]||r.esfera)}${textoLocalISO(r)&&r.esfera!=='federal'?`<div class="dica" style="margin:0">${esc(textoLocalISO(r))}</div>`:''}</td><td>${esc(emp(r))}</td>
+      <td>${celObrig(r)}</td><td>${esc(rotuloDe(ISO_SIT,r.situacao))}${r.responsavel?`<div class="dica" style="margin:0">${esc(r.responsavel)}</div>`:''}</td>
+      <td style="white-space:nowrap">${v79IsoOk?htmlPrazoLegal(r):'—'}</td>
       <td>${r.proxima_revisao?esc(fmtData(r.proxima_revisao)):'—'}${venc?' <span class="badge badge-atraso">vencida</span>':''}</td>
       <td>${r.link?`<a class="btn-link" href="${esc(r.link)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">texto</a>`:''}</td></tr>`;}).join('')
-    :'<tr><td colspan="8" class="vazio">Nenhum requisito com estes filtros.</td></tr>')+'</tbody>';
+    :'<tr><td colspan="9" class="vazio">Nenhum requisito com estes filtros.</td></tr>')+'</tbody>';
   $('tabela-iso').querySelectorAll('[data-rq]').forEach(tr=>tr.onclick=()=>abrirRequisito(tr.dataset.rq));
 }
 function abrirRequisito(id,base){
@@ -14665,11 +14788,18 @@ function abrirRequisito(id,base){
   $('rq-orgao').value=v('orgao');$('rq-ementa').value=v('ementa');$('rq-link').value=v('link');$('rq-sit').value=v('situacao','avaliar');
   $('rq-resp').value=v('responsavel');$('rq-como').value=v('como_atende');$('rq-evid').value=v('evidencia');
   $('rq-ultima').value=v('ultima_revisao');$('rq-period').value=v('periodicidade_meses',12);$('rq-prox').value=v('proxima_revisao');$('rq-ativo').checked=!r||r.ativo!==false;
+  preencherSelect($('rq-uf'),Object.keys(UF_NOMES).map(u=>[u,u+' — '+UF_NOMES[u]]));
+  $('rq-uf').value=String(v('uf','RJ')||'RJ').toUpperCase();$('rq-mun').value=v('municipio');
+  $('rq-pub').value=v('data_publicacao');$('rq-prazo').value=v('prazo_atender');$('rq-adequado').value=v('adequado_em');$('rq-prazo-obs').value=v('prazo_obs');
+  ['rq-pub','rq-prazo','rq-adequado','rq-prazo-obs','rq-uf','rq-mun'].forEach(k=>$(k).disabled=!v79IsoOk);
+  $('rq-prazo-dica').textContent=v79IsoOk?'Padrão: publicação + 90 dias.':'Rode a migração v79 para usar o prazo legal.';
+  rqLocalVisivel();
   const sel=new Set(r&&r.empresas||[]);
   $('rq-empresas').innerHTML=todasEmpresas.map(e=>`<label style="display:inline-flex;gap:6px;align-items:center;font-weight:500"><input type="checkbox" value="${esc(e.id)}" ${sel.has(e.id)?'checked':''}> ${esc(e.sigla)} — ${esc(e.nome)}</label>`).join('');
   $('rq-titulo-modal').textContent=id?r.titulo:'Novo requisito';
   $('rq-btn-excluir').style.display=id&&PERM.admin?'':'none';$('rq-btn-revisado').style.display=id?'':'none';
   renderVersoesRequisito(id||null);
+  renderObrigacoesRequisito(id||null);
   abrirModal('modal-requisito');
 }
 function dadosRequisito(){
@@ -14677,10 +14807,19 @@ function dadosRequisito(){
   return{titulo,norma:$('rq-norma').value,tipo:$('rq-tipo').value,esfera:$('rq-esfera').value,orgao:$('rq-orgao').value.trim()||null,ementa:$('rq-ementa').value.trim()||null,
     link:$('rq-link').value.trim()||null,situacao:$('rq-sit').value,responsavel:$('rq-resp').value.trim()||null,como_atende:$('rq-como').value.trim()||null,
     evidencia:$('rq-evid').value.trim()||null,ultima_revisao:$('rq-ultima').value||null,periodicidade_meses:Math.max(1,Math.round(Number($('rq-period').value)||12)),
-    proxima_revisao:$('rq-prox').value||null,ativo:$('rq-ativo').checked,empresas:[...$('rq-empresas').querySelectorAll('input:checked')].map(i=>i.value),atualizado_em:new Date().toISOString()};
+    proxima_revisao:$('rq-prox').value||null,ativo:$('rq-ativo').checked,empresas:[...$('rq-empresas').querySelectorAll('input:checked')].map(i=>i.value),atualizado_em:new Date().toISOString(),
+    ...(v79IsoOk?dadosRequisitoV79():{})};
+}
+function dadosRequisitoV79(){
+  const esf=$('rq-esfera').value,pub=$('rq-pub').value||null;let prazo=$('rq-prazo').value||null,obs=$('rq-prazo-obs').value.trim()||null;
+  if(pub&&!prazo){prazo=somarDias(pub,ISO_PRAZO_DIAS);obs=obs||'padrão: publicação + 90 dias';}
+  return{uf:['estadual','municipal'].includes(esf)?($('rq-uf').value||'RJ'):null,municipio:esf==='municipal'?($('rq-mun').value.trim().replace(/\s+/g,' ')||null):null,
+    data_publicacao:pub,prazo_atender:prazo,adequado_em:$('rq-adequado').value||null,prazo_obs:obs};
 }
 async function salvarRequisito(){
   const d=dadosRequisito();if(!d)return;
+  if(v79IsoOk&&d.esfera==='municipal'&&!d.municipio){alert('Informe o município desta lei.');return;}
+  if(v79IsoOk&&rqEditId){const s=situacaoPelasObrig(rqEditId);if(s)d.situacao=s;}
   if(!d.proxima_revisao&&d.ultima_revisao)d.proxima_revisao=somarMeses(d.ultima_revisao,d.periodicidade_meses);
   let r;
   if(rqEditId)r=await sb.from('iso_requisitos').update(d).eq('id',rqEditId).select().single();
@@ -14692,9 +14831,10 @@ async function salvarRequisito(){
 }
 async function requisitoRevisadoHoje(){
   if(!rqEditId)return;const d=dadosRequisito();if(!d)return;
+  if(v79IsoOk){const s=situacaoPelasObrig(rqEditId);if(s)d.situacao=s;}
   d.ultima_revisao=hojeISO();d.proxima_revisao=somarMeses(hojeISO(),d.periodicidade_meses);
   const{error}=await sb.from('iso_requisitos').update(d).eq('id',rqEditId);if(erroSB(error))return;
-  fecharModal('modal-requisito');await carregarGestao();renderISO();toast(`Revisado. Próxima revisão: ${fmtData(d.proxima_revisao)}`);
+  fecharModal('modal-requisito');await carregarGestao();renderISO();toast(`Conferido. Próxima conferência geral: ${fmtData(d.proxima_revisao)}`);
 }
 async function excluirRequisito(){
   if(!rqEditId||!confirm('Excluir este requisito? (Se a lei foi revogada, prefira desmarcar "Ativo" — o histórico fica para o auditor.)'))return;
@@ -14705,8 +14845,10 @@ function incluirNovidade(id){
   const x=isoNovidades.find(n=>n.id===id);if(!x)return;
   const t=String(x.termo||'');
   const amb=/ambient|resíduo|residuo|efluente|emiss|poluiç|vegeta|poda|arboriz|hídric|hidric|perigos|clim|saneante|licenciamento/i.test(t+' '+x.titulo+' '+(x.ementa||''));
-  rqDeNovidade=id;
+  rqDeNovidade=id;const lc=localDaUrnISO(x.chave);
   abrirRequisito(null,{titulo:x.titulo,ementa:x.ementa,link:x.link,esfera:['federal','estadual','municipal'].includes(x.esfera)?x.esfera:'outro',
+    uf:lc.uf||null,municipio:lc.municipio||null,data_publicacao:x.data_publicacao||null,prazo_atender:prazoNovidade(x),
+    prazo_obs:x.data_publicacao?'padrão: publicação + 90 dias':'padrão: 90 dias (a busca não trouxe a data de publicação: confira)',
     tipo:/decreto/i.test(x.tipo||x.titulo)?'decreto':/resolu/i.test(x.tipo||x.titulo)?'resolucao':/portaria|instru/i.test(x.tipo||x.titulo)?'portaria':'lei',norma:amb?'14001':'ambas',situacao:'avaliar'});
 }
 async function descartarNovidade(id){
@@ -14755,7 +14897,9 @@ function abrirNovaVersaoISO(base){
   $('iv-titulo-modal').textContent=`Registrar versão ${n}`;
   $('iv-sub').textContent=`${r.titulo||''} — ${n===1?'guarde o texto que vale hoje: as próximas versões serão comparadas com ele.':'o texto novo será comparado com a versão '+(n-1)+' ('+vs[vs.length-1].nome+').'}`;
   $('iv-nome').value=(base&&base.nome)||(n===1?(r.titulo||''):'');$('iv-link').value=(base&&base.link)||(n===1?(r.link||''):'');
-  $('iv-vigencia').value=(base&&base.vigencia)||'';$('iv-texto').value='';$('iv-resumo').value=(base&&base.resumo)||'';$('iv-impacto').value='';
+  $('iv-vigencia').value=(base&&base.vigencia)||'';$('iv-texto').value='';
+  $('iv-pub').value=(base&&base.publicacao)||'';$('iv-prazo').value=(base&&base.publicacao)?somarDias(base.publicacao,ISO_PRAZO_DIAS):'';
+  $('iv-pub').disabled=$('iv-prazo').disabled=!v79IsoOk;$('iv-resumo').value=(base&&base.resumo)||'';$('iv-impacto').value='';
   abrirModal('modal-iso-versao');setTimeout(()=>$('iv-nome').focus(),50);
 }
 async function buscarTextoLeiISO(){
@@ -14779,11 +14923,15 @@ async function salvarVersaoISO(){
   const vs=versoesDe(rid),versao=vs.length?vs[vs.length-1].versao+1:1;
   const d={requisito_id:rid,versao,nome,vigencia:$('iv-vigencia').value||null,link:$('iv-link').value.trim()||null,texto:texto||null,
     resumo:$('iv-resumo').value.trim()||null,impacto:$('iv-impacto').value.trim()||null,criado_por:quemSou()};
+  if(v79IsoOk){d.publicacao=$('iv-pub').value||null;d.prazo_atender=$('iv-prazo').value||(d.publicacao?somarDias(d.publicacao,ISO_PRAZO_DIAS):null);
+    if(versao>1&&!d.prazo_atender&&!confirm('Versão nova sem data de publicação nem prazo para atender. O auditor confere se a adequação foi feita no prazo legal. Salvar assim mesmo?'))return;}
   const{error}=await sb.from('iso_requisitos_versoes').insert(d);
   if(error&&/duplicate|iso_requisitos_versoes_uk/i.test(error.message||'')){alert('Outra pessoa acabou de registrar uma versão. Feche e abra o requisito de novo.');return;}
   if(erroSB(error))return;
   const r=todosRequisitos.find(x=>x.id===rid),upd={atualizado_em:new Date().toISOString()};
   if(d.link&&versao>1)upd.link=d.link;
+  if(v79IsoOk&&versao>1&&(d.publicacao||d.prazo_atender)){upd.data_publicacao=d.publicacao;upd.prazo_atender=d.prazo_atender;upd.adequado_em=null;
+    upd.prazo_obs=$('iv-prazo').value?'versão '+versao+': prazo informado':'versão '+versao+': padrão publicação + 90 dias';}
   if(versao>1&&r&&r.situacao!=='avaliar'&&confirm('Saiu uma versão nova. Marcar o requisito como "A avaliar", para confirmar se continuamos cumprindo?'))upd.situacao='avaliar';
   await sb.from('iso_requisitos').update(upd).eq('id',rid);
   if(window._ivNovidade){await sb.from('iso_novidades').update({situacao:'incluida',requisito_id:rid,avaliado_por:quemSou(),avaliado_em:new Date().toISOString()}).eq('id',window._ivNovidade);window._ivNovidade=null;}
@@ -14900,7 +15048,7 @@ function requisitoAlteradoPor(nov){
 function compararNovidadeISO(id){
   const x=isoNovidades.find(n=>n.id===id),r=x&&requisitoAlteradoPor(x);if(!r)return;
   abrirRequisito(r.id);
-  abrirNovaVersaoISO({requisito_id:r.id,nome:x.titulo,link:x.link,vigencia:x.data_publicacao||'',resumo:x.ementa||''});
+  abrirNovaVersaoISO({requisito_id:r.id,nome:x.titulo,link:x.link,vigencia:x.data_publicacao||'',publicacao:x.data_publicacao||'',resumo:x.ementa||''});
   window._ivNovidade=id;
 }
 function abrirConfigISO(){
@@ -14917,9 +15065,293 @@ async function salvarConfigISO(){
   Object.assign(isoConfig,dados);fecharModal('modal-iso-config');toast('Palavras da busca salvas');
 }
 function exportarISO(){
-  const l=[['Lei / norma / requisito','Órgão','ISO','Tipo','Esfera','Empresas','Do que trata','Situação','Como cumprimos','Comprovante','Responsável','Última revisão','Próxima revisão','Link','Ativo']];
-  todosRequisitos.forEach(r=>l.push([r.titulo,r.orgao||'',r.norma==='ambas'?'9001 e 14001':r.norma,rotuloDe(ISO_TIPOS,r.tipo),ISO_ESF[r.esfera]||r.esfera,(r.empresas||[]).length?(r.empresas||[]).map(id=>(empresaPorId(id)||{}).sigla||'').join(', '):'Todas',r.ementa||'',rotuloDe(ISO_SIT,r.situacao).replace(/^\S+\s/,''),r.como_atende||'',r.evidencia||'',r.responsavel||'',r.ultima_revisao?fmtData(r.ultima_revisao):'',r.proxima_revisao?fmtData(r.proxima_revisao):'',r.link||'',r.ativo===false?'não':'sim']));
+  // v79: uma linha por obrigação (formato da matriz que o auditor confere); lei sem obrigação sai numa linha só
+  const l=[['Lei / norma / requisito','Órgão','ISO','Tipo','Esfera','Local','Empresas','Do que trata','Publicação','Prazo para atender','Adequação concluída em','Artigo','Obrigação (o que a lei exige)','Aplica-se a','Situação','Como cumprimos','Evidência','Responsável','Frequência','Última avaliação','Validação','Validado por','Tipo do validador','Registro','Validado em','Parecer / registro da validação','Última conferência geral','Próxima conferência geral','Link','Ativo']];
+  const d=x=>x?fmtData(x):'';
+  todosRequisitos.slice().sort((a,b)=>String(a.titulo).localeCompare(String(b.titulo),'pt-BR')).forEach(r=>{
+    const base=[r.titulo,r.orgao||'',r.norma==='ambas'?'9001 e 14001':r.norma,rotuloDe(ISO_TIPOS,r.tipo),ISO_ESF[r.esfera]||r.esfera,textoLocalISO(r),siglasEmpresas(r.empresas),r.ementa||'',d(r.data_publicacao),d(r.prazo_atender),d(r.adequado_em)];
+    const fim=[d(r.ultima_revisao),d(r.proxima_revisao),r.link||'',r.ativo===false?'não':'sim'];
+    const ob=obrigDe(r.id);
+    if(!ob.length)l.push(base.concat(['','','',rotuloDe(ISO_SIT,r.situacao),r.como_atende||'',r.evidencia||'',r.responsavel||'','','','sem obrigações cadastradas','','','','',''],fim));
+    else ob.forEach(o=>l.push(base.concat([o.artigo||'',o.obrigacao,o.aplicavel_a||'',rotuloDe(ISO_SIT,o.situacao),o.como_atende||'',o.evidencia||'',o.responsavel||'',o.frequencia||'',d(o.ultima_avaliacao),
+      ISO_VAL_ROT[validacaoObrig(o)],o.validado_nome||'',ISO_VAL_TIPO[o.validado_tipo]||'',o.validado_registro||'',d(o.validado_em),o.parecer||''],fim.slice(0,3),[o.ativo===false||r.ativo===false?'não':'sim'])));
+  });
   planilha('BVK-GES-ISO-MATRIZ DE REQUISITOS LEGAIS','Requisitos',l);
+}
+
+/* ---------- v79: LOCAIS DE ATUAÇÃO, OBRIGAÇÕES, VALIDAÇÃO E PRAZO LEGAL ---------- */
+// Pedido da consultoria da certificação: legislação de todos os municípios onde atuamos,
+// o requisito aplicável (obrigação) de cada lei e o atendimento dentro do prazo legal
+// (padrão: 90 dias da publicação) — a conferência geral a cada 12 meses continua como extra.
+const ISO_PRAZO_DIAS=90,ISO_PRAZO_ALERTA=30;
+const UF_NOMES={AC:'Acre',AL:'Alagoas',AP:'Amapá',AM:'Amazonas',BA:'Bahia',CE:'Ceará',DF:'Distrito Federal',ES:'Espírito Santo',GO:'Goiás',MA:'Maranhão',MT:'Mato Grosso',MS:'Mato Grosso do Sul',MG:'Minas Gerais',PA:'Pará',PB:'Paraíba',PR:'Paraná',PE:'Pernambuco',PI:'Piauí',RJ:'Rio de Janeiro',RN:'Rio Grande do Norte',RS:'Rio Grande do Sul',RO:'Rondônia',RR:'Roraima',SC:'Santa Catarina',SP:'São Paulo',SE:'Sergipe',TO:'Tocantins'};
+const ISO_STOP=new Set(['de','do','da','dos','das','e']);
+const slugLex=s=>semAcento(String(s||'')).toLowerCase().replace(/[^a-z0-9]+/g,'.').split('.').filter(p=>p&&!ISO_STOP.has(p)).join('.');
+const UF_POR_SLUG=Object.fromEntries(Object.entries(UF_NOMES).map(([uf,n])=>[slugLex(n),uf]));
+const ISO_VAL_ROT={ok:'Validada',pendente:'Aguardando validação',parecer:'Aguardando parecer jurídico'};
+const ISO_VAL_TIPO={especialista:'Especialista técnico',advogado:'Advogado'};
+let isoLocais=[],isoObrig=[],isoValid=[],v79IsoOk=true,obEditId=null,obRequisito=null,lcEditId=null,vlEditId=null;
+const AVISO_V79='<div class="info-box" style="display:block">Para usar locais de atuação, obrigações, validação e prazo legal, rode antes a migração <code>supabase/migracao_crm_v79_requisitos_legais_obrigacoes_prazo.sql</code> no Supabase.</div>';
+async function carregarV79ISO(){
+  const[l,o,v]=await Promise.all([sb.from('iso_locais').select('*').order('municipio'),
+    sb.from('iso_obrigacoes').select('*').order('ordem').order('criado_em'),sb.from('iso_validadores').select('*').order('nome')]);
+  const e=l.error||o.error||v.error;
+  if(e){v79IsoOk=false;if(!/iso_locais|iso_obrigacoes|iso_validadores|schema cache|does not exist/i.test(e.message||''))console.warn(e);isoLocais=[];isoObrig=[];isoValid=[];return;}
+  v79IsoOk=true;isoLocais=l.data||[];isoObrig=o.data||[];isoValid=v.data||[];
+}
+const obrigDe=rid=>isoObrig.filter(o=>o.requisito_id===rid);
+const obrigAtivasDe=rid=>obrigDe(rid).filter(o=>o.ativo!==false);
+// validação da interpretação: ok · pendente · parecer (só vale com advogado)
+function validacaoObrig(o){if(!o.validado_em)return o.precisa_parecer?'parecer':'pendente';if(o.precisa_parecer&&o.validado_tipo!=='advogado')return'parecer';return'ok';}
+const isoObrigAValidar=()=>isoObrig.filter(o=>o.ativo!==false&&validacaoObrig(o)!=='ok'&&(todosRequisitos.find(r=>r.id===o.requisito_id)||{}).ativo!==false);
+// situação da lei a partir das obrigações
+function situacaoPelasObrig(rid){
+  const l=obrigAtivasDe(rid);if(!l.length)return null;
+  const ap=l.filter(o=>o.situacao!=='nao_aplicavel');if(!ap.length)return'nao_aplicavel';
+  const t=new Set(ap.map(o=>o.situacao));
+  if(t.has('nao_atendido'))return'nao_atendido';
+  if(t.size===1)return[...t][0];
+  if(t.has('avaliar'))return'avaliar';
+  return'parcial';
+}
+async function sincronizarSituacaoLei(rid){
+  const s=situacaoPelasObrig(rid),r=todosRequisitos.find(x=>x.id===rid);
+  if(s&&r&&r.situacao!==s){const{error}=await sb.from('iso_requisitos').update({situacao:s,atualizado_em:new Date().toISOString()}).eq('id',rid);if(!error)r.situacao=s;}
+  return s;
+}
+// prazo legal da lei: sem · ok · alerta (≤30 dias) · vencido · adequado
+function prazoLegal(r){
+  if(!r||!r.prazo_atender)return{estado:'sem'};
+  if(r.adequado_em)return{estado:'adequado'};
+  const d=diasAte(r.prazo_atender);return{estado:d<0?'vencido':d<=ISO_PRAZO_ALERTA?'alerta':'ok',dias:d};
+}
+const isoPrazoPendente=()=>todosRequisitos.filter(r=>r.ativo!==false&&r.situacao!=='nao_aplicavel'&&['vencido','alerta'].includes(prazoLegal(r).estado));
+function etiquetaDias(d){return`<span class="badge ${d<0?'badge-atraso':d<=ISO_PRAZO_ALERTA?'badge-hoje':'badge-cinza'}">${d<0?'vencido há '+(-d)+' dia(s)':d===0?'vence hoje':'faltam '+d+' dia(s)'}</span>`;}
+function htmlPrazoLegal(r){
+  const p=prazoLegal(r);if(p.estado==='sem')return'—';
+  if(p.estado==='adequado')return`${esc(fmtData(r.prazo_atender))} <span class="badge badge-ok">adequado em ${esc(fmtData(r.adequado_em))}</span>`;
+  return`${esc(fmtData(r.prazo_atender))} ${etiquetaDias(p.dias)}`;
+}
+function prazoNovidade(x){const base=x.data_publicacao||String(x.encontrado_em||'').slice(0,10)||hojeISO();return somarDias(base,ISO_PRAZO_DIAS);}
+// local de uma lei do LexML pela URN (urn:lex:br;estado;municipio:esfera:…)
+function localDaUrnISO(urn){
+  const m=String(urn||'').match(/^urn:lex:([^:]+):([^:]+)/i);if(!m)return{};
+  const seg=m[1].toLowerCase().split(';');if(seg.length<2)return{};
+  const uf=UF_POR_SLUG[slugLex(seg[1])]||'';let municipio='';
+  if(seg[2]){const sm=slugLex(seg[2]),l=isoLocais.find(x=>String(x.uf||'').toUpperCase()===uf&&slugLex(x.municipio)===sm);
+    municipio=l?l.municipio:seg[2].split('.').map(p=>ISO_STOP.has(p)?p:p.charAt(0).toUpperCase()+p.slice(1)).join(' ');}
+  return{uf,municipio};
+}
+function textoLocalISO(r){
+  if(r.esfera==='federal')return'Brasil';
+  if(r.esfera==='estadual')return r.uf?(UF_NOMES[r.uf]||r.uf):'';
+  if(r.esfera==='municipal')return(r.municipio||'município não informado')+(r.uf?'/'+r.uf:'');
+  return'';
+}
+const mesmoMunicipio=(r,l)=>r.esfera==='municipal'&&slugLex(r.municipio)===slugLex(l.municipio)&&String(r.uf||'RJ').toUpperCase()===String(l.uf||'').toUpperCase();
+const leisDoLocal=l=>todosRequisitos.filter(r=>r.ativo!==false&&mesmoMunicipio(r,l));
+const locaisSemLei=()=>isoLocais.filter(l=>l.ativo!==false&&!leisDoLocal(l).length);
+function checksEmpresas(el,sel){el.innerHTML=todasEmpresas.map(e=>`<label style="display:inline-flex;gap:6px;align-items:center;font-weight:500"><input type="checkbox" value="${esc(e.id)}" ${sel.has(e.id)?'checked':''}> ${esc(e.sigla)} — ${esc(e.nome)}</label>`).join('');}
+const siglasEmpresas=ids=>(ids||[]).length?(ids||[]).map(id=>(empresaPorId(id)||{}).sigla||'').filter(Boolean).join(', '):'Todas';
+
+/* campos de local e prazo na janela da lei */
+function rqLocalVisivel(){
+  const esf=$('rq-esfera').value;
+  $('rq-uf-box').style.display=['estadual','municipal'].includes(esf)?'':'none';
+  $('rq-mun-box').style.display=esf==='municipal'?'':'none';
+  const uf=$('rq-uf').value||'RJ';
+  $('dl-iso-municipios').innerHTML=isoLocais.filter(l=>l.ativo!==false&&String(l.uf).toUpperCase()===uf).map(l=>`<option value="${esc(l.municipio)}">`).join('');
+}
+function rqPrazoSugerido(){
+  const pub=$('rq-pub').value;if(!pub||$('rq-prazo').value)return;
+  $('rq-prazo').value=somarDias(pub,ISO_PRAZO_DIAS);if(!$('rq-prazo-obs').value.trim())$('rq-prazo-obs').value='padrão: publicação + 90 dias';
+}
+function ivPrazoSugerido(){const pub=$('iv-pub').value;if(pub&&!$('iv-prazo').value)$('iv-prazo').value=somarDias(pub,ISO_PRAZO_DIAS);}
+
+/* obrigações da lei */
+function renderObrigacoesRequisito(rid){
+  const box=$('rq-obrig-box');$('rq-obrig-novo').style.display=rid?'none':'';box.style.display=rid?'':'none';
+  $('rq-sit').disabled=false;$('rq-sit-dica').textContent='';
+  if(!rid)return;
+  if(!v79IsoOk){$('rq-obrig').innerHTML=AVISO_V79;box.querySelector('button').style.display='none';return;}
+  box.querySelector('button').style.display='';
+  const l=obrigDe(rid).slice().sort((a,b)=>(a.ativo===false)-(b.ativo===false)||(a.ordem||0)-(b.ordem||0));
+  const s=situacaoPelasObrig(rid);
+  if(s){$('rq-sit').value=s;$('rq-sit').disabled=true;$('rq-sit-dica').textContent='Calculada pelas obrigações abaixo.';}
+  const corVal={ok:'badge-ok',pendente:'badge-cinza',parecer:'badge-atraso'};
+  $('rq-obrig').innerHTML=l.length?`<div class="tabela-wrap"><table class="tabela"><thead><tr><th>Artigo</th><th>O que a lei exige</th><th>Situação</th><th>Validação</th><th>Evidência</th></tr></thead><tbody>${l.map(o=>{const v=validacaoObrig(o);return`<tr class="${o.ativo===false?'inativo':''}" data-ob="${esc(o.id)}" style="cursor:pointer">
+      <td style="white-space:nowrap">${esc(o.artigo||'—')}</td>
+      <td>${esc(o.obrigacao)}${o.aplicavel_a?`<div class="dica" style="margin:0">Aplica-se a: ${esc(o.aplicavel_a)}</div>`:''}${o.como_atende?`<div style="font-size:12px;margin-top:2px">Como cumprimos: ${esc(o.como_atende)}</div>`:''}</td>
+      <td>${esc(rotuloDe(ISO_SIT,o.situacao))}${o.ultima_avaliacao?`<div class="dica" style="margin:0">avaliada em ${esc(fmtData(o.ultima_avaliacao))}</div>`:''}</td>
+      <td><span class="badge ${corVal[v]}">${esc(ISO_VAL_ROT[v])}</span>${o.validado_em?`<div class="dica" style="margin:0">${esc(o.validado_nome||'')} · ${esc(fmtData(o.validado_em))}</div>`:''}</td>
+      <td>${esc(o.evidencia||'')}</td></tr>`;}).join('')}</tbody></table></div>`
+    :'<p class="vazio">Nenhuma obrigação cadastrada. Leia a lei e cadastre o que ela exige da empresa (um item por artigo ou exigência).</p>';
+  $('rq-obrig').querySelectorAll('[data-ob]').forEach(tr=>tr.onclick=()=>abrirObrigacaoISO(tr.dataset.ob));
+}
+function abrirObrigacaoISO(id){
+  if(!v79IsoOk){alert('Rode antes a migração v79 no Supabase.');return;}
+  const rid=id?(isoObrig.find(o=>o.id===id)||{}).requisito_id:rqEditId;if(!rid)return;
+  obEditId=id||null;obRequisito=rid;
+  const o=id?isoObrig.find(x=>x.id===id):null,r=todosRequisitos.find(x=>x.id===rid)||{};
+  const v=(k,d='')=>o&&o[k]!=null?o[k]:d;
+  preencherSelect($('ob-sit'),ISO_SIT);pessoasDatalist();
+  $('ob-titulo-modal').textContent=o?(o.artigo?o.artigo+' — ':'')+'Obrigação':'Nova obrigação';
+  $('ob-sub').textContent=r.titulo||'';
+  $('ob-artigo').value=v('artigo');$('ob-sit').value=v('situacao','avaliar');$('ob-obrig').value=v('obrigacao');$('ob-aplica').value=v('aplicavel_a');
+  $('ob-como').value=v('como_atende');$('ob-evid').value=v('evidencia');$('ob-resp').value=v('responsavel',r.responsavel||'');$('ob-freq').value=v('frequencia');
+  $('ob-aval').value=v('ultima_avaliacao');$('ob-ativo').checked=!o||o.ativo!==false;
+  checksEmpresas($('ob-empresas'),new Set(o&&o.empresas||[]));
+  // validação
+  const ativos=isoValid.filter(x=>x.ativo!==false||(o&&x.id===o.validador_id));
+  $('ob-validador').innerHTML='<option value="">— ainda não validada —</option>'+ativos.map(x=>`<option value="${esc(x.id)}">${esc(x.nome)} — ${esc(ISO_VAL_TIPO[x.tipo]||x.tipo)}${x.registro?' ('+esc(x.registro)+')':''}</option>`).join('');
+  $('ob-validador').value=v('validador_id');$('ob-valid-em').value=v('validado_em');$('ob-parecer').value=v('parecer');$('ob-valid-obs').value=v('validacao_obs');
+  $('ob-parecer-obrig').checked=!!(o&&o.precisa_parecer);
+  const consultoria=!PERM.admin;
+  ['ob-validador','ob-valid-em','ob-parecer'].forEach(k=>$(k).disabled=consultoria);
+  const st=o?validacaoObrig(o):'pendente';
+  $('ob-valid-info').innerHTML=(consultoria?'A consultoria cadastra e ajusta as obrigações; a validação da interpretação é feita pelo especialista ou advogado da empresa (o administrador registra aqui). ':'')+
+    (o&&o.validado_em?`Validada por <strong>${esc(o.validado_nome||'')}</strong> (${esc(ISO_VAL_TIPO[o.validado_tipo]||o.validado_tipo||'')}${o.validado_registro?', '+esc(o.validado_registro):''}) em ${esc(fmtData(o.validado_em))}. `:'')+
+    (st==='parecer'?'<strong>Aguardando parecer jurídico.</strong> ':'')+
+    (!isoValid.length&&!consultoria?'Cadastre primeiro quem valida em <strong>Quem valida</strong>.':'');
+  $('ob-btn-excluir').style.display=o&&PERM.admin?'':'none';$('ob-btn-avaliado').style.display=o?'':'none';
+  abrirModal('modal-iso-obrig');if(!o)setTimeout(()=>$('ob-artigo').focus(),50);
+}
+async function salvarObrigacaoISO(avaliadoHoje){
+  const rid=obRequisito;if(!rid)return;
+  const obrigacao=$('ob-obrig').value.trim();if(!obrigacao){alert('Escreva o que a lei exige da empresa.');return;}
+  const o=obEditId?isoObrig.find(x=>x.id===obEditId):null;
+  const d={requisito_id:rid,artigo:$('ob-artigo').value.trim()||null,obrigacao,aplicavel_a:$('ob-aplica').value.trim()||null,
+    empresas:[...$('ob-empresas').querySelectorAll('input:checked')].map(i=>i.value),situacao:$('ob-sit').value,
+    como_atende:$('ob-como').value.trim()||null,evidencia:$('ob-evid').value.trim()||null,responsavel:$('ob-resp').value.trim()||null,
+    frequencia:$('ob-freq').value.trim()||null,ultima_avaliacao:avaliadoHoje?hojeISO():($('ob-aval').value||null),
+    precisa_parecer:$('ob-parecer-obrig').checked,validacao_obs:$('ob-valid-obs').value.trim()||null,ativo:$('ob-ativo').checked,atualizado_em:new Date().toISOString()};
+  const textoMudou=o&&o.validado_em&&((o.obrigacao||'')!==obrigacao||(o.artigo||'')!==(d.artigo||''));
+  if(PERM.admin){
+    const vid=$('ob-validador').value||null,vem=$('ob-valid-em').value||null,val=vid?isoValid.find(x=>x.id===vid):null;
+    if(vem&&!vid){alert('Escolha quem validou (ou apague a data da validação).');return;}
+    const mudouValid=!o||(o.validador_id||null)!==vid||(o.validado_em||null)!==vem;
+    if(textoMudou&&!mudouValid){
+      if(!confirm('O texto da obrigação mudou depois de validado. A validação será retirada e precisa ser feita de novo. Continuar?'))return;
+      Object.assign(d,{validador_id:null,validado_tipo:null,validado_nome:null,validado_registro:null,validado_em:null});
+    }else{
+      d.validador_id=vid;d.validado_em=vid?(vem||hojeISO()):null;
+      d.validado_tipo=val?val.tipo:null;d.validado_nome=val?val.nome:null;d.validado_registro=val?(val.registro||null):null;
+      d.parecer=$('ob-parecer').value.trim()||null;
+      if(val&&d.precisa_parecer&&val.tipo!=='advogado'&&!confirm('Esta obrigação precisa de parecer jurídico e quem validou não é advogado. Ela continua como "aguardando parecer jurídico". Salvar assim mesmo?'))return;
+    }
+  }else if(textoMudou&&!confirm('O texto da obrigação mudou depois de validado. A validação será retirada e o administrador terá de registrar a nova validação. Continuar?'))return;
+  let r;
+  if(obEditId)r=await sb.from('iso_obrigacoes').update(d).eq('id',obEditId);
+  else r=await sb.from('iso_obrigacoes').insert(Object.assign(d,{ordem:obrigDe(rid).length+1,criado_por:quemSou()}));
+  if(erroSB(r.error))return;
+  fecharModal('modal-iso-obrig');
+  await carregarV79ISO();await sincronizarSituacaoLei(rid);
+  renderObrigacoesRequisito(rid);renderISO();atualizarBadgeGestao();toast('Obrigação salva');
+}
+function obrigacaoAvaliadaHoje(){salvarObrigacaoISO(true);}
+async function excluirObrigacaoISO(){
+  if(!PERM.admin||!obEditId||!confirm('Excluir esta obrigação? (Se deixou de valer, prefira desmarcar "Ativa" — o histórico fica para o auditor.)'))return;
+  const rid=obRequisito;const{error}=await sb.from('iso_obrigacoes').delete().eq('id',obEditId);if(erroSB(error))return;
+  fecharModal('modal-iso-obrig');await carregarV79ISO();await sincronizarSituacaoLei(rid);renderObrigacoesRequisito(rid);renderISO();atualizarBadgeGestao();toast('Excluída');
+}
+
+/* locais de atuação */
+function abrirLocaisISO(){
+  if(!v79IsoOk){alert('Rode antes a migração v79 no Supabase.');return;}
+  preencherSelect($('lc-uf'),Object.keys(UF_NOMES).map(u=>[u,u+' — '+UF_NOMES[u]]));
+  limparLocalISO();renderLocaisISO();abrirModal('modal-iso-locais');
+}
+function limparLocalISO(){lcEditId=null;$('lc-mun').value='';$('lc-uf').value='RJ';$('lc-obs').value='';$('lc-ativo').checked=true;
+  const vb=todasEmpresas.find(e=>e.sigla==='VB');checksEmpresas($('lc-empresas'),new Set(vb?[vb.id]:[]));}
+function editarLocalISO(id,base){
+  const l=id?isoLocais.find(x=>x.id===id):base;if(!l)return;lcEditId=id||null;
+  $('lc-mun').value=l.municipio||'';$('lc-uf').value=(l.uf||'RJ').toUpperCase();$('lc-obs').value=l.observacoes||'';$('lc-ativo').checked=l.ativo!==false;
+  if(id)checksEmpresas($('lc-empresas'),new Set(l.empresas||[]));
+  $('lc-mun').focus();
+}
+async function salvarLocalISO(){
+  const municipio=$('lc-mun').value.trim().replace(/\s+/g,' ');if(!municipio){alert('Informe o município.');return;}
+  const d={municipio,uf:$('lc-uf').value||'RJ',empresas:[...$('lc-empresas').querySelectorAll('input:checked')].map(i=>i.value),
+    observacoes:$('lc-obs').value.trim()||null,ativo:$('lc-ativo').checked,atualizado_em:new Date().toISOString()};
+  const r=lcEditId?await sb.from('iso_locais').update(d).eq('id',lcEditId):await sb.from('iso_locais').insert(Object.assign(d,{origem:window._lcDeCliente?'cliente':'manual',criado_por:quemSou()}));
+  window._lcDeCliente=false;
+  if(r.error&&/duplicate|iso_locais_uk/i.test(r.error.message||'')){alert('Este município já está na lista.');return;}
+  if(erroSB(r.error))return;
+  await carregarV79ISO();limparLocalISO();renderLocaisISO();renderISO();atualizarBadgeGestao();toast('Município salvo. A próxima busca de leis já inclui ele.');
+}
+// cidade escrita no local do contrato ou no endereço do cliente
+function cidadeDoTextoISO(t){
+  const txt=String(t||''),n=' '+semAcento(txt).toLowerCase().replace(/[^a-z0-9]+/g,' ')+' ';
+  const cad=isoLocais.filter(x=>x.ativo!==false).sort((a,b)=>b.municipio.length-a.municipio.length)
+    .find(x=>n.includes(' '+semAcento(x.municipio).toLowerCase().replace(/[^a-z0-9]+/g,' ')+' '));
+  if(cad)return{municipio:cad.municipio,uf:cad.uf,status:'cadastrado'};
+  const ms=[...txt.matchAll(/([A-Za-zÀ-ÿ'][A-Za-zÀ-ÿ' .]{1,40}?)\s*[\/–-]\s*([A-Z]{2})\b/g)].filter(m=>UF_NOMES[m[2]]);
+  if(ms.length){const m=ms[ms.length-1];return{municipio:m[1].trim(),uf:m[2],status:'fora'};}
+  if(/(,|-|–)\s*RJ\s*\.?\s*$/.test(txt.trim()))return{municipio:'Rio de Janeiro',uf:'RJ',status:'provavel'};
+  return null;
+}
+function clientesLocaisISO(){
+  if(!PERM.admin)return[];
+  const porCli=new Map();
+  (todosProjetos||[]).forEach(p=>{if(!p.cliente_id)return;const a=porCli.get(p.cliente_id)||[];if(p.local&&String(p.local).trim())a.push(String(p.local).trim());porCli.set(p.cliente_id,a);});
+  const l=[];
+  porCli.forEach((locs,cid)=>{
+    const c=(todosClientes||[]).find(x=>x.id===cid);if(!c)return;
+    const textos=locs.length?[...new Set(locs)]:[c.endereco||''],vistos=new Set();
+    textos.forEach(t=>{const cd=cidadeDoTextoISO(t),k=cd?cd.municipio+'/'+cd.uf:'?'+t;if(vistos.has(k))return;vistos.add(k);
+      l.push({cliente:c,texto:t,cidade:cd,status:cd?cd.status:'sem'});});
+  });
+  return l;
+}
+const cidadesForaISO=()=>{const m=new Map();clientesLocaisISO().filter(x=>x.status==='fora').forEach(x=>{const k=slugLex(x.cidade.municipio)+'|'+x.cidade.uf;if(!m.has(k))m.set(k,Object.assign({clientes:[]},x.cidade));m.get(k).clientes.push(x.cliente);});return[...m.values()];};
+function renderLocaisISO(){
+  const ordem=isoLocais.slice().sort((a,b)=>(a.ativo===false)-(b.ativo===false)||String(a.municipio).localeCompare(String(b.municipio),'pt-BR'));
+  const ufs=[...new Set(isoLocais.filter(l=>l.ativo!==false).map(l=>String(l.uf).toUpperCase()))];
+  const nEst=uf=>todosRequisitos.filter(r=>r.ativo!==false&&r.esfera==='estadual'&&String(r.uf||'').toUpperCase()===uf).length;
+  $('lc-lista').innerHTML=(ufs.length?`<div class="dica" style="margin:0 0 6px">${ufs.map(u=>`Estado ${esc(u)}: ${nEst(u)} lei(s) estadual(is) na matriz`).join(' · ')}</div>`:'')+
+    `<div class="tabela-wrap"><table class="tabela"><thead><tr><th>Município</th><th>UF</th><th>Empresas</th><th>Leis municipais na matriz</th><th></th></tr></thead><tbody>${ordem.map(l=>{const n=leisDoLocal(l).length;return`<tr class="${l.ativo===false?'inativo':''}">
+      <td><strong>${esc(l.municipio)}</strong>${l.observacoes?`<div class="dica" style="margin:0">${esc(l.observacoes)}</div>`:''}</td><td>${esc(l.uf)}</td><td>${esc(siglasEmpresas(l.empresas))}</td>
+      <td>${n?n:'<span class="badge badge-atraso">nenhuma</span> <span class="dica">cadastre a legislação municipal</span>'}</td>
+      <td style="white-space:nowrap"><button class="btn-link" data-lc-ver="${esc(l.id)}">ver leis</button> <button class="btn-link" data-lc-ed="${esc(l.id)}">alterar</button></td></tr>`;}).join('')||'<tr><td colspan="5" class="vazio">Nenhum município cadastrado.</td></tr>'}</tbody></table></div>`;
+  $('lc-lista').querySelectorAll('[data-lc-ed]').forEach(b=>b.onclick=()=>editarLocalISO(b.dataset.lcEd));
+  $('lc-lista').querySelectorAll('[data-lc-ver]').forEach(b=>b.onclick=()=>{const l=isoLocais.find(x=>x.id===b.dataset.lcVer);fecharModal('modal-iso-locais');$('iso-esfera').value='';renderISO();$('iso-local').value='mun:'+slugLex(l.municipio)+'|'+String(l.uf).toUpperCase();renderISO();});
+  // clientes com contrato: cidade fora da lista
+  if(!PERM.admin){$('lc-clientes').innerHTML='';return;}
+  const cl=clientesLocaisISO(),fora=cl.filter(x=>x.status==='fora'),prov=cl.filter(x=>x.status==='provavel'),sem=cl.filter(x=>x.status==='sem');
+  const linha=x=>`<tr><td>${esc(x.cliente.codigo||'')} ${esc(x.cliente.nome||'')}</td><td>${esc(x.texto||'(sem endereço)')}</td><td>${x.cidade?esc(x.cidade.municipio+'/'+x.cidade.uf):'—'}</td></tr>`;
+  $('lc-clientes').innerHTML=`<div class="secao">Clientes com contrato: onde executamos</div>
+    <div class="dica" style="margin:0 0 6px">O CRM lê o local de cada contrato (ou o endereço do cliente) e aponta as cidades que ainda não estão na lista. ${cl.length-fora.length-prov.length-sem.length} de ${cl.length} local(is) já batem com um município cadastrado.</div>
+    ${fora.length?`<div class="painel" style="margin:6px 0"><strong>Cidades fora da lista (${cidadesForaISO().length})</strong><div class="tabela-wrap"><table class="tabela"><thead><tr><th>Cidade</th><th>Clientes</th><th></th></tr></thead><tbody>${cidadesForaISO().map((c,i)=>`<tr><td><strong>${esc(c.municipio)}/${esc(c.uf)}</strong></td><td>${esc(c.clientes.map(x=>(x.codigo||'')+' '+(x.nome||'')).join(', '))}</td><td><button class="btn-salvar" style="padding:5px 10px;font-size:12px" data-lc-inc="${i}">Incluir na lista</button></td></tr>`).join('')}</tbody></table></div></div>`:'<p class="dica">Nenhum contrato em cidade fora da lista.</p>'}
+    ${prov.length?`<details style="margin:6px 0"><summary>Endereço só com "RJ" — provavelmente Rio de Janeiro (${prov.length})</summary><div class="tabela-wrap"><table class="tabela"><tbody>${prov.map(linha).join('')}</tbody></table></div></details>`:''}
+    ${sem.length?`<details style="margin:6px 0"><summary>Sem cidade no local do contrato nem no endereço do cliente (${sem.length}) — vale preencher</summary><div class="tabela-wrap"><table class="tabela"><tbody>${sem.map(linha).join('')}</tbody></table></div></details>`:''}`;
+  const cf=cidadesForaISO();
+  $('lc-clientes').querySelectorAll('[data-lc-inc]').forEach(b=>b.onclick=()=>{const c=cf[+b.dataset.lcInc];limparLocalISO();editarLocalISO(null,{municipio:c.municipio,uf:c.uf,observacoes:'Contrato de '+c.clientes.map(x=>x.codigo||x.nome).join(', ')});window._lcDeCliente=true;$('lc-mun').scrollIntoView({block:'center'});});
+}
+
+/* quem valida */
+function abrirValidadoresISO(){
+  if(!v79IsoOk){alert('Rode antes a migração v79 no Supabase.');return;}
+  $('vl-form').style.display=PERM.admin?'':'none';limparValidadorISO();renderValidadoresISO();abrirModal('modal-iso-validadores');
+}
+function limparValidadorISO(){vlEditId=null;['vl-nome','vl-formacao','vl-registro','vl-comprovante','vl-contato'].forEach(k=>$(k).value='');$('vl-tipo').value='especialista';$('vl-ativo').checked=true;}
+function renderValidadoresISO(){
+  const n=id=>isoObrig.filter(o=>o.validador_id===id&&o.ativo!==false).length;
+  $('vl-lista').innerHTML=`<div class="tabela-wrap"><table class="tabela"><thead><tr><th>Nome</th><th>Tipo</th><th>Formação / registro</th><th>Comprovante</th><th>Obrigações validadas</th><th></th></tr></thead><tbody>${isoValid.map(v=>`<tr class="${v.ativo===false?'inativo':''}">
+    <td><strong>${esc(v.nome)}</strong>${v.contato?`<div class="dica" style="margin:0">${esc(v.contato)}</div>`:''}</td><td>${esc(ISO_VAL_TIPO[v.tipo]||v.tipo)}</td>
+    <td>${esc(v.formacao||'')}${v.registro?`<div class="dica" style="margin:0">${esc(v.registro)}</div>`:''}</td>
+    <td>${v.comprovante?esc(v.comprovante):'<span class="badge badge-atraso">falta</span>'}</td><td>${n(v.id)}</td>
+    <td>${PERM.admin?`<button class="btn-link" data-vl-ed="${esc(v.id)}">alterar</button>`:''}</td></tr>`).join('')||'<tr><td colspan="6" class="vazio">Ninguém cadastrado ainda.</td></tr>'}</tbody></table></div>`;
+  $('vl-lista').querySelectorAll('[data-vl-ed]').forEach(b=>b.onclick=()=>{const v=isoValid.find(x=>x.id===b.dataset.vlEd);if(!v)return;vlEditId=v.id;
+    $('vl-nome').value=v.nome||'';$('vl-tipo').value=v.tipo||'especialista';$('vl-formacao').value=v.formacao||'';$('vl-registro').value=v.registro||'';
+    $('vl-comprovante').value=v.comprovante||'';$('vl-contato').value=v.contato||'';$('vl-ativo').checked=v.ativo!==false;$('vl-nome').focus();});
+}
+async function salvarValidadorISO(){
+  if(!PERM.admin)return;const nome=$('vl-nome').value.trim();if(!nome){alert('Informe o nome.');return;}
+  const d={nome,tipo:$('vl-tipo').value,formacao:$('vl-formacao').value.trim()||null,registro:$('vl-registro').value.trim()||null,
+    comprovante:$('vl-comprovante').value.trim()||null,contato:$('vl-contato').value.trim()||null,ativo:$('vl-ativo').checked,atualizado_em:new Date().toISOString()};
+  if(!d.registro&&!confirm(d.tipo==='advogado'?'Salvar sem o número da OAB?':'Salvar sem o registro no conselho (CREA, CRBio, CRQ…)? O auditor costuma pedir a prova de competência.'))return;
+  const r=vlEditId?await sb.from('iso_validadores').update(d).eq('id',vlEditId):await sb.from('iso_validadores').insert(Object.assign(d,{criado_por:quemSou()}));
+  if(erroSB(r.error))return;await carregarV79ISO();limparValidadorISO();renderValidadoresISO();toast('Salvo');
 }
 
 /* ---------- CONTAS E ACESSOS (só administrador, sem senha) ---------- */

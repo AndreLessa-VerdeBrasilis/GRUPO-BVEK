@@ -12,6 +12,10 @@
 //   { acao: "buscar", automatico: true } + cabeçalho x-cron-token
 //        → agendamento semanal do Supabase (pg_cron, migração v56)
 //
+// v79: os lugares da busca saem de Gestão → Normas ISO → Locais de atuação (tabela
+//      iso_locais): leis federais + do estado + de cada município cadastrado.
+//      O campo "Lugares extras" (iso_config.localidades) continua valendo para lugares a mais.
+//
 // Não precisa de segredo novo: usa SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY.
 // =====================================================================
 import { createClient } from "npm:@supabase/supabase-js@2";
@@ -44,17 +48,34 @@ function localDaUrn(urn: string): string {
   const m = urn.match(/^urn:lex:([^:]+)/i);
   return m ? m[1].toLowerCase() : "";
 }
-// a lei é de um lugar que interessa? (federal = "br"; RJ = "br;rio.de.janeiro"…)
+// v79: nomes de lugar comparados sem acento e sem "de/do/da/dos/das/e" (o LexML pode escrever
+// "rio.de.janeiro" ou "rio.janeiro"; assim as duas formas batem)
+const STOP = new Set(["de", "do", "da", "dos", "das", "e"]);
+const slug = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase()
+  .replace(/[^a-z0-9]+/g, ".").split(".").filter((p) => p && !STOP.has(p)).join(".");
+const slugLocal = (loc: string) => loc.split(";").map(slug).join(";");
+const UF_NOMES: Record<string, string> = {
+  AC: "Acre", AL: "Alagoas", AP: "Amapá", AM: "Amazonas", BA: "Bahia", CE: "Ceará", DF: "Distrito Federal", ES: "Espírito Santo",
+  GO: "Goiás", MA: "Maranhão", MT: "Mato Grosso", MS: "Mato Grosso do Sul", MG: "Minas Gerais", PA: "Pará", PB: "Paraíba",
+  PR: "Paraná", PE: "Pernambuco", PI: "Piauí", RJ: "Rio de Janeiro", RN: "Rio Grande do Norte", RS: "Rio Grande do Sul",
+  RO: "Rondônia", RR: "Roraima", SC: "Santa Catarina", SP: "São Paulo", SE: "Sergipe", TO: "Tocantins",
+};
+// a lei é de um lugar que interessa?
+//  "federal"            → leis nacionais
+//  "=br;estado"         → só as leis do estado (v79, vindo de Locais de atuação)
+//  "=br;estado;cidade"  → só as leis daquele município (v79)
+//  outro texto          → qualquer lei cujo lugar contenha esse nome (regra antiga do campo "Lugares")
 function localOk(urn: string, locais: string[]): boolean {
-  const loc = localDaUrn(urn), esf = esferaDaUrn(urn);
+  const loc = slugLocal(localDaUrn(urn)), esf = esferaDaUrn(urn);
   return locais.some((l) => {
     const x = l.toLowerCase().trim();
     if (x === "federal") return loc === "br" && esf === "federal";
-    return loc.split(";").includes(x);
+    if (x.startsWith("=")) return loc === x.slice(1);
+    return loc.split(";").includes(slug(x));
   });
 }
 
-async function consultar(query: string, max = 50): Promise<{ registros: string[]; erro: string }> {
+async function consultar(query: string, max = 100): Promise<{ registros: string[]; erro: string }> {
   const url = `${SRU}?operation=searchRetrieve&version=1.1&maximumRecords=${max}&startRecord=1&query=${encodeURIComponent(query)}`;
   const r = await fetch(url, { headers: { Accept: "application/xml" } });
   const t = await r.text();
@@ -68,7 +89,21 @@ async function buscar(adm: Linha): Promise<Linha> {
   const { data: cfg } = await adm.from("iso_config").select("*").eq("id", 1).maybeSingle();
   if (!cfg) throw new Error("Falta rodar a migração v56 no Supabase.");
   const termos = ((cfg.termos || []) as string[]).map((t) => t.trim()).filter(Boolean);
-  const locais = ((cfg.localidades || []) as string[]).length ? cfg.localidades as string[] : ["federal", "rio.de.janeiro"];
+  let locais = ((cfg.localidades || []) as string[]).length ? cfg.localidades as string[] : ["federal", "rio.de.janeiro"];
+  // v79: Locais de atuação → estado e município exatos (se a tabela existir e tiver municípios)
+  const { data: lugares, error: eLug } = await adm.from("iso_locais").select("municipio, uf").eq("ativo", true);
+  if (!eLug && (lugares || []).length) {
+    const daTabela = new Set<string>(["federal"]);
+    for (const l of lugares as Linha[]) {
+      const est = slug(UF_NOMES[String(l.uf || "RJ").toUpperCase()] || String(l.uf || ""));
+      if (!est) continue;
+      daTabela.add("=br;" + est);
+      daTabela.add("=br;" + est + ";" + slug(String(l.municipio || "")));
+    }
+    // "rio.de.janeiro" era o padrão antigo (estado + todos os municípios do RJ): agora vem da tabela
+    const extras = locais.filter((x) => !["federal", "rio.de.janeiro", "rio.janeiro"].includes(x.toLowerCase().trim()));
+    locais = [...daTabela, ...extras];
+  }
   const desde = new Date(Date.now() - Math.max(7, Number(cfg.dias_busca) || 30) * 86400000).toISOString().slice(0, 10);
   const ano = desde.slice(0, 4);
 
@@ -105,7 +140,8 @@ async function buscar(adm: Linha): Promise<Linha> {
     if (error) throw new Error(error.message);
     novos = (data || []).length;
   }
-  const resumo = `${new Date().toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}: ${termos.length} palavra(s), ${lista.length} lei(s) encontrada(s), ${novos} nova(s)` +
+  const nLug = locais.filter((x) => x.startsWith("=br;") && x.split(";").length === 3).length;
+  const resumo = `${new Date().toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}: ${termos.length} palavra(s), federal${nLug ? ` + ${nLug} município(s)` : ""}, ${lista.length} lei(s) encontrada(s), ${novos} nova(s)` +
     (erros.length ? ` · ${erros.length} palavra(s) com erro: ${erros.slice(0, 3).join("; ")}` : "");
   await adm.from("iso_config").update({ ultima_busca: new Date().toISOString(), ultimo_resultado: resumo.slice(0, 1000) }).eq("id", 1);
   return { ok: true, encontrados: lista.length, novos, erros, resumo };
