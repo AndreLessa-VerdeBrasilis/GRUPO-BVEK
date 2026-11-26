@@ -1,5 +1,13 @@
 // =====================================================================
-// CRM Grupo BVEK — função "convocacao" (Supabase Edge Function) — v47 / v72
+// CRM Grupo BVEK — função "convocacao" (Supabase Edge Function) — v47 / v72 / v85
+// v85: INTERMITENTES (RH → ficha → tipo de contrato) recebem a CONVOCAÇÃO EM PDF
+//      (papel timbrado, art. 452-A da CLT), guardada em Documentos (tipo
+//      "Convocação de intermitente", documentos.cronograma_id) e enviada junto:
+//      no WhatsApp (modelo com documento no cabeçalho, se configurado; senão o
+//      link do PDF vai no texto) e anexada ao e-mail. Alteração → convocação nova
+//      (a antiga fica "substituída"); cancelamento → convocação "arquivada".
+//      Alocação que já terminou → só a DECLARAÇÃO de prestação de serviços.
+//      Precisa da migração v85.
 // v72: erro 138000 (botão de ligação pelo WhatsApp no modelo) explicado e
 //      apontado pelo diagnóstico; conta do WhatsApp (WABA) informada na tela.
 // Cronograma → avisa cada funcionário da equipe pelo WhatsApp (API oficial
@@ -29,6 +37,7 @@
 // Alocações que já terminaram não geram aviso.
 // =====================================================================
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { PDFDocument, StandardFonts, rgb } from "npm:pdf-lib@1.17.1";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -107,7 +116,7 @@ function textoWhats(tipo: Tipo, nome: string, d: Det): string {
   return l.join("\n");
 }
 
-function emailHtml(tipo: Tipo, nome: string, d: Det): string {
+function emailHtml(tipo: Tipo, nome: string, d: Det, comPdf = false): string {
   const cor = tipo === "cancelamento" ? "#C0392B" : "#0C4982";
   const linha = (rot: string, v: string) => v ? `<tr><td style="padding:4px 12px 4px 0;color:#555;white-space:nowrap;vertical-align:top">${rot}</td><td style="padding:4px 0;font-weight:600">${escH(v).replace(/\n/g, "<br>")}</td></tr>` : "";
   return `<div style="font-family:Calibri,Arial,sans-serif;font-size:15px;color:#222;max-width:640px">
@@ -121,6 +130,7 @@ function emailHtml(tipo: Tipo, nome: string, d: Det): string {
     ${linha("Contrato", d.projeto)}${linha("Cliente", d.cliente)}${linha("Serviço", d.servico)}
     ${tipo !== "cancelamento" ? linha("Equipe", d.equipe) + linha("Observações", d.obs) : ""}
   </table>
+  ${comPdf ? `<p style="margin-top:16px">A convocação em PDF está anexada a este e-mail. Responda em até 1 dia útil (pelo WhatsApp, por e-mail ou ao escritório).</p>` : ""}
   <p style="margin-top:24px;font-size:12px;color:#777">Aviso automático do cronograma do Grupo BVEK. Em caso de dúvida, fale com o escritório.</p></div>`;
 }
 
@@ -389,30 +399,230 @@ async function avisarEscritorio(adm: any, p: Linha, quem: string, cfg: Linha): P
   return json({ ok: true, enviados, total: resultado.length, resultado, sem_modelo: temWhats && !String(cfg.meta_modelo || "").trim() });
 }
 
+// ------------------------------------------------------------------ v85: convocação em PDF (intermitentes)
+const CRM_URL = "https://grupo-bvek.vercel.app";
+// funcionários registrados só no CNPJ da Verde Brasilis (mesmos dados do termo de adesão no CRM)
+const EMPREGADORA = {
+  razao: "VERDE BRASILIS GESTÃO E SERVIÇOS LTDA.", cnpj: "27.400.958/0001-26",
+  sede: "Rua Conquista, nº 270 – Jardim Guanabara – Ilha do Governador", representante: "André Ferreira Lessa", cargo: "Diretor",
+};
+const TIPO_DOC_CONV = "Convocação de intermitente";
+const SEMANA_LONGA = ["domingo", "segunda-feira", "terça-feira", "quarta-feira", "quinta-feira", "sexta-feira", "sábado"];
+const MESES = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"];
+const fmtCPF = (c: unknown) => { const d = String(c || "").replace(/\D/g, ""); return d.length === 11 ? `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6, 9)}-${d.slice(9)}` : String(c || ""); };
+const somaDias = (iso: string, n: number) => { const d = new Date(iso + "T12:00:00Z"); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
+// dias da alocação (mesma regra do CRM: dias úteis + sábado/domingo se marcados; um dia só sempre conta)
+function diasDaAloc(l: Linha): string[] {
+  const ini = String(l.data_inicio), fim = String(l.data_fim), r: string[] = [];
+  if (ini === fim) return [ini];
+  for (let d = ini; d <= fim && r.length < 120; d = somaDias(d, 1)) {
+    const s = new Date(d + "T12:00:00Z").getUTCDay();
+    if ((s === 6 && !l.sabado) || (s === 0 && !l.domingo)) continue;
+    r.push(d);
+  }
+  return r;
+}
+let timbradoCache: Uint8Array | null | undefined;
+async function bytesTimbrado(): Promise<Uint8Array | null> {
+  if (timbradoCache !== undefined) return timbradoCache;
+  try { const r = await fetch(CRM_URL + "/img/timbrado/bvk-timbrado.pdf"); timbradoCache = r.ok ? new Uint8Array(await r.arrayBuffer()) : null; } catch (_) { timbradoCache = null; }
+  return timbradoCache;
+}
+// deno-lint-ignore no-explicit-any
+async function bytesAssinaturaRep(adm: any): Promise<Uint8Array | null> {
+  try { const { data, error } = await adm.storage.from("rh").download("assinaturas/representante.png"); return error || !data ? null : new Uint8Array(await data.arrayBuffer()); } catch (_) { return null; }
+}
+type Run = [string, boolean];
+type TextoDoc = { titulo: string; sub: string; partes: Run[][]; abertura: string; clausulas: [string, string][]; fecho: string };
+function textoConvocacao(modo: "convocacao" | "alteracao" | "declaracao", l: Linha, f: Linha, d: Det, emitidoAnterior: string | null): TextoDoc {
+  const E = EMPREGADORA, dias = diasDaAloc(l), hoje = hojeBrasilia();
+  const listaDias = dias.length <= 12
+    ? dias.map((x) => `${dataBR(x)} (${SEMANA_LONGA[new Date(x + "T12:00:00Z").getUTCDay()]})`).join("; ")
+    : `de ${dataBR(dias[0])} a ${dataBR(dias[dias.length - 1])}, ${d.data.replace(/^.*\(/, "(")}`;
+  const antecedencia = Math.round((Date.parse(String(l.data_inicio) + "T12:00:00Z") - Date.parse(hoje + "T12:00:00Z")) / 86400000);
+  const partes: Run[][] = [
+    [["EMPREGADORA: ", true], [`${E.razao}, inscrita no CNPJ sob o nº ${E.cnpj}, com sede na ${E.sede}, Rio de Janeiro/RJ, integrante do Grupo BVEK.`, false]],
+    [["EMPREGADO(A): ", true], [`${String(f.nome || "").toUpperCase()}, CPF nº ${f.cpf ? fmtCPF(f.cpf) : "______________________"}, função ${f.cargo || "______________________________"}, admitido(a) em ${f.data_admissao ? dataBR(String(f.data_admissao)) : "____/____/________"}, contratado(a) na modalidade de trabalho intermitente.`, false]],
+  ];
+  const servico = [d.servico, d.projeto ? "contrato " + d.projeto : "", d.cliente ? "cliente " + d.cliente : ""].filter(Boolean).join(" – ") || "conforme orientação do escritório";
+  const cl: [string, string][] = [
+    ["1. Dia(s) de trabalho:", `${listaDias} – total de ${dias.length} dia(s).`],
+    ["2. Jornada:", d.horario + "."],
+    ["3. Local:", d.local + "."],
+    ["4. Serviço:", servico + "."],
+  ];
+  if (modo === "declaracao") {
+    cl.push(["5. Folha de pagamento:", "Os dias acima foram lançados no cronograma da EMPREGADORA e entram na folha de pagamento da competência correspondente, com o pagamento das parcelas previstas no art. 452-A, § 6º, da CLT."]);
+    return {
+      titulo: "DECLARAÇÃO DE PRESTAÇÃO DE SERVIÇOS", sub: "Contrato de trabalho intermitente – art. 452-A da CLT", partes,
+      abertura: "A EMPREGADORA declara, para os devidos fins, que o(a) EMPREGADO(A) acima qualificado(a) prestou serviços, por convocação da EMPREGADORA, nas condições abaixo:",
+      clausulas: cl, fecho: "Por ser verdade, as partes assinam a presente declaração.",
+    };
+  }
+  if (d.obs) cl.push(["5. Observações:", d.obs]);
+  const n = cl.length + 1;
+  cl.push(
+    [`${n}. Resposta:`, "Nos termos do art. 452-A, § 2º, da CLT, o(a) EMPREGADO(A) tem o prazo de 1 (um) dia útil, contado do recebimento desta convocação, para responder ao chamado (pelo WhatsApp, e-mail ou diretamente ao escritório), presumindo-se a recusa no silêncio. A recusa da oferta não descaracteriza a subordinação (art. 452-A, § 3º)."],
+    [`${n + 1}. Antecedência:`, antecedencia >= 3
+      ? `Convocação emitida em ${dataBR(hoje)}, com a antecedência mínima de 3 (três) dias corridos do início dos serviços (art. 452-A, § 1º, da CLT).`
+      : `Convocação emitida em ${dataBR(hoje)}, com antecedência inferior a 3 (três) dias corridos do início dos serviços; por isso, a prestação depende da concordância expressa do(a) EMPREGADO(A), que pode recusá-la sem qualquer penalidade.`],
+    [`${n + 2}. Remuneração:`, "Pelo período trabalhado, o(a) EMPREGADO(A) receberá a remuneração prevista no contrato de trabalho intermitente, com férias proporcionais acrescidas de um terço, décimo terceiro salário proporcional, repouso semanal remunerado e adicionais legais (art. 452-A, §§ 6º e 11, da CLT), além dos benefícios pelos dias efetivamente trabalhados."],
+  );
+  return {
+    titulo: modo === "alteracao" ? "CONVOCAÇÃO PARA PRESTAÇÃO DE SERVIÇOS – RETIFICADA" : "CONVOCAÇÃO PARA PRESTAÇÃO DE SERVIÇOS",
+    sub: "Contrato de trabalho intermitente – art. 452-A da CLT", partes,
+    abertura: (modo === "alteracao" ? `Esta convocação substitui a anterior${emitidoAnterior ? `, emitida em ${dataBR(emitidoAnterior)}` : ""}, e vale o que está nela. ` : "") +
+      "A EMPREGADORA convoca o(a) EMPREGADO(A) acima qualificado(a) para prestar serviços nas condições abaixo:",
+    clausulas: cl, fecho: "Ciente da convocação, o(a) EMPREGADO(A) assina abaixo (o aceite também vale pela resposta no WhatsApp ou e-mail).",
+  };
+}
+// mesmo layout de pdfDocTimbrado (index.html): A4, papel timbrado de fundo, Helvetica, assinaturas lado a lado no fim
+async function pdfConvocacao(t: TextoDoc, f: Linha, repPng: Uint8Array | null): Promise<Uint8Array> {
+  const doc = await PDFDocument.create();
+  const fn = await doc.embedFont(StandardFonts.Helvetica), fb = await doc.embedFont(StandardFonts.HelveticaBold);
+  doc.setTitle(t.titulo + " — " + f.nome); doc.setAuthor("Grupo BVEK");
+  const tb = await bytesTimbrado();
+  let fundo: Awaited<ReturnType<typeof doc.embedPdf>>[0] | null = null;
+  if (tb) { try { [fundo] = await doc.embedPdf(tb, [0]); } catch (_) { fundo = null; } }
+  const pri = rgb(12 / 255, 73 / 255, 130 / 255), W = 595.28, H = 841.89, M = 40, larg = W - 2 * M, cor = rgb(.13, .13, .13), TOPO = 104, RODAPE = 128, ESPACO_ASS = 46;
+  const lim = (x: string) => String(x).replace(/[“”]/g, '"').replace(/[‘’]/g, "'").replace(/[–—]/g, "-").replace(/[^\x00-\xFF]/g, "");
+  // deno-lint-ignore no-explicit-any
+  let pg: any, y = 0;
+  const novaPg = () => {
+    pg = doc.addPage([W, H]);
+    if (fundo) pg.drawPage(fundo, { x: 0, y: 0, width: W, height: H });
+    else pg.drawText("GRUPO BVEK", { x: M, y: H - 60, size: 14, font: fb, color: pri });
+    y = H - TOPO - 6;
+  };
+  novaPg();
+  const par = (runs: Run[], o: { tam?: number; alinhar?: string; antes?: number; depois?: number; c?: ReturnType<typeof rgb>; medir?: boolean } = {}): number => {
+    const tam = o.tam ?? 9.5, alinhar = o.alinhar ?? "just", antes = o.antes ?? 0, depois = o.depois ?? 3, c = o.c ?? cor;
+    const lh = tam * 1.22, pal: { w: string; f: typeof fn; wd?: number }[] = [];
+    runs.forEach(([tx, b]) => lim(tx).split(/(\s+)/).filter((x) => x !== "").forEach((w) => pal.push({ w, f: b ? fb : fn })));
+    const linhas: { w: string; f: typeof fn; wd: number }[][] = []; let at: { w: string; f: typeof fn; wd: number }[] = [], la = 0;
+    pal.forEach((p) => {
+      const esp = /^\s+$/.test(p.w), wd = p.f.widthOfTextAtSize(esp ? " " : p.w, tam);
+      if (!esp && la + wd > larg && at.length) { while (at.length && /^\s+$/.test(at[at.length - 1].w)) at.pop(); linhas.push(at); at = []; la = 0; }
+      if (esp && !at.length) return;
+      at.push({ ...p, wd }); la += wd;
+    });
+    if (at.length) linhas.push(at);
+    if (o.medir) return antes + linhas.length * lh + depois;
+    y -= antes;
+    linhas.forEach((ln, i) => {
+      if (y - lh < RODAPE) novaPg();
+      const esps = ln.filter((p) => /^\s+$/.test(p.w)).length, total = ln.reduce((s, p) => s + p.wd, 0);
+      let x = M, extra = 0;
+      if (alinhar === "centro") x = M + (larg - total) / 2;
+      else if (alinhar === "just" && i < linhas.length - 1 && esps) extra = (larg - total) / esps;
+      ln.forEach((p) => { if (/^\s+$/.test(p.w)) { x += p.wd + extra; return; } pg.drawText(p.w, { x, y: y - tam, size: tam, font: p.f, color: c }); x += p.wd; });
+      y -= lh;
+    });
+    y -= depois;
+    return 0;
+  };
+  par([[t.titulo, true]], { tam: 12, alinhar: "centro", depois: 1, c: pri });
+  par([[t.sub, true]], { tam: 10, alinhar: "centro", depois: 12 });
+  t.partes.forEach((r, i, a) => par(r, { depois: i === a.length - 1 ? 8 : 3 }));
+  par([[t.abertura, false]], { depois: 8 });
+  t.clausulas.forEach(([a, b]) => par([[a + " ", true], [b, false]], { depois: 4 }));
+  const hoje = hojeBrasilia();
+  const fecho: Run[] = [[t.fecho, false]], local: Run[] = [[`Rio de Janeiro, ${Number(hoje.slice(8, 10))} de ${MESES[Number(hoje.slice(5, 7)) - 1]} de ${hoje.slice(0, 4)}.`, false]];
+  // v69: fecho, local/data e assinaturas sempre na mesma página
+  if (y - par(fecho, { depois: 10, medir: true }) - par(local, { alinhar: "centro", depois: 6, medir: true }) - ESPACO_ASS - 40 < RODAPE) novaPg();
+  par(fecho, { antes: 4, depois: 10 }); par(local, { alinhar: "centro", depois: 6 });
+  y -= ESPACO_ASS;
+  const colW = (larg - 30) / 2, E = EMPREGADORA;
+  if (repPng) { try { const img = await doc.embedPng(repPng); const h = 40, w = Math.min(colW * .8, img.width * h / img.height); pg.drawImage(img, { x: M + colW + 30 + (colW - w) / 2, y: y + 1, width: w, height: h }); } catch (_) { /* sem a imagem */ } }
+  ([[M, ["EMPREGADO(A)", "Nome: " + String(f.nome || "").toUpperCase(), "CPF: " + (f.cpf ? fmtCPF(f.cpf) : "")]], [M + colW + 30, [E.razao, "Representante: " + E.representante, "Cargo: " + E.cargo]]] as [number, string[]][]).forEach(([x0, ls]) => {
+    pg.drawLine({ start: { x: x0, y }, end: { x: x0 + colW, y }, thickness: .7, color: cor });
+    ls.forEach((tx0, i) => {
+      const fo = i ? fn : fb, tam = i ? 8.6 : 8.8; let tx = lim(tx0);
+      while (fo.widthOfTextAtSize(tx, tam) > colW && tx.length > 4) tx = tx.slice(0, -1);
+      pg.drawText(tx, { x: x0 + (colW - fo.widthOfTextAtSize(tx, tam)) / 2, y: y - 12 - i * 12, size: tam, font: fo, color: cor });
+    });
+  });
+  return await doc.save();
+}
+const nomeArqConv = (modo: string, f: Linha, l: Linha) =>
+  `BVK-RH-DOC-${modo === "declaracao" ? "DECLARACAO_SERVICO" : "CONVOCACAO"}_${semAcento(f.nome).toUpperCase().replace(/[^A-Z0-9 ]+/g, " ").trim().replace(/\s+/g, "_")}_${String(l.data_inicio).replace(/-/g, "")}.pdf`;
+const base64 = (b: Uint8Array) => { let s = ""; for (let i = 0; i < b.length; i += 0x8000) s += String.fromCharCode(...b.subarray(i, i + 0x8000)); return btoa(s); };
+type PdfConv = { documento_id: string; caminho: string; nome: string; bytes?: Uint8Array; url?: string };
+// gera o PDF, guarda em Documentos (bucket "documentos") e devolve o link para o WhatsApp (30 dias)
+// deno-lint-ignore no-explicit-any
+async function gerarDocConvocacao(adm: any, modo: "convocacao" | "alteracao" | "declaracao", l: Linha, f: Linha, d: Det, anterior: Linha | null, quem: string, ctx: Linha): Promise<PdfConv> {
+  if (!ctx.tipoId) {
+    const { data: t, error } = await adm.from("tipos_documento").select("id").eq("nome", TIPO_DOC_CONV).maybeSingle();
+    if (error || !t) throw new Error("Falta rodar a migração v85 no Supabase (tipo de documento \"" + TIPO_DOC_CONV + "\").");
+    ctx.tipoId = t.id;
+  }
+  if (ctx.repPng === undefined) ctx.repPng = await bytesAssinaturaRep(adm);
+  const t = textoConvocacao(modo, l, f, d, anterior?.criado_em ? String(anterior.criado_em).slice(0, 10) : null);
+  const bytes = await pdfConvocacao(t, f, ctx.repPng);
+  const nome = nomeArqConv(modo, f, l);
+  const desc = `${modo === "declaracao" ? "Declaração de prestação de serviços" : modo === "alteracao" ? "Convocação (retificada)" : "Convocação"} — ${d.data}${d.projeto ? " — " + d.projeto : d.servico ? " — " + d.servico : ""}`;
+  const ins = await adm.from("documentos").insert({
+    tipo_id: ctx.tipoId, funcionario_id: f.id, empresa_id: f.empresa_id || null, orgao: "RH", descricao: desc.slice(0, 300),
+    data_emissao: hojeBrasilia(), data_validade: null, dias_aviso: 0, situacao: "vigente", cronograma_id: l.id, criado_por: quem,
+  }).select("id").single();
+  if (ins.error) throw new Error(/cronograma_id/.test(ins.error.message) ? "Falta rodar a migração v85 no Supabase." : ins.error.message);
+  const sigla = (ctx.siglas as Map<string, string>).get(String(f.empresa_id || "")) || "GERAL";
+  const caminho = `${sigla}/${ins.data.id}/${Date.now()}_${nome}`;
+  const up = await adm.storage.from("documentos").upload(caminho, bytes, { contentType: "application/pdf", upsert: false });
+  if (up.error) { await adm.from("documentos").delete().eq("id", ins.data.id); throw new Error("PDF não foi guardado: " + up.error.message); }
+  await adm.from("documentos").update({ arquivo: caminho, arquivo_nome: nome }).eq("id", ins.data.id);
+  if (anterior?.id) await adm.from("documentos").update({ situacao: "substituido", substituido_por: ins.data.id, atualizado_em: new Date().toISOString() }).eq("id", anterior.id);
+  const { data: su } = await adm.storage.from("documentos").createSignedUrl(caminho, 30 * 24 * 3600);
+  return { documento_id: ins.data.id, caminho, nome, bytes, url: su?.signedUrl || "" };
+}
+// reenvio sem mudança: usa o mesmo PDF já guardado
+// deno-lint-ignore no-explicit-any
+async function pdfExistente(adm: any, doc: Linha): Promise<PdfConv | null> {
+  if (!doc?.arquivo) return null;
+  const { data } = await adm.storage.from("documentos").download(doc.arquivo);
+  const { data: su } = await adm.storage.from("documentos").createSignedUrl(doc.arquivo, 30 * 24 * 3600);
+  return { documento_id: doc.id, caminho: doc.arquivo, nome: doc.arquivo_nome || "convocacao.pdf", bytes: data ? new Uint8Array(await data.arrayBuffer()) : undefined, url: su?.signedUrl || "" };
+}
+
 // ------------------------------------------------------------------ envios
-async function enviarWhats(cfg: Linha, fone: string, tipo: Tipo, nome: string, d: Det): Promise<string | null> {
-  const modelo = String(cfg.meta_modelo || "").trim();
+// v85: pdf = convocação do intermitente. Com o modelo "com documento" (meta_modelo_doc, cabeçalho DOCUMENTO
+// e as mesmas 7 variáveis) o PDF vai anexado na própria mensagem; com o modelo comum, o link do PDF vai na
+// variável {{7}}; sem modelo (texto livre, janela de 24 horas), o PDF vai numa segunda mensagem.
+async function enviarWhats(cfg: Linha, fone: string, tipo: Tipo, nome: string, d: Det, pdf?: PdfConv | null): Promise<string | null> {
+  const modeloDoc = String(cfg.meta_modelo_doc || "").trim();
+  const comDoc = !!(pdf?.url && modeloDoc);
+  const modelo = comDoc ? modeloDoc : String(cfg.meta_modelo || "").trim();
+  const obs = tipo === "cancelamento" ? "Não é preciso comparecer." : d.obs;
+  const sete = pdf?.url && !comDoc && modelo ? [`Convocação em PDF: ${pdf.url}`, obs].filter(Boolean).join(" | ") : obs;
+  const url = `${GRAPH}/${encodeURIComponent(String(cfg.meta_phone_id).trim())}/messages`;
+  const headers = { Authorization: "Bearer " + String(cfg.meta_token).trim(), "Content-Type": "application/json" };
   const corpo = modelo
     ? {
       messaging_product: "whatsapp", to: fone, type: "template",
       template: {
         name: modelo, language: { code: cfg.meta_idioma || "pt_BR" },
-        components: [{
-          type: "body",
-          parameters: [CABECALHO[tipo], nome, d.data, d.horario, d.local,
-            [d.projeto, d.cliente && !d.projeto ? d.cliente : "", d.servico].filter(Boolean).join(" · "),
-            tipo === "cancelamento" ? "Não é preciso comparecer." : d.obs].map(param),
-        }],
+        components: [
+          ...(comDoc ? [{ type: "header", parameters: [{ type: "document", document: { link: pdf!.url, filename: pdf!.nome } }] }] : []),
+          {
+            type: "body",
+            parameters: [CABECALHO[tipo], nome, d.data, d.horario, d.local,
+              [d.projeto, d.cliente && !d.projeto ? d.cliente : "", d.servico].filter(Boolean).join(" · "),
+              sete].map(param),
+          },
+        ],
       },
     }
     : { messaging_product: "whatsapp", to: fone, type: "text", text: { body: textoWhats(tipo, nome, d) } };
-  const r = await fetch(`${GRAPH}/${encodeURIComponent(String(cfg.meta_phone_id).trim())}/messages`, {
-    method: "POST",
-    headers: { Authorization: "Bearer " + String(cfg.meta_token).trim(), "Content-Type": "application/json" },
-    body: JSON.stringify(corpo),
-  });
-  if (r.ok) return null;
-  return erroMeta(await r.text());
+  const r = await fetch(url, { method: "POST", headers, body: JSON.stringify(corpo) });
+  if (!r.ok) return erroMeta(await r.text());
+  if (pdf?.url && !modelo) {
+    const r2 = await fetch(url, {
+      method: "POST", headers,
+      body: JSON.stringify({ messaging_product: "whatsapp", to: fone, type: "document", document: { link: pdf.url, filename: pdf.nome, caption: "Convocação em PDF" } }),
+    });
+    if (!r2.ok) return "mensagem enviada, mas o PDF não: " + erroMeta(await r2.text());
+  }
+  return null;
 }
 
 async function tokenM365(tenant: string, clientId: string, segredo: string): Promise<string> {
@@ -425,13 +635,16 @@ async function tokenM365(tenant: string, clientId: string, segredo: string): Pro
   if (!rt.ok || !tok.access_token) throw new Error("O Microsoft 365 recusou o aplicativo: " + (tok.error_description || tok.error || rt.status));
   return tok.access_token;
 }
-async function enviarEmail(token: string, remetente: string, para: string, tipo: Tipo, nome: string, d: Det): Promise<string | null> {
+async function enviarEmail(token: string, remetente: string, para: string, tipo: Tipo, nome: string, d: Det, pdf?: PdfConv | null): Promise<string | null> {
   const assunto = `${CABECALHO[tipo]} — ${d.data}${d.projeto ? " — " + d.projeto : d.local ? " — " + d.local : ""}`.slice(0, 250);
   const rs = await fetch(`https://graph.microsoft.com/v1.0/users/${encodeURIComponent(remetente)}/sendMail`, {
     method: "POST",
     headers: { Authorization: "Bearer " + token, "Content-Type": "application/json" },
     body: JSON.stringify({
-      message: { subject: assunto, body: { contentType: "HTML", content: emailHtml(tipo, nome, d) }, toRecipients: [{ emailAddress: { address: para } }] },
+      message: {
+        subject: assunto, body: { contentType: "HTML", content: emailHtml(tipo, nome, d, !!pdf?.bytes) }, toRecipients: [{ emailAddress: { address: para } }],
+        ...(pdf?.bytes ? { attachments: [{ "@odata.type": "#microsoft.graph.fileAttachment", name: pdf.nome, contentType: "application/pdf", contentBytes: base64(pdf.bytes) }] } : {}),
+      },
       saveToSentItems: true,
     }),
   });
@@ -484,23 +697,33 @@ Deno.serve(async (req) => {
     // 2. a alocação e o que já foi avisado
     const { data: l } = await adm.from("cronograma").select("*").eq("id", String(p.cronograma_id || "")).maybeSingle();
     if (!l) return json({ erro: "Alocação não encontrada. Salve antes de avisar." }, 404);
-    if (l.data_fim < hojeBrasilia()) return json({ ok: true, pulado: "A alocação já terminou: ninguém foi avisado.", resultado: [] });
+    const terminou = l.data_fim < hojeBrasilia();
 
-    const { data: avisos, error: eAv } = await adm.from("cronograma_avisos").select("funcionario_id,tipo,assinatura,ok,enviado_em")
+    const { data: avisos, error: eAv } = await adm.from("cronograma_avisos").select("*")
       .eq("cronograma_id", l.id).eq("ok", true).order("enviado_em", { ascending: false });
     if (eAv) throw new Error(/cronograma_avisos/.test(eAv.message) ? "Falta rodar a migração v47 no Supabase." : eAv.message);
-    const ultimo = new Map<string, Linha>();
-    for (const a of avisos || []) if (a.funcionario_id && !ultimo.has(a.funcionario_id)) ultimo.set(a.funcionario_id, a);
+    // último aviso por pessoa (WhatsApp/e-mail) e, à parte, o último PDF da convocação (v85, canal "documento")
+    const ultimo = new Map<string, Linha>(), ultimoDoc = new Map<string, Linha>();
+    for (const a of avisos || []) {
+      if (!a.funcionario_id) continue;
+      if (a.canal === "documento") { if (!ultimoDoc.has(a.funcionario_id)) ultimoDoc.set(a.funcionario_id, a); }
+      else if (!ultimo.has(a.funcionario_id)) ultimo.set(a.funcionario_id, a);
+    }
 
     const equipeIds: string[] = l.situacao === "ativo" ? (l.funcionarios || []) : [];
-    const ids = [...new Set([...(l.funcionarios || []), ...ultimo.keys()])];
-    const [rf, rp, cfg] = await Promise.all([
-      adm.from("funcionarios").select("id,nome,email,celular,ativo").in("id", ids.length ? ids : ["00000000-0000-0000-0000-000000000000"]),
+    const ids = [...new Set([...(l.funcionarios || []), ...ultimo.keys(), ...ultimoDoc.keys()])];
+    const idsQ = ids.length ? ids : ["00000000-0000-0000-0000-000000000000"];
+    const [rf, rp, rrh, remp, cfg] = await Promise.all([
+      adm.from("funcionarios").select("id,nome,email,celular,ativo,cpf,cargo,data_admissao,empresa_id").in("id", idsQ),
       l.projeto_id ? adm.from("projetos").select("id,codigo,nome,cliente_id,local").eq("id", l.projeto_id).maybeSingle() : Promise.resolve({ data: null }),
+      adm.from("funcionario_rh").select("funcionario_id,tipo_contrato").in("funcionario_id", idsQ),
+      adm.from("empresas").select("id,sigla"),
       lerConfig(),
     ]);
     const funcs = (rf.data || []) as Linha[];
     const proj = (rp.data || null) as Linha | null;
+    const inter = new Set(((rrh.data || []) as Linha[]).filter((r) => r.tipo_contrato === "intermitente").map((r) => String(r.funcionario_id)));
+    const ctx: Linha = { siglas: new Map(((remp.data || []) as Linha[]).map((e) => [String(e.id), String(e.sigla || "GERAL")])) };
     const cliId = l.cliente_id || proj?.cliente_id;
     const cli = cliId ? ((await adm.from("clientes").select("id,codigo,nome").eq("id", cliId).maybeSingle()).data as Linha | null) : null;
 
@@ -508,6 +731,35 @@ Deno.serve(async (req) => {
     const d = detalhes(l, proj, cli, equipeNomes);
     // o que a pessoa precisa saber: se mudar, ela recebe "alteração"
     const assinatura = JSON.stringify([l.data_inicio, l.data_fim, !!l.sabado, !!l.domingo, hora(l.hora_inicio), hora(l.hora_fim), d.local, d.projeto, d.cliente, d.servico, d.obs]);
+    const docsDe = async (ids: string[]) => {
+      const ds = ids.filter(Boolean);
+      if (!ds.length) return new Map<string, Linha>();
+      const { data } = await adm.from("documentos").select("id,arquivo,arquivo_nome,situacao,criado_em").in("id", ds);
+      return new Map(((data || []) as Linha[]).map((x) => [String(x.id), x]));
+    };
+    const docsAnt = await docsDe([...ultimoDoc.values()].map((a) => a.documento_id));
+    const registros: Linha[] = [];
+
+    // v85: alocação que já terminou → ninguém é avisado; intermitentes ganham a DECLARAÇÃO de prestação de serviços
+    if (terminou) {
+      const feitos: string[] = [], erros: string[] = [];
+      for (const id of equipeIds) {
+        const f = funcs.find((x) => x.id === id);
+        if (!f || !inter.has(id)) continue;
+        const u = ultimoDoc.get(id);
+        if (u && u.assinatura === assinatura && u.tipo !== "cancelamento" && !p.reenviar) continue;
+        try {
+          const pdf = await gerarDocConvocacao(adm, "declaracao", l, f, d, u?.documento_id ? docsAnt.get(u.documento_id) || null : null, quem, ctx);
+          registros.push({ cronograma_id: l.id, funcionario_id: f.id, tipo: "convocacao", canal: "documento", destino: pdf.caminho, ok: true, erro: null, assinatura, enviado_por: quem, documento_id: pdf.documento_id });
+          feitos.push(f.nome);
+        } catch (e) { erros.push(`${f.nome}: ${String((e as Error).message || e)}`); }
+      }
+      if (registros.length) { const { error } = await adm.from("cronograma_avisos").insert(registros); if (error) console.warn("cronograma_avisos", error.message); }
+      return json({
+        ok: true, resultado: [], documentos: feitos.length, erros_pdf: erros,
+        pulado: "A alocação já terminou: ninguém foi avisado." + (feitos.length ? ` Declaração de prestação de serviços guardada em Documentos para: ${feitos.join(", ")}.` : ""),
+      });
+    }
 
     // 3. quem recebe o quê
     const plano: { f: Linha; tipo: Tipo }[] = [];
@@ -534,31 +786,54 @@ Deno.serve(async (req) => {
 
     // 5. envia e registra
     const resultado: Linha[] = [];
-    const registros: Linha[] = [];
     for (const { f, tipo } of plano) {
       const nome = primeiroNome(f.nome);
       const fone = foneMeta(f.celular), email = String(f.email || "").trim();
       const r: Linha = { nome: f.nome, tipo, whatsapp: "", email: "" };
+      // v85: PDF da convocação do intermitente (novo, reaproveitado no reenvio sem mudança, ou arquivado no cancelamento)
+      let pdf: PdfConv | null = null;
+      if (inter.has(f.id)) {
+        const u = ultimoDoc.get(f.id), docAnt = u?.documento_id ? docsAnt.get(u.documento_id) || null : null;
+        try {
+          if (tipo === "cancelamento") {
+            if (docAnt && u!.tipo !== "cancelamento") {
+              await adm.from("documentos").update({ situacao: "arquivado", observacoes: `Convocação cancelada em ${dataBR(hojeBrasilia())} por ${quem}.`, atualizado_em: new Date().toISOString() }).eq("id", docAnt.id);
+              registros.push({ cronograma_id: l.id, funcionario_id: f.id, tipo, canal: "documento", destino: docAnt.arquivo, ok: true, erro: null, assinatura, enviado_por: quem, documento_id: docAnt.id });
+              r.pdf = "convocação arquivada";
+            }
+          } else {
+            const mesmo = u && u.tipo !== "cancelamento" && u.assinatura === assinatura && docAnt && docAnt.situacao === "vigente";
+            pdf = mesmo ? await pdfExistente(adm, docAnt!) : await gerarDocConvocacao(adm, u && u.tipo !== "cancelamento" && docAnt ? "alteracao" : "convocacao", l, f, d, u && u.tipo !== "cancelamento" ? docAnt : null, quem, ctx);
+            if (pdf && !mesmo) registros.push({ cronograma_id: l.id, funcionario_id: f.id, tipo, canal: "documento", destino: pdf.caminho, ok: true, erro: null, assinatura, enviado_por: quem, documento_id: pdf.documento_id });
+            r.pdf = pdf ? "ok" : "";
+          }
+        } catch (e) { r.pdf = "erro: " + String((e as Error).message || e).slice(0, 300); pdf = null; }
+      }
+      const docId = pdf?.documento_id || null;
       if (!fone) r.whatsapp = "sem celular na ficha";
       else if (!temWhats) r.whatsapp = cfg.ativo === false ? "WhatsApp da convocação desligado" : "WhatsApp (Meta) não configurado";
       else {
         let erro: string | null;
-        try { erro = await enviarWhats(cfg, fone, tipo, nome, d); } catch (e) { erro = String((e as Error).message || e).slice(0, 300); }
+        try { erro = await enviarWhats(cfg, fone, tipo, nome, d, pdf); } catch (e) { erro = String((e as Error).message || e).slice(0, 300); }
         r.whatsapp = erro ? "erro: " + erro : "ok";
-        registros.push({ cronograma_id: l.id, funcionario_id: f.id, tipo, canal: "whatsapp", destino: fone, ok: !erro, erro, assinatura, enviado_por: quem });
+        registros.push({ cronograma_id: l.id, funcionario_id: f.id, tipo, canal: "whatsapp", destino: fone, ok: !erro, erro, assinatura, enviado_por: quem, ...(docId ? { documento_id: docId } : {}) });
       }
       if (!EMAIL_OK.test(email)) r.email = "sem e-mail na ficha";
       else if (!tokenMs) r.email = erroMs || "e-mail não configurado";
       else {
         let erro: string | null;
-        try { erro = await enviarEmail(tokenMs, remetente!, email, tipo, nome, d); } catch (e) { erro = String((e as Error).message || e).slice(0, 300); }
+        try { erro = await enviarEmail(tokenMs, remetente!, email, tipo, nome, d, pdf); } catch (e) { erro = String((e as Error).message || e).slice(0, 300); }
         r.email = erro ? "erro: " + erro : "ok";
-        registros.push({ cronograma_id: l.id, funcionario_id: f.id, tipo, canal: "email", destino: email, ok: !erro, erro, assinatura, enviado_por: quem });
+        registros.push({ cronograma_id: l.id, funcionario_id: f.id, tipo, canal: "email", destino: email, ok: !erro, erro, assinatura, enviado_por: quem, ...(docId ? { documento_id: docId } : {}) });
       }
       resultado.push(r);
     }
     if (registros.length) {
-      const { error } = await adm.from("cronograma_avisos").insert(registros);
+      let { error } = await adm.from("cronograma_avisos").insert(registros);
+      // sem a migração v85: grava ao menos os avisos de WhatsApp/e-mail (sem o documento)
+      if (error && /documento_id|canal_chk|check constraint/i.test(error.message)) {
+        ({ error } = await adm.from("cronograma_avisos").insert(registros.filter((x) => x.canal !== "documento").map(({ documento_id: _, ...x }) => x)));
+      }
       if (error) console.warn("cronograma_avisos", error.message);
     }
     const enviados = resultado.filter((r) => r.whatsapp === "ok" || r.email === "ok").length;

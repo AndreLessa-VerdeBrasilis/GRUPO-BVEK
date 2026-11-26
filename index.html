@@ -1007,9 +1007,12 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
     <div id="tab-projetos" style="display:none">
       <div class="barra-acoes">
         <h2>Contratos</h2>
-        <button class="btn-sec" id="btn-resultado-contratos" style="display:none" onclick="abrirResultadoContrato()">Custos × recebido</button>
-        <button class="btn-sec" id="btn-nfp-contratos" style="display:none" onclick="abrirNFP()">Notas e pedidos <span id="nfp-badge"></span></button>
-        <button class="btn-novo" id="btn-novo-projeto" onclick="abrirModalProjeto()">+ Novo Contrato</button>
+        <!-- v85: botões juntos à direita (antes ficavam espalhados pela barra) -->
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          <button class="btn-sec" id="btn-resultado-contratos" style="display:none" onclick="abrirResultadoContrato()">Custos × recebido</button>
+          <button class="btn-sec" id="btn-nfp-contratos" style="display:none" onclick="abrirNFP()">Notas e pedidos <span id="nfp-badge"></span></button>
+          <button class="btn-novo" id="btn-novo-projeto" onclick="abrirModalProjeto()">+ Novo Contrato</button>
+        </div>
       </div>
       <div class="filtros">
         <input type="search" id="proj-busca" placeholder="Buscar por código, cliente ou nome" oninput="renderProjetos()">
@@ -3275,6 +3278,19 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
     </div>
   </div>
 </div>
+<!-- v85: AVISO VERMELHO — pedido do cliente (OS / ordem de compra / requisição) ainda sem nota fiscal (só administrador) -->
+<div class="modal-overlay" id="modal-nf-urgente">
+  <div class="modal" style="max-width:720px;border:3px solid var(--vermelho);border-top-width:10px">
+    <h2 style="color:var(--vermelho)">URGENTE: emitir nota fiscal</h2>
+    <p class="modal-sub" style="color:var(--texto)">Chegou <strong>pedido do cliente</strong> (ordem de serviço, ordem de compra ou requisição) que ainda <strong>não tem nota fiscal</strong>. Emita a nota no portal da prefeitura e registre aqui, ligada ao pedido — assim o aviso some.</p>
+    <div id="nfu-lista" style="background:#fdecea;border-radius:10px;padding:6px 14px;margin:10px 0"></div>
+    <p class="dica">O aviso volta toda vez que o CRM é aberto, até a nota ser lançada. Se o pedido não gera nota, abra o pedido e marque <em>Encerrado</em> (ou <em>Não é pedido</em>, se for o caso).</p>
+    <div class="modal-btns">
+      <button class="btn-sec" onclick="abrirNFP('pedidos');fecharNfUrgente()">Ver todos os pedidos</button>
+      <button class="btn-cancelar" onclick="fecharNfUrgente()">Lembrar mais tarde</button>
+    </div>
+  </div>
+</div>
 <div class="modal-overlay" id="modal-pedido">
   <div class="modal">
     <h2 id="pdc-titulo">Pedido do cliente</h2>
@@ -3326,7 +3342,7 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
         <input type="search" id="crg-equipe-busca" placeholder="Buscar funcionário" oninput="renderEquipeCrono()" style="margin-bottom:6px">
         <div class="crg-equipe" id="crg-equipe"></div></div>
       <div class="campo full"><label>Observações</label><textarea id="crg-obs" rows="2" placeholder="Ex.: levar EPI, ponto de encontro às 6h30 no escritório"></textarea></div>
-      <div class="campo full so-edicao"><div class="campo-check"><input type="checkbox" id="crg-avisar" checked><label for="crg-avisar">Avisar a equipe ao salvar (WhatsApp e e-mail): quem entrou recebe a convocação, quem já sabia recebe só se algo mudar, quem saiu recebe o cancelamento</label></div></div>
+      <div class="campo full so-edicao"><div class="campo-check"><input type="checkbox" id="crg-avisar" checked><label for="crg-avisar">Avisar a equipe ao salvar (WhatsApp e e-mail): quem entrou recebe a convocação, quem já sabia recebe só se algo mudar, quem saiu recebe o cancelamento. <strong>Intermitentes</strong> recebem junto a convocação em PDF (fica em Documentos)</label></div></div>
       <div class="campo full" id="crg-avisos-box" style="display:none"><label>Avisos da convocação</label><div id="crg-avisos"></div></div>
     </div>
     <div class="modal-btns">
@@ -3348,6 +3364,7 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
       <div class="campo"><label>ID do número (Phone number ID) *</label><input type="text" id="wc-phone"></div>
       <div class="campo"><label>Nome do modelo aprovado</label><input type="text" id="wc-modelo" placeholder="ex.: convocacao_cronograma"></div>
       <div class="campo"><label>Idioma do modelo</label><input type="text" id="wc-idioma" placeholder="pt_BR"></div>
+      <div class="campo full"><label>Modelo com o PDF da convocação (intermitentes) <span class="dica" style="display:inline;margin:0">— opcional; modelo aprovado com cabeçalho <strong>Documento</strong> e as mesmas 7 variáveis. Sem ele, o link do PDF vai na variável {{7}}</span></label><input type="text" id="wc-modelo-doc" placeholder="ex.: convocacao_com_pdf"></div>
       <div class="campo full"><label>ID da conta do WhatsApp (WABA) <span class="dica" style="display:inline;margin:0">— opcional; ajuda o Diagnóstico a conferir o modelo (Gerenciador do WhatsApp → Configurações da conta → ID da conta)</span></label><input type="text" id="wc-waba" inputmode="numeric"></div>
       <div class="campo full"><div class="info-box" style="display:block;line-height:1.55;border-left:4px solid var(--vermelho)"><strong>Erro 138000 ("Calling not enabled")</strong>: o modelo tem botão de <strong>ligação pelo WhatsApp</strong> (chamada de voz) e as chamadas não estão ligadas no número. A Meta recusa a mensagem inteira. Crie na Meta um modelo novo <strong>sem esse botão</strong> (o botão "Ligar" comum, de telefone, pode ficar), espere a aprovação e troque o nome do modelo acima.</div></div>
       <div class="campo full"><div class="info-box" style="display:block;line-height:1.6">Crie na Meta um modelo da categoria <strong>Utilidade</strong> com 7 variáveis, por exemplo:<br>
@@ -4021,7 +4038,7 @@ function diasDesde(d){if(!d)return 0;return Math.floor((Date.now()-new Date(d).g
 function semAcento(s){return String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'');}
 function norm(s){return semAcento(s).toUpperCase().replace(/[^A-Z0-9]/g,'');}
 function toast(msg){const t=$('toast');t.textContent=msg;t.classList.add('mostrar');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('mostrar'),3200);}
-function fecharModal(id){$(id).classList.remove('aberto');if(id==='modal-notif'&&typeof posNotificacao==='function')posNotificacao();}
+function fecharModal(id){if(id==='modal-nf-urgente'&&$(id).classList.contains('aberto')){fecharNfUrgente();return;}$(id).classList.remove('aberto');if(id==='modal-notif'&&typeof posNotificacao==='function')posNotificacao();}
 function abrirModal(id){$(id).classList.add('aberto');}
 function erroSB(error,msg){if(error){console.error(error);alert((msg||'Erro ao salvar')+':\n'+(error.message||error));return true;}return false;}
 function localParaISO(v){return v?new Date(v).toISOString():null;}
@@ -4594,6 +4611,7 @@ async function carregarTudo(){
   atualizarDatalists();
   renderTabAtual();
   verificarAlertas();
+  verificarPedidosUrgentes();   // v85: aviso vermelho — pedido do cliente sem nota fiscal
 }
 async function carregarPerfis(){
   if(!v11Ok){todosPerfis=[];return;}
@@ -8780,7 +8798,7 @@ async function buscarPedidosEmail(){
     let msg=data&&data.erro;if(error&&!msg){try{msg=(await error.context.json()).erro;}catch(_){msg=error.message;}}
     if(msg){$('pcf-res').innerHTML=`<span style="color:var(--vermelho)">${esc(msg)}</span>`;return;}
     $('pcf-res').innerHTML=esc(data.resumo)+(data.achados&&data.achados.length?'<br>'+data.achados.map(esc).join('<br>'):'')+(data.erros&&data.erros.length?`<br><span style="color:var(--vermelho)">${data.erros.map(esc).join('<br>')}</span>`:'');
-    await carregarNFP();if(data.novos)toast(`${data.novos} pedido(s) novo(s) a classificar`);
+    await carregarNFP();if(data.novos){toast(`${data.novos} pedido(s) novo(s) a classificar`);verificarPedidosUrgentes();}
   }finally{b.disabled=false;}
 }
 
@@ -8816,7 +8834,7 @@ function abrirNota(id,preset){
   $('nf-cliente').value=c?rotuloCliente(c):'';$('nf-empresa').value=n?(n.empresa_id||''):(pj&&pj.empresa_id||'');
   $('nf-prazo').value=n&&n.prazo_dias?String(n.prazo_dias):'';
   if(n&&n.prazo_dias&&![...$('nf-prazo').options].some(o=>o.value===String(n.prazo_dias)))$('nf-prazo').insertAdjacentHTML('beforeend',`<option value="${n.prazo_dias}">${n.prazo_dias} dias</option>`);
-  mudouClienteNota();$('nf-projeto').value=pj?pj.id:'';mudouProjetoNota();if(n)$('nf-pedido').value=n.pedido_id||'';
+  mudouClienteNota();$('nf-projeto').value=pj?pj.id:'';mudouProjetoNota();if(n)$('nf-pedido').value=n.pedido_id||'';else if(pr.pedido_id&&[...$('nf-pedido').options].some(o=>o.value===pr.pedido_id))$('nf-pedido').value=pr.pedido_id;
   $('nf-numero').value=n?n.numero:'';$('nf-serie').value=n&&n.serie||'';$('nf-emissao').value=n?n.data_emissao:hojeISO();
   $('nf-valor').value=n?fmtMoeda(n.valor):'';$('nf-liquido').value=n&&n.valor_liquido!=null?fmtMoeda(n.valor_liquido):'';
   $('nf-vencimento').value=n&&n.vencimento||'';if(!n)calcVencNota();
@@ -8940,6 +8958,38 @@ function aposMudarNFP(){
   if($('modal-nfp').classList.contains('aberto'))renderNFP();
   if($('modal-resultado').classList.contains('aberto'))renderResultado();
 }
+
+/* ---- v85: aviso VERMELHO de urgência — pedido do cliente (OS / OC / requisição) sem nota fiscal ---- */
+// Entra no aviso: pedido a classificar ou ativo, dos últimos 60 dias, sem nenhuma nota (não cancelada) ligada a ele.
+// "Lembrar mais tarde" cala o aviso só até o CRM ser aberto de novo (ou até chegar pedido novo).
+const NFU_DIAS=60;
+function pedidosSemNota(){
+  const lim=new Date(Date.now()-NFU_DIAS*86400000).toISOString();
+  return nfPedidos.filter(p=>['a_classificar','ativo'].includes(p.situacao)&&String(p.criado_em||'')>=lim&&!nfNotas.some(n=>n.pedido_id===p.id&&n.situacao!=='cancelada'));
+}
+function nfuVistos(){try{return new Set(JSON.parse(sessionStorage.getItem('bvek_nfu_vistos')||'[]'));}catch(e){return new Set();}}
+function verificarPedidosUrgentes(forcar){
+  if(!PERM.verLucro||!v80Ok)return;
+  const lista=pedidosSemNota(),vistos=nfuVistos();
+  if(!lista.length){$('modal-nf-urgente').classList.remove('aberto');return;}
+  if(!forcar&&lista.every(p=>vistos.has(p.id)))return;
+  const pjDe=id=>todosProjetos.find(x=>x.id===id),R=v=>'R$ '+fmtMoeda(v);
+  $('nfu-lista').innerHTML=lista.map(p=>{const pj=pjDe(p.projeto_id),c=clientePorId(p.cliente_id||(pj||{}).cliente_id),novo=!vistos.has(p.id),dias=Math.floor((Date.now()-new Date(p.criado_em))/86400000);
+    return`<div style="display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:8px 0;border-bottom:1px solid #f5c6c0">
+      <div style="min-width:0;flex:1"><strong style="color:var(--vermelho)">${esc(p.tipo||'Pedido do cliente')}${p.numero?' '+esc(p.numero):''}</strong>${novo?' <span class="badge badge-atraso">novo</span>':''}${p.situacao==='a_classificar'?' <span class="badge badge-hoje">a classificar</span>':''}
+        <div style="font-size:13px">${esc(c?c.nome:(p.email_de_nome||p.email_de||'cliente a conferir'))}${pj?` · <span class="cod">${esc(pj.codigo)}</span> ${esc(pj.nome||'')}`:''}${p.valor!=null?' · '+R(p.valor):''}</div>
+        <div class="dica" style="margin:0">${p.origem==='email'?`chegou por e-mail${p.email_assunto?': '+esc(p.email_assunto):''} · `:''}${dias<=0?'hoje':dias===1?'há 1 dia':'há '+dias+' dias'}</div></div>
+      ${p.situacao==='a_classificar'?`<button class="btn-sec" data-nfu-ped="${esc(p.id)}">Conferir pedido</button>`:`<button class="btn-salvar" style="background:var(--vermelho)" data-nfu-nota="${esc(p.id)}">Lançar a nota</button>`}</div>`;}).join('');
+  $('nfu-lista').querySelectorAll('[data-nfu-ped]').forEach(b=>b.onclick=()=>{fecharNfUrgente();abrirPedido(b.dataset.nfuPed);});
+  $('nfu-lista').querySelectorAll('[data-nfu-nota]').forEach(b=>b.onclick=()=>{const p=nfPedidos.find(x=>x.id===b.dataset.nfuNota);fecharNfUrgente();abrirNota(null,{projeto_id:p.projeto_id,pedido_id:p.id});});
+  abrirModal('modal-nf-urgente');
+}
+function fecharNfUrgente(){
+  try{const v=nfuVistos();pedidosSemNota().forEach(p=>v.add(p.id));sessionStorage.setItem('bvek_nfu_vistos',JSON.stringify([...v]));}catch(e){}
+  $('modal-nf-urgente').classList.remove('aberto');
+}
+// pedidos chegam do e-mail de hora em hora: com o CRM aberto, confere a cada 15 minutos
+setInterval(async()=>{if(typeof PERM==='undefined'||!PERM.verLucro||document.hidden)return;await carregarNFP();verificarPedidosUrgentes();},15*60*1000);
 
 /* pedido do cliente */
 function mudouClientePedido(){
@@ -12050,6 +12100,11 @@ async function salvarAlocacao(){
   const conf=[];(outras||[]).filter(o=>o.id!==cronoEditId).forEach(o=>{const dd=new Set(diasDaAlocacao(o,ini,fim));const comuns=diasDaAlocacao(dados).filter(d=>dd.has(d));if(!comuns.length)return;
     (o.funcionarios||[]).filter(id=>cronoEquipe.has(id)).forEach(id=>conf.push(`• ${(funcPorId(id)||{}).nome||'?'}: ${rotuloAloc(o)} (${comuns.slice(0,4).map(d=>fmtData(d).slice(0,5)).join(', ')}${comuns.length>4?'…':''})`));});
   if(conf.length&&!confirm(`Atenção: já alocado(s) em outro lugar nos mesmos dias:\n${conf.join('\n')}\n\nNa folha, o mesmo dia conta uma vez só. Salvar mesmo assim?`))return;
+  // v85: intermitente precisa ser convocado com 3 dias corridos de antecedência (art. 452-A, § 1º, da CLT)
+  const antAnt=cronoEditId?cronoLinhas.find(x=>x.id===cronoEditId):null,hj=hojeISO();
+  const novosInter=[...cronoEquipe].filter(id=>{const f=funcPorId(id);return f&&ehIntermitente(f)&&!(antAnt&&(antAnt.funcionarios||[]).includes(id)&&antAnt.data_inicio===ini);});
+  const antecDias=Math.round((new Date(ini+'T12:00:00')-new Date(hj+'T12:00:00'))/86400000);
+  if(novosInter.length&&antecDias>=0&&antecDias<3&&$('crg-avisar').checked&&!confirm(`Atenção: a lei pede que o intermitente seja convocado com pelo menos 3 dias corridos de antecedência (art. 452-A da CLT). Este serviço começa ${antecDias===0?'hoje':antecDias===1?'amanhã':'em '+antecDias+' dias'}.\n\n${novosInter.map(id=>'• '+(funcPorId(id)||{}).nome).join('\n')}\n\nA convocação em PDF vai dizer que a antecedência foi menor e que o funcionário pode recusar sem penalidade. Salvar e convocar mesmo assim?`))return;
   const btn=$('crg-btn-salvar');btn.disabled=true;
   try{
     const ant=cronoEditId?cronoLinhas.find(x=>x.id===cronoEditId):null;
@@ -12098,12 +12153,15 @@ async function avisarConvocacao(id,reenviar=false){
       if(!m&&error){try{st=error.context&&error.context.status||0;const j=await error.context.json();m=j.erro||'';}catch(e){}m=m||error.message||'erro';}
       if(st===404||/Failed to send|FunctionsFetchError|FunctionsRelayError|not found/i.test(m))m='a função "convocacao" não está publicada no Supabase (Edge Functions → Deploy new function, com o conteúdo de supabase/functions/convocacao/index.ts).';
       console.warn('Convocação',m);alert('A alocação foi salva, mas a equipe NÃO foi avisada:\n'+m);return;}
-    if(data.pulado){if(reenviar||/terminou/.test(data.pulado))toast(data.pulado);return;}
+    // v85: intermitentes recebem a convocação em PDF (guardada em Documentos); alocação já terminada → declaração
+    if(data.documentos&&PERM.docs&&typeof carregarDocumentos==='function')carregarDocumentos();
+    if(data.pulado){if((data.erros_pdf||[]).length)alert(data.pulado+'\n\nNão foi possível gerar o PDF:\n'+data.erros_pdf.join('\n'));else if(reenviar||/terminou/.test(data.pulado))toast(data.pulado);return;}
     const r=data.resultado||[];
+    if(PERM.docs&&r.some(x=>x.pdf)&&typeof carregarDocumentos==='function')carregarDocumentos();
     const falhas=r.filter(x=>x.whatsapp!=='ok'&&x.email!=='ok');
     const TIPO={convocacao:'convocação',alteracao:'alteração',cancelamento:'cancelamento'};
-    if(!falhas.length&&!r.some(x=>/^erro/.test(x.whatsapp+'')||/^erro/.test(x.email+'')))toast(`Equipe avisada: ${r.map(x=>`${nomeCurtoTxt(x.nome)} (${TIPO[x.tipo]||x.tipo})`).join(', ')}`);
-    else alert(`Avisos da convocação — ${data.enviados} de ${data.total} pessoa(s) receberam:\n\n`+r.map(x=>`• ${x.nome} (${TIPO[x.tipo]||x.tipo})\n   WhatsApp: ${x.whatsapp}\n   E-mail: ${x.email}`).join('\n')+(falhas.length?'\n\nQuem ficou sem aviso: cadastre o celular/e-mail em RH → ficha → Dados e use “Reenviar aviso” na alocação.':''));
+    if(!falhas.length&&!r.some(x=>/^erro/.test(x.whatsapp+'')||/^erro/.test(x.email+'')||/^erro/.test(x.pdf+'')))toast(`Equipe avisada: ${r.map(x=>`${nomeCurtoTxt(x.nome)} (${TIPO[x.tipo]||x.tipo}${x.pdf==='ok'?', com PDF':''})`).join(', ')}`);
+    else alert(`Avisos da convocação — ${data.enviados} de ${data.total} pessoa(s) receberam:\n\n`+r.map(x=>`• ${x.nome} (${TIPO[x.tipo]||x.tipo})\n   WhatsApp: ${x.whatsapp}\n   E-mail: ${x.email}${x.pdf?`\n   Convocação em PDF: ${x.pdf}`:''}`).join('\n')+(falhas.length?'\n\nQuem ficou sem aviso: cadastre o celular/e-mail em RH → ficha → Dados e use “Reenviar aviso” na alocação.':''));
     if(data.sem_modelo)console.warn('Convocação: sem modelo aprovado na Meta, a mensagem só chega para quem falou com o número da empresa nas últimas 24h (Cronograma → WhatsApp).');
   }catch(e){console.warn(e);alert('A alocação foi salva, mas não foi possível avisar a equipe.');}
 }
@@ -12121,10 +12179,15 @@ async function renderAvisosConvocacao(id){
   const TIPO={convocacao:'convocação',alteracao:'alteração',cancelamento:'cancelamento'};
   const porFunc=new Map();data.forEach(a=>{const k=a.funcionario_id||'?';if(!porFunc.has(k))porFunc.set(k,[]);porFunc.get(k).push(a);});
   box.style.display='';
-  $('crg-avisos').innerHTML='<div class="sub-lista">'+[...porFunc].map(([fid,av])=>{
+  $('crg-avisos').innerHTML='<div class="sub-lista">'+[...porFunc].map(([fid,avTodos])=>{
+    // v85: canal "documento" = convocação em PDF do intermitente (abre para quem vê os documentos)
+    const docA=avTodos.find(x=>x.canal==='documento'&&x.documento_id),doc=docA&&typeof todosDocumentos!=='undefined'?todosDocumentos.find(d=>d.id===docA.documento_id):null;
+    const pdfLink=docA?(doc&&doc.arquivo?` <button class="btn-link" data-crg-pdf="${esc(doc.arquivo)}">${docA.tipo==='cancelamento'?'convocação (arquivada)':'convocação em PDF'}</button>`:' <span class="badge badge-cinza">PDF gerado</span>'):'';
+    const av=avTodos.filter(x=>x.canal!=='documento');if(!av.length)return`<div class="sub-item"><span><strong>${esc((funcPorId(fid)||{}).nome||'?')}</strong> · declaração de prestação de serviços</span><span>${pdfLink}</span></div>`;
     const ult=av[0],canais=['whatsapp','email'].map(c=>{const a=av.find(x=>x.canal===c&&x.enviado_em===ult.enviado_em)||av.find(x=>x.canal===c);if(!a)return'';
       return a.ok?`<span class="badge badge-ok" title="${esc(TIPO[a.tipo]||a.tipo)} em ${esc(fmtDataHora(a.enviado_em))}">${c==='whatsapp'?'WhatsApp':'e-mail'} ✓</span>`:`<span class="badge badge-atraso" title="${esc(a.erro||'')}">${c==='whatsapp'?'WhatsApp':'e-mail'}: erro</span>`;}).join(' ');
-    return`<div class="sub-item"><span><strong>${esc((funcPorId(fid)||{}).nome||'?')}</strong> · ${esc(TIPO[ult.tipo]||ult.tipo)} · ${esc(fmtDataHora(ult.enviado_em))}${ult.enviado_por?' por '+esc(ult.enviado_por):''}</span><span>${canais}</span></div>`;}).join('')+'</div>';
+    return`<div class="sub-item"><span><strong>${esc((funcPorId(fid)||{}).nome||'?')}</strong> · ${esc(TIPO[ult.tipo]||ult.tipo)} · ${esc(fmtDataHora(ult.enviado_em))}${ult.enviado_por?' por '+esc(ult.enviado_por):''}</span><span>${canais}${pdfLink}</span></div>`;}).join('')+'</div>';
+  $('crg-avisos').querySelectorAll('[data-crg-pdf]').forEach(b=>b.onclick=()=>abrirArquivoDoc(b.dataset.crgPdf));
 }
 /* v48: configuração do WhatsApp da convocação (tabela whatsapp_convocacao_config, só administrador) */
 let waConvConfig=null;
@@ -12136,6 +12199,7 @@ async function abrirConfigConvocacao(){
   $('wc-ativo').checked=c.ativo!==false;$('wc-token').value=c.meta_token||'';$('wc-phone').value=c.meta_phone_id||'';
   $('wc-modelo').value=c.meta_modelo||'';$('wc-idioma').value=c.meta_idioma||'pt_BR';$('wc-teste').value='';$('wc-diag').style.display='none';
   $('wc-waba').value=c.meta_waba_id||'';$('wc-waba').disabled=!('meta_waba_id' in c);$('wc-waba').title='meta_waba_id' in c?'':'Rode a migração v72 para usar este campo';
+  $('wc-modelo-doc').value=c.meta_modelo_doc||'';$('wc-modelo-doc').disabled=!('meta_modelo_doc' in c);$('wc-modelo-doc').title='meta_modelo_doc' in c?'':'Rode a migração v85 para usar este campo';  // v85
   abrirModal('modal-wa-conv');
 }
 async function salvarConfigConvocacao(silencioso){
@@ -12143,6 +12207,7 @@ async function salvarConfigConvocacao(silencioso){
   const dados={ativo:$('wc-ativo').checked,meta_token:$('wc-token').value.trim()||null,meta_phone_id:$('wc-phone').value.trim()||null,
     meta_modelo:$('wc-modelo').value.trim()||null,meta_idioma:$('wc-idioma').value.trim()||'pt_BR',atualizado_em:new Date().toISOString()};
   if(waConvConfig&&'meta_waba_id' in waConvConfig)dados.meta_waba_id=$('wc-waba').value.replace(/\D/g,'')||null;  // v72
+  if(waConvConfig&&'meta_modelo_doc' in waConvConfig)dados.meta_modelo_doc=$('wc-modelo-doc').value.trim()||null;  // v85
   if(dados.ativo&&(!dados.meta_token||!dados.meta_phone_id)){alert('Para mandar pelo WhatsApp, preencha o token e o ID do número da Meta.');return false;}
   const{error}=await sb.from('whatsapp_convocacao_config').update(dados).eq('id',1);
   if(erroSB(error))return false;
