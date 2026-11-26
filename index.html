@@ -2623,6 +2623,8 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
     <div id="cv-certidoes"></div>
     <div class="secao">Triagem inicial (antes da entrevista)</div>
     <div id="cv-triagem"></div>
+    <div class="secao">Entrevista</div>
+    <div id="cv-entrevista"></div>
     <div class="secao">Questionário de perfil comportamental</div>
     <div id="cv-perfil"></div>
     <div class="modal-btns">
@@ -10669,7 +10671,7 @@ async function carregarCurriculos(){
   const e=c.error||a.error;
   if(e){if(/curriculos|avaliacoes_perfil|does not exist|schema cache/i.test(e.message||''))avisarMigracaoV14();else console.error(e);return;}
   todosCurriculos=c.data||[];todasAvaliacoes=a.data||[];
-  await carregarTriagens();
+  await carregarTriagens();await carregarEntrevistas();
   atualizarDatalistsRH();
 }
 function badgePerfil(cvId){
@@ -10703,18 +10705,19 @@ function renderCurriculos(){
     ['No banco',String(base.filter(c=>c.situacao!=='arquivado').length),'currículos ativos'],
     ['Aprovados',String(base.filter(c=>c.situacao==='aprovado').length),'banco de talentos'],
     ['Freelas para chamar',String(base.filter(c=>['freela','qualquer'].includes(c.vinculo)&&['sim','prioridade'].includes(c.chamar_novamente)).length),'sem reavaliar'],
+    ...(entOk?[(()=>{const pr=todasEntrevistas.filter(e=>e.situacao==='agendada'&&new Date(e.fim).getTime()>=Date.now()&&base.some(c=>c.id===e.curriculo_id&&entrevistaAtual(c.id)===e)).sort((a,b)=>String(a.inicio).localeCompare(String(b.inicio)));const c0=pr[0]&&todosCurriculos.find(c=>c.id===pr[0].curriculo_id);return['Entrevistas',`${pr.length} marcada(s)`,pr.length?`próxima: ${curtoEnt(pr[0].inicio)}${c0?' — '+nomeCurtoTxt(c0.nome):''}`:'nenhuma marcada'];})()]:[]),
     ...(triOk?[['Triagens',`${triAguard} aguardando`,triSemDecisao?`${triSemDecisao} respondida(s) sem decisão`:'nenhuma decisão pendente']]:[]),
     ['Questionários',`${aguard} aguardando`,semParecer?`${semParecer} respondido(s) sem parecer`:'nenhum parecer pendente'],
   ].map(([r,v,s])=>`<div class="kpi"><div class="rot">${esc(r)}</div><div class="val">${esc(v)}</div><div class="sub">${esc(s)}</div></div>`).join('');
   $('cv-contagem').textContent=`${l.length} currículo(s)`;
   const zap=t=>{const d=String(t||'').replace(/\D/g,'');return d.length>=10?`<a href="https://wa.me/55${esc(d)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="Abrir no WhatsApp">${esc(fmtTel(t))}</a>`:esc(t||'');};
-  $('tabela-cv').innerHTML='<thead><tr><th>Nome</th><th>Vínculo</th><th>Cidade</th><th>Contato</th><th>Situação</th><th>Técnica</th><th>Comport.</th><th>Chamar de novo</th><th>Triagem</th><th>Perfil</th></tr></thead><tbody>'+
+  $('tabela-cv').innerHTML='<thead><tr><th>Nome</th><th>Vínculo</th><th>Cidade</th><th>Contato</th><th>Situação</th><th>Técnica</th><th>Comport.</th><th>Chamar de novo</th><th>Triagem / entrevista</th><th>Perfil</th></tr></thead><tbody>'+
     (l.length?l.map(c=>`<tr class="clicavel" data-cv="${esc(c.id)}"><td><strong>${esc(c.nome)}</strong>${c.funcao?`<div style="font-size:12px;color:var(--texto2)">${esc(c.funcao)}</div>`:''}</td>
       <td>${esc(CV_VINC_LABEL[c.vinculo]||'—')}</td><td>${esc(c.cidade||'')}</td><td style="white-space:nowrap">${zap(c.telefone)}</td>
       <td><span class="badge ${CV_SIT_CLS[c.situacao]||'badge-cinza'}">${esc(CV_SIT_LABEL[c.situacao]||c.situacao)}</span></td>
       <td>${estrelas(c.nota_tecnica)}</td><td>${estrelas(c.nota_comportamental)}</td>
       <td>${c.chamar_novamente?`<span class="badge ${c.chamar_novamente==='nao'?'badge-atraso':c.chamar_novamente==='talvez'?'badge-cinza':'badge-ok'}">${esc(CV_CHAMAR_LABEL[c.chamar_novamente]||'')}</span>`:'—'}</td>
-      <td>${badgeTriagem(c.id)}</td><td>${badgePerfil(c.id)}</td></tr>`).join('')
+      <td>${badgeTriagem(c.id)}${badgeEntrevista(c.id)?'<br>'+badgeEntrevista(c.id):''}</td><td>${badgePerfil(c.id)}</td></tr>`).join('')
     :'<tr><td colspan="10" class="vazio">Nenhum currículo nesta lista.</td></tr>')+'</tbody>';
   $('tabela-cv').querySelectorAll('[data-cv]').forEach(tr=>tr.onclick=()=>abrirCurriculo(tr.dataset.cv));
 }
@@ -10835,7 +10838,7 @@ function abrirCurriculo(id){
   $('cv-sub').textContent=c?[c.funcao,CV_VINC_LABEL[c.vinculo],c.criado_em&&'cadastrado em '+fmtData(c.criado_em)].filter(Boolean).join(' · '):'Candidatos e freelas que já conhecemos, para não precisar avaliar de novo.';
   $('cv-excluir').style.display=c&&PERM.excluir?'inline-block':'none';
   $('cv-contratar').style.display=c&&c.situacao!=='contratado'&&!c.funcionario_id?'inline-block':'none';
-  triManual=false;renderTriagemCV();renderPerfilCV();renderCertidoesCV();
+  triManual=false;entForm=null;renderTriagemCV();renderEntrevistaCV();renderPerfilCV();renderCertidoesCV();
   abrirModal('modal-curriculo');
   if(!c)setTimeout(()=>$('cv-nome').focus(),50);
 }
@@ -11142,7 +11145,210 @@ async function salvarResultadoTriagem(){
   const dados={resultado:$('tri-res').value||null,observacao:$('tri-obs').value.trim()||null,resultado_por:quemSou(),resultado_em:new Date().toISOString()};
   const{data,error}=await sb.from('triagens').update(dados).eq('id',t.id).select().single();
   if(erroSB(error))return;
-  todasTriagens=todasTriagens.map(x=>x.id===t.id?data:x);renderTriagemCV();renderCurriculos();toast('Decisão da triagem salva');
+  todasTriagens=todasTriagens.map(x=>x.id===t.id?data:x);renderTriagemCV();renderEntrevistaCV();renderCurriculos();toast(data.resultado==='entrevistar'?'Decisão salva — agende a entrevista logo abaixo':'Decisão da triagem salva');
+}
+/* ===== v82: ENTREVISTA (3º passo do candidato) — vira evento da agenda do escritório (Cronograma + convite no Outlook
+   para os entrevistadores) e abre o WhatsApp do candidato com a mensagem pronta. Tabela entrevistas. ===== */
+let todasEntrevistas=[],entOk=true,entForm=null,entSel=new Set();const entAgenda={};
+const ENT_SIT={agendada:'Agendada',realizada:'Compareceu',faltou:'Faltou',cancelada:'Cancelada'};
+const ENT_CLS={agendada:'badge-hoje',realizada:'badge-ok',faltou:'badge-atraso',cancelada:'badge-cinza'};
+const ENT_LOCAL_KEY='bvek_entrevista_local';
+async function carregarEntrevistas(){
+  if(!PERM.curriculos)return;
+  const{data,error}=await sb.from('entrevistas').select('*').order('inicio',{ascending:false});
+  if(error){todasEntrevistas=[];if(/entrevistas|does not exist|schema cache/i.test(error.message||''))entOk=false;else console.error(error);return;}
+  entOk=true;todasEntrevistas=data||[];
+}
+const entrevistasDo=cvId=>todasEntrevistas.filter(e=>e.curriculo_id===cvId).sort((a,b)=>String(b.criado_em).localeCompare(String(a.criado_em)));
+const entrevistaAtual=cvId=>entrevistasDo(cvId)[0]||null;
+const vagaTxt=v=>{const s=String(v||'').trim();return s===s.toUpperCase()?s.toLowerCase():s;};
+const diaLongoEnt=ts=>new Date(ts).toLocaleDateString('pt-BR',{timeZone:FUSO_BR,weekday:'long',day:'2-digit',month:'2-digit',year:'numeric'});
+const curtoEnt=ts=>new Date(ts).toLocaleDateString('pt-BR',{timeZone:FUSO_BR,day:'2-digit',month:'2-digit'})+' '+horaBR(ts);
+function badgeEntrevista(cvId){
+  if(!entOk)return'';
+  const e=entrevistaAtual(cvId);if(!e||e.situacao==='cancelada')return'';
+  return e.situacao==='agendada'?`<span class="badge badge-hoje">entrevista ${esc(curtoEnt(e.inicio))}</span>`:`<span class="badge ${ENT_CLS[e.situacao]}">entrevista: ${esc(ENT_SIT[e.situacao].toLowerCase())}</span>`;
+}
+// mensagem ao candidato (convite, remarcação ou cancelamento)
+function msgEntrevista(c,e,tipo){
+  const n=TRI()?TRI().primeiroNome(c.nome):'',vaga=vagaTxt(e.cargo),dia=diaLongoEnt(e.inicio),hora=horaBR(e.inicio);
+  const ola=`Olá${n?', '+n:''}! Aqui é do RH do Grupo BVEK.\n\n`;
+  if(tipo==='cancelada')return ola+`Precisamos cancelar a entrevista que estava marcada para ${dia}, às ${hora}${vaga?' (vaga de '+vaga+')':''}. Pedimos desculpas pelo transtorno. Entraremos em contato caso seja possível marcar uma nova data.`;
+  const intro=tipo==='remarcada'?`Sua entrevista${vaga?' para a vaga de '+vaga:''} foi remarcada. Nova data:`
+    :`Seu perfil avançou no nosso processo seletivo${vaga?' para a vaga de '+vaga:''} e gostaríamos de convidar você para uma entrevista presencial:`;
+  return ola+intro+`\n\nData: ${dia}\nHorário: ${hora}${e.local?'\nLocal: '+e.local:''}${e.obs_candidato?'\n\n'+e.obs_candidato:''}\n\nPor favor, confirme sua presença respondendo a esta mensagem. Se não puder comparecer nesse horário, nos avise para combinarmos outra data.`;
+}
+const telCand=c=>{const d=String(c&&c.telefone||'').replace(/\D/g,'').replace(/^55(?=\d{10,11}$)/,'');return d.length>=10?d:'';};
+// abre a janela já no clique (o navegador bloqueia janela aberta depois de esperar o banco)
+function janelaWhats(c){if(!telCand(c))return null;const w=window.open('about:blank','_blank');try{if(w)w.opener=null;}catch(x){}return w;}
+async function enviarWhatsEnt(c,e,tipo,w){
+  const msg=msgEntrevista(c,e,tipo),tel=telCand(c);
+  if(tel&&w){w.location.href=`https://wa.me/55${tel}?text=${encodeURIComponent(msg)}`;}
+  else{
+    try{await navigator.clipboard.writeText(msg);}catch(x){}
+    alert(tel?'O navegador bloqueou a janela do WhatsApp. A mensagem foi copiada: cole na conversa com o candidato.':'O candidato está sem celular na ficha. A mensagem foi copiada: envie por onde tiver contato (ou cadastre o celular e use "Enviar de novo no WhatsApp").');
+  }
+  if(e.id){const upd={whatsapp_em:new Date().toISOString(),whatsapp_por:quemSou()};const r=await sb.from('entrevistas').update(upd).eq('id',e.id);if(!r.error)Object.assign(e,upd);}
+}
+function renderEntrevistaCV(){
+  const box=$('cv-entrevista');if(!box)return;
+  if(!entOk){box.innerHTML='<p class="vazio">Falta atualizar o banco de dados: no Supabase, rode a migração v82 (supabase/migracao_crm_v82_entrevistas_curriculos.sql) e recarregue a página.</p>';return;}
+  if(!cvEditandoId){box.innerHTML='<p class="vazio">Salve o currículo para agendar a entrevista.</p>';return;}
+  if(!PERM.cronograma||!v45Ok){box.innerHTML='<p class="vazio">A agenda do escritório não está disponível para este acesso (migração v45).</p>';return;}
+  const c=todosCurriculos.find(x=>x.id===cvEditandoId);if(!c){box.innerHTML='';return;}
+  if(entForm){box.innerHTML=formEntrevista(c);renderEntrevistadores();return;}
+  const t=triagemAtual(cvEditandoId),e=entrevistaAtual(cvEditandoId),ant=entrevistasDo(cvEditandoId).slice(1);
+  const hist=ant.length?`<div class="dica" style="margin-top:10px"><strong>Entrevistas anteriores:</strong> ${ant.map(x=>`${esc(curtoEnt(x.inicio))} (${esc(ENT_SIT[x.situacao].toLowerCase())})`).join(' · ')}</div>`:'';
+  const dica='<p class="dica" style="margin-top:8px">A entrevista entra na agenda do escritório (Cronograma e Painel) e os entrevistadores recebem o convite no Outlook. O WhatsApp abre com a mensagem pronta para o candidato: é só conferir e enviar.</p>';
+  if(e&&e.situacao!=='cancelada'){
+    const passou=new Date(e.fim).getTime()<Date.now(),ag=entAgenda[e.agenda_id];
+    box.innerHTML=`<div class="link-perfil" style="display:block">
+        <div style="display:flex;gap:10px;justify-content:space-between;flex-wrap:wrap;align-items:center">
+          <span style="font-size:14px"><strong>${esc(diaLongoEnt(e.inicio))}, às ${esc(horaBR(e.inicio))}</strong> (até ${esc(horaBR(e.fim))})${e.cargo?' · vaga: <strong>'+esc(e.cargo)+'</strong>':''}</span>
+          <span class="badge ${ENT_CLS[e.situacao]}">${esc(ENT_SIT[e.situacao])}</span></div>
+        <div style="font-size:13px;margin-top:6px;line-height:1.6">
+          ${e.local?'Local: '+esc(e.local)+'<br>':''}
+          Entrevistadores: ${(e.entrevistadores||[]).length?esc(e.entrevistadores.map(p=>p.nome||p.email).join(', ')):'<em>ninguém convidado</em>'}${ag?' · Outlook: '+statusOutlookEsc(ag):''}<br>
+          ${e.whatsapp_em?`WhatsApp aberto em ${esc(fmtDataHora(e.whatsapp_em))}${e.whatsapp_por?' por '+esc(e.whatsapp_por):''}`:'<span style="color:var(--vermelho)">Mensagem ao candidato ainda não enviada.</span>'}
+          ${e.obs_candidato?'<br>Recado na mensagem: '+esc(e.obs_candidato):''}
+        </div>
+        <div id="ent-aviso"></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+          ${e.situacao==='agendada'?`${passou?`<button class="btn-sec" onclick="marcarEntrevista('realizada')">Compareceu</button><button class="btn-sec" onclick="marcarEntrevista('faltou')">Faltou</button>`:''}
+          <button class="btn-sec" onclick="reenviarWhatsEnt()">${e.whatsapp_em?'Enviar de novo no WhatsApp':'Enviar no WhatsApp'}</button>
+          <button class="btn-sec" onclick="copiarMsgEnt()">Copiar mensagem</button>
+          <button class="btn-sec" onclick="abrirFormEntrevista('remarcar')">Remarcar</button>
+          <button class="btn-excluir" onclick="cancelarEntrevista()">Cancelar entrevista</button>`
+          :`<button class="btn-link" onclick="marcarEntrevista('agendada')">voltar para agendada</button><button class="btn-sec" onclick="abrirFormEntrevista('nova')">Agendar outra entrevista</button>`}
+        </div></div>
+      <div class="campo" style="margin-top:10px"><label>Anotações da entrevista</label><textarea id="ent-anot" rows="2">${esc(e.observacao||'')}</textarea>
+        <div style="text-align:right;margin-top:6px"><button class="btn-sec" onclick="salvarAnotEntrevista()">Salvar anotações</button></div></div>${hist}`;
+    conferirAgendaEnt(e);
+    return;
+  }
+  const liberado=t&&t.respondido_em&&t.resultado==='entrevistar';
+  box.innerHTML=`${e?`<p class="vazio">A última entrevista (${esc(curtoEnt(e.inicio))}) foi cancelada.</p>`:''}
+    ${liberado?`<button class="btn-sec" onclick="abrirFormEntrevista('nova')">Agendar entrevista</button>`
+      :`<p class="vazio">O agendamento é liberado quando a decisão da triagem for <strong>Chamar para entrevista</strong>${t&&t.resultado?` (hoje: ${esc(TRI_RESULT_CURTO[t.resultado]||t.resultado)})`:''}.</p>
+        <button class="btn-link" onclick="abrirFormEntrevista('nova')">agendar mesmo assim (ex.: indicação sem triagem)</button>`}
+    ${dica}${hist}`;
+}
+async function abrirFormEntrevista(modo){
+  const e=entrevistaAtual(cvEditandoId);
+  const t=triagemAtual(cvEditandoId);
+  if(modo==='nova'&&!(t&&t.resultado==='entrevistar')&&!confirm('A triagem deste candidato não está como "Chamar para entrevista". Agendar mesmo assim?'))return;
+  entForm={modo,id:modo==='remarcar'&&e?e.id:null};
+  const meu=String((usuario&&usuario.email)||'').toLowerCase();
+  entSel=new Set(modo==='remarcar'&&e?(e.entrevistadores||[]).map(p=>String(p.email||'').toLowerCase()).filter(Boolean):(meu&&!/@funcionario\./.test(meu)?[meu]:[]));
+  renderEntrevistaCV();
+  await carregarPessoasAgenda();renderEntrevistadores();
+}
+function formEntrevista(c){
+  const e=entForm.modo==='remarcar'?todasEntrevistas.find(x=>x.id===entForm.id):null,t=triagemAtual(cvEditandoId);
+  let local='';try{local=localStorage.getItem(ENT_LOCAL_KEY)||'';}catch(x){}
+  const dur=e?Math.round((new Date(e.fim)-new Date(e.inicio))/60000):60;
+  return`<p style="font-size:13px;margin-bottom:8px">${e?'Remarcar a entrevista: o evento da agenda muda e o candidato recebe a nova data.':'Agendar a entrevista presencial.'}</p>
+  <div class="form-grid">
+    <div class="campo"><label>Data *</label><input type="date" id="ent-data" min="${hojeISO()}" value="${e?diaBR(e.inicio):''}"></div>
+    <div class="campo"><label>Horário *</label><div class="linha-flex"><input type="time" id="ent-hora" step="900" value="${e?horaBR(e.inicio):'09:00'}">
+      <select id="ent-dur" title="Duração">${[30,45,60,90,120].map(m=>`<option value="${m}" ${m===dur?'selected':''}>${m<60?m+' min':m%60?Math.floor(m/60)+'h'+m%60:m/60+'h'}</option>`).join('')}</select></div></div>
+    <div class="campo"><label>Vaga</label><input type="text" id="ent-cargo" list="dl-funcoes" value="${esc((e&&e.cargo)||(t&&t.cargo)||c.funcao||'')}"></div>
+    <div class="campo"><label>Local *</label><input type="text" id="ent-local" value="${esc((e&&e.local)||local)}" placeholder="Endereço do escritório"></div>
+    <div class="campo full"><label>Entrevistadores <span class="dica" style="display:inline;margin:0">(recebem o convite no Outlook)</span></label>
+      <div class="crg-equipe" id="ent-pessoas"><p class="vazio">Carregando…</p></div></div>
+    <div class="campo full"><label>Recado para o candidato (vai na mensagem)</label><textarea id="ent-obs" rows="2" placeholder="Ex.: trazer documento com foto e carteira de trabalho; procurar a recepção">${esc((e&&e.obs_candidato)||'')}</textarea></div>
+    <div class="campo full" style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap"><button class="btn-cancelar" onclick="entForm=null;renderEntrevistaCV()">Cancelar</button>
+      <button class="btn-salvar" id="ent-btn" onclick="salvarEntrevista()">${e?'Remarcar':'Agendar'} e abrir o WhatsApp</button></div>
+  </div>`;
+}
+function renderEntrevistadores(){
+  const box=$('ent-pessoas');if(!box||!pessoasAgenda)return;
+  const lista=[...pessoasAgenda];entSel.forEach(em=>{if(!lista.some(p=>p.email===em))lista.push({nome:em,email:em});});
+  box.innerHTML=lista.length?lista.map(p=>`<label><input type="checkbox" data-ent="${esc(p.email)}" ${entSel.has(p.email)?'checked':''}>${esc(p.nome)}</label>`).join(''):'<p class="vazio">Ninguém na lista da agenda.</p>';
+  box.querySelectorAll('[data-ent]').forEach(x=>x.onchange=()=>{x.checked?entSel.add(x.dataset.ent):entSel.delete(x.dataset.ent);});
+}
+async function salvarEntrevista(){
+  const c=todosCurriculos.find(x=>x.id===cvEditandoId);if(!c||!entForm)return;
+  const remarcar=entForm.modo==='remarcar',e0=remarcar?todasEntrevistas.find(x=>x.id===entForm.id):null,t=triagemAtual(cvEditandoId);
+  const d=$('ent-data').value,h=$('ent-hora').value,dur=+$('ent-dur').value||60,local=$('ent-local').value.trim(),obs=$('ent-obs').value.trim(),cargo=$('ent-cargo').value.trim()||null;
+  if(!d||!h){alert('Informe a data e o horário da entrevista.');return;}
+  if(!local){alert('Informe o local da entrevista (vai na mensagem ao candidato).');return;}
+  const ini=new Date(`${d}T${h}:00-03:00`),fimD=new Date(ini.getTime()+dur*60000);
+  if(ini.getTime()<Date.now()&&!confirm('Essa data e horário já passaram. Salvar mesmo assim?'))return;
+  const inicio=ini.toISOString(),fim=fimD.toISOString(),agora=new Date().toISOString();
+  const nomes=Object.fromEntries((pessoasAgenda||[]).map(p=>[p.email,p.nome]));
+  const ents=[...entSel].map(em=>({nome:nomes[em]||em,email:em}));
+  const w=janelaWhats(c);
+  const btn=$('ent-btn');btn.disabled=true;
+  try{
+    const desc=['Entrevista do processo seletivo.',`Candidato: ${c.nome}`,cargo?`Vaga: ${cargo}`:'',c.telefone?`Telefone: ${fmtTel(c.telefone)}`:'',c.email?`E-mail: ${c.email}`:'',obs?`Recado ao candidato: ${obs}`:'','Currículo, triagem e perfil no CRM: RH → Currículos.'].filter(Boolean).join('\n');
+    const ag={titulo:`Entrevista — ${c.nome}${cargo?' ('+vagaTxt(cargo)+')':''}`,inicio,fim,dia_inteiro:false,local,descricao:desc,participantes:ents,situacao:'ativo',atualizado_em:agora};
+    let agendaId=e0&&e0.agenda_id;
+    if(agendaId){const r=await sb.from('agenda_escritorio').update(ag).eq('id',agendaId).select('id');if(erroSB(r.error)){if(w)w.close();return;}if(!r.data||!r.data.length)agendaId=null;}
+    if(!agendaId){
+      const quem=quemSou();
+      const r=await sb.from('agenda_escritorio').insert(Object.assign(ag,{origem:'crm',criado_por:quem,organizador:quem,organizador_email:usuario?usuario.email:null})).select().single();
+      if(erroSB(r.error)){if(w)w.close();return;}agendaId=r.data.id;
+    }
+    const dados={agenda_id:agendaId,cargo,inicio,fim,local,entrevistadores:ents,obs_candidato:obs||null,situacao:'agendada',atualizado_em:agora};
+    const r=e0?await sb.from('entrevistas').update(dados).eq('id',e0.id).select().single()
+      :await sb.from('entrevistas').insert(Object.assign(dados,{curriculo_id:c.id,triagem_id:t?t.id:null,criado_por:quemSou()})).select().single();
+    if(erroSB(r.error)){if(w)w.close();return;}
+    todasEntrevistas=e0?todasEntrevistas.map(x=>x.id===e0.id?r.data:x):[r.data,...todasEntrevistas];
+    try{localStorage.setItem(ENT_LOCAL_KEY,local);}catch(x){}
+    if(c.situacao==='novo'){const u=await sb.from('curriculos').update({situacao:'analise',atualizado_em:agora}).eq('id',c.id);if(!u.error){c.situacao='analise';$('cv-sit').value='analise';}}
+    await enviarWhatsEnt(c,r.data,remarcar?'remarcada':'convite',w);
+    entForm=null;renderEntrevistaCV();renderCurriculos();
+    await enviarEventoEscritorio(agendaId,'salvo');
+    delete entAgenda[agendaId];await recarregarAgendas();renderEntrevistaCV();
+  }finally{if($('ent-btn'))$('ent-btn').disabled=false;}
+}
+// confere o evento na agenda (pode ter sido mudado no Cronograma ou no Outlook)
+async function conferirAgendaEnt(e){
+  if(!e.agenda_id||e.situacao!=='agendada')return;
+  let ag=entAgenda[e.agenda_id];
+  if(!ag){const{data,error}=await sb.from('agenda_escritorio').select('id,inicio,fim,local,situacao,outlook_id,outlook_erro,outlook_sync_em,atualizado_em').eq('id',e.agenda_id).maybeSingle();
+    if(error)return;if(!data){return;}ag=entAgenda[e.agenda_id]=data;
+    if(cvEditandoId===e.curriculo_id&&!entForm&&$('cv-entrevista'))renderEntrevistaCV();return;}
+  const box=$('ent-aviso');if(!box)return;
+  if(ag.situacao==='cancelado'){
+    box.innerHTML='<div class="info-box" style="margin-top:8px">O evento desta entrevista foi <strong>cancelado na agenda do escritório</strong>. <button class="btn-link" onclick="cancelarEntrevista(true)">marcar como cancelada e avisar o candidato</button></div>';return;}
+  const mudou=Date.parse(ag.inicio)!==Date.parse(e.inicio)||Date.parse(ag.fim)!==Date.parse(e.fim)||(ag.local||'')!==(e.local||'');
+  if(mudou){
+    const upd={inicio:ag.inicio,fim:ag.fim,local:ag.local,atualizado_em:new Date().toISOString()};
+    const r=await sb.from('entrevistas').update(upd).eq('id',e.id);if(r.error)return;Object.assign(e,upd);
+    renderEntrevistaCV();
+    const b=$('ent-aviso');if(b)b.innerHTML='<div class="info-box" style="margin-top:8px">A data, o horário ou o local foram <strong>mudados na agenda do escritório</strong>. <button class="btn-link" onclick="avisarRemarcacaoEnt()">avisar o candidato da nova data no WhatsApp</button></div>';
+  }
+}
+async function avisarRemarcacaoEnt(){const c=todosCurriculos.find(x=>x.id===cvEditandoId),e=entrevistaAtual(cvEditandoId);if(!c||!e)return;const w=janelaWhats(c);await enviarWhatsEnt(c,e,'remarcada',w);renderEntrevistaCV();}
+async function reenviarWhatsEnt(){const c=todosCurriculos.find(x=>x.id===cvEditandoId),e=entrevistaAtual(cvEditandoId);if(!c||!e)return;const w=janelaWhats(c);await enviarWhatsEnt(c,e,'convite',w);renderEntrevistaCV();}
+function copiarMsgEnt(){const c=todosCurriculos.find(x=>x.id===cvEditandoId),e=entrevistaAtual(cvEditandoId);if(!c||!e)return;const m=msgEntrevista(c,e,'convite');
+  (navigator.clipboard?navigator.clipboard.writeText(m):Promise.reject()).then(()=>toast('Mensagem copiada'),()=>{const a=document.createElement('textarea');a.value=m;document.body.appendChild(a);a.select();document.execCommand('copy');a.remove();toast('Mensagem copiada');});}
+async function cancelarEntrevista(jaCanceladaNaAgenda){
+  const c=todosCurriculos.find(x=>x.id===cvEditandoId),e=entrevistaAtual(cvEditandoId);if(!c||!e)return;
+  if(!jaCanceladaNaAgenda&&!confirm('Cancelar esta entrevista? O evento sai da agenda do escritório e os entrevistadores recebem o cancelamento no Outlook. Nada é apagado.'))return;
+  const avisar=confirm('Avisar o candidato do cancelamento no WhatsApp?');
+  const w=avisar?janelaWhats(c):null;
+  const agora=new Date().toISOString();
+  if(e.agenda_id&&!jaCanceladaNaAgenda){const r=await sb.from('agenda_escritorio').update({situacao:'cancelado',atualizado_em:agora}).eq('id',e.agenda_id);if(erroSB(r.error)){if(w)w.close();return;}}
+  const r=await sb.from('entrevistas').update({situacao:'cancelada',atualizado_em:agora}).eq('id',e.id);if(erroSB(r.error)){if(w)w.close();return;}
+  e.situacao='cancelada';
+  if(avisar)await enviarWhatsEnt(c,e,'cancelada',w);
+  renderEntrevistaCV();renderCurriculos();
+  if(e.agenda_id&&!jaCanceladaNaAgenda){await enviarEventoEscritorio(e.agenda_id,'cancelado');delete entAgenda[e.agenda_id];await recarregarAgendas();}
+}
+async function marcarEntrevista(sit){
+  const e=entrevistaAtual(cvEditandoId);if(!e)return;
+  const upd={situacao:sit,atualizado_em:new Date().toISOString()};
+  const r=await sb.from('entrevistas').update(upd).eq('id',e.id);if(erroSB(r.error))return;
+  Object.assign(e,upd);renderEntrevistaCV();renderCurriculos();toast(sit==='agendada'?'Entrevista voltou para agendada':'Entrevista: '+ENT_SIT[sit].toLowerCase());
+}
+async function salvarAnotEntrevista(){
+  const e=entrevistaAtual(cvEditandoId);if(!e)return;
+  const upd={observacao:$('ent-anot').value.trim()||null,atualizado_em:new Date().toISOString()};
+  const r=await sb.from('entrevistas').update(upd).eq('id',e.id);if(erroSB(r.error))return;
+  Object.assign(e,upd);toast('Anotações salvas');
 }
 async function salvarCurriculo(){
   const nome=$('cv-nome').value.trim().toUpperCase().replace(/\s+/g,' ');if(!nome){alert('Informe o nome.');return;}
