@@ -92,6 +92,7 @@ Boa parte disto já foi implementada nas versões v11 a v18 (acessos, documentos
   - justificada (atestado, licença): desconta VT e VR;
   - abonada: desconta só VT.
 - Envio mensal à contabilidade Innove (thais.ribeiro@innovecontabil.com.br e dp@innovecontabil.com.br) todo dia 26 (v75; era dia 25 — a folha fecha no dia 25 e o envio fica para o dia seguinte): a Sulamita (perfil administrador) confere no CRM e clica Enviar, via Microsoft 365, usando a caixa sulamita.decanio@bvek.com.br como remetente.
+- Premiações no envio à contabilidade (v83, sem migração): a premiação/extra do mês (tabela `premiacoes`, lançada em RH → Contracheques e premiações) entra na tabela do envio (coluna Premiação), na conferência, no texto do e-mail (lista por funcionário), na planilha do fechamento (colunas no Resumo + aba "Premiações") e, se marcado, as declarações em PDF vão anexadas (as assinadas com a assinatura eletrônica).
 - Adiantamento de 40% do salário no dia 15 para quem solicita; vales (empréstimos informais) descontados com valor livre mês a mês.
 - Regra de prazos: adiantamento (dia 15) — sábado → sexta anterior; domingo → segunda seguinte; feriado → dia útil anterior. Envio à contabilidade (dia 26, v75) — nunca antes do dia 26: fim de semana ou feriado → próximo dia útil (`prazoRHDepois`).
 - Contracheques: a contabilidade manda um PDF único sem CPF; o CRM separa por funcionário e acrescenta nome, CPF, admissão e função.

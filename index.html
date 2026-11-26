@@ -1468,7 +1468,8 @@ th[data-ord] .seta{opacity:.35;margin-left:4px}th[data-ord].ord-ativa .seta{opac
           <div class="campo full"><label>Mensagem</label><textarea id="env-corpo" rows="8"></textarea></div>
           <div class="campo full"><label>Anexos</label>
             <div class="caixa-pdf">
-              <div class="campo-check"><input type="checkbox" id="env-anexo-planilha" checked><label for="env-anexo-planilha">Planilha do fechamento do mês (gerada pelo CRM: faltas, benefícios, vales e adiantamentos)</label></div>
+              <div class="campo-check"><input type="checkbox" id="env-anexo-planilha" checked><label for="env-anexo-planilha">Planilha do fechamento do mês (gerada pelo CRM: faltas, benefícios, vales, adiantamentos e premiações)</label></div>
+              <div class="campo-check" id="env-anexo-premios-box" style="display:none"><input type="checkbox" id="env-anexo-premios" checked><label for="env-anexo-premios" id="env-anexo-premios-txt">Declarações de premiação do mês (PDF)</label></div>
               <div style="margin-top:6px"><input type="file" id="env-outros" multiple accept=".pdf,.jpg,.jpeg,.png,.xlsx,.docx,.doc,.csv" onchange="escolheuAnexosEnvio(this.files)"></div>
               <div class="info" id="env-outros-info">Outros arquivos (atestados, declarações…), até 3 MB no total.</div>
             </div>
@@ -10475,25 +10476,30 @@ function renderFichaVales(){
 function dadosFechamento(iso){
   const b=linhasBeneficios(),cols=colunasBeneficios(b.linhas);
   const porId=Object.fromEntries(b.linhas.map(l=>[l.f.id,l]));
-  const funcs=filtraEmpresa(todosFuncionarios.filter(f=>(f.ativo!==false&&naFolha(f))||porId[f.id]));
+  const funcs=filtraEmpresa(todosFuncionarios.filter(f=>(f.ativo!==false&&naFolha(f))||porId[f.id]||premioDoMes(f.id,iso)));
   const linhas=funcs.map(f=>{
     const l=porId[f.id],cf=compFuncs.find(x=>x.funcionario_id===f.id);
     const dias=l?l.dias:(cf&&cf.dias_trabalhados!=null?cf.dias_trabalhados:b.diasUteis),fx=faltasCF(cf);
     const itens=l?l.itens:[],a=adiantDoMes(f.id,iso);
     return{f,dias,fx,faltas:totalFaltas(fx),detalhe:cf&&cf.detalhe||null,itens,totalBenef:r2(itens.reduce((s,i)=>s+i.valor_total,0)),descBenef:r2(itens.reduce((s,i)=>s+i.desconto,0)),
-      descVale:descontoValesNoMes(f.id,iso),adiant:a?Number(a.valor):0,adiantPago:a?a.pago_em:null,obs:(cf&&cf.observacoes)||''};
+      descVale:descontoValesNoMes(f.id,iso),adiant:a?Number(a.valor):0,adiantPago:a?a.pago_em:null,obs:(cf&&cf.observacoes)||'',
+      premio:premioDoMes(f.id,iso),premioValor:(()=>{const p=premioDoMes(f.id,iso);return p?r2(Number(p.valor)):0;})()};
   }).sort((a,b)=>a.f.nome.localeCompare(b.f.nome,'pt-BR'));
   return Object.assign({},b,{cols,linhas});
 }
 function corpoPadraoEnvio(iso,d){
   const sm=k=>d.linhas.reduce((s,l)=>s+l.fx[k],0);
   const faltas=`${sm('inj')} injustificada(s), ${sm('just')} justificada(s) e ${sm('abon')} abonada(s)`,vale=d.linhas.reduce((s,l)=>s+l.descVale,0),ad=d.linhas.reduce((s,l)=>s+l.adiant,0);
+  const pr=d.linhas.filter(l=>l.premio),tPr=r2(pr.reduce((s,l)=>s+l.premioValor,0));
   return`Olá, Thais e equipe do DP,
 
-Segue o fechamento do RH do Grupo BVEK referente a ${nomeMes(iso)}, com faltas, benefícios de ${nomeMes(mesSeguinte(iso))} (vale-refeição, vale-transporte, plano odontológico e demais), descontos de vales/empréstimos e adiantamentos do mês, na planilha em anexo.
+Segue o fechamento do RH do Grupo BVEK referente a ${nomeMes(iso)}, com faltas, benefícios de ${nomeMes(mesSeguinte(iso))} (vale-refeição, vale-transporte, plano odontológico e demais), descontos de vales/empréstimos, adiantamentos${pr.length?' e premiações':''} do mês, na planilha em anexo.
 
-Resumo: ${d.linhas.length} funcionário(s) · faltas de ${fmtData(periodoPonto(iso).inicio)} a ${fmtData(periodoPonto(iso).fim)}: ${faltas}${sm('sab')?` · ${sm('sab')} sábado(s) trabalhado(s) (somados só no VT)`:''} · descontos de vales R$ ${fmtMoeda(vale)} · adiantamentos R$ ${fmtMoeda(ad)}.
-
+Resumo: ${d.linhas.length} funcionário(s) · faltas de ${fmtData(periodoPonto(iso).inicio)} a ${fmtData(periodoPonto(iso).fim)}: ${faltas}${sm('sab')?` · ${sm('sab')} sábado(s) trabalhado(s) (somados só no VT)`:''} · descontos de vales R$ ${fmtMoeda(vale)} · adiantamentos R$ ${fmtMoeda(ad)}${pr.length?` · premiações R$ ${fmtMoeda(tPr)} (${pr.length} funcionário(s))`:''}.
+${pr.length?`
+Premiações do mês (incluir no contracheque):
+${pr.map(l=>`- ${l.f.nome}: R$ ${fmtMoeda(l.premioValor)} — dia(s) ${diasTexto(l.premio.dias)}${l.premio.pago_em?` — pago em ${fmtData(l.premio.pago_em)}`:''}`).join('\n')}
+`:''}
 Qualquer dúvida, estamos à disposição.
 
 Atenciosamente,
@@ -10517,18 +10523,20 @@ async function renderRHEnvio(){
     (()=>{const f=resumoFolha();return it(true,`Folha de ${esc(nomeMes(iso))}: <strong>${f.total}</strong> funcionário(s)${f.inter?` · ${f.interDentro} de ${f.inter} intermitente(s) incluído(s)`:''}`,`<button class="btn-sec" onclick="abrirFolha()">Folha do mês</button>`);})(),
     it(true,`Vales/empréstimos: <strong>R$ ${esc(fmtMoeda(tVale))}</strong> a descontar neste mês`,`<button class="btn-link" onclick="rhSub='vales';renderRH()">ver vales</button>`),
     it(!adSemData,`Adiantamentos: ${ads.length} lançado(s)${adSemData?` · <strong>${adSemData} sem data de pagamento</strong>`:''}`,`<button class="btn-link" onclick="rhSub='vales';renderRH()">ver adiantamentos</button>`),
+    (()=>{const pr=d.linhas.filter(l=>l.premio),semAss=pr.filter(l=>!l.premio.assinado_em).length,disc=pr.filter(l=>l.premio.assinado_em&&!l.premio.concorda).length;
+      return it(!disc,pr.length?`Premiações: <strong>${pr.length}</strong> funcionário(s) · <strong>R$ ${esc(fmtMoeda(pr.reduce((s,l)=>s+l.premioValor,0)))}</strong>${semAss?` · ${semAss} declaração(ões) ainda sem assinatura`:''}${disc?` · <strong>${disc} funcionário(s) discordou(aram)</strong>`:''}`:'Premiações: nenhuma lançada neste mês',`<button class="btn-link" onclick="rhSub='contracheques';renderRH()">ver premiações</button>`);})(),
     empresaAtual!=='todas'?it(false,`Você está vendo só <strong>${esc(nomeEmpresaAtual())}</strong>: a planilha terá só esta empresa. Para mandar o grupo todo, escolha "Todas as empresas" no alto.`):'',
     it(!!enviado,enviado?`Enviado em ${esc(fmtDataHora(enviado.enviado_em))} por ${esc(enviado.enviado_por||'—')} para ${esc(enviado.para)}`:`Ainda não enviado (prazo deste mês: ${esc(textoDataEnvio(iso))})`),
   ].join('');
   const cols=d.cols;
-  $('tabela-envio').innerHTML=`<thead><tr><th>Funcionário</th><th class="num">Dias base</th><th class="num" title="Desconta o dia, VR/VA e VT">Injust.</th><th class="num" title="Atestado, licença: desconta VR/VA e VT">Just.</th><th class="num" title="Perdoada pela empresa: desconta só VT">Abon.</th><th class="num">Férias</th><th class="num" title="Sábados trabalhados (somam só no VT)">Sáb.</th><th class="num" title="Atrasos e saídas antecipadas (ponto)">Atrasos</th>${cols.map(n=>`<th class="num">${esc(siglaBenef(n))}</th>`).join('')}<th class="num">Desc. benef.</th><th class="num">Desc. vale</th><th class="num">Adiant.</th><th>Observação do mês</th></tr></thead><tbody>`+
+  $('tabela-envio').innerHTML=`<thead><tr><th>Funcionário</th><th class="num">Dias base</th><th class="num" title="Desconta o dia, VR/VA e VT">Injust.</th><th class="num" title="Atestado, licença: desconta VR/VA e VT">Just.</th><th class="num" title="Perdoada pela empresa: desconta só VT">Abon.</th><th class="num">Férias</th><th class="num" title="Sábados trabalhados (somam só no VT)">Sáb.</th><th class="num" title="Atrasos e saídas antecipadas (ponto)">Atrasos</th>${cols.map(n=>`<th class="num">${esc(siglaBenef(n))}</th>`).join('')}<th class="num">Desc. benef.</th><th class="num">Desc. vale</th><th class="num">Adiant.</th><th class="num" title="Premiação / extra do mês (lançada em Contracheques e premiações)">Premiação</th><th>Observação do mês</th></tr></thead><tbody>`+
     (d.linhas.length?d.linhas.map(l=>`<tr><td>${linkNome(l.f)}${tagEmpresa(l.f)}${ehIntermitente(l.f)?' <span class="badge badge-cinza">intermitente</span>':''}</td><td class="num">${esc(l.dias)}</td>
       ${['inj','just','abon','fer','sab'].map(k=>`<td class="num">${edita?`<input type="number" min="0" max="${k==='sab'?6:31}" value="${l.fx[k]||''}" placeholder="0" data-env-fx="${esc(l.f.id)}" data-campo="${k}">`:(l.fx[k]?`<span class="${k==='sab'?'':'menos'}">${esc(l.fx[k])}</span>`:'—')}</td>`).join('')}
       <td class="num">${esc(fmtMin(l.fx.parcMin))}${l.fx.incompl?` <span class="badge badge-hoje" title="Dias com marcação incompleta no ponto (não contados como falta)">${l.fx.incompl} inc.</span>`:''}${l.fx.origem==='secullum'?' <span class="badge badge-cinza" title="Lido do ponto (Secullum)">ponto</span>':''}</td>
       ${cols.map(n=>{const i=l.itens.find(x=>x.tipo_nome===n);return`<td class="num">${i?esc(fmtMoeda(i.valor_total)):'<span style="color:#bbb">—</span>'}</td>`;}).join('')}
-      <td class="num">${l.descBenef?esc(fmtMoeda(l.descBenef)):'—'}</td><td class="num">${l.descVale?esc(fmtMoeda(l.descVale)):'—'}</td><td class="num">${l.adiant?esc(fmtMoeda(l.adiant)):'—'}</td>
+      <td class="num">${l.descBenef?esc(fmtMoeda(l.descBenef)):'—'}</td><td class="num">${l.descVale?esc(fmtMoeda(l.descVale)):'—'}</td><td class="num">${l.adiant?esc(fmtMoeda(l.adiant)):'—'}</td><td class="num">${l.premio?`<span title="dia(s) ${esc(diasTexto(l.premio.dias))}">${esc(fmtMoeda(l.premioValor))}</span>`:'—'}</td>
       <td>${PERM.rhEditar?`<input type="text" class="inp-obs" value="${esc(l.obs)}" placeholder="atestado, afastamento…" data-env-obs="${esc(l.f.id)}">`:esc(l.obs)}</td></tr>`).join('')
-    :`<tr><td colspan="${cols.length+12}" class="vazio">Nenhum funcionário.</td></tr>`)+'</tbody>';
+    :`<tr><td colspan="${cols.length+13}" class="vazio">Nenhum funcionário.</td></tr>`)+'</tbody>';
   $('tabela-envio').querySelectorAll('[data-env-fx]').forEach(i=>i.onchange=()=>salvarFaltaTipo(i.dataset.envFx,i.dataset.campo,i.value));
   $('tabela-envio').querySelectorAll('[data-env-obs]').forEach(i=>i.onchange=()=>salvarObsMes(i.dataset.envObs,i.value));
   ligarLinksNome($('tabela-envio'));
@@ -10540,7 +10548,8 @@ async function renderRHEnvio(){
     anexosEnvioExtra=[];$('env-outros').value='';escolheuAnexosEnvio([]);
   }
   $('env-salvar-padrao').style.display=PERM.admin?'':'none';
-  ['env-para','env-cc','env-assunto','env-corpo','env-anexo-planilha','env-outros'].forEach(id=>$(id).disabled=!PERM.rhEditar);
+  {const np=d.linhas.filter(l=>l.premio).length;$('env-anexo-premios-box').style.display=np?'':'none';$('env-anexo-premios-txt').textContent=`Declarações de premiação do mês (${np} PDF${np>1?'s':''}; as já assinadas vão com a assinatura)`;}
+  ['env-para','env-cc','env-assunto','env-corpo','env-anexo-planilha','env-anexo-premios','env-outros'].forEach(id=>$(id).disabled=!PERM.rhEditar);
   $('rh-envios-lista').innerHTML=envios.length?'<div class="sub-lista">'+envios.map(e=>`<div class="sub-item"><div><strong>${esc(fmtDataHora(e.enviado_em))}</strong> · ${esc(e.enviado_por||'')} ${e.situacao==='enviado'?'<span class="badge badge-ok">enviado</span>':'<span class="badge badge-atraso">erro</span>'}<div class="dica" style="margin:0">Para: ${esc(e.para||'')}${e.remetente?' · de: '+esc(e.remetente):''} · ${(e.anexos||[]).length} anexo(s)${(e.anexos||[]).length?': '+esc((e.anexos||[]).map(a=>a.nome).join(', ')):''}</div>${e.erro?`<div class="dica" style="margin:0;color:var(--vermelho)">${esc(e.erro)}</div>`:''}</div><div class="acoes">${(e.anexos||[]).filter(a=>/\.xlsx$/i.test(a.nome||'')).map(a=>`<button class="btn-link" onclick="abrirArquivoRH('${esc(a.caminho)}')">planilha</button>`).join('')}</div></div>`).join('')+'</div>':'<p class="vazio">Nenhum envio neste mês.</p>';
 }
 async function salvarObsMes(fid,texto){
@@ -10562,15 +10571,16 @@ async function gerarPlanilhaFechamento(iso){
   const sig=f=>(empresaPorId(f.empresa_id)||{}).sigla||'';
   const resumo=[['Grupo BVEK — Fechamento do RH',nomeMes(iso)],['Benefícios referentes a',nomeMes(mesSeguinte(iso)),'Os benefícios são sempre do mês seguinte'],['Dias úteis de '+nomeMes(mesSeguinte(iso)),d.diasUteis,d.fechada?'Benefícios fechados':'Benefícios em aberto (valores podem mudar)'],['Gerado em',fmtDataHora(new Date().toISOString()),quemSou()||''],[],
     ['Período de apuração das faltas',fmtData(periodoPonto(iso).inicio)+' a '+fmtData(periodoPonto(iso).fim),'Injustificada: desconta o dia, VR e VT · Justificada: desconta VR e VT · Abonada: desconta só VT · Sábado trabalhado: soma só no VT'],[],
-    ['Funcionário','CPF','Empresa','Função','Admissão','Dias base','Faltas injustificadas','Faltas justificadas','Faltas abonadas','Férias (dias)','Sábados trabalhados','Atrasos/saídas (h)',...d.cols,'Total benefícios','Desconto benefícios (funcionário)','Desconto vale/empréstimo','Adiantamento','Adiantamento pago em','Observações']];
-  const tot=new Array(d.cols.length+4).fill(0);
+    ['Funcionário','CPF','Empresa','Função','Admissão','Dias base','Faltas injustificadas','Faltas justificadas','Faltas abonadas','Férias (dias)','Sábados trabalhados','Atrasos/saídas (h)',...d.cols,'Total benefícios','Desconto benefícios (funcionário)','Desconto vale/empréstimo','Adiantamento','Adiantamento pago em','Premiação / extra','Premiação paga em','Observações']];
+  const tot=new Array(d.cols.length+4).fill(0);let totPr=0;
   d.linhas.forEach(l=>{
     const vals=d.cols.map(n=>{const i=l.itens.find(x=>x.tipo_nome===n);return i?r2(i.valor_total):0;});
     const nums=[...vals,l.totalBenef,l.descBenef,l.descVale,r2(l.adiant)];nums.forEach((v,k)=>tot[k]+=v);
-    resumo.push([l.f.nome,l.f.cpf||'',sig(l.f),l.f.cargo||'',l.f.data_admissao?fmtData(l.f.data_admissao):'',l.dias,l.fx.inj,l.fx.just,l.fx.abon,l.fx.fer,l.fx.sab,l.fx.parcMin?fmtMin(l.fx.parcMin):'',...nums,l.adiantPago?fmtData(l.adiantPago):'',l.obs]);
+    totPr+=l.premioValor;
+    resumo.push([l.f.nome,l.f.cpf||'',sig(l.f),l.f.cargo||'',l.f.data_admissao?fmtData(l.f.data_admissao):'',l.dias,l.fx.inj,l.fx.just,l.fx.abon,l.fx.fer,l.fx.sab,l.fx.parcMin?fmtMin(l.fx.parcMin):'',...nums,l.adiantPago?fmtData(l.adiantPago):'',l.premioValor,l.premio&&l.premio.pago_em?fmtData(l.premio.pago_em):'',l.obs]);
   });
   const sm=k=>d.linhas.reduce((s,l)=>s+l.fx[k],0);
-  resumo.push(['TOTAL','','','','','',sm('inj'),sm('just'),sm('abon'),sm('fer'),sm('sab'),fmtMin(sm('parcMin')),...tot.map(r2),'','']);
+  resumo.push(['TOTAL','','','','','',sm('inj'),sm('just'),sm('abon'),sm('fer'),sm('sab'),fmtMin(sm('parcMin')),...tot.map(r2),'',r2(totPr),'','']);
   const ponto=[['Funcionário','CPF','Data','Tipo','Detalhe']];
   d.linhas.forEach(l=>((l.detalhe&&l.detalhe.dias)||[]).filter(x=>x.t!=='parcial').forEach(x=>ponto.push([l.f.nome,l.f.cpf||'',fmtData(x.d),{injustificada:'Falta injustificada',justificada:'Falta justificada',abonada:'Falta abonada',ferias:'Férias',incompleta:'Marcação incompleta (não contada como falta)',sabado:'Sábado trabalhado (soma só no VT)'}[x.t]||x.t,x.x||''])));
   const detalhe=[['Funcionário','CPF','PIS','Empresa','Benefício','Cálculo','Valor unitário','Dias','Valor total','Desconto funcionário']];
@@ -10582,13 +10592,16 @@ async function gerarPlanilhaFechamento(iso){
     vales.push([f.nome||'',f.cpf||'',fmtData(v.data),v.motivo||'',r2(v.valor),noMes?r2(noMes.valor):0,saldo]);});
   const adiant=[['Funcionário','CPF','Salário base','%','Valor','Pago em','Observação']];
   todosAdiant.filter(a=>a.competencia===iso&&ids.has(a.funcionario_id)).forEach(a=>{const f=funcPorId(a.funcionario_id)||{};adiant.push([f.nome||'',f.cpf||'',a.salario_base!=null?r2(a.salario_base):'',Number(a.percentual),r2(a.valor),a.pago_em?fmtData(a.pago_em):'',a.observacoes||'']);});
+  const premios=[['Funcionário','CPF','Função','Dia(s)','Valor','Motivo','Pago em','Declaração']];
+  d.linhas.filter(l=>l.premio).forEach(l=>{const p=l.premio;premios.push([l.f.nome,l.f.cpf||'',l.f.cargo||'',diasTexto(p.dias),r2(Number(p.valor)),p.motivo||'',p.pago_em?fmtData(p.pago_em):'',p.assinado_em?(p.concorda?'assinada em '+fmtData(p.assinado_em):'funcionário discordou'):'aguardando assinatura']);});
   const wb=X.utils.book_new();
   const ws=(aoa,larg)=>{const w=X.utils.aoa_to_sheet(aoa);w['!cols']=larg.map(x=>({wch:x}));return w;};
-  X.utils.book_append_sheet(wb,ws(resumo,[32,15,8,20,11,9,12,11,11,9,10,11,...d.cols.map(()=>13),13,14,14,12,12,30]),'Resumo');
+  X.utils.book_append_sheet(wb,ws(resumo,[32,15,8,20,11,9,12,11,11,9,10,11,...d.cols.map(()=>13),13,14,14,12,12,14,12,30]),'Resumo');
   if(ponto.length>1)X.utils.book_append_sheet(wb,ws(ponto,[32,15,11,40,20]),'Faltas dia a dia');
   X.utils.book_append_sheet(wb,ws(detalhe,[32,15,15,8,28,18,12,6,12,12]),'Benefícios');
   X.utils.book_append_sheet(wb,ws(vales,[32,15,11,24,14,14,16]),'Vales');
   X.utils.book_append_sheet(wb,ws(adiant,[32,15,13,6,12,11,24]),'Adiantamentos');
+  if(premios.length>1)X.utils.book_append_sheet(wb,ws(premios,[32,15,20,18,12,50,11,22]),'Premiações');
   const suf=empresaAtual==='todas'?'GRUPO':((empresaPorId(empresaAtual)||{}).sigla||'');
   return{wb,X,nome:`BVK-RH-FECHAMENTO-${iso.slice(0,7)}-${suf}.xlsx`};
 }
@@ -10612,7 +10625,8 @@ async function enviarContabilidade(){
   const assunto=$('env-assunto').value.trim(),corpo=$('env-corpo').value.trim();
   if(!assunto||!corpo){alert('Preencha o assunto e a mensagem.');return;}
   const comPlanilha=$('env-anexo-planilha').checked;
-  if(!comPlanilha&&!anexosEnvioExtra.length&&!confirm('Enviar sem nenhum anexo?'))return;
+  const premiosMes=dadosFechamento(iso).linhas.filter(l=>l.premio),comPremios=premiosMes.length&&$('env-anexo-premios').checked;
+  if(!comPlanilha&&!comPremios&&!anexosEnvioExtra.length&&!confirm('Enviar sem nenhum anexo?'))return;
   const tamExtra=anexosEnvioExtra.reduce((s,f)=>s+f.size,0);
   if(tamExtra>2.9*1048576){alert('Os outros anexos passam de 3 MB. Tire algum arquivo (ou envie em outro e-mail pelo Outlook).');return;}
   const d=dadosFechamento(iso),av=[];
@@ -10620,7 +10634,7 @@ async function enviarContabilidade(){
   if(empresaAtual!=='todas')av.push(`a planilha terá só ${nomeEmpresaAtual()}`);
   const ja=todosEnvios.filter(e=>e.competencia===iso&&e.situacao==='enviado').length;
   if(ja)av.push(`este mês já foi enviado ${ja} vez(es)`);
-  if(!confirm(`Enviar o fechamento de ${nomeMes(iso)} para:\n${para.join('\n')}${cc.length?`\n\nCópia: ${cc.join(', ')}`:''}\n\nAnexos: ${[comPlanilha?'planilha do fechamento':'',...anexosEnvioExtra.map(f=>f.name)].filter(Boolean).join(', ')||'nenhum'}${av.length?'\n\nAtenção: '+av.join('; ')+'.':''}`))return;
+  if(!confirm(`Enviar o fechamento de ${nomeMes(iso)} para:\n${para.join('\n')}${cc.length?`\n\nCópia: ${cc.join(', ')}`:''}\n\nAnexos: ${[comPlanilha?'planilha do fechamento':'',comPremios?`${premiosMes.length} declaração(ões) de premiação`:'',...anexosEnvioExtra.map(f=>f.name)].filter(Boolean).join(', ')||'nenhum'}${av.length?'\n\nAtenção: '+av.join('; ')+'.':''}`))return;
   const btn=$('env-btn');btn.disabled=true;btn.textContent='Enviando…';
   try{
     const anexos=[],pasta=`envios/${iso.slice(0,7)}/${Date.now()}`;
@@ -10629,6 +10643,20 @@ async function enviarContabilidade(){
       const caminho=`${pasta}/${nome}`,tipo='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
       const up=await sb.storage.from(BUCKET_RH).upload(caminho,new Blob([X.write(wb,{type:'array',bookType:'xlsx'})],{type:tipo}),{contentType:tipo});
       if(up.error)throw up.error;anexos.push({caminho,nome});
+    }
+    if(comPremios){
+      // declarações geradas na hora: as assinadas saem com a assinatura eletrônica
+      const ids=premiosMes.filter(l=>l.premio.assinado_em).map(l=>l.premio.id);
+      const{data:compl,error:ePr}=ids.length?await sb.from('premiacoes').select('*').in('id',ids):{data:[]};
+      if(ePr)throw ePr;
+      for(const l of premiosMes){
+        const full=(compl||[]).find(x=>x.id===l.premio.id)||null;
+        const bytes=await pdfDocTimbrado(textoDeclaracaoPremio(full||l.premio,l.f),l.f,full||undefined);
+        const nome=nomeArquivoPadrao({emp:'BVK',area:'RH',tipo:'DOC',desc:'DECLARACAO_PREMIO_'+l.f.nome,data:iso.slice(0,7).replace('-','')})+'.pdf';
+        const caminho=`${pasta}/${nome}`;
+        const up=await sb.storage.from(BUCKET_RH).upload(caminho,new Blob([bytes],{type:'application/pdf'}),{contentType:'application/pdf'});
+        if(up.error)throw new Error(`Não foi possível anexar a declaração de ${l.f.nome}: ${up.error.message}`);anexos.push({caminho,nome});
+      }
     }
     for(const f of anexosEnvioExtra){
       const caminho=`${pasta}/${nomeArquivoSeguro(f.name)}`;
